@@ -13,6 +13,7 @@ import {
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
 import { useMatrixOptionWidth } from '@/components/editor/custom-blocks/use-matrix-option-width';
+import { useRoughSolutionXs } from '@/components/editor/custom-blocks/use-rough-solution-xs';
 
 export type TrueFalseValue = 'true' | 'false' | 'na';
 
@@ -29,6 +30,7 @@ export type TrueFalseAttrs = {
   showNa: boolean;
   naLabel: string;
   rows: TrueFalseRow[];
+  showFirstAsExample: boolean;
 };
 
 export const DEFAULT_TRUE_FALSE_ROWS: TrueFalseRow[] = [
@@ -59,6 +61,7 @@ function TrueFalseNodeView({ node, selected }: NodeViewProps) {
     showNa,
     naLabel,
     rows,
+    showFirstAsExample,
   } = node.attrs as TrueFalseAttrs;
   const options = [
     { value: 'true' as const, label: trueLabel },
@@ -70,6 +73,7 @@ function TrueFalseNodeView({ node, selected }: NodeViewProps) {
     columns: options.length,
     controlWithLabel: false,
   });
+  const solutionsRef = useRoughSolutionXs(optionWidthRef);
 
   return (
     <CustomBlockRoot
@@ -77,6 +81,12 @@ function TrueFalseNodeView({ node, selected }: NodeViewProps) {
       className={`mch-node true-false-node${showNa ? ' true-false-node--with-na' : ''}`}
     >
       <div className="custom-block__matrix-layout" ref={optionWidthRef}>
+        <svg
+          aria-hidden="true"
+          className="custom-block__rough-solution-overlay"
+          preserveAspectRatio="none"
+          ref={solutionsRef}
+        />
         <BlockInstruction>Mark each statement as true or false.</BlockInstruction>
         <BlockQuestion>{question}</BlockQuestion>
         <div className="mch-node__header">
@@ -97,7 +107,13 @@ function TrueFalseNodeView({ node, selected }: NodeViewProps) {
               <div className="mch-node__option-columns" data-columns={options.length}>
                 {options.map((option) => (
                   <span className="mch-node__choice" key={option.value}>
-                    <BlockChoiceIndicator checked={row.correctValue === option.value} />
+                    <BlockChoiceIndicator
+                      checked={false}
+                      example={showFirstAsExample && rowIndex === 0}
+                      solutionKey={row.correctValue === option.value
+                        ? `${row.id}:${option.value}`
+                        : undefined}
+                    />
                   </span>
                 ))}
               </div>
@@ -127,9 +143,9 @@ export const TrueFalse = Node.create({
   addAttributes() {
     return {
       question: {
-        default: 'Decide whether each statement is true or false.',
+        default: '',
         parseHTML: (element) => element.getAttribute('data-true-false-question')
-          ?? 'Decide whether each statement is true or false.',
+          ?? '',
         renderHTML: (attributes) => ({
           'data-true-false-question': attributes.question,
         }),
@@ -161,6 +177,17 @@ export const TrueFalse = Node.create({
           'data-true-false-rows': encodeURIComponent(JSON.stringify(attributes.rows)),
         }),
       },
+      showFirstAsExample: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-true-false-show-first-example') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-true-false-show-first-example': String(
+            attributes.showFirstAsExample,
+          ),
+        }),
+      },
     };
   },
 
@@ -184,12 +211,13 @@ export const TrueFalse = Node.create({
           commands.insertContent({
             type: this.name,
             attrs: {
-              question: attrs.question ?? 'Decide whether each statement is true or false.',
+              question: attrs.question ?? '',
               trueLabel: attrs.trueLabel ?? 'True',
               falseLabel: attrs.falseLabel ?? 'False',
               showNa: attrs.showNa ?? false,
               naLabel: attrs.naLabel ?? 'N/A',
               rows: attrs.rows ?? defaultRows(),
+              showFirstAsExample: attrs.showFirstAsExample ?? false,
             },
           }),
     };

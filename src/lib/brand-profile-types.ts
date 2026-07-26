@@ -13,6 +13,66 @@ export const DATE_FORMATS = [
 
 export type BrandNumberFormat = typeof NUMBER_FORMATS[number];
 export type BrandProfileDateFormat = typeof DATE_FORMATS[number];
+export type BrandInstructionBadgeStyle =
+  | 'filled'
+  | 'primary-text'
+  | 'accent-text';
+export const BRAND_COLOR_TOKENS = [
+  'defaultText',
+  'primary',
+  'accent',
+  'custom1',
+  'custom2',
+] as const;
+export const BRAND_FONT_WEIGHTS = [400, 500, 600, 700, 800] as const;
+export type BrandColorToken = typeof BRAND_COLOR_TOKENS[number];
+export type BrandInstructionNumberColor = BrandColorToken | 'inverse';
+export type BrandFontWeight = typeof BRAND_FONT_WEIGHTS[number];
+export type BrandHeadingStyle = {
+  numberColor: BrandColorToken;
+  numberFontWeight: BrandFontWeight;
+  textColor: BrandColorToken;
+  textFontWeight: BrandFontWeight;
+};
+export type BrandHeadingStyles = {
+  1: BrandHeadingStyle;
+  2: BrandHeadingStyle;
+  3: BrandHeadingStyle;
+  4: BrandHeadingStyle;
+  5: BrandHeadingStyle;
+};
+export const DEFAULT_BRAND_HEADING_STYLES: BrandHeadingStyles = {
+  1: {
+    numberColor: 'custom1',
+    numberFontWeight: 700,
+    textColor: 'custom1',
+    textFontWeight: 700,
+  },
+  2: {
+    numberColor: 'custom1',
+    numberFontWeight: 700,
+    textColor: 'custom1',
+    textFontWeight: 700,
+  },
+  3: {
+    numberColor: 'custom1',
+    numberFontWeight: 700,
+    textColor: 'custom1',
+    textFontWeight: 700,
+  },
+  4: {
+    numberColor: 'custom1',
+    numberFontWeight: 700,
+    textColor: 'custom1',
+    textFontWeight: 700,
+  },
+  5: {
+    numberColor: 'custom1',
+    numberFontWeight: 700,
+    textColor: 'custom1',
+    textFontWeight: 700,
+  },
+};
 export type BrandHeadingNumberFormats = {
   1: BrandNumberFormat;
   2: BrandNumberFormat;
@@ -28,10 +88,19 @@ export type BrandProfile = {
   description: string;
   primaryColor: string;
   accentColor: string;
+  customColor1: string;
+  customColor2: string;
   fontFamily: string;
   logoUrl: string | null;
+  logoScale: number;
   instructionNumberFormat: BrandNumberFormat;
+  instructionNumberColor: BrandInstructionNumberColor;
+  instructionNumberFontWeight: BrandFontWeight;
+  instructionBadgeStyle: BrandInstructionBadgeStyle;
   headingNumberFormats: BrandHeadingNumberFormats;
+  headingStyles: BrandHeadingStyles;
+  fixedHeadingNumberWidth: boolean;
+  contentIndentation: boolean;
   dateFormat: BrandProfileDateFormat;
   isDefault: boolean;
   isSystem: boolean;

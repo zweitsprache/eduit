@@ -1,8 +1,19 @@
+import {
+  DEFAULT_BRAND_HEADING_STYLES,
+  type BrandFontWeight,
+  type BrandHeadingStyles,
+  type BrandInstructionNumberColor,
+} from '@/lib/brand-profile-types';
+
 export type InstructionNumberFormat =
   | 'upper-alpha'
   | 'lower-alpha'
   | 'decimal'
   | 'decimal-leading-zero';
+export type InstructionBadgeStyle =
+  | 'filled'
+  | 'primary-text'
+  | 'accent-text';
 
 export type BrandDateFormat = 'dd.MM.yyyy' | 'dd/MM/yyyy' | 'yyyy-MM-dd';
 export type HeadingNumberFormat =
@@ -24,9 +35,17 @@ export type CustomBlockBrand = {
   name: string;
   primaryColor: string;
   accentColor: string;
+  customColor1: string;
+  customColor2: string;
   fontFamily: string;
   instructionNumberFormat: InstructionNumberFormat;
+  instructionNumberColor: BrandInstructionNumberColor;
+  instructionNumberFontWeight: BrandFontWeight;
+  instructionBadgeStyle: InstructionBadgeStyle;
   headingNumberFormats: HeadingNumberFormats;
+  headingStyles: BrandHeadingStyles;
+  fixedHeadingNumberWidth: boolean;
+  contentIndentation: boolean;
   dateFormat: BrandDateFormat;
 };
 
@@ -39,8 +58,13 @@ export const EDUIT_BRAND = {
   name: 'Eduit',
   primaryColor: '#11224d',
   accentColor: '#cc6600',
+  customColor1: '#101828',
+  customColor2: '#667085',
   fontFamily: '"Encode Sans Semi Condensed", sans-serif',
   instructionNumberFormat: 'upper-alpha',
+  instructionNumberColor: 'inverse',
+  instructionNumberFontWeight: 700,
+  instructionBadgeStyle: 'filled',
   headingNumberFormats: {
     1: 'decimal',
     2: 'decimal',
@@ -48,6 +72,9 @@ export const EDUIT_BRAND = {
     4: 'decimal',
     5: 'decimal',
   },
+  headingStyles: DEFAULT_BRAND_HEADING_STYLES,
+  fixedHeadingNumberWidth: false,
+  contentIndentation: false,
   dateFormat: 'dd.MM.yyyy',
 } satisfies CustomBlockBrand;
 

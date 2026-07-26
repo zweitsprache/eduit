@@ -9,6 +9,7 @@ import {
   CustomBlockRoot,
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
+import { RoughExampleStrike } from '@/components/editor/custom-blocks/rough-example-strike';
 import {
   parseFillInTheBlankText,
   isSingleLetterBlankAnswer,
@@ -26,7 +27,9 @@ export type DialogueItem = {
 export type DialogueAttrs = {
   items: DialogueItem[];
   showOriginal: boolean;
+  showWordBank: boolean;
   hideBlankNumbers: boolean;
+  showFirstAsExample: boolean;
 };
 
 export const DEFAULT_DIALOGUE_ITEMS: DialogueItem[] = [
@@ -63,7 +66,13 @@ function originalText(parts: FillInTheBlankPart[]) {
 }
 
 function DialogueNodeView({ node, selected }: NodeViewProps) {
-  const { items, showOriginal, hideBlankNumbers } = node.attrs as DialogueAttrs;
+  const {
+    items,
+    showOriginal,
+    showWordBank,
+    hideBlankNumbers,
+    showFirstAsExample,
+  } = node.attrs as DialogueAttrs;
   let blankOffset = 0;
   let speakerOrdinal = 0;
   let previousSpeaker: DialogueSpeaker | null = null;
@@ -78,6 +87,16 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
     });
     return { item, parts, speakerOrdinal, startsSpeakerTurn };
   });
+  const wordBankItems = parsedItems.flatMap(({ item, parts }) => (
+    parts.flatMap((part) => (
+      part.type === 'blank' && part.answer.trim()
+        ? [{
+            id: `${item.id}-blank-${part.index}`,
+            text: part.answer.trim(),
+          }]
+        : []
+    ))
+  ));
 
   return (
     <CustomBlockRoot
@@ -85,6 +104,18 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
       className={showOriginal ? 'dialogue-node dialogue-node--with-original' : 'dialogue-node'}
     >
       <BlockInstruction>Complete the dialogue.</BlockInstruction>
+      {showWordBank && wordBankItems.length > 0 && (
+        <div className="custom-block__word-bank dialogue-node__word-bank">
+          {wordBankItems.map((item) => (
+            <span className="custom-block__word-bank-item" key={item.id}>
+              {item.text}
+              {showFirstAsExample && item === wordBankItems[0] && (
+                <RoughExampleStrike seed={item.id} />
+              )}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="dialogue-node__rows">
         {parsedItems.map(({ item, parts, speakerOrdinal: itemOrdinal, startsSpeakerTurn }) => (
           <div className="dialogue-node__row" key={item.id}>
@@ -121,6 +152,7 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
                           : ''
                       }`}
                       data-answer={part.answer}
+                      data-example={showFirstAsExample && part.index === 1}
                       style={{
                         '--fill-blank-width-factor': part.widthFactor,
                       } as CSSProperties}
@@ -177,11 +209,31 @@ export const Dialogue = Node.create({
           'data-dialogue-show-original': String(attributes.showOriginal),
         }),
       },
+      showWordBank: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-dialogue-show-word-bank') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-dialogue-show-word-bank': String(attributes.showWordBank),
+        }),
+      },
       hideBlankNumbers: {
         default: false,
         parseHTML: (element) => element.getAttribute('data-dialogue-hide-blank-numbers') === 'true',
         renderHTML: (attributes) => ({
           'data-dialogue-hide-blank-numbers': String(attributes.hideBlankNumbers),
+        }),
+      },
+      showFirstAsExample: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-dialogue-show-first-example') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-dialogue-show-first-example': String(
+            attributes.showFirstAsExample,
+          ),
         }),
       },
     };
@@ -209,7 +261,9 @@ export const Dialogue = Node.create({
             attrs: {
               items: attrs.items ?? defaultItems(),
               showOriginal: attrs.showOriginal ?? false,
+              showWordBank: attrs.showWordBank ?? false,
               hideBlankNumbers: attrs.hideBlankNumbers ?? false,
+              showFirstAsExample: attrs.showFirstAsExample ?? false,
             },
           }),
     };

@@ -14,6 +14,7 @@ type WorksheetRow = {
   title: string;
   content_html: string;
   document_size: Worksheet['documentSize'];
+  show_solutions: boolean;
   status: Worksheet['status'];
   created_at: Date | string;
   updated_at: Date | string;
@@ -28,6 +29,7 @@ function mapRow(row: WorksheetRow): Worksheet {
     title: row.title,
     contentHtml: row.content_html,
     documentSize: row.document_size,
+    showSolutions: row.show_solutions,
     status: row.status,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
@@ -100,6 +102,12 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
     }
     patch.status = input.status as Worksheet['status'];
   }
+  if ('showSolutions' in input) {
+    if (typeof input.showSolutions !== 'boolean') {
+      throw new Error('Invalid show-solutions setting.');
+    }
+    patch.showSolutions = input.showSolutions;
+  }
   if ('brandProfileId' in input) {
     if (input.brandProfileId !== null && typeof input.brandProfileId !== 'string') {
       throw new Error('Invalid brand profile.');
@@ -119,6 +127,7 @@ export async function updateWorksheet(id: string, patch: WorksheetPatch) {
     set title = ${patch.title ?? current.title},
         content_html = ${patch.contentHtml ?? current.contentHtml},
         document_size = ${patch.documentSize ?? current.documentSize},
+        show_solutions = ${patch.showSolutions ?? current.showSolutions},
         status = ${patch.status ?? current.status},
         brand_profile_id = ${patch.brandProfileId === undefined
           ? current.brandProfileId

@@ -65,7 +65,15 @@
   right: 15mm;
   width: 52px;
   height: 16px;
-  background: url("/logo/eduit_logo.svg") center / contain no-repeat;
+  background-image: var(
+    --document-brand-logo,
+    url("/logo/eduit_logo.svg")
+  );
+  background-position: top right;
+  background-size: contain;
+  background-repeat: no-repeat;
+  transform: scale(var(--document-brand-logo-scale, 1));
+  transform-origin: top right;
   content: "";
   pointer-events: none;
 }

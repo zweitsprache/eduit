@@ -75,3 +75,73 @@
   color: #101828;
   font: inherit;
 }
+
+.tiptap[data-brand="eduit"]
+  .heading-node--h1
+  .heading-node__content {
+  color: var(--brand-heading-h1-text-color, #101828);
+  font-weight: var(--brand-heading-h1-text-weight, 700);
+}
+
+.tiptap[data-brand="eduit"]
+  .heading-node--h1
+  .heading-node__content::before {
+  color: var(--brand-heading-h1-number-color, #101828);
+  font-weight: var(--brand-heading-h1-number-weight, 700);
+}
+
+.tiptap[data-brand="eduit"]
+  .heading-node--h2
+  .heading-node__content {
+  color: var(--brand-heading-h2-text-color, #101828);
+  font-weight: var(--brand-heading-h2-text-weight, 700);
+}
+
+.tiptap[data-brand="eduit"]
+  .heading-node--h2
+  .heading-node__content::before {
+  color: var(--brand-heading-h2-number-color, #101828);
+  font-weight: var(--brand-heading-h2-number-weight, 700);
+}
+
+.tiptap[data-brand="eduit"]
+  .heading-node--h3
+  .heading-node__content {
+  color: var(--brand-heading-h3-text-color, #101828);
+  font-weight: var(--brand-heading-h3-text-weight, 700);
+}
+
+.tiptap[data-brand="eduit"]
+  .heading-node--h3
+  .heading-node__content::before {
+  color: var(--brand-heading-h3-number-color, #101828);
+  font-weight: var(--brand-heading-h3-number-weight, 700);
+}
+
+.tiptap[data-brand="eduit"]
+  .heading-node--h4
+  .heading-node__content {
+  color: var(--brand-heading-h4-text-color, #101828);
+  font-weight: var(--brand-heading-h4-text-weight, 700);
+}
+
+.tiptap[data-brand="eduit"]
+  .heading-node--h4
+  .heading-node__content::before {
+  color: var(--brand-heading-h4-number-color, #101828);
+  font-weight: var(--brand-heading-h4-number-weight, 700);
+}
+
+.tiptap[data-brand="eduit"]
+  .heading-node--h5
+  .heading-node__content {
+  color: var(--brand-heading-h5-text-color, #101828);
+  font-weight: var(--brand-heading-h5-text-weight, 700);
+}
+
+.tiptap[data-brand="eduit"]
+  .heading-node--h5
+  .heading-node__content::before {
+  color: var(--brand-heading-h5-number-color, #101828);
+  font-weight: var(--brand-heading-h5-number-weight, 700);
+}

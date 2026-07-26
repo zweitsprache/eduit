@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useEditor, useEditorState, EditorContent, type Editor } from '@tiptap/react';
 import { NodeSelection } from '@tiptap/pm/state';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -29,6 +33,8 @@ import {
   Download01,
   Loading01,
   PlusSquare,
+  ChevronUp,
+  ChevronDown,
 } from '@untitledui/icons';
 import { Button } from '@/components/base/buttons/button';
 import { cx } from '@/utils/cx';
@@ -86,6 +92,7 @@ import {
 } from '@/components/editor/dialogue-node';
 import {
   RewriteSentences,
+  rewriteWordBankMode,
   type RewriteSentenceItem,
   type RewriteSentencesAttrs,
 } from '@/components/editor/rewrite-sentences-node';
@@ -96,22 +103,85 @@ import {
   type SortingCategoryItem,
 } from '@/components/editor/sorting-categories-node';
 import {
+  WordGrid,
+  type WordGridAttrs,
+  type WordGridDirection,
+} from '@/components/editor/word-grid-node';
+import {
+  ChooseCorrectWords,
+  type ChooseCorrectWordItem,
+  type ChooseCorrectWordsAttrs,
+} from '@/components/editor/choose-correct-words-node';
+import {
+  InlineChoice,
+  type InlineChoiceAttrs,
+  type InlineChoiceItem,
+} from '@/components/editor/inline-choice-node';
+import {
+  MiniForm,
+  type MiniFormAttrs,
+  type MiniFormColumns,
+  type MiniFormField,
+  type MiniFormItem,
+} from '@/components/editor/mini-form-node';
+import {
+  WorksheetTable,
+  type WorksheetTableAttrs,
+  type WorksheetTableColumn,
+  type WorksheetTableRow,
+} from '@/components/editor/worksheet-table-node';
+import {
   ACTIVE_CUSTOM_BLOCK_BRAND,
   formatBrandDate,
 } from '@/components/editor/custom-blocks/brand';
+import type { BrandProfile } from '@/lib/brand-profile-types';
 import { CustomBlockNumbering } from '@/components/editor/custom-blocks/numbering';
 import { InsertBlockPalette } from '@/components/editor/custom-blocks/insert-block-palette';
 import { MediaLibraryModal } from '@/components/editor/media-library-modal';
+import {
+  stripInlineFormatting,
+} from '@/components/editor/custom-blocks/inline-formatting';
+import {
+  InlineFormattedInput,
+} from '@/components/editor/custom-blocks/inline-formatted-input';
 
 const STORAGE_KEY = 'eduit-editor-content';
+const SelectablePageBreak = PageBreak.extend({
+  selectable: true,
+});
 const DOCUMENT_HEADER = '<p></p>';
 const DOCUMENT_CREATOR = 'Creator name';
 const DOCUMENT_ID = 'Document ID';
-const DOCUMENT_FOOTER = [
-  `<p>${ACTIVE_CUSTOM_BLOCK_BRAND.name}<br>${DOCUMENT_CREATOR}</p>`,
-  '<p>{page}/{total}</p>',
-  `<p>${DOCUMENT_ID}<br>${formatBrandDate(new Date())}</p>`,
-].join('');
+const DEFAULT_DOCUMENT_BRAND = {
+  name: ACTIVE_CUSTOM_BLOCK_BRAND.name,
+  primaryColor: ACTIVE_CUSTOM_BLOCK_BRAND.primaryColor,
+  accentColor: ACTIVE_CUSTOM_BLOCK_BRAND.accentColor,
+  customColor1: ACTIVE_CUSTOM_BLOCK_BRAND.customColor1,
+  customColor2: ACTIVE_CUSTOM_BLOCK_BRAND.customColor2,
+  fontFamily: ACTIVE_CUSTOM_BLOCK_BRAND.fontFamily,
+  logoUrl: '/logo/eduit_logo.svg',
+  logoScale: 1,
+  instructionNumberFormat:
+    ACTIVE_CUSTOM_BLOCK_BRAND.instructionNumberFormat,
+  instructionNumberColor: ACTIVE_CUSTOM_BLOCK_BRAND.instructionNumberColor,
+  instructionNumberFontWeight:
+    ACTIVE_CUSTOM_BLOCK_BRAND.instructionNumberFontWeight,
+  instructionBadgeStyle: ACTIVE_CUSTOM_BLOCK_BRAND.instructionBadgeStyle,
+  headingNumberFormats: ACTIVE_CUSTOM_BLOCK_BRAND.headingNumberFormats,
+  headingStyles: ACTIVE_CUSTOM_BLOCK_BRAND.headingStyles,
+  fixedHeadingNumberWidth:
+    ACTIVE_CUSTOM_BLOCK_BRAND.fixedHeadingNumberWidth,
+  contentIndentation: ACTIVE_CUSTOM_BLOCK_BRAND.contentIndentation,
+  dateFormat: ACTIVE_CUSTOM_BLOCK_BRAND.dateFormat,
+};
+
+function documentFooter(brand: Pick<BrandProfile, 'dateFormat' | 'name'>) {
+  return [
+    `<p>${brand.name}<br>${DOCUMENT_CREATOR}</p>`,
+    '<p>{page}/{total}</p>',
+    `<p>${DOCUMENT_ID}<br>${formatBrandDate(new Date(), brand.dateFormat)}</p>`,
+  ].join('');
+}
 
 function setNodeAttr(editor: Editor, pos: number, key: keyof MCQAttrs, value: MCQAttrs[keyof MCQAttrs]) {
   editor
@@ -285,6 +355,146 @@ function setSortingCategoriesAttr(
     .run();
 }
 
+function setWordGridAttr(
+  editor: Editor,
+  pos: number,
+  key: keyof WordGridAttrs,
+  value: WordGridAttrs[keyof WordGridAttrs],
+) {
+  editor
+    .chain()
+    // Deliberately no .focus(): sidebar inputs must retain DOM focus.
+    .command(({ tr }) => {
+      if (tr.doc.nodeAt(pos)?.type.name !== 'wordGrid') return false;
+      tr.setNodeAttribute(pos, key, value);
+      return true;
+    })
+    .run();
+}
+
+function setChooseCorrectWordsAttr(
+  editor: Editor,
+  pos: number,
+  key: keyof ChooseCorrectWordsAttrs,
+  value: ChooseCorrectWordsAttrs[keyof ChooseCorrectWordsAttrs],
+) {
+  editor
+    .chain()
+    // Deliberately no .focus(): sidebar inputs must retain DOM focus.
+    .command(({ tr }) => {
+      if (tr.doc.nodeAt(pos)?.type.name !== 'chooseCorrectWords') return false;
+      tr.setNodeAttribute(pos, key, value);
+      return true;
+    })
+    .run();
+}
+
+function setInlineChoiceAttr(
+  editor: Editor,
+  pos: number,
+  key: keyof InlineChoiceAttrs,
+  value: InlineChoiceAttrs[keyof InlineChoiceAttrs],
+) {
+  editor
+    .chain()
+    // Deliberately no .focus(): sidebar inputs must retain DOM focus.
+    .command(({ tr }) => {
+      if (tr.doc.nodeAt(pos)?.type.name !== 'inlineChoice') return false;
+      tr.setNodeAttribute(pos, key, value);
+      return true;
+    })
+    .run();
+}
+
+function setMiniFormAttr(
+  editor: Editor,
+  pos: number,
+  key: keyof MiniFormAttrs,
+  value: MiniFormAttrs[keyof MiniFormAttrs],
+) {
+  editor
+    .chain()
+    // Deliberately no .focus(): sidebar inputs must retain DOM focus.
+    .command(({ tr }) => {
+      if (tr.doc.nodeAt(pos)?.type.name !== 'miniForm') return false;
+      tr.setNodeAttribute(pos, key, value);
+      return true;
+    })
+    .run();
+}
+
+function setWorksheetTableAttr(
+  editor: Editor,
+  pos: number,
+  key: keyof WorksheetTableAttrs,
+  value: WorksheetTableAttrs[keyof WorksheetTableAttrs],
+) {
+  editor
+    .chain()
+    // Deliberately no .focus(): sidebar inputs must retain DOM focus.
+    .command(({ tr }) => {
+      if (tr.doc.nodeAt(pos)?.type.name !== 'worksheetTable') return false;
+      tr.setNodeAttribute(pos, key, value);
+      return true;
+    })
+    .run();
+}
+
+function worksheetTableColumnSpan(column: WorksheetTableColumn) {
+  const span = Number(column.span);
+  const legacyWidth = Number(
+    (column as WorksheetTableColumn & { width?: number }).width,
+  );
+  if (Number.isFinite(span)) {
+    return Math.max(1, Math.min(12, Math.round(span)));
+  }
+  if (Number.isFinite(legacyWidth)) {
+    return Math.max(1, Math.min(12, Math.round(legacyWidth * 0.12)));
+  }
+  return 1;
+}
+
+function normalizedTableColumns(columns: WorksheetTableColumn[]) {
+  if (!columns.length) return [];
+  const weights = columns.map(worksheetTableColumnSpan);
+  const total = weights.reduce((sum, span) => sum + span, 0);
+  if (total === 12) {
+    return columns.map((column, index) => ({
+      ...column,
+      span: weights[index],
+    }));
+  }
+
+  const quotas = weights.map((span) => (span / total) * 12);
+  const spans = quotas.map((quota) => Math.max(1, Math.floor(quota)));
+  let difference = 12 - spans.reduce((sum, span) => sum + span, 0);
+  while (difference > 0) {
+    const candidates = quotas
+      .map((quota, index) => ({ index, remainder: quota - spans[index] }))
+      .sort((a, b) => b.remainder - a.remainder);
+    for (const { index } of candidates) {
+      if (difference <= 0) break;
+      spans[index] += 1;
+      difference -= 1;
+    }
+  }
+  while (difference < 0) {
+    const index = spans.reduce(
+      (largestIndex, span, currentIndex) => (
+        span > spans[largestIndex] ? currentIndex : largestIndex
+      ),
+      0,
+    );
+    if (spans[index] <= 1) break;
+    spans[index] -= 1;
+    difference += 1;
+  }
+  return columns.map((column, index) => ({
+    ...column,
+    span: spans[index],
+  }));
+}
+
 function ToolbarButton({
   onClick,
   active,
@@ -344,11 +554,28 @@ const DOC_SIZES: { id: string; label: string; format: () => PageFormat }[] = [
   { id: 'letter-landscape', label: 'US Letter Landscape', format: () => documentFormat(PAGE_FORMATS.Letter, 'landscape') },
 ];
 
+const WORD_GRID_DIRECTION_OPTIONS: {
+  value: WordGridDirection;
+  label: string;
+}[] = [
+  { value: 'leftToRight', label: 'Left to right' },
+  { value: 'rightToLeft', label: 'Right to left' },
+  { value: 'topToBottom', label: 'Top to bottom' },
+  { value: 'bottomToTop', label: 'Bottom to top' },
+  { value: 'northWestToSouthEast', label: 'NW to SE' },
+  { value: 'southWestToNorthEast', label: 'SW to NE' },
+  { value: 'northEastToSouthWest', label: 'NE to SW' },
+  { value: 'southEastToNorthWest', label: 'SE to NW' },
+];
+
 
 
 export default function EditorPage() {
   const [saved, setSaved] = useState(true);
   const [docSize, setDocSize] = useState('a4-portrait');
+  const [brandProfiles, setBrandProfiles] = useState<BrandProfile[]>([]);
+  const [brandProfileId, setBrandProfileId] = useState<string | null>(null);
+  const [showSolutions, setShowSolutions] = useState(false);
   const [worksheetTitle, setWorksheetTitle] = useState('Untitled Document');
   const worksheetIdRef = useRef<string | null>(
     typeof window !== 'undefined'
@@ -368,10 +595,17 @@ export default function EditorPage() {
   const [selectedDialoguePos, setSelectedDialoguePos] = useState<number | null>(null);
   const [selectedRewriteSentencesPos, setSelectedRewriteSentencesPos] = useState<number | null>(null);
   const [selectedSortingCategoriesPos, setSelectedSortingCategoriesPos] = useState<number | null>(null);
+  const [selectedWordGridPos, setSelectedWordGridPos] = useState<number | null>(null);
+  const [selectedChooseCorrectWordsPos, setSelectedChooseCorrectWordsPos] = useState<number | null>(null);
+  const [selectedInlineChoicePos, setSelectedInlineChoicePos] = useState<number | null>(null);
+  const [selectedMiniFormPos, setSelectedMiniFormPos] = useState<number | null>(null);
+  const [selectedWorksheetTablePos, setSelectedWorksheetTablePos] = useState<number | null>(null);
+  const [selectedPageBreakPos, setSelectedPageBreakPos] = useState<number | null>(null);
   const [exportingPDF, setExportingPDF] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [insertPaletteOpen, setInsertPaletteOpen] = useState(false);
   const [rewriteImageItemId, setRewriteImageItemId] = useState<string | null>(null);
+  const [miniFormImageItemId, setMiniFormImageItemId] = useState<string | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -389,14 +623,19 @@ export default function EditorPage() {
       Dialogue,
       RewriteSentences,
       SortingCategories,
-      PageBreak.configure({
+      WordGrid,
+      ChooseCorrectWords,
+      InlineChoice,
+      MiniForm,
+      WorksheetTable,
+      SelectablePageBreak.configure({
         label: 'Page break',
       }),
       Pages.configure({
         pageFormat: documentFormat(PAGE_FORMATS.A4),
         header: DOCUMENT_HEADER,
         headerTopMargin: mmToPixels(10),
-        footer: DOCUMENT_FOOTER,
+        footer: documentFooter(DEFAULT_DOCUMENT_BRAND),
         editableFooter: false,
         pageGapBackground: 'var(--color-bg-tertiary)',
       }),
@@ -462,6 +701,24 @@ export default function EditorPage() {
       );
       setSelectedSortingCategoriesPos(
         selectedNodeName === 'sortingCategories' ? selection.from : null,
+      );
+      setSelectedWordGridPos(
+        selectedNodeName === 'wordGrid' ? selection.from : null,
+      );
+      setSelectedChooseCorrectWordsPos(
+        selectedNodeName === 'chooseCorrectWords' ? selection.from : null,
+      );
+      setSelectedInlineChoicePos(
+        selectedNodeName === 'inlineChoice' ? selection.from : null,
+      );
+      setSelectedMiniFormPos(
+        selectedNodeName === 'miniForm' ? selection.from : null,
+      );
+      setSelectedWorksheetTablePos(
+        selectedNodeName === 'worksheetTable' ? selection.from : null,
+      );
+      setSelectedPageBreakPos(
+        selectedNodeName === 'pageBreak' ? selection.from : null,
       );
     },
     editorProps: {
@@ -588,10 +845,242 @@ export default function EditorPage() {
     },
   });
 
+  const selectedWordGridAttrs = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor || selectedWordGridPos === null) return null;
+      const node = currentEditor.state.doc.nodeAt(selectedWordGridPos);
+      return node?.type.name === 'wordGrid'
+        ? node.attrs as WordGridAttrs
+        : null;
+    },
+  });
+
+  const selectedChooseCorrectWordsAttrs = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor || selectedChooseCorrectWordsPos === null) return null;
+      const node = currentEditor.state.doc.nodeAt(selectedChooseCorrectWordsPos);
+      return node?.type.name === 'chooseCorrectWords'
+        ? node.attrs as ChooseCorrectWordsAttrs
+        : null;
+    },
+  });
+
+  const selectedInlineChoiceAttrs = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor || selectedInlineChoicePos === null) return null;
+      const node = currentEditor.state.doc.nodeAt(selectedInlineChoicePos);
+      return node?.type.name === 'inlineChoice'
+        ? node.attrs as InlineChoiceAttrs
+        : null;
+    },
+  });
+
+  const selectedMiniFormAttrs = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor || selectedMiniFormPos === null) return null;
+      const node = currentEditor.state.doc.nodeAt(selectedMiniFormPos);
+      return node?.type.name === 'miniForm'
+        ? node.attrs as MiniFormAttrs
+        : null;
+    },
+  });
+
+  const selectedWorksheetTableAttrs = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor || selectedWorksheetTablePos === null) return null;
+      const node = currentEditor.state.doc.nodeAt(selectedWorksheetTablePos);
+      return node?.type.name === 'worksheetTable'
+        ? node.attrs as WorksheetTableAttrs
+        : null;
+    },
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch('/api/admin/brand-profiles', { cache: 'no-store' })
+      .then(async (response) => {
+        const result = await response.json() as {
+          profiles?: BrandProfile[];
+          error?: string;
+        };
+        if (!response.ok) {
+          throw new Error(result.error ?? 'Could not load brand profiles.');
+        }
+        if (!cancelled) {
+          setBrandProfiles(
+            (result.profiles ?? []).filter(({ isActive }) => isActive),
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setBrandProfiles([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selectedBrandProfile = brandProfiles.find(
+    ({ id }) => id === brandProfileId,
+  );
+  const activeBrand = selectedBrandProfile ?? DEFAULT_DOCUMENT_BRAND;
+
   useEffect(() => {
     if (!editor) return;
-    editor.commands.setFooter(DOCUMENT_FOOTER);
-  }, [editor]);
+    const editorElement = editor.view.dom;
+    // Eduit supplies the structural defaults; profiles override brand tokens.
+    editorElement.setAttribute('data-brand', 'eduit');
+    editorElement.style.setProperty('--eduit-primary', activeBrand.primaryColor);
+    editorElement.style.setProperty('--eduit-accent', activeBrand.accentColor);
+    editorElement.style.setProperty(
+      '--brand-custom-1',
+      activeBrand.customColor1,
+    );
+    editorElement.style.setProperty(
+      '--brand-custom-2',
+      activeBrand.customColor2,
+    );
+    editorElement.style.setProperty(
+      '--custom-block-font-family',
+      activeBrand.fontFamily,
+    );
+    editorElement.style.setProperty(
+      '--document-brand-logo',
+      activeBrand.logoUrl
+        ? `url("${activeBrand.logoUrl.replaceAll('"', '\\"')}")`
+        : 'none',
+    );
+    editorElement.style.setProperty(
+      '--document-brand-logo-scale',
+      String(activeBrand.logoScale),
+    );
+    editorElement.setAttribute(
+      'data-instruction-badge-style',
+      activeBrand.instructionBadgeStyle,
+    );
+    editorElement.setAttribute(
+      'data-fixed-heading-number-width',
+      String(activeBrand.fixedHeadingNumberWidth),
+    );
+    editorElement.setAttribute(
+      'data-content-indentation',
+      String(activeBrand.contentIndentation),
+    );
+    const brandColors = {
+      defaultText: 'var(--color-text-primary)',
+      primary: activeBrand.primaryColor,
+      accent: activeBrand.accentColor,
+      custom1: activeBrand.customColor1,
+      custom2: activeBrand.customColor2,
+    };
+    editorElement.style.setProperty(
+      '--brand-task-number-color',
+      activeBrand.instructionNumberColor === 'inverse'
+        ? '#ffffff'
+        : brandColors[activeBrand.instructionNumberColor],
+    );
+    editorElement.style.setProperty(
+      '--brand-task-number-weight',
+      String(activeBrand.instructionNumberFontWeight),
+    );
+    ([1, 2, 3, 4, 5] as const).forEach((level) => {
+      const style = activeBrand.headingStyles[level];
+      editorElement.style.setProperty(
+        `--brand-heading-h${level}-number-color`,
+        brandColors[style.numberColor],
+      );
+      editorElement.style.setProperty(
+        `--brand-heading-h${level}-number-weight`,
+        String(style.numberFontWeight),
+      );
+      editorElement.style.setProperty(
+        `--brand-heading-h${level}-text-color`,
+        brandColors[style.textColor],
+      );
+      editorElement.style.setProperty(
+        `--brand-heading-h${level}-text-weight`,
+        String(style.textFontWeight),
+      );
+    });
+    let measurementCancelled = false;
+    const measureNumberWidths = () => {
+      if (measurementCancelled) return;
+      const measure = (
+        sample: string,
+        fontSize: string,
+        fontWeight: number,
+      ) => {
+        const probe = document.createElement('span');
+        probe.textContent = sample;
+        probe.style.position = 'fixed';
+        probe.style.visibility = 'hidden';
+        probe.style.pointerEvents = 'none';
+        probe.style.whiteSpace = 'nowrap';
+        probe.style.fontFamily = activeBrand.fontFamily;
+        probe.style.fontSize = fontSize;
+        probe.style.fontWeight = String(fontWeight);
+        document.body.appendChild(probe);
+        const width = probe.getBoundingClientRect().width;
+        probe.remove();
+        return Math.max(1, width);
+      };
+      const taskFormat = activeBrand.instructionNumberFormat;
+      const taskSample = taskFormat === 'upper-alpha'
+        ? 'A'
+        : taskFormat === 'lower-alpha'
+          ? 'a'
+          : taskFormat === 'decimal-leading-zero'
+            ? '00'
+            : '0';
+      editorElement.style.setProperty(
+        '--brand-task-number-measured-width',
+        `${measure(
+          taskSample,
+          '0.875rem',
+          activeBrand.instructionNumberFontWeight,
+        )}px`,
+      );
+      if (activeBrand.fixedHeadingNumberWidth) {
+        const levelOneFormat = activeBrand.headingNumberFormats[1];
+        const headingSample = levelOneFormat === 'upper-alpha'
+          ? 'A'
+          : levelOneFormat === 'lower-alpha'
+            ? 'a'
+            : '0';
+        editorElement.style.setProperty(
+          '--brand-heading-fixed-number-width',
+          `${measure(
+            headingSample,
+            '1.5rem',
+            activeBrand.headingStyles[1].numberFontWeight,
+          )}px`,
+        );
+      }
+    };
+    measureNumberWidths();
+    void document.fonts.ready.then(measureNumberWidths);
+    editor.commands.setCustomBlockNumberingBrand({
+      instructionNumberFormat: activeBrand.instructionNumberFormat,
+      headingNumberFormats: activeBrand.headingNumberFormats,
+    });
+    editor.commands.setFooter(documentFooter(activeBrand));
+    return () => {
+      measurementCancelled = true;
+    };
+  }, [activeBrand, editor]);
+
+  useEffect(() => {
+    if (!editor) return;
+    editor.view.dom.setAttribute(
+      'data-show-solutions',
+      String(showSolutions),
+    );
+  }, [editor, showSolutions]);
 
   useEffect(() => {
     if (!editor || worksheetInitializationStartedRef.current) return;
@@ -621,6 +1110,8 @@ export default function EditorPage() {
             title: string;
             contentHtml: string;
             documentSize: string;
+            brandProfileId: string | null;
+            showSolutions: boolean;
           };
           error?: string;
         };
@@ -637,6 +1128,8 @@ export default function EditorPage() {
         }
         setWorksheetTitle(result.worksheet.title);
         setDocSize(result.worksheet.documentSize);
+        setBrandProfileId(result.worksheet.brandProfileId);
+        setShowSolutions(result.worksheet.showSolutions);
         if (existingWorksheetId) {
           editor.commands.setContent(result.worksheet.contentHtml || '');
         }
@@ -833,6 +1326,221 @@ export default function EditorPage() {
         categoryId,
       },
     ]);
+  };
+
+  const updateWordGridWords = (words: string[]) => {
+    if (selectedWordGridPos === null) return;
+    setWordGridAttr(editor, selectedWordGridPos, 'words', words);
+  };
+
+  const updateWordGridWord = (index: number, word: string) => {
+    if (!selectedWordGridAttrs) return;
+    updateWordGridWords(
+      selectedWordGridAttrs.words.map((currentWord, wordIndex) => (
+        wordIndex === index ? word : currentWord
+      )),
+    );
+  };
+
+  const updateWordGridDirection = (
+    direction: WordGridDirection,
+    enabled: boolean,
+  ) => {
+    if (!selectedWordGridAttrs || selectedWordGridPos === null) return;
+    const directions = {
+      ...selectedWordGridAttrs.directions,
+      [direction]: enabled,
+    };
+    if (!Object.values(directions).some(Boolean)) return;
+    setWordGridAttr(editor, selectedWordGridPos, 'directions', directions);
+  };
+
+  const updateChooseCorrectWordItems = (items: ChooseCorrectWordItem[]) => {
+    if (selectedChooseCorrectWordsPos === null) return;
+    setChooseCorrectWordsAttr(
+      editor,
+      selectedChooseCorrectWordsPos,
+      'items',
+      items,
+    );
+  };
+
+  const updateChooseCorrectWordItem = (
+    id: string,
+    patch: Partial<ChooseCorrectWordItem>,
+  ) => {
+    if (!selectedChooseCorrectWordsAttrs) return;
+    updateChooseCorrectWordItems(
+      selectedChooseCorrectWordsAttrs.items.map((item) => (
+        item.id === id ? { ...item, ...patch } : item
+      )),
+    );
+  };
+
+  const updateInlineChoiceItems = (items: InlineChoiceItem[]) => {
+    if (selectedInlineChoicePos === null) return;
+    setInlineChoiceAttr(editor, selectedInlineChoicePos, 'items', items);
+  };
+
+  const updateInlineChoiceSentence = (id: string, text: string) => {
+    if (!selectedInlineChoiceAttrs) return;
+    updateInlineChoiceItems(
+      selectedInlineChoiceAttrs.items.map((item) => (
+        item.id === id && item.type === 'sentence'
+          ? { ...item, text }
+          : item
+      )),
+    );
+  };
+
+  const moveInlineChoiceItem = (itemIndex: number, direction: -1 | 1) => {
+    if (!selectedInlineChoiceAttrs) return;
+    const targetIndex = itemIndex + direction;
+    if (
+      targetIndex < 0
+      || targetIndex >= selectedInlineChoiceAttrs.items.length
+    ) return;
+    const items = [...selectedInlineChoiceAttrs.items];
+    [items[itemIndex], items[targetIndex]] = [
+      items[targetIndex],
+      items[itemIndex],
+    ];
+    updateInlineChoiceItems(items);
+  };
+
+  const updateMiniFormFields = (fields: MiniFormField[]) => {
+    if (selectedMiniFormPos === null) return;
+    setMiniFormAttr(editor, selectedMiniFormPos, 'fields', fields);
+  };
+
+  const updateMiniFormItems = (items: MiniFormItem[]) => {
+    if (selectedMiniFormPos === null) return;
+    setMiniFormAttr(editor, selectedMiniFormPos, 'items', items);
+  };
+
+  const updateMiniFormItem = (
+    id: string,
+    patch: Partial<MiniFormItem>,
+  ) => {
+    if (!selectedMiniFormAttrs) return;
+    updateMiniFormItems(
+      selectedMiniFormAttrs.items.map((item) => (
+        item.id === id ? { ...item, ...patch } : item
+      )),
+    );
+  };
+
+  const updateMiniFormValue = (
+    itemId: string,
+    fieldId: string,
+    value: string,
+  ) => {
+    if (!selectedMiniFormAttrs) return;
+    updateMiniFormItems(
+      selectedMiniFormAttrs.items.map((item) => (
+        item.id === itemId
+          ? {
+              ...item,
+              values: { ...item.values, [fieldId]: value },
+            }
+          : item
+      )),
+    );
+  };
+
+  const moveMiniFormItem = (itemIndex: number, direction: -1 | 1) => {
+    if (!selectedMiniFormAttrs) return;
+    const targetIndex = itemIndex + direction;
+    if (targetIndex < 0 || targetIndex >= selectedMiniFormAttrs.items.length) {
+      return;
+    }
+    const items = [...selectedMiniFormAttrs.items];
+    [items[itemIndex], items[targetIndex]] = [
+      items[targetIndex],
+      items[itemIndex],
+    ];
+    updateMiniFormItems(items);
+  };
+
+  const selectMiniFormImage = (image: { src: string; alt: string }) => {
+    if (!miniFormImageItemId) return;
+    updateMiniFormItem(miniFormImageItemId, { image });
+    setMiniFormImageItemId(null);
+  };
+
+  const updateWorksheetTableColumns = (columns: WorksheetTableColumn[]) => {
+    if (selectedWorksheetTablePos === null) return;
+    setWorksheetTableAttr(
+      editor,
+      selectedWorksheetTablePos,
+      'columns',
+      normalizedTableColumns(columns),
+    );
+  };
+
+  const updateWorksheetTableColumnSpan = (
+    columnId: string,
+    requestedSpan: number,
+  ) => {
+    if (!selectedWorksheetTableAttrs) return;
+    const columns = selectedWorksheetTableAttrs.columns;
+    if (columns.length === 1) {
+      updateWorksheetTableColumns([{ ...columns[0], span: 12 }]);
+      return;
+    }
+
+    const columnIndex = columns.findIndex(({ id }) => id === columnId);
+    if (columnIndex < 0) return;
+    const neighbourIndex = columnIndex < columns.length - 1
+      ? columnIndex + 1
+      : columnIndex - 1;
+    const currentSpan = worksheetTableColumnSpan(columns[columnIndex]);
+    const neighbourSpan = worksheetTableColumnSpan(columns[neighbourIndex]);
+    const span = Math.min(
+      currentSpan + neighbourSpan - 1,
+      Math.max(1, Math.round(requestedSpan)),
+    );
+    const spanDelta = span - currentSpan;
+
+    updateWorksheetTableColumns(columns.map((column, index) => {
+      if (index === columnIndex) return { ...column, span };
+      if (index === neighbourIndex) {
+        return { ...column, span: neighbourSpan - spanDelta };
+      }
+      return column;
+    }));
+  };
+
+  const updateWorksheetTableRows = (rows: WorksheetTableRow[]) => {
+    if (selectedWorksheetTablePos === null) return;
+    setWorksheetTableAttr(editor, selectedWorksheetTablePos, 'rows', rows);
+  };
+
+  const updateWorksheetTableCell = (
+    rowId: string,
+    columnId: string,
+    value: string,
+  ) => {
+    if (!selectedWorksheetTableAttrs) return;
+    updateWorksheetTableRows(
+      selectedWorksheetTableAttrs.rows.map((row) => (
+        row.id === rowId
+          ? { ...row, cells: { ...row.cells, [columnId]: value } }
+          : row
+      )),
+    );
+  };
+
+  const moveWorksheetTableRow = (rowIndex: number, direction: -1 | 1) => {
+    if (!selectedWorksheetTableAttrs) return;
+    const targetIndex = rowIndex + direction;
+    if (
+      targetIndex < 0
+      || targetIndex >= selectedWorksheetTableAttrs.rows.length
+    ) return;
+    const rows = [...selectedWorksheetTableAttrs.rows];
+    [rows[rowIndex], rows[targetIndex]] = [rows[targetIndex], rows[rowIndex]];
+    updateWorksheetTableRows(rows);
   };
 
   const updateMCQOption = (id: string, patch: Partial<MCQOption>) => {
@@ -1107,6 +1815,72 @@ export default function EditorPage() {
         }),
       });
     }
+  };
+
+  const handleBrandProfile = async (id: string) => {
+    const previousBrandProfileId = brandProfileId;
+    const nextBrandProfileId = id || null;
+    setBrandProfileId(nextBrandProfileId);
+    const worksheetId = worksheetIdRef.current;
+    if (!worksheetId) return;
+
+    setSaved(false);
+    try {
+      const response = await fetch('/api/worksheets', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: worksheetId,
+          worksheet: { brandProfileId: nextBrandProfileId },
+        }),
+      });
+      if (!response.ok) throw new Error('Could not save brand profile.');
+      setSaved(true);
+    } catch {
+      setBrandProfileId(previousBrandProfileId);
+      setSaved(false);
+    }
+  };
+
+  const handleShowSolutions = async (value: boolean) => {
+    const previousValue = showSolutions;
+    setShowSolutions(value);
+    const worksheetId = worksheetIdRef.current;
+    if (!worksheetId) return;
+
+    setSaved(false);
+    try {
+      const response = await fetch('/api/worksheets', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: worksheetId,
+          worksheet: { showSolutions: value },
+        }),
+      });
+      if (!response.ok) throw new Error('Could not save solution setting.');
+      setSaved(true);
+    } catch {
+      setShowSolutions(previousValue);
+      setSaved(false);
+    }
+  };
+
+  const deleteSelectedPageBreak = () => {
+    if (selectedPageBreakPos === null) return;
+    editor
+      .chain()
+      .command(({ tr }) => {
+        const node = tr.doc.nodeAt(selectedPageBreakPos);
+        if (node?.type.name !== 'pageBreak') return false;
+        tr.delete(
+          selectedPageBreakPos,
+          selectedPageBreakPos + node.nodeSize,
+        );
+        return true;
+      })
+      .run();
+    setSelectedPageBreakPos(null);
   };
 
   const exportPDF = async () => {
@@ -1387,6 +2161,20 @@ export default function EditorPage() {
                 className="mt-2 w-full resize-none rounded-lg border border-primary bg-primary px-3 py-2 text-sm text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
               />
 
+              <label className="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                <span>Show first as example</span>
+                <input
+                  type="checkbox"
+                  checked={selectedMCMAttrs.showFirstAsExample}
+                  onChange={(event) => setMCMAttr(
+                    editor,
+                    selectedMCMPos,
+                    'showFirstAsExample',
+                    event.target.checked,
+                  )}
+                />
+              </label>
+
               <div className="mt-4 flex items-center justify-between">
                 <span className="text-xs font-semibold text-tertiary">Answer rows</span>
                 <span className="text-[10px] text-quaternary">Max. 3 options each</span>
@@ -1498,14 +2286,33 @@ export default function EditorPage() {
                 <span className="rounded bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-brand-secondary">MCH</span>
               </div>
 
-              <label htmlFor="mch-question" className="mt-4 block text-xs font-semibold text-tertiary">Question</label>
-              <textarea
-                id="mch-question"
-                rows={3}
+              <span className="mt-4 block text-xs font-semibold text-tertiary">Question</span>
+              <InlineFormattedInput
+                ariaLabel="MCH question"
+                multiline
                 value={selectedMCHAttrs.question}
-                onChange={(event) => setMCHAttr(editor, selectedMCHPos, 'question', event.target.value)}
-                className="mt-2 w-full resize-none rounded-lg border border-primary bg-primary px-3 py-2 text-sm text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
+                onChange={(value) => setMCHAttr(
+                  editor,
+                  selectedMCHPos,
+                  'question',
+                  value,
+                )}
+                className="custom-block__inline-formatted-input mt-2 min-h-20 w-full whitespace-pre-wrap rounded-lg border border-primary bg-primary px-3 py-2 text-sm text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
               />
+
+              <label className="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                <span>Show first as example</span>
+                <input
+                  type="checkbox"
+                  checked={selectedMCHAttrs.showFirstAsExample}
+                  onChange={(event) => setMCHAttr(
+                    editor,
+                    selectedMCHPos,
+                    'showFirstAsExample',
+                    event.target.checked,
+                  )}
+                />
+              </label>
 
               <div className="mt-4 flex items-center justify-between">
                 <span className="text-xs font-semibold text-tertiary">Header options</span>
@@ -1517,17 +2324,17 @@ export default function EditorPage() {
                     <span className="w-5 text-xs tabular-nums text-quaternary">
                       {String(optionIndex + 1).padStart(2, '0')}
                     </span>
-                    <input
-                      aria-label={`Header option ${optionIndex + 1}`}
+                    <InlineFormattedInput
+                      ariaLabel={`Header option ${optionIndex + 1}`}
                       value={option.text}
-                      onChange={(event) => updateMCHOptions(
+                      onChange={(value) => updateMCHOptions(
                         selectedMCHAttrs.options.map((current) => (
                           current.id === option.id
-                            ? { ...current, text: event.target.value }
+                            ? { ...current, text: value }
                             : current
                         )),
                       )}
-                      className="min-w-0 flex-1 rounded-lg border border-primary bg-primary px-2.5 py-2 text-sm text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
+                      className="custom-block__inline-formatted-input min-w-0 flex-1 rounded-lg border border-primary bg-primary px-2.5 py-2 text-sm text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
                     />
                     <button
                       type="button"
@@ -1572,11 +2379,11 @@ export default function EditorPage() {
                       <span className="w-5 text-xs tabular-nums text-quaternary">
                         {String(rowIndex + 1).padStart(2, '0')}
                       </span>
-                      <input
-                        aria-label={`Answer row ${rowIndex + 1}`}
+                      <InlineFormattedInput
+                        ariaLabel={`Answer row ${rowIndex + 1}`}
                         value={row.text}
-                        onChange={(event) => updateMCHRow(row.id, { text: event.target.value })}
-                        className="min-w-0 flex-1 rounded-lg border border-primary bg-primary px-2.5 py-2 text-sm text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
+                        onChange={(value) => updateMCHRow(row.id, { text: value })}
+                        className="custom-block__inline-formatted-input min-w-0 flex-1 rounded-lg border border-primary bg-primary px-2.5 py-2 text-sm text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
                       />
                       <button
                         type="button"
@@ -1601,7 +2408,8 @@ export default function EditorPage() {
                       <option value="">No correct option</option>
                       {selectedMCHAttrs.options.map((option, optionIndex) => (
                         <option key={option.id} value={option.id}>
-                          {option.text || `Option ${String.fromCharCode(65 + optionIndex)}`}
+                          {stripInlineFormatting(option.text)
+                            || `Option ${String.fromCharCode(65 + optionIndex)}`}
                         </option>
                       ))}
                     </select>
@@ -1626,7 +2434,36 @@ export default function EditorPage() {
                 <span className="rounded bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-brand-secondary">Pairs</span>
               </div>
 
+              <label htmlFor="matching-pairs-question" className="mt-4 block text-xs font-semibold text-tertiary">
+                Question
+              </label>
+              <textarea
+                id="matching-pairs-question"
+                rows={3}
+                value={selectedMatchingPairsAttrs.question}
+                onChange={(event) => setMatchingPairsAttr(
+                  editor,
+                  selectedMatchingPairsPos,
+                  'question',
+                  event.target.value,
+                )}
+                className="mt-2 w-full resize-none border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+
               <div className="mt-4 space-y-3">
+                <label className="flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                  <span>Show first as example</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedMatchingPairsAttrs.showFirstAsExample}
+                    onChange={(event) => setMatchingPairsAttr(
+                      editor,
+                      selectedMatchingPairsPos,
+                      'showFirstAsExample',
+                      event.target.checked,
+                    )}
+                  />
+                </label>
                 <label className="flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
                   <span>Show word bank</span>
                   <input
@@ -1754,6 +2591,20 @@ export default function EditorPage() {
                 )}
                 className="mt-2 w-full resize-none rounded-lg border border-primary bg-primary px-3 py-2 text-sm text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
               />
+
+              <label className="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                <span>Show first as example</span>
+                <input
+                  type="checkbox"
+                  checked={selectedTrueFalseAttrs.showFirstAsExample}
+                  onChange={(event) => setTrueFalseAttr(
+                    editor,
+                    selectedTrueFalsePos,
+                    'showFirstAsExample',
+                    event.target.checked,
+                  )}
+                />
+              </label>
 
               <div className="mt-4">
                 <span className="text-xs font-semibold text-tertiary">Answer labels</span>
@@ -1895,6 +2746,19 @@ export default function EditorPage() {
                   )}
                 />
               </label>
+              <label className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                <span>Show first as example</span>
+                <input
+                  type="checkbox"
+                  checked={selectedSortingCategoriesAttrs.showFirstAsExample}
+                  onChange={(event) => setSortingCategoriesAttr(
+                    editor,
+                    selectedSortingCategoriesPos,
+                    'showFirstAsExample',
+                    event.target.checked,
+                  )}
+                />
+              </label>
 
               <div className="mt-5 space-y-4">
                 {selectedSortingCategoriesAttrs.categories.map((category, categoryIndex) => (
@@ -1981,12 +2845,1216 @@ export default function EditorPage() {
             </div>
           )}
 
+          {selectedWordGridAttrs && selectedWordGridPos !== null && (
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-quaternary">Word Grid</p>
+                <span className="rounded bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-brand-secondary">
+                  Grid
+                </span>
+              </div>
+
+              <label htmlFor="word-grid-instruction" className="mt-4 block text-xs font-semibold text-tertiary">
+                Instruction
+              </label>
+              <textarea
+                id="word-grid-instruction"
+                rows={2}
+                value={selectedWordGridAttrs.instruction}
+                onChange={(event) => setWordGridAttr(
+                  editor,
+                  selectedWordGridPos,
+                  'instruction',
+                  event.target.value,
+                )}
+                className="mt-2 w-full resize-y border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <label className="text-xs font-semibold text-tertiary">
+                  Columns
+                  <input
+                    type="number"
+                    min="3"
+                    max="20"
+                    step="1"
+                    value={selectedWordGridAttrs.columns}
+                    onChange={(event) => {
+                      const value = event.currentTarget.valueAsNumber;
+                      if (!Number.isFinite(value)) return;
+                      setWordGridAttr(
+                        editor,
+                        selectedWordGridPos,
+                        'columns',
+                        Math.min(20, Math.max(3, Math.round(value))),
+                      );
+                    }}
+                    className="mt-2 w-full border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  />
+                </label>
+                <label className="text-xs font-semibold text-tertiary">
+                  Rows
+                  <input
+                    type="number"
+                    min="3"
+                    max="20"
+                    step="1"
+                    value={selectedWordGridAttrs.rows}
+                    onChange={(event) => {
+                      const value = event.currentTarget.valueAsNumber;
+                      if (!Number.isFinite(value)) return;
+                      setWordGridAttr(
+                        editor,
+                        selectedWordGridPos,
+                        'rows',
+                        Math.min(20, Math.max(3, Math.round(value))),
+                      );
+                    }}
+                    className="mt-2 w-full border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  />
+                </label>
+              </div>
+
+              <label htmlFor="word-grid-row-height" className="mt-4 block text-xs font-semibold text-tertiary">
+                Row height
+              </label>
+              <input
+                id="word-grid-row-height"
+                type="number"
+                min="0.5"
+                max="3"
+                step="0.1"
+                value={selectedWordGridAttrs.rowHeight}
+                onChange={(event) => {
+                  const value = event.currentTarget.valueAsNumber;
+                  if (!Number.isFinite(value)) return;
+                  setWordGridAttr(
+                    editor,
+                    selectedWordGridPos,
+                    'rowHeight',
+                    Math.round(Math.min(3, Math.max(0.5, value)) * 10) / 10,
+                  );
+                }}
+                className="mt-2 w-full border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+              <p className="mt-1.5 text-xs leading-5 text-quaternary">
+                Multiplies the design-system row height in 0.1 steps.
+              </p>
+
+              <div className="mt-4 space-y-3">
+                <label className="flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                  <span>Show word list</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedWordGridAttrs.showWordList}
+                    onChange={(event) => setWordGridAttr(
+                      editor,
+                      selectedWordGridPos,
+                      'showWordList',
+                      event.target.checked,
+                    )}
+                  />
+                </label>
+                <label className="flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                  <span>Show first as example</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedWordGridAttrs.showFirstAsExample}
+                    onChange={(event) => setWordGridAttr(
+                      editor,
+                      selectedWordGridPos,
+                      'showFirstAsExample',
+                      event.target.checked,
+                    )}
+                  />
+                </label>
+              </div>
+
+              <div className="mt-5 border-t border-secondary pt-4">
+                <p className="text-xs font-semibold text-tertiary">Letter directions</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {WORD_GRID_DIRECTION_OPTIONS.map((direction) => (
+                    <label
+                      className="flex min-w-0 items-center justify-between gap-2 border border-primary bg-primary px-2.5 py-2 text-xs text-secondary"
+                      key={direction.value}
+                    >
+                      <span className="truncate">{direction.label}</span>
+                      <input
+                        type="checkbox"
+                        checked={selectedWordGridAttrs.directions[direction.value]}
+                        onChange={(event) => updateWordGridDirection(
+                          direction.value,
+                          event.target.checked,
+                        )}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-5 border-t border-secondary pt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-tertiary">Words</p>
+                  <span className="text-[10px] tabular-nums text-quaternary">
+                    {selectedWordGridAttrs.words.length}
+                  </span>
+                </div>
+                <div className="mt-2 space-y-2">
+                  {selectedWordGridAttrs.words.map((word, wordIndex) => (
+                    <div className="flex items-center gap-2" key={wordIndex}>
+                      <input
+                        aria-label={`Word ${wordIndex + 1}`}
+                        value={word}
+                        onChange={(event) => updateWordGridWord(
+                          wordIndex,
+                          event.target.value,
+                        )}
+                        className="min-w-0 flex-1 border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Delete word ${wordIndex + 1}`}
+                        disabled={selectedWordGridAttrs.words.length <= 1}
+                        onClick={() => updateWordGridWords(
+                          selectedWordGridAttrs.words.filter(
+                            (_, index) => index !== wordIndex,
+                          ),
+                        )}
+                        className="text-quaternary transition hover:text-error-primary disabled:cursor-not-allowed disabled:opacity-30"
+                      >
+                        <Trash01 className="size-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateWordGridWords([
+                    ...selectedWordGridAttrs.words,
+                    'New word',
+                  ])}
+                  className="mt-3 flex w-full items-center justify-center gap-2 border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+                >
+                  <PlusSquare className="size-4" />
+                  Add word
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setWordGridAttr(
+                  editor,
+                  selectedWordGridPos,
+                  'generation',
+                  selectedWordGridAttrs.generation + 1,
+                )}
+                className="mt-4 w-full border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+              >
+                Regenerate grid
+              </button>
+            </div>
+          )}
+
+          {selectedChooseCorrectWordsAttrs && selectedChooseCorrectWordsPos !== null && (
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-quaternary">
+                  Choose Correct Words
+                </p>
+                <span className="rounded bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-brand-secondary">
+                  Words
+                </span>
+              </div>
+
+              <label htmlFor="choose-correct-instruction" className="mt-4 block text-xs font-semibold text-tertiary">
+                Instruction
+              </label>
+              <textarea
+                id="choose-correct-instruction"
+                rows={2}
+                value={selectedChooseCorrectWordsAttrs.instruction}
+                onChange={(event) => setChooseCorrectWordsAttr(
+                  editor,
+                  selectedChooseCorrectWordsPos,
+                  'instruction',
+                  event.target.value,
+                )}
+                className="mt-2 w-full resize-y border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <label className="text-xs font-semibold text-tertiary">
+                  Keep from left
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="1"
+                    value={selectedChooseCorrectWordsAttrs.keepLeft}
+                    onChange={(event) => {
+                      const value = event.currentTarget.valueAsNumber;
+                      if (!Number.isFinite(value)) return;
+                      setChooseCorrectWordsAttr(
+                        editor,
+                        selectedChooseCorrectWordsPos,
+                        'keepLeft',
+                        Math.min(10, Math.max(0, Math.round(value))),
+                      );
+                    }}
+                    className="mt-2 w-full border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  />
+                </label>
+                <label className="text-xs font-semibold text-tertiary">
+                  Keep from right
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="1"
+                    value={selectedChooseCorrectWordsAttrs.keepRight}
+                    onChange={(event) => {
+                      const value = event.currentTarget.valueAsNumber;
+                      if (!Number.isFinite(value)) return;
+                      setChooseCorrectWordsAttr(
+                        editor,
+                        selectedChooseCorrectWordsPos,
+                        'keepRight',
+                        Math.min(10, Math.max(0, Math.round(value))),
+                      );
+                    }}
+                    className="mt-2 w-full border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  />
+                </label>
+              </div>
+
+              <label className="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                <span>Show first as example</span>
+                <input
+                  type="checkbox"
+                  checked={selectedChooseCorrectWordsAttrs.showFirstAsExample}
+                  onChange={(event) => setChooseCorrectWordsAttr(
+                    editor,
+                    selectedChooseCorrectWordsPos,
+                    'showFirstAsExample',
+                    event.target.checked,
+                  )}
+                />
+              </label>
+
+              <div className="mt-5 border-t border-secondary pt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-tertiary">Words</p>
+                  <span className="text-[10px] tabular-nums text-quaternary">
+                    {selectedChooseCorrectWordsAttrs.items.length}
+                  </span>
+                </div>
+                <div className="mt-2 space-y-2">
+                  {selectedChooseCorrectWordsAttrs.items.map((item, itemIndex) => (
+                    <div className="flex items-center gap-2" key={item.id}>
+                      <input
+                        aria-label={`Correct word ${itemIndex + 1}`}
+                        value={item.word}
+                        onChange={(event) => updateChooseCorrectWordItem(
+                          item.id,
+                          { word: event.target.value },
+                        )}
+                        className="min-w-0 flex-1 border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                      />
+                      <input
+                        aria-label={`Option count for ${item.word}`}
+                        type="number"
+                        min="2"
+                        max="12"
+                        step="1"
+                        value={item.optionCount}
+                        onChange={(event) => {
+                          const value = event.currentTarget.valueAsNumber;
+                          if (!Number.isFinite(value)) return;
+                          updateChooseCorrectWordItem(item.id, {
+                            optionCount: Math.min(
+                              12,
+                              Math.max(2, Math.round(value)),
+                            ),
+                          });
+                        }}
+                        className="w-16 border border-primary bg-primary px-2.5 py-2 text-sm tabular-nums text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Delete word ${itemIndex + 1}`}
+                        disabled={selectedChooseCorrectWordsAttrs.items.length <= 1}
+                        onClick={() => updateChooseCorrectWordItems(
+                          selectedChooseCorrectWordsAttrs.items.filter(
+                            ({ id }) => id !== item.id,
+                          ),
+                        )}
+                        className="text-quaternary transition hover:text-error-primary disabled:cursor-not-allowed disabled:opacity-30"
+                      >
+                        <Trash01 className="size-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => updateChooseCorrectWordItems([
+                    ...selectedChooseCorrectWordsAttrs.items,
+                    {
+                      id: `correct-word-${Date.now()}`,
+                      word: 'New word',
+                      optionCount: 8,
+                    },
+                  ])}
+                  className="mt-3 flex w-full items-center justify-center gap-2 border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+                >
+                  <PlusSquare className="size-4" />
+                  Add word
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setChooseCorrectWordsAttr(
+                  editor,
+                  selectedChooseCorrectWordsPos,
+                  'generation',
+                  selectedChooseCorrectWordsAttrs.generation + 1,
+                )}
+                className="mt-4 w-full border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+              >
+                Shuffle items
+              </button>
+            </div>
+          )}
+
+          {selectedInlineChoiceAttrs && selectedInlineChoicePos !== null && (
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-quaternary">
+                  Inline Choice
+                </p>
+                <span className="rounded bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-brand-secondary">
+                  Choice
+                </span>
+              </div>
+
+              <label htmlFor="inline-choice-instruction" className="mt-4 block text-xs font-semibold text-tertiary">
+                Instruction
+              </label>
+              <textarea
+                id="inline-choice-instruction"
+                rows={2}
+                value={selectedInlineChoiceAttrs.instruction}
+                onChange={(event) => setInlineChoiceAttr(
+                  editor,
+                  selectedInlineChoicePos,
+                  'instruction',
+                  event.target.value,
+                )}
+                className="mt-2 w-full resize-y border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+
+              <div className="mt-4 space-y-3">
+                <label className="flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                  <span>Shuffle choices</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedInlineChoiceAttrs.shuffleChoices}
+                    onChange={(event) => setInlineChoiceAttr(
+                      editor,
+                      selectedInlineChoicePos,
+                      'shuffleChoices',
+                      event.target.checked,
+                    )}
+                  />
+                </label>
+                <label className="flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                  <span>Show first as example</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedInlineChoiceAttrs.showFirstAsExample}
+                    onChange={(event) => setInlineChoiceAttr(
+                      editor,
+                      selectedInlineChoicePos,
+                      'showFirstAsExample',
+                      event.target.checked,
+                    )}
+                  />
+                </label>
+              </div>
+
+              <div className="mt-5 space-y-2">
+                {selectedInlineChoiceAttrs.items.map((item, itemIndex) => {
+                  const sentenceNumber = selectedInlineChoiceAttrs.items
+                    .slice(0, itemIndex + 1)
+                    .filter((currentItem) => currentItem.type === 'sentence')
+                    .length;
+                  const sentenceCount = selectedInlineChoiceAttrs.items
+                    .filter((currentItem) => currentItem.type === 'sentence')
+                    .length;
+
+                  return (
+                    <div
+                      className="border border-secondary bg-secondary p-3"
+                      key={item.id}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="bg-primary px-2 py-1 text-[10px] font-semibold tabular-nums text-quaternary">
+                          {item.type === 'sentence'
+                            ? String(sentenceNumber).padStart(2, '0')
+                            : 'ROW'}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            aria-label={`Move item ${itemIndex + 1} up`}
+                            disabled={itemIndex === 0}
+                            onClick={() => moveInlineChoiceItem(itemIndex, -1)}
+                            className="text-quaternary transition hover:text-secondary disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <ChevronUp className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Move item ${itemIndex + 1} down`}
+                            disabled={
+                              itemIndex
+                              === selectedInlineChoiceAttrs.items.length - 1
+                            }
+                            onClick={() => moveInlineChoiceItem(itemIndex, 1)}
+                            className="text-quaternary transition hover:text-secondary disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <ChevronDown className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Delete item ${itemIndex + 1}`}
+                            disabled={
+                              item.type === 'sentence' && sentenceCount <= 1
+                            }
+                            onClick={() => updateInlineChoiceItems(
+                              selectedInlineChoiceAttrs.items.filter(
+                                ({ id }) => id !== item.id,
+                              ),
+                            )}
+                            className="text-quaternary transition hover:text-error-primary disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <Trash01 className="size-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {item.type === 'sentence' ? (
+                        <textarea
+                          aria-label={`Inline choice sentence ${sentenceNumber}`}
+                          rows={3}
+                          value={item.text}
+                          onChange={(event) => updateInlineChoiceSentence(
+                            item.id,
+                            event.target.value,
+                          )}
+                          className="mt-2 w-full resize-y bg-transparent text-sm leading-5 text-secondary outline-none"
+                        />
+                      ) : (
+                        <p className="mt-2 text-xs text-quaternary">
+                          Blank divider row
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateInlineChoiceItems([
+                    ...selectedInlineChoiceAttrs.items,
+                    {
+                      id: `inline-choice-${Date.now()}`,
+                      type: 'sentence',
+                      text: '{{choice:*Correct|Wrong 1|Wrong 2}} Enter sentence text.',
+                    },
+                  ])}
+                  className="flex items-center justify-center gap-2 border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+                >
+                  <PlusSquare className="size-4" />
+                  Add sentence
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateInlineChoiceItems([
+                    ...selectedInlineChoiceAttrs.items,
+                    {
+                      id: `inline-choice-divider-${Date.now()}`,
+                      type: 'divider',
+                    },
+                  ])}
+                  className="flex items-center justify-center gap-2 border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+                >
+                  <PlusSquare className="size-4" />
+                  Add row
+                </button>
+              </div>
+            </div>
+          )}
+
+          {selectedMiniFormAttrs && selectedMiniFormPos !== null && (
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-quaternary">
+                  Mini Form
+                </p>
+                <span className="rounded bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-brand-secondary">
+                  Form
+                </span>
+              </div>
+
+              <label htmlFor="mini-form-instruction" className="mt-4 block text-xs font-semibold text-tertiary">
+                Instruction
+              </label>
+              <textarea
+                id="mini-form-instruction"
+                rows={2}
+                value={selectedMiniFormAttrs.instruction}
+                onChange={(event) => setMiniFormAttr(
+                  editor,
+                  selectedMiniFormPos,
+                  'instruction',
+                  event.target.value,
+                )}
+                className="mt-2 w-full resize-y border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+
+              <div className="mt-5 border-t border-secondary pt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-tertiary">
+                    Form field labels
+                  </p>
+                  <span className="text-[10px] tabular-nums text-quaternary">
+                    {selectedMiniFormAttrs.fields.length}
+                  </span>
+                </div>
+                <div className="mt-2 space-y-2">
+                  {selectedMiniFormAttrs.fields.map((field, fieldIndex) => (
+                    <div className="flex items-center gap-2" key={field.id}>
+                      <input
+                        aria-label={`Form field ${fieldIndex + 1}`}
+                        value={field.label}
+                        onChange={(event) => updateMiniFormFields(
+                          selectedMiniFormAttrs.fields.map((currentField) => (
+                            currentField.id === field.id
+                              ? { ...currentField, label: event.target.value }
+                              : currentField
+                          )),
+                        )}
+                        className="min-w-0 flex-1 border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Delete form field ${fieldIndex + 1}`}
+                        disabled={selectedMiniFormAttrs.fields.length <= 1}
+                        onClick={() => updateMiniFormFields(
+                          selectedMiniFormAttrs.fields.filter(
+                            ({ id }) => id !== field.id,
+                          ),
+                        )}
+                        className="text-quaternary transition hover:text-error-primary disabled:cursor-not-allowed disabled:opacity-30"
+                      >
+                        <Trash01 className="size-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fieldNumber = selectedMiniFormAttrs.fields.length + 1;
+                    updateMiniFormFields([
+                      ...selectedMiniFormAttrs.fields,
+                      {
+                        id: `mini-form-field-${Date.now()}`,
+                        label: `Field ${fieldNumber}`,
+                      },
+                    ]);
+                  }}
+                  className="mt-3 flex w-full items-center justify-center gap-2 border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+                >
+                  <PlusSquare className="size-4" />
+                  Add field
+                </button>
+              </div>
+
+              <label htmlFor="mini-form-columns" className="mt-4 block text-xs font-semibold text-tertiary">
+                Columns
+              </label>
+              <select
+                id="mini-form-columns"
+                value={selectedMiniFormAttrs.columns}
+                onChange={(event) => setMiniFormAttr(
+                  editor,
+                  selectedMiniFormPos,
+                  'columns',
+                  Number(event.target.value) as MiniFormColumns,
+                )}
+                className="mt-2 w-full border border-primary bg-primary px-3 py-2 text-sm font-medium text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              >
+                {[1, 2, 3].map((columns) => (
+                  <option key={columns} value={columns}>{columns}</option>
+                ))}
+              </select>
+
+              <label className="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                <span>Show first as example</span>
+                <input
+                  type="checkbox"
+                  checked={selectedMiniFormAttrs.showFirstAsExample}
+                  onChange={(event) => setMiniFormAttr(
+                    editor,
+                    selectedMiniFormPos,
+                    'showFirstAsExample',
+                    event.target.checked,
+                  )}
+                />
+              </label>
+
+              <div className="mt-5 border-t border-secondary pt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-tertiary">
+                    Sentences
+                  </p>
+                  <span className="text-[10px] tabular-nums text-quaternary">
+                    {selectedMiniFormAttrs.items.length}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-quaternary">
+                  Enter a prompt and one expected value for every field.
+                </p>
+
+                <div className="mt-3 space-y-3">
+                  {selectedMiniFormAttrs.items.map((item, itemIndex) => (
+                    <div
+                      className="border border-secondary bg-secondary p-3"
+                      key={item.id}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="bg-primary px-2 py-1 text-[10px] font-semibold tabular-nums text-quaternary">
+                          {String(itemIndex + 1).padStart(2, '0')}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            aria-label={`Move mini form item ${itemIndex + 1} up`}
+                            disabled={itemIndex === 0}
+                            onClick={() => moveMiniFormItem(itemIndex, -1)}
+                            className="text-quaternary transition hover:text-secondary disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <ChevronUp className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Move mini form item ${itemIndex + 1} down`}
+                            disabled={
+                              itemIndex === selectedMiniFormAttrs.items.length - 1
+                            }
+                            onClick={() => moveMiniFormItem(itemIndex, 1)}
+                            className="text-quaternary transition hover:text-secondary disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <ChevronDown className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Delete mini form item ${itemIndex + 1}`}
+                            disabled={selectedMiniFormAttrs.items.length <= 1}
+                            onClick={() => updateMiniFormItems(
+                              selectedMiniFormAttrs.items.filter(
+                                ({ id }) => id !== item.id,
+                              ),
+                            )}
+                            className="text-quaternary transition hover:text-error-primary disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <Trash01 className="size-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <textarea
+                        aria-label={`Mini form prompt ${itemIndex + 1}`}
+                        rows={3}
+                        value={item.prompt}
+                        onChange={(event) => updateMiniFormItem(item.id, {
+                          prompt: event.target.value,
+                        })}
+                        className="mt-2 w-full resize-y border border-primary bg-primary px-2.5 py-2 text-sm leading-5 text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                      />
+
+                      <div
+                        className="mt-2 grid gap-2"
+                        style={{
+                          gridTemplateColumns: `repeat(${Math.min(
+                            selectedMiniFormAttrs.columns,
+                            selectedMiniFormAttrs.fields.length,
+                          )}, minmax(0, 1fr))`,
+                        }}
+                      >
+                        {selectedMiniFormAttrs.fields.map((field) => (
+                          <label
+                            className="min-w-0 text-[10px] font-medium text-quaternary"
+                            key={field.id}
+                          >
+                            <span className="block truncate">{field.label}</span>
+                            <input
+                              value={item.values[field.id] ?? ''}
+                              onChange={(event) => updateMiniFormValue(
+                                item.id,
+                                field.id,
+                                event.target.value,
+                              )}
+                              className="mt-1 w-full min-w-0 border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                            />
+                          </label>
+                        ))}
+                      </div>
+
+                      <div className="mt-3">
+                        <span className="block text-[10px] font-medium uppercase tracking-wide text-quaternary">
+                          Image
+                        </span>
+                        {item.image && (
+                          <div className="mt-1.5 flex items-center gap-2 border border-primary bg-primary p-2">
+                            <img
+                              alt={item.image.alt}
+                              className="size-12 rounded object-cover"
+                              src={item.image.src}
+                            />
+                            <p className="min-w-0 flex-1 truncate text-xs font-medium text-secondary">
+                              {item.image.alt || 'Worksheet image'}
+                            </p>
+                            <button
+                              aria-label={`Remove image from mini form item ${itemIndex + 1}`}
+                              className="text-quaternary transition hover:text-error-primary"
+                              onClick={() => updateMiniFormItem(item.id, {
+                                image: undefined,
+                              })}
+                              type="button"
+                            >
+                              <Trash01 className="size-4" />
+                            </button>
+                          </div>
+                        )}
+                        <button
+                          className="mt-1.5 flex w-full items-center justify-center gap-2 border border-primary bg-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+                          onClick={() => setMiniFormImageItemId(item.id)}
+                          type="button"
+                        >
+                          <Image01 className="size-4 text-quaternary" />
+                          {item.image ? 'Replace image' : 'Browse media'}
+                        </button>
+                        <input
+                          aria-label={`Image URL for mini form item ${itemIndex + 1}`}
+                          placeholder="https://example.com/image.jpg"
+                          value={item.image?.src ?? ''}
+                          onChange={(event) => updateMiniFormItem(item.id, {
+                            image: event.target.value
+                              ? {
+                                  src: event.target.value,
+                                  alt: item.image?.alt ?? '',
+                                }
+                              : undefined,
+                          })}
+                          className="mt-2 w-full border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => updateMiniFormItems([
+                    ...selectedMiniFormAttrs.items,
+                    {
+                      id: `mini-form-item-${Date.now()}`,
+                      prompt: 'Enter the sentence or question.',
+                      values: Object.fromEntries(
+                        selectedMiniFormAttrs.fields.map(({ id }) => [id, '']),
+                      ),
+                    },
+                  ])}
+                  className="mt-3 flex w-full items-center justify-center gap-2 border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+                >
+                  <PlusSquare className="size-4" />
+                  Add sentence
+                </button>
+              </div>
+            </div>
+          )}
+
+          {selectedWorksheetTableAttrs
+            && selectedWorksheetTablePos !== null && (
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-quaternary">
+                  Table
+                </p>
+                <span className="rounded bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-brand-secondary">
+                  Table
+                </span>
+              </div>
+
+              <label htmlFor="worksheet-table-instruction" className="mt-4 block text-xs font-semibold text-tertiary">
+                Instruction
+              </label>
+              <textarea
+                id="worksheet-table-instruction"
+                rows={2}
+                value={selectedWorksheetTableAttrs.instruction}
+                onChange={(event) => setWorksheetTableAttr(
+                  editor,
+                  selectedWorksheetTablePos,
+                  'instruction',
+                  event.target.value,
+                )}
+                className="mt-2 w-full resize-y border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+
+              <div className="mt-4 space-y-3">
+                <label className="flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                  <span>Show header row</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedWorksheetTableAttrs.showHeader}
+                    onChange={(event) => setWorksheetTableAttr(
+                      editor,
+                      selectedWorksheetTablePos,
+                      'showHeader',
+                      event.target.checked,
+                    )}
+                  />
+                </label>
+                <label className="flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                  <span>Hide blank numbers</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedWorksheetTableAttrs.hideBlankNumbers}
+                    onChange={(event) => setWorksheetTableAttr(
+                      editor,
+                      selectedWorksheetTablePos,
+                      'hideBlankNumbers',
+                      event.target.checked,
+                    )}
+                  />
+                </label>
+                <label className="flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                  <span>Show first as example</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedWorksheetTableAttrs.showFirstAsExample}
+                    onChange={(event) => setWorksheetTableAttr(
+                      editor,
+                      selectedWorksheetTablePos,
+                      'showFirstAsExample',
+                      event.target.checked,
+                    )}
+                  />
+                </label>
+              </div>
+
+              <label htmlFor="worksheet-table-blank-width" className="mt-4 block text-xs font-semibold text-tertiary">
+                Default blank width
+              </label>
+              <input
+                id="worksheet-table-blank-width"
+                type="number"
+                min="1"
+                max="5"
+                step="0.1"
+                value={selectedWorksheetTableAttrs.blankWidthFactor}
+                onChange={(event) => {
+                  const width = event.currentTarget.valueAsNumber;
+                  if (!Number.isFinite(width)) return;
+                  setWorksheetTableAttr(
+                    editor,
+                    selectedWorksheetTablePos,
+                    'blankWidthFactor',
+                    Math.min(5, Math.max(1, width)),
+                  );
+                }}
+                className="mt-2 w-full border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+
+              <div className="mt-5 border-t border-secondary pt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-tertiary">
+                    Columns
+                  </p>
+                  <span className="text-[10px] text-quaternary">
+                    12-column grid
+                  </span>
+                </div>
+                <div className="mt-2 space-y-2">
+                  {selectedWorksheetTableAttrs.columns.map(
+                    (column, columnIndex) => (
+                      <div
+                        className="border border-secondary bg-secondary p-3"
+                        key={column.id}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 text-[10px] tabular-nums text-quaternary">
+                            {String(columnIndex + 1).padStart(2, '0')}
+                          </span>
+                          <InlineFormattedInput
+                            ariaLabel={`Table column ${columnIndex + 1} label`}
+                            value={column.label}
+                            onChange={(value) => updateWorksheetTableColumns(
+                              selectedWorksheetTableAttrs.columns.map(
+                                (currentColumn) => (
+                                  currentColumn.id === column.id
+                                    ? { ...currentColumn, label: value }
+                                    : currentColumn
+                                ),
+                              ),
+                            )}
+                            className="custom-block__inline-formatted-input min-w-0 flex-1 border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                          />
+                          <button
+                            type="button"
+                            aria-label={`Delete table column ${columnIndex + 1}`}
+                            disabled={
+                              selectedWorksheetTableAttrs.columns.length <= 1
+                            }
+                            onClick={() => updateWorksheetTableColumns(
+                              selectedWorksheetTableAttrs.columns.filter(
+                                ({ id }) => id !== column.id,
+                              ),
+                            )}
+                            className="text-quaternary transition hover:text-error-primary disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <Trash01 className="size-4" />
+                          </button>
+                        </div>
+                        <label className="mt-2 ml-7 flex items-center gap-2 text-[10px] font-medium text-quaternary">
+                          <span>Span</span>
+                          <input
+                            aria-label={`Grid span of table column ${columnIndex + 1}`}
+                            type="number"
+                            min="1"
+                            max="12"
+                            step="1"
+                            value={worksheetTableColumnSpan(column)}
+                            onChange={(event) => {
+                              const span = event.currentTarget.valueAsNumber;
+                              if (!Number.isFinite(span)) return;
+                              updateWorksheetTableColumnSpan(column.id, span);
+                            }}
+                            className="min-w-0 flex-1 border border-primary bg-primary px-2.5 py-2 text-sm tabular-nums text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                          />
+                          <span>/12</span>
+                        </label>
+                        <label className="mt-2 ml-7 flex items-center gap-2 text-[10px] font-medium text-quaternary">
+                          <span>Align</span>
+                          <select
+                            aria-label={`Horizontal alignment of table column ${columnIndex + 1}`}
+                            value={column.align ?? 'left'}
+                            onChange={(event) => updateWorksheetTableColumns(
+                              selectedWorksheetTableAttrs.columns.map(
+                                (currentColumn) => (
+                                  currentColumn.id === column.id
+                                    ? {
+                                        ...currentColumn,
+                                        align: event.target.value as
+                                          WorksheetTableColumn['align'],
+                                      }
+                                    : currentColumn
+                                ),
+                              ),
+                            )}
+                            className="min-w-0 flex-1 border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                          >
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                          </select>
+                        </label>
+                      </div>
+                    ),
+                  )}
+                </div>
+                <button
+                  type="button"
+                  disabled={selectedWorksheetTableAttrs.columns.length >= 6}
+                  onClick={() => {
+                    const nextIndex = selectedWorksheetTableAttrs.columns.length + 1;
+                    const newColumnId = `table-column-${Date.now()}`;
+                    const donorIndex = selectedWorksheetTableAttrs.columns
+                      .reduce((largestIndex, column, index, columns) => (
+                        worksheetTableColumnSpan(column)
+                          > worksheetTableColumnSpan(columns[largestIndex])
+                          ? index
+                          : largestIndex
+                      ), 0);
+                    updateWorksheetTableColumns([
+                      ...selectedWorksheetTableAttrs.columns.map((column, index) => ({
+                        ...column,
+                        span: index === donorIndex
+                          ? Math.max(
+                              1,
+                              worksheetTableColumnSpan(column) - 1,
+                            )
+                          : worksheetTableColumnSpan(column),
+                      })),
+                      {
+                        id: newColumnId,
+                        label: `Column ${nextIndex}`,
+                        span: 1,
+                        align: 'left',
+                      },
+                    ]);
+                  }}
+                  className="mt-3 flex w-full items-center justify-center gap-2 border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                  <PlusSquare className="size-4" />
+                  Add column
+                </button>
+              </div>
+
+              <div className="mt-5 border-t border-secondary pt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-tertiary">Rows</p>
+                  <span className="text-[10px] tabular-nums text-quaternary">
+                    {selectedWorksheetTableAttrs.rows.length}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-quaternary">
+                  Use Cmd+B or Ctrl+B for bold and
+                  {' '}<code className="bg-secondary px-1 py-0.5">
+                    {'{{blank:answer}}'}
+                  </code>{' '}for blanks.
+                </p>
+
+                <div className="mt-3 space-y-3">
+                  {selectedWorksheetTableAttrs.rows.map((row, rowIndex) => (
+                    <div
+                      className="border border-secondary bg-secondary p-3"
+                      key={row.id}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="bg-primary px-2 py-1 text-[10px] font-semibold tabular-nums text-quaternary">
+                          {String(rowIndex + 1).padStart(2, '0')}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            aria-label={`Move table row ${rowIndex + 1} up`}
+                            disabled={rowIndex === 0}
+                            onClick={() => moveWorksheetTableRow(rowIndex, -1)}
+                            className="text-quaternary transition hover:text-secondary disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <ChevronUp className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Move table row ${rowIndex + 1} down`}
+                            disabled={
+                              rowIndex
+                              === selectedWorksheetTableAttrs.rows.length - 1
+                            }
+                            onClick={() => moveWorksheetTableRow(rowIndex, 1)}
+                            className="text-quaternary transition hover:text-secondary disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <ChevronDown className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Delete table row ${rowIndex + 1}`}
+                            disabled={
+                              selectedWorksheetTableAttrs.rows.length <= 1
+                            }
+                            onClick={() => updateWorksheetTableRows(
+                              selectedWorksheetTableAttrs.rows.filter(
+                                ({ id }) => id !== row.id,
+                              ),
+                            )}
+                            className="text-quaternary transition hover:text-error-primary disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <Trash01 className="size-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 space-y-2">
+                        {selectedWorksheetTableAttrs.columns.map(
+                          (column, columnIndex) => (
+                            <label
+                              className="block text-[10px] font-medium text-quaternary"
+                              key={column.id}
+                            >
+                              <span className="block truncate">
+                                {stripInlineFormatting(column.label)
+                                  || `Column ${columnIndex + 1}`}
+                              </span>
+                              <InlineFormattedInput
+                                ariaLabel={`Table row ${rowIndex + 1}, column ${columnIndex + 1}`}
+                                multiline
+                                value={row.cells[column.id] ?? ''}
+                                onChange={(value) => updateWorksheetTableCell(
+                                  row.id,
+                                  column.id,
+                                  value,
+                                )}
+                                className="custom-block__inline-formatted-input mt-1 min-h-16 w-full whitespace-pre-wrap border border-primary bg-primary px-2.5 py-2 text-sm leading-5 text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                              />
+                            </label>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => updateWorksheetTableRows([
+                    ...selectedWorksheetTableAttrs.rows,
+                    {
+                      id: `table-row-${Date.now()}`,
+                      cells: Object.fromEntries(
+                        selectedWorksheetTableAttrs.columns.map(
+                          ({ id }) => [id, ''],
+                        ),
+                      ),
+                    },
+                  ])}
+                  className="mt-3 flex w-full items-center justify-center gap-2 border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+                >
+                  <PlusSquare className="size-4" />
+                  Add row
+                </button>
+              </div>
+            </div>
+          )}
+
           {selectedRewriteSentencesAttrs && selectedRewriteSentencesPos !== null && (
             <div>
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-quaternary">Rewrite Sentences</p>
                 <span className="rounded bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-brand-secondary">Rewrite</span>
               </div>
+
+              <label className="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                <span>Show first as example</span>
+                <input
+                  type="checkbox"
+                  checked={selectedRewriteSentencesAttrs.showFirstAsExample}
+                  onChange={(event) => setRewriteSentencesAttr(
+                    editor,
+                    selectedRewriteSentencesPos,
+                    'showFirstAsExample',
+                    event.target.checked,
+                  )}
+                />
+              </label>
 
               <div className="mt-4 space-y-3">
                 {selectedRewriteSentencesAttrs.items.map((item, itemIndex) => (
@@ -2021,18 +4089,22 @@ export default function EditorPage() {
                       })}
                       className="mt-1 w-full resize-y border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
                     />
-                    <label className="mt-2 block text-[10px] font-medium uppercase tracking-wide text-quaternary">
-                      Solution
-                    </label>
-                    <textarea
-                      aria-label={`Solution ${itemIndex + 1}`}
-                      rows={2}
-                      value={item.solution}
-                      onChange={(event) => updateRewriteSentenceItem(item.id, {
-                        solution: event.target.value,
-                      })}
-                      className="mt-1 w-full resize-y border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-                    />
+                    {rewriteWordBankMode(item.input) !== 'automatic' && (
+                      <>
+                        <label className="mt-2 block text-[10px] font-medium uppercase tracking-wide text-quaternary">
+                          Solution
+                        </label>
+                        <textarea
+                          aria-label={`Solution ${itemIndex + 1}`}
+                          rows={2}
+                          value={item.solution}
+                          onChange={(event) => updateRewriteSentenceItem(item.id, {
+                            solution: event.target.value,
+                          })}
+                          className="mt-1 w-full resize-y border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                        />
+                      </>
+                    )}
                     <div className="mt-3">
                       <span className="block text-[10px] font-medium uppercase tracking-wide text-quaternary">
                         Image
@@ -2100,6 +4172,20 @@ export default function EditorPage() {
               </div>
 
               <label className="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                <span>Show first as example</span>
+                <input
+                  type="checkbox"
+                  checked={selectedDialogueAttrs.showFirstAsExample}
+                  onChange={(event) => setDialogueAttr(
+                    editor,
+                    selectedDialoguePos,
+                    'showFirstAsExample',
+                    event.target.checked,
+                  )}
+                />
+              </label>
+
+              <label className="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
                 <span>Show original</span>
                 <input
                   type="checkbox"
@@ -2108,6 +4194,19 @@ export default function EditorPage() {
                     editor,
                     selectedDialoguePos,
                     'showOriginal',
+                    event.target.checked,
+                  )}
+                />
+              </label>
+              <label className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                <span>Show word bank</span>
+                <input
+                  type="checkbox"
+                  checked={selectedDialogueAttrs.showWordBank}
+                  onChange={(event) => setDialogueAttr(
+                    editor,
+                    selectedDialoguePos,
+                    'showWordBank',
                     event.target.checked,
                   )}
                 />
@@ -2393,6 +4492,34 @@ export default function EditorPage() {
               </p>
 
               <label className="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                <span>Show first as example</span>
+                <input
+                  type="checkbox"
+                  checked={selectedFillInTheBlankAttrs.showFirstAsExample}
+                  onChange={(event) => setFillInTheBlankAttr(
+                    editor,
+                    selectedFillInTheBlankPos,
+                    'showFirstAsExample',
+                    event.target.checked,
+                  )}
+                />
+              </label>
+
+              <label className="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                <span>Show word bank</span>
+                <input
+                  type="checkbox"
+                  checked={selectedFillInTheBlankAttrs.showWordBank}
+                  onChange={(event) => setFillInTheBlankAttr(
+                    editor,
+                    selectedFillInTheBlankPos,
+                    'showWordBank',
+                    event.target.checked,
+                  )}
+                />
+              </label>
+
+              <label className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
                 <span>Hide blank numbers</span>
                 <input
                   type="checkbox"
@@ -2441,6 +4568,22 @@ export default function EditorPage() {
             </div>
           )}
 
+          {selectedPageBreakPos !== null && (
+            <div>
+              <p className="text-xs font-semibold text-quaternary">
+                Page break
+              </p>
+              <button
+                type="button"
+                onClick={deleteSelectedPageBreak}
+                className="mt-3 flex w-full items-center justify-center gap-2 border border-primary px-3 py-2 text-xs font-semibold text-error-primary transition hover:bg-error-primary"
+              >
+                <Trash01 className="size-4" />
+                Delete page break
+              </button>
+            </div>
+          )}
+
           {(selectedMCQAttrs
             || selectedMCMAttrs
             || selectedMCHAttrs
@@ -2451,7 +4594,13 @@ export default function EditorPage() {
             || selectedCustomHeadingAttrs
             || selectedDialogueAttrs
             || selectedRewriteSentencesAttrs
-            || selectedSortingCategoriesAttrs) && (
+            || selectedSortingCategoriesAttrs
+            || selectedWordGridAttrs
+            || selectedChooseCorrectWordsAttrs
+            || selectedInlineChoiceAttrs
+            || selectedMiniFormAttrs
+            || selectedWorksheetTableAttrs
+            || selectedPageBreakPos !== null) && (
             <div className="border-t border-secondary" />
           )}
 
@@ -2467,6 +4616,42 @@ export default function EditorPage() {
                 <option key={s.id} value={s.id}>{s.label}</option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label htmlFor="doc-brand" className="text-xs font-semibold text-quaternary">
+              Brand
+            </label>
+            <select
+              id="doc-brand"
+              value={brandProfileId ?? ''}
+              onChange={(event) => {
+                void handleBrandProfile(event.target.value);
+              }}
+              className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-medium text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
+            >
+              <option value="">Default brand (Eduit)</option>
+              {brandProfiles.map((brand) => (
+                <option key={brand.id} value={brand.id}>
+                  {brand.name}{brand.isDefault ? ' · Default' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold text-quaternary">
+                Show solutions
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={showSolutions}
+              onChange={(event) => {
+                void handleShowSolutions(event.target.checked);
+              }}
+            />
           </div>
 
           <div className="border-t border-secondary pt-5">
@@ -2512,6 +4697,11 @@ export default function EditorPage() {
         onClose={() => setRewriteImageItemId(null)}
         onSelect={selectRewriteSentenceImage}
         open={rewriteImageItemId !== null}
+      />
+      <MediaLibraryModal
+        onClose={() => setMiniFormImageItemId(null)}
+        onSelect={selectMiniFormImage}
+        open={miniFormImageItemId !== null}
       />
     </div>
   );

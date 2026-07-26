@@ -1,14 +1,21 @@
 "use client";
 
-import { Fragment } from 'react';
+import {
+  Fragment,
+  useLayoutEffect,
+  useRef,
+} from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
+import rough from 'roughjs';
 import {
   BlockChoiceIndicator,
   BlockInstruction,
+  BlockQuestion,
   CustomBlockRoot,
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
+import { RoughExampleStrike } from '@/components/editor/custom-blocks/rough-example-strike';
 
 export type MatchingPair = {
   id: string;
@@ -17,10 +24,12 @@ export type MatchingPair = {
 };
 
 export type MatchingPairsAttrs = {
+  question: string;
   pairs: MatchingPair[];
   rightOrder: string[];
   showWordBank: boolean;
   shuffleWordBank: boolean;
+  showFirstAsExample: boolean;
 };
 
 export const DEFAULT_MATCHING_PAIRS: MatchingPair[] = [
@@ -61,11 +70,15 @@ function stableHash(value: string) {
 }
 
 function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const solutionsRef = useRef<SVGSVGElement>(null);
   const {
+    question,
     pairs,
     rightOrder,
     showWordBank,
     shuffleWordBank,
+    showFirstAsExample,
   } = node.attrs as MatchingPairsAttrs;
   const pairById = new Map(pairs.map((pair) => [pair.id, pair]));
   const orderedRightPairs = normalizedRightOrder(pairs, rightOrder)
@@ -81,16 +94,132 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
       shuffleWordBank ? stableHash(first.id) - stableHash(second.id) : 0
     ));
 
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    const svg = solutionsRef.current;
+    const columns = svg?.parentElement;
+    if (!root || !svg || !columns) return;
+
+    let cancelled = false;
+    const drawSolutions = () => {
+      if (cancelled) return;
+      const columnsRect = columns.getBoundingClientRect();
+      const width = columns.clientWidth;
+      const height = columns.clientHeight;
+      if (width <= 0 || height <= 0) return;
+      const scaleX = columnsRect.width / width || 1;
+      const scaleY = columnsRect.height / height || 1;
+
+      svg.replaceChildren();
+      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+      svg.setAttribute('width', String(width));
+      svg.setAttribute('height', String(height));
+      const roughSvg = rough.svg(svg);
+      const endpoints = new Map<string, {
+        left?: HTMLElement;
+        right?: HTMLElement;
+      }>();
+
+      columns.querySelectorAll<HTMLElement>(
+        '[data-matching-pair-id][data-matching-side]',
+      ).forEach((row) => {
+        const pairId = row.dataset.matchingPairId;
+        const side = row.dataset.matchingSide;
+        const indicator = row.querySelector<HTMLElement>(
+          '.custom-block__choice-indicator',
+        );
+        if (!pairId || !indicator || (side !== 'left' && side !== 'right')) {
+          return;
+        }
+        const endpoint = endpoints.get(pairId) ?? {};
+        endpoint[side] = indicator;
+        endpoints.set(pairId, endpoint);
+      });
+
+      pairs.forEach((pair) => {
+        const endpoint = endpoints.get(pair.id);
+        if (!endpoint?.left || !endpoint.right) return;
+        const leftRect = endpoint.left.getBoundingClientRect();
+        const rightRect = endpoint.right.getBoundingClientRect();
+        const line = roughSvg.line(
+          (
+            leftRect.left
+            + leftRect.width / 2
+            - columnsRect.left
+          ) / scaleX,
+          (
+            leftRect.top
+            + leftRect.height / 2
+            - columnsRect.top
+          ) / scaleY,
+          (
+            rightRect.left
+            + rightRect.width / 2
+            - columnsRect.left
+          ) / scaleX,
+          (
+            rightRect.top
+            + rightRect.height / 2
+            - columnsRect.top
+          ) / scaleY,
+          {
+            bowing: 1.4,
+            disableMultiStroke: true,
+            roughness: 1.15,
+            seed: stableHash(pair.id) || 1,
+            stroke: 'var(--custom-block-solution-color)',
+            strokeWidth: 1.5,
+          },
+        );
+        const solutionKind = showFirstAsExample && pair === pairs[0]
+          ? 'example'
+          : 'solution';
+        line.dataset.solutionKind = solutionKind;
+        line.querySelectorAll('path').forEach((path) => {
+          path.style.stroke = solutionKind === 'example'
+            ? 'var(--custom-block-example-solution-color)'
+            : 'var(--custom-block-solution-color)';
+        });
+        svg.appendChild(line);
+      });
+    };
+
+    drawSolutions();
+    const resizeObserver = new ResizeObserver(drawSolutions);
+    resizeObserver.observe(columns);
+    columns.querySelectorAll<HTMLElement>(
+      '.matching-pairs-node__row',
+    ).forEach((row) => resizeObserver.observe(row));
+    window.addEventListener('resize', drawSolutions);
+    void document.fonts.ready.then(drawSolutions);
+    return () => {
+      cancelled = true;
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', drawSolutions);
+    };
+  }, [pairs, rightOrder, question, showFirstAsExample, showWordBank]);
+
   return (
-    <CustomBlockRoot selected={selected} className="matching-pairs-node">
+    <CustomBlockRoot
+      selected={selected}
+      className="matching-pairs-node"
+      rootRef={rootRef}
+    >
       <BlockInstruction>
         Match the items on the left with the items on the right.
       </BlockInstruction>
+      <BlockQuestion>{question}</BlockQuestion>
       {showWordBank && (
         <div className="custom-block__word-bank matching-pairs-node__word-bank">
           {wordBankItems.map((item) => (
-            <span className="matching-pairs-node__word-bank-item" key={item.id}>
+            <span
+              className="custom-block__word-bank-item matching-pairs-node__word-bank-item"
+              key={item.id}
+            >
               {item.text}
+              {showFirstAsExample && item.id === pairs[0]?.id && (
+                <RoughExampleStrike seed={`matching:${item.id}`} />
+              )}
             </span>
           ))}
         </div>
@@ -100,7 +229,12 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
           const rightPair = orderedRightPairs[index];
           return (
             <Fragment key={pair.id}>
-            <div className="matching-pairs-node__row" key={pair.id}>
+            <div
+              className="matching-pairs-node__row"
+              data-matching-pair-id={pair.id}
+              data-matching-side="left"
+              key={pair.id}
+            >
               <span className="custom-block__row-index">
                 {String(index + 1).padStart(2, '0')}
               </span>
@@ -109,7 +243,11 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
               </span>
               <BlockChoiceIndicator checked={false} />
             </div>
-            <div className="matching-pairs-node__row">
+            <div
+              className="matching-pairs-node__row"
+              data-matching-pair-id={rightPair?.id}
+              data-matching-side="right"
+            >
               <BlockChoiceIndicator checked={false} />
               <span className="matching-pairs-node__label">
                 {rightPair?.right || `Match ${index + 1}`}
@@ -121,6 +259,11 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
             </Fragment>
           );
         })}
+        <svg
+          aria-hidden="true"
+          className="matching-pairs-node__solutions"
+          ref={solutionsRef}
+        />
       </div>
     </CustomBlockRoot>
   );
@@ -143,6 +286,16 @@ export const MatchingPairs = Node.create({
 
   addAttributes() {
     return {
+      question: {
+        default: '',
+        parseHTML: (element) => (
+          element.getAttribute('data-matching-question')
+          ?? ''
+        ),
+        renderHTML: (attributes) => ({
+          'data-matching-question': attributes.question,
+        }),
+      },
       pairs: {
         default: DEFAULT_MATCHING_PAIRS,
         parseHTML: (element) => parseValue(
@@ -179,6 +332,17 @@ export const MatchingPairs = Node.create({
           'data-matching-shuffle-word-bank': String(attributes.shuffleWordBank),
         }),
       },
+      showFirstAsExample: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-matching-show-first-example') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-matching-show-first-example': String(
+            attributes.showFirstAsExample,
+          ),
+        }),
+      },
     };
   },
 
@@ -203,12 +367,14 @@ export const MatchingPairs = Node.create({
           return commands.insertContent({
             type: this.name,
             attrs: {
+              question: attrs.question ?? '',
               pairs,
               rightOrder: attrs.rightOrder
                 ?? [pairs[1]?.id, pairs[0]?.id, ...pairs.slice(2).map(({ id }) => id)]
                   .filter((id): id is string => Boolean(id)),
               showWordBank: attrs.showWordBank ?? false,
               shuffleWordBank: attrs.shuffleWordBank ?? false,
+              showFirstAsExample: attrs.showFirstAsExample ?? false,
             },
           });
         },

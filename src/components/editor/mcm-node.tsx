@@ -13,6 +13,7 @@ import {
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
 import { useMatrixOptionWidth } from '@/components/editor/custom-blocks/use-matrix-option-width';
+import { useRoughSolutionXs } from '@/components/editor/custom-blocks/use-rough-solution-xs';
 
 export type MCMOption = {
   id: string;
@@ -29,6 +30,7 @@ export type MCMRow = {
 export type MCMAttrs = {
   question: string;
   rows: MCMRow[];
+  showFirstAsExample: boolean;
 };
 
 export const DEFAULT_MCM_ROWS: MCMRow[] = [
@@ -71,7 +73,7 @@ function parseRows(value: string | null): MCMRow[] {
 }
 
 function MCMNodeView({ node, selected }: NodeViewProps) {
-  const { question, rows } = node.attrs as MCMAttrs;
+  const { question, rows, showFirstAsExample } = node.attrs as MCMAttrs;
   const optionColumnCount = Math.min(
     3,
     Math.max(1, ...rows.map((row) => row.options.length)),
@@ -81,10 +83,17 @@ function MCMNodeView({ node, selected }: NodeViewProps) {
     columns: optionColumnCount,
     controlWithLabel: true,
   });
+  const solutionsRef = useRoughSolutionXs(optionWidthRef);
 
   return (
     <CustomBlockRoot selected={selected} className="mcm-node">
       <div className="custom-block__matrix-layout" ref={optionWidthRef}>
+        <svg
+          aria-hidden="true"
+          className="custom-block__rough-solution-overlay"
+          preserveAspectRatio="none"
+          ref={solutionsRef}
+        />
         <BlockInstruction>Choose the correct answer for each row.</BlockInstruction>
         <BlockQuestion>{question}</BlockQuestion>
         <BlockRows>
@@ -96,7 +105,11 @@ function MCMNodeView({ node, selected }: NodeViewProps) {
                   const option = row.options[optionIndex];
                   return option ? (
                     <div className="mcm-node__option" key={option.id}>
-                      <BlockChoiceIndicator checked={option.correct} />
+                      <BlockChoiceIndicator
+                        checked={false}
+                        example={showFirstAsExample && rowIndex === 0}
+                        solutionKey={option.correct ? option.id : undefined}
+                      />
                       <span className="mcm-node__option-label">
                         {option.text || `Option ${String.fromCharCode(65 + optionIndex)}`}
                       </span>
@@ -136,8 +149,8 @@ export const MCM = Node.create({
   addAttributes() {
     return {
       question: {
-        default: 'Enter your question here',
-        parseHTML: (element) => element.getAttribute('data-mcm-question') ?? 'Enter your question here',
+        default: '',
+        parseHTML: (element) => element.getAttribute('data-mcm-question') ?? '',
         renderHTML: (attributes) => ({ 'data-mcm-question': attributes.question }),
       },
       rows: {
@@ -145,6 +158,15 @@ export const MCM = Node.create({
         parseHTML: (element) => parseRows(element.getAttribute('data-mcm-rows')),
         renderHTML: (attributes) => ({
           'data-mcm-rows': encodeURIComponent(JSON.stringify(attributes.rows)),
+        }),
+      },
+      showFirstAsExample: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-mcm-show-first-example') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-mcm-show-first-example': String(attributes.showFirstAsExample),
         }),
       },
     };
@@ -170,8 +192,9 @@ export const MCM = Node.create({
           commands.insertContent({
             type: this.name,
             attrs: {
-              question: attrs.question ?? 'Enter your question here',
+              question: attrs.question ?? '',
               rows: attrs.rows ?? defaultRows(),
+              showFirstAsExample: attrs.showFirstAsExample ?? false,
             },
           }),
     };

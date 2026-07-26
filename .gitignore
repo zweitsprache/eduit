@@ -9,6 +9,7 @@ out
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.DS_Store
 
 # Tiptap Pro registry auth (never commit the token)
 .npmrc

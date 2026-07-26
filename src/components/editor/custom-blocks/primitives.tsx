@@ -45,14 +45,18 @@ export function BlockInstruction({
 
 export function BlockQuestion({
   children,
-  placeholder = 'Enter your question here',
 }: {
   children?: ReactNode;
-  placeholder?: string;
 }) {
+  const hasContent = typeof children === 'string'
+    ? children.trim().length > 0
+    : children !== null && children !== undefined && children !== false;
+
+  if (!hasContent) return null;
+
   return (
     <p className="custom-block__question">
-      {children || placeholder}
+      {children}
     </p>
   );
 }
@@ -88,7 +92,15 @@ export function BlockRow({
   );
 }
 
-export function BlockChoiceIndicator({ checked }: { checked: boolean }) {
+export function BlockChoiceIndicator({
+  checked,
+  example = false,
+  solutionKey,
+}: {
+  checked: boolean;
+  example?: boolean;
+  solutionKey?: string;
+}) {
   return (
     <span
       aria-hidden="true"
@@ -96,6 +108,9 @@ export function BlockChoiceIndicator({ checked }: { checked: boolean }) {
         'custom-block__choice-indicator',
         checked && 'custom-block__choice-indicator--checked',
       )}
+      data-rough-solution-x={solutionKey ? true : undefined}
+      data-solution-kind={example ? 'example' : 'solution'}
+      data-solution-key={solutionKey}
     >
       {checked ? '✓' : ''}
     </span>

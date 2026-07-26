@@ -13,6 +13,11 @@ import {
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
 import { useMatrixOptionWidth } from '@/components/editor/custom-blocks/use-matrix-option-width';
+import { useRoughSolutionXs } from '@/components/editor/custom-blocks/use-rough-solution-xs';
+import {
+  InlineFormattedText,
+  stripInlineFormatting,
+} from '@/components/editor/custom-blocks/inline-formatting';
 
 export type MCHOption = {
   id: string;
@@ -29,6 +34,7 @@ export type MCHAttrs = {
   question: string;
   options: MCHOption[];
   rows: MCHRow[];
+  showFirstAsExample: boolean;
 };
 
 export const DEFAULT_MCH_OPTIONS: MCHOption[] = [
@@ -61,37 +67,67 @@ function parseValue<T>(value: string | null, fallback: () => T[]): T[] {
 }
 
 function MCHNodeView({ node, selected }: NodeViewProps) {
-  const { question, options, rows } = node.attrs as MCHAttrs;
+  const {
+    question,
+    options,
+    rows,
+    showFirstAsExample,
+  } = node.attrs as MCHAttrs;
   const optionWidthRef = useMatrixOptionWidth({
-    labels: options.map((option) => option.text),
+    labels: options.map((option) => stripInlineFormatting(option.text)),
     columns: options.length,
     controlWithLabel: false,
   });
+  const solutionsRef = useRoughSolutionXs(optionWidthRef);
 
   return (
     <CustomBlockRoot selected={selected} className="mch-node">
       <div className="custom-block__matrix-layout" ref={optionWidthRef}>
+        <svg
+          aria-hidden="true"
+          className="custom-block__rough-solution-overlay"
+          preserveAspectRatio="none"
+          ref={solutionsRef}
+        />
         <BlockInstruction>Choose the correct answer for each row.</BlockInstruction>
-        <BlockQuestion>{question}</BlockQuestion>
+        <BlockQuestion>
+          {question.trim()
+            ? <InlineFormattedText text={question} />
+            : null}
+        </BlockQuestion>
         <div className="mch-node__header">
           <span aria-hidden="true" className="mch-node__index-spacer" />
           <span aria-hidden="true" className="mch-node__label-spacer" />
           <div className="mch-node__option-columns" data-columns={options.length}>
             {options.map((option, index) => (
-              <strong className="mch-node__header-option" key={option.id}>
-                {option.text || `Option ${String.fromCharCode(65 + index)}`}
-              </strong>
+              <span className="mch-node__header-option" key={option.id}>
+                <InlineFormattedText
+                  fallback={`Option ${String.fromCharCode(65 + index)}`}
+                  text={option.text}
+                />
+              </span>
             ))}
           </div>
         </div>
         <BlockRows>
           {rows.map((row, rowIndex) => (
             <BlockRow index={rowIndex} key={row.id}>
-              <BlockRowLabel>{row.text || `Answer row ${rowIndex + 1}`}</BlockRowLabel>
+              <BlockRowLabel>
+                <InlineFormattedText
+                  fallback={`Answer row ${rowIndex + 1}`}
+                  text={row.text}
+                />
+              </BlockRowLabel>
               <div className="mch-node__option-columns" data-columns={options.length}>
                 {options.map((option) => (
                   <span className="mch-node__choice" key={option.id}>
-                    <BlockChoiceIndicator checked={row.correctOptionId === option.id} />
+                    <BlockChoiceIndicator
+                      checked={false}
+                      example={showFirstAsExample && rowIndex === 0}
+                      solutionKey={row.correctOptionId === option.id
+                        ? `${row.id}:${option.id}`
+                        : undefined}
+                    />
                   </span>
                 ))}
               </div>
@@ -121,8 +157,8 @@ export const MCH = Node.create({
   addAttributes() {
     return {
       question: {
-        default: 'Enter your question here',
-        parseHTML: (element) => element.getAttribute('data-mch-question') ?? 'Enter your question here',
+        default: '',
+        parseHTML: (element) => element.getAttribute('data-mch-question') ?? '',
         renderHTML: (attributes) => ({ 'data-mch-question': attributes.question }),
       },
       options: {
@@ -143,6 +179,15 @@ export const MCH = Node.create({
         ),
         renderHTML: (attributes) => ({
           'data-mch-rows': encodeURIComponent(JSON.stringify(attributes.rows)),
+        }),
+      },
+      showFirstAsExample: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-mch-show-first-example') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-mch-show-first-example': String(attributes.showFirstAsExample),
         }),
       },
     };
@@ -168,9 +213,10 @@ export const MCH = Node.create({
           commands.insertContent({
             type: this.name,
             attrs: {
-              question: attrs.question ?? 'Enter your question here',
+              question: attrs.question ?? '',
               options: attrs.options ?? defaultOptions(),
               rows: attrs.rows ?? defaultRows(),
+              showFirstAsExample: attrs.showFirstAsExample ?? false,
             },
           }),
     };

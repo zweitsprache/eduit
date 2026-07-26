@@ -10,7 +10,10 @@ import {
   Trash01,
 } from '@untitledui/icons';
 import {
+  BRAND_COLOR_TOKENS,
+  BRAND_FONT_WEIGHTS,
   DATE_FORMATS,
+  DEFAULT_BRAND_HEADING_STYLES,
   NUMBER_FORMATS,
   type BrandProfile,
   type BrandProfileInput,
@@ -23,9 +26,15 @@ const EMPTY_PROFILE: BrandProfileInput = {
   description: '',
   primaryColor: '#11224d',
   accentColor: '#cc6600',
+  customColor1: '#101828',
+  customColor2: '#667085',
   fontFamily: '"Encode Sans Semi Condensed", sans-serif',
   logoUrl: null,
+  logoScale: 1,
   instructionNumberFormat: 'upper-alpha',
+  instructionNumberColor: 'inverse',
+  instructionNumberFontWeight: 700,
+  instructionBadgeStyle: 'filled',
   headingNumberFormats: {
     1: 'decimal',
     2: 'decimal',
@@ -33,6 +42,9 @@ const EMPTY_PROFILE: BrandProfileInput = {
     4: 'decimal',
     5: 'decimal',
   },
+  headingStyles: DEFAULT_BRAND_HEADING_STYLES,
+  fixedHeadingNumberWidth: false,
+  contentIndentation: false,
   dateFormat: 'dd.MM.yyyy',
   isDefault: false,
   isActive: true,
@@ -51,6 +63,20 @@ function profileInput(profile: BrandProfile): BrandProfileInput {
 
 const FIELD_CLASS = 'mt-2 w-full border border-primary bg-primary px-3 py-2 text-sm text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand';
 const LABEL_CLASS = 'block text-xs font-semibold text-tertiary';
+const COLOR_TOKEN_LABELS = {
+  defaultText: 'Default text',
+  primary: 'Primary',
+  accent: 'Accent',
+  custom1: 'Custom 1',
+  custom2: 'Custom 2',
+} as const;
+const TASK_NUMBER_COLOR_OPTIONS = [
+  { value: 'inverse', label: 'Inverse / white' },
+  ...BRAND_COLOR_TOKENS.map((value) => ({
+    value,
+    label: COLOR_TOKEN_LABELS[value],
+  })),
+] as const;
 
 export function BrandProfilesAdmin() {
   const [profiles, setProfiles] = useState<BrandProfile[]>([]);
@@ -286,6 +312,8 @@ export function BrandProfilesAdmin() {
             {([
               ['primaryColor', 'Primary color'],
               ['accentColor', 'Accent color'],
+              ['customColor1', 'Custom 1'],
+              ['customColor2', 'Custom 2'],
             ] as const).map(([key, label]) => (
               <div key={key}>
                 <label className={LABEL_CLASS} htmlFor={`brand-${key}`}>{label}</label>
@@ -314,43 +342,273 @@ export function BrandProfilesAdmin() {
               <label className={LABEL_CLASS} htmlFor="brand-logo">Logo URL</label>
               <input id="brand-logo" className={FIELD_CLASS} value={draft.logoUrl ?? ''} onChange={(event) => update('logoUrl', event.target.value || null)} placeholder="/logo/example.svg" />
             </div>
+            <div className="col-span-2">
+              <div className="flex items-center justify-between gap-3">
+                <label className={LABEL_CLASS} htmlFor="brand-logo-scale">
+                  Logo scale
+                </label>
+                <span className="text-xs tabular-nums text-quaternary">
+                  {Math.round(draft.logoScale * 100)}%
+                </span>
+              </div>
+              <input
+                id="brand-logo-scale"
+                type="range"
+                min="0.5"
+                max="2"
+                step="0.05"
+                value={draft.logoScale}
+                onChange={(event) => update(
+                  'logoScale',
+                  Number(event.target.value),
+                )}
+                className="mt-3 w-full accent-[var(--color-bg-brand-solid)]"
+              />
+              <div className="mt-1 flex justify-between text-[10px] text-quaternary">
+                <span>50%</span>
+                <span>100%</span>
+                <span>200%</span>
+              </div>
+              <p className="mt-2 text-xs text-quaternary">
+                Scaling keeps the logo’s top-right origin and does not change
+                header geometry.
+              </p>
+            </div>
 
             <div className="col-span-2 border-t border-secondary pt-5">
               <h3 className="text-sm font-semibold">Numbering and locale</h3>
             </div>
             <div className="col-span-2">
               <p className={LABEL_CLASS}>Heading numbering by level</p>
-              <div className="mt-2 grid grid-cols-5 gap-3">
+              <label className="mt-3 flex items-center justify-between gap-4 border border-secondary bg-secondary px-3 py-2.5">
+                <span>
+                  <span className="block text-xs font-semibold text-secondary">
+                    Fixed number width
+                  </span>
+                  <span className="mt-0.5 block text-xs text-quaternary">
+                    Right-align all counters in the width of one H1 glyph.
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={draft.fixedHeadingNumberWidth}
+                  onChange={(event) => update(
+                    'fixedHeadingNumberWidth',
+                    event.target.checked,
+                  )}
+                />
+              </label>
+              <div className="mt-2 space-y-3">
                 {([1, 2, 3, 4, 5] as const).map((level) => (
-                  <div key={level}>
-                    <label className="block text-[11px] font-semibold text-quaternary" htmlFor={`heading-format-${level}`}>
+                  <div
+                    className="border border-secondary bg-secondary p-3"
+                    key={level}
+                  >
+                    <p className="text-xs font-semibold text-secondary">
                       H{level}
-                    </label>
-                    <select
-                      id={`heading-format-${level}`}
-                      className={FIELD_CLASS}
-                      value={draft.headingNumberFormats[level]}
-                      onChange={(event) => update('headingNumberFormats', {
-                        ...draft.headingNumberFormats,
-                        [level]: event.target.value as BrandProfileInput['headingNumberFormats'][typeof level],
-                      })}
-                    >
-                      {NUMBER_FORMATS.map((format) => (
-                        <option key={format} value={format}>{format}</option>
-                      ))}
-                    </select>
+                    </p>
+                    <div className="mt-2 grid grid-cols-5 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-quaternary" htmlFor={`heading-format-${level}`}>
+                          Number format
+                        </label>
+                        <select
+                          id={`heading-format-${level}`}
+                          className={FIELD_CLASS}
+                          value={draft.headingNumberFormats[level]}
+                          onChange={(event) => update('headingNumberFormats', {
+                            ...draft.headingNumberFormats,
+                            [level]: event.target.value as BrandProfileInput['headingNumberFormats'][typeof level],
+                          })}
+                        >
+                          {NUMBER_FORMATS.map((format) => (
+                            <option key={format} value={format}>{format}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-quaternary" htmlFor={`heading-number-color-${level}`}>
+                          Number color
+                        </label>
+                        <select
+                          id={`heading-number-color-${level}`}
+                          className={FIELD_CLASS}
+                          value={draft.headingStyles[level].numberColor}
+                          onChange={(event) => update('headingStyles', {
+                            ...draft.headingStyles,
+                            [level]: {
+                              ...draft.headingStyles[level],
+                              numberColor: event.target.value as
+                                BrandProfileInput['headingStyles'][typeof level]['numberColor'],
+                            },
+                          })}
+                        >
+                          {BRAND_COLOR_TOKENS.map((token) => (
+                            <option key={token} value={token}>
+                              {COLOR_TOKEN_LABELS[token]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-quaternary" htmlFor={`heading-number-weight-${level}`}>
+                          Number weight
+                        </label>
+                        <select
+                          id={`heading-number-weight-${level}`}
+                          className={FIELD_CLASS}
+                          value={draft.headingStyles[level].numberFontWeight}
+                          onChange={(event) => update('headingStyles', {
+                            ...draft.headingStyles,
+                            [level]: {
+                              ...draft.headingStyles[level],
+                              numberFontWeight: Number(event.target.value) as
+                                BrandProfileInput['headingStyles'][typeof level]['numberFontWeight'],
+                            },
+                          })}
+                        >
+                          {BRAND_FONT_WEIGHTS.map((weight) => (
+                            <option key={weight} value={weight}>{weight}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-quaternary" htmlFor={`heading-text-color-${level}`}>
+                          Text color
+                        </label>
+                        <select
+                          id={`heading-text-color-${level}`}
+                          className={FIELD_CLASS}
+                          value={draft.headingStyles[level].textColor}
+                          onChange={(event) => update('headingStyles', {
+                            ...draft.headingStyles,
+                            [level]: {
+                              ...draft.headingStyles[level],
+                              textColor: event.target.value as
+                                BrandProfileInput['headingStyles'][typeof level]['textColor'],
+                            },
+                          })}
+                        >
+                          {BRAND_COLOR_TOKENS.map((token) => (
+                            <option key={token} value={token}>
+                              {COLOR_TOKEN_LABELS[token]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-quaternary" htmlFor={`heading-text-weight-${level}`}>
+                          Text weight
+                        </label>
+                        <select
+                          id={`heading-text-weight-${level}`}
+                          className={FIELD_CLASS}
+                          value={draft.headingStyles[level].textFontWeight}
+                          onChange={(event) => update('headingStyles', {
+                            ...draft.headingStyles,
+                            [level]: {
+                              ...draft.headingStyles[level],
+                              textFontWeight: Number(event.target.value) as
+                                BrandProfileInput['headingStyles'][typeof level]['textFontWeight'],
+                            },
+                          })}
+                        >
+                          {BRAND_FONT_WEIGHTS.map((weight) => (
+                            <option key={weight} value={weight}>{weight}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
               <p className="mt-2 text-xs text-quaternary">
-                Each segment in a hierarchical number uses the format of its heading level.
+                Number and heading text are styled independently at every
+                level.
               </p>
             </div>
             <div>
-              <label className={LABEL_CLASS} htmlFor="instruction-format">Instruction numbering</label>
+              <label className={LABEL_CLASS} htmlFor="instruction-format">Task Numbering</label>
               <select id="instruction-format" className={FIELD_CLASS} value={draft.instructionNumberFormat} onChange={(event) => update('instructionNumberFormat', event.target.value as BrandProfileInput['instructionNumberFormat'])}>
                 {NUMBER_FORMATS.map((format) => <option key={format} value={format}>{format}</option>)}
               </select>
+            </div>
+            <div>
+              <label className={LABEL_CLASS} htmlFor="instruction-badge-style">
+                Task number style
+              </label>
+              <select
+                id="instruction-badge-style"
+                className={FIELD_CLASS}
+                value={draft.instructionBadgeStyle}
+                onChange={(event) => update(
+                  'instructionBadgeStyle',
+                  event.target.value as
+                    BrandProfileInput['instructionBadgeStyle'],
+                )}
+              >
+                <option value="filled">Filled badge</option>
+                <option value="primary-text">Primary text</option>
+                <option value="accent-text">Accent text</option>
+              </select>
+            </div>
+            <div>
+              <label className={LABEL_CLASS} htmlFor="instruction-number-color">
+                Task number color
+              </label>
+              <select
+                id="instruction-number-color"
+                className={FIELD_CLASS}
+                value={draft.instructionNumberColor}
+                onChange={(event) => update(
+                  'instructionNumberColor',
+                  event.target.value as
+                    BrandProfileInput['instructionNumberColor'],
+                )}
+              >
+                {TASK_NUMBER_COLOR_OPTIONS.map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={LABEL_CLASS} htmlFor="instruction-number-weight">
+                Task number weight
+              </label>
+              <select
+                id="instruction-number-weight"
+                className={FIELD_CLASS}
+                value={draft.instructionNumberFontWeight}
+                onChange={(event) => update(
+                  'instructionNumberFontWeight',
+                  Number(event.target.value) as
+                    BrandProfileInput['instructionNumberFontWeight'],
+                )}
+              >
+                {BRAND_FONT_WEIGHTS.map((weight) => (
+                  <option key={weight} value={weight}>{weight}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="flex items-center justify-between gap-4 border border-secondary bg-secondary px-3 py-2.5">
+                <span>
+                  <span className="block text-xs font-semibold text-secondary">
+                    Content indentation
+                  </span>
+                  <span className="mt-0.5 block text-xs text-quaternary">
+                    Align custom-block content with the task instruction text.
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={draft.contentIndentation}
+                  onChange={(event) => update(
+                    'contentIndentation',
+                    event.target.checked,
+                  )}
+                />
+              </label>
             </div>
             <div>
               <label className={LABEL_CLASS} htmlFor="date-format">Date format</label>

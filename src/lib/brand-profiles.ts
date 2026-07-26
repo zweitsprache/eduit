@@ -1,9 +1,13 @@
 import { sql } from '@/lib/neon';
 import {
+  BRAND_COLOR_TOKENS,
+  BRAND_FONT_WEIGHTS,
   DATE_FORMATS,
+  DEFAULT_BRAND_HEADING_STYLES,
   NUMBER_FORMATS,
   type BrandProfile,
   type BrandHeadingNumberFormats,
+  type BrandHeadingStyles,
   type BrandProfileInput,
 } from '@/lib/brand-profile-types';
 
@@ -14,10 +18,19 @@ type BrandProfileRow = {
   description: string;
   primary_color: string;
   accent_color: string;
+  custom_color_1: string;
+  custom_color_2: string;
   font_family: string;
   logo_url: string | null;
+  logo_scale: number | string;
   instruction_number_format: BrandProfile['instructionNumberFormat'];
+  instruction_number_color: BrandProfile['instructionNumberColor'];
+  instruction_number_font_weight: BrandProfile['instructionNumberFontWeight'];
+  instruction_badge_style: BrandProfile['instructionBadgeStyle'];
   heading_number_formats: BrandHeadingNumberFormats;
+  heading_styles: BrandHeadingStyles;
+  fixed_heading_number_width: boolean;
+  content_indentation: boolean;
   date_format: BrandProfile['dateFormat'];
   is_default: boolean;
   is_system: boolean;
@@ -34,10 +47,19 @@ function mapRow(row: BrandProfileRow): BrandProfile {
     description: row.description,
     primaryColor: row.primary_color,
     accentColor: row.accent_color,
+    customColor1: row.custom_color_1,
+    customColor2: row.custom_color_2,
     fontFamily: row.font_family,
     logoUrl: row.logo_url,
+    logoScale: Number(row.logo_scale),
     instructionNumberFormat: row.instruction_number_format,
+    instructionNumberColor: row.instruction_number_color,
+    instructionNumberFontWeight: row.instruction_number_font_weight,
+    instructionBadgeStyle: row.instruction_badge_style,
     headingNumberFormats: row.heading_number_formats,
+    headingStyles: row.heading_styles,
+    fixedHeadingNumberWidth: row.fixed_heading_number_width,
+    contentIndentation: row.content_indentation,
     dateFormat: row.date_format,
     isDefault: row.is_default,
     isSystem: row.is_system,
@@ -80,6 +102,37 @@ export function validateBrandProfileInput(value: unknown): BrandProfileInput {
       return [level, format];
     }),
   ) as BrandHeadingNumberFormats;
+  const rawHeadingStyles = input.headingStyles;
+  const headingStyles = Object.fromEntries(
+    [1, 2, 3, 4, 5].map((level) => {
+      const fallback = DEFAULT_BRAND_HEADING_STYLES[
+        level as keyof BrandHeadingStyles
+      ];
+      const rawStyle = rawHeadingStyles
+        && typeof rawHeadingStyles === 'object'
+        ? (rawHeadingStyles as Record<number, unknown>)[level]
+        : null;
+      const style = rawStyle && typeof rawStyle === 'object'
+        ? rawStyle as Record<string, unknown>
+        : {};
+      const color = (
+        key: 'numberColor' | 'textColor',
+      ) => BRAND_COLOR_TOKENS.includes(style[key] as never)
+        ? style[key] as typeof fallback[typeof key]
+        : fallback[key];
+      const weight = (
+        key: 'numberFontWeight' | 'textFontWeight',
+      ) => BRAND_FONT_WEIGHTS.includes(Number(style[key]) as never)
+        ? Number(style[key]) as typeof fallback[typeof key]
+        : fallback[key];
+      return [level, {
+        numberColor: color('numberColor'),
+        numberFontWeight: weight('numberFontWeight'),
+        textColor: color('textColor'),
+        textFontWeight: weight('textFontWeight'),
+      }];
+    }),
+  ) as BrandHeadingStyles;
   if (!DATE_FORMATS.includes(input.dateFormat as never)) {
     throw new Error('Invalid date format.');
   }
@@ -90,10 +143,41 @@ export function validateBrandProfileInput(value: unknown): BrandProfileInput {
     description: text('description', false),
     primaryColor: color('primaryColor'),
     accentColor: color('accentColor'),
+    customColor1: color('customColor1'),
+    customColor2: color('customColor2'),
     fontFamily: text('fontFamily'),
     logoUrl: text('logoUrl', false) || null,
+    logoScale: Math.min(
+      2,
+      Math.max(
+        0.5,
+        Number.isFinite(Number(input.logoScale))
+          ? Number(input.logoScale)
+          : 1,
+      ),
+    ),
     instructionNumberFormat: input.instructionNumberFormat as BrandProfileInput['instructionNumberFormat'],
+    instructionNumberColor: (
+      input.instructionNumberColor === 'inverse'
+      || BRAND_COLOR_TOKENS.includes(input.instructionNumberColor as never)
+    )
+      ? (input.instructionNumberColor as BrandProfileInput['instructionNumberColor'])
+      : 'inverse',
+    instructionNumberFontWeight: BRAND_FONT_WEIGHTS.includes(
+      Number(input.instructionNumberFontWeight) as never,
+    )
+      ? (Number(input.instructionNumberFontWeight) as BrandProfileInput['instructionNumberFontWeight'])
+      : 700,
+    instructionBadgeStyle: (
+      input.instructionBadgeStyle === 'primary-text'
+      || input.instructionBadgeStyle === 'accent-text'
+    )
+      ? input.instructionBadgeStyle
+      : 'filled',
     headingNumberFormats,
+    headingStyles,
+    fixedHeadingNumberWidth: input.fixedHeadingNumberWidth === true,
+    contentIndentation: input.contentIndentation === true,
     dateFormat: input.dateFormat as BrandProfileInput['dateFormat'],
     isDefault: input.isDefault === true,
     isActive: input.isActive !== false,
@@ -113,13 +197,26 @@ export async function createBrandProfile(input: BrandProfileInput) {
   if (input.isDefault) await sql`update brand_profiles set is_default = false where is_default = true`;
   const rows = await sql`
     insert into brand_profiles (
-      slug, name, description, primary_color, accent_color, font_family, logo_url,
-      instruction_number_format, heading_number_formats, date_format,
+      slug, name, description, primary_color, accent_color,
+      custom_color_1, custom_color_2, font_family,
+      logo_url, logo_scale,
+      instruction_number_format, instruction_number_color,
+      instruction_number_font_weight, instruction_badge_style,
+      heading_number_formats, heading_styles, fixed_heading_number_width,
+      content_indentation,
+      date_format,
       is_default, is_system, is_active
     ) values (
       ${input.slug}, ${input.name}, ${input.description}, ${input.primaryColor},
-      ${input.accentColor}, ${input.fontFamily}, ${input.logoUrl},
-      ${input.instructionNumberFormat}, ${JSON.stringify(input.headingNumberFormats)}::jsonb,
+      ${input.accentColor}, ${input.customColor1}, ${input.customColor2},
+      ${input.fontFamily}, ${input.logoUrl},
+      ${input.logoScale},
+      ${input.instructionNumberFormat}, ${input.instructionNumberColor},
+      ${input.instructionNumberFontWeight}, ${input.instructionBadgeStyle},
+      ${JSON.stringify(input.headingNumberFormats)}::jsonb,
+      ${JSON.stringify(input.headingStyles)}::jsonb,
+      ${input.fixedHeadingNumberWidth},
+      ${input.contentIndentation},
       ${input.dateFormat}, ${input.isDefault}, false, ${input.isActive}
     )
     returning *
@@ -136,10 +233,19 @@ export async function updateBrandProfile(id: string, input: BrandProfileInput) {
         description = ${input.description},
         primary_color = ${input.primaryColor},
         accent_color = ${input.accentColor},
+        custom_color_1 = ${input.customColor1},
+        custom_color_2 = ${input.customColor2},
         font_family = ${input.fontFamily},
         logo_url = ${input.logoUrl},
+        logo_scale = ${input.logoScale},
         instruction_number_format = ${input.instructionNumberFormat},
+        instruction_number_color = ${input.instructionNumberColor},
+        instruction_number_font_weight = ${input.instructionNumberFontWeight},
+        instruction_badge_style = ${input.instructionBadgeStyle},
         heading_number_formats = ${JSON.stringify(input.headingNumberFormats)}::jsonb,
+        heading_styles = ${JSON.stringify(input.headingStyles)}::jsonb,
+        fixed_heading_number_width = ${input.fixedHeadingNumberWidth},
+        content_indentation = ${input.contentIndentation},
         date_format = ${input.dateFormat},
         is_default = ${input.isDefault},
         is_active = ${input.isActive},

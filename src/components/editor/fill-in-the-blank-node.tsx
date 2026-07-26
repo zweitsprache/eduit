@@ -8,11 +8,14 @@ import {
   CustomBlockRoot,
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
+import { RoughExampleStrike } from '@/components/editor/custom-blocks/rough-example-strike';
 
 export type FillInTheBlankAttrs = {
   text: string;
   widthFactor: number;
   hideBlankNumbers: boolean;
+  showWordBank: boolean;
+  showFirstAsExample: boolean;
 };
 
 export type FillInTheBlankPart =
@@ -80,44 +83,124 @@ export function isSingleLetterBlankAnswer(answer: string) {
     && characters[0].toLocaleLowerCase() !== characters[0].toLocaleUpperCase();
 }
 
+function parseParagraphs(text: string, defaultWidthFactor: number) {
+  let blankOffset = 0;
+
+  return text
+    .split(/\r?\n/)
+    .filter((paragraph) => paragraph.trim().length > 0)
+    .map((paragraph) => {
+      const parts = parseFillInTheBlankText(paragraph, defaultWidthFactor)
+        .map((part) => (
+          part.type === 'blank'
+            ? { ...part, index: part.index + blankOffset }
+            : part
+        ));
+      blankOffset += parts.filter((part) => part.type === 'blank').length;
+      return parts;
+    });
+}
+
+function FillInTheBlankParts({
+  hideBlankNumbers,
+  parts,
+  showFirstAsExample,
+}: {
+  hideBlankNumbers: boolean;
+  parts: FillInTheBlankPart[];
+  showFirstAsExample: boolean;
+}) {
+  return parts.map((part, index) => (
+    <Fragment key={`${part.type}-${index}`}>
+      {part.type === 'text' ? part.value : (
+        <span
+          aria-label={`Blank ${part.index}`}
+          className={`fill-in-the-blank-node__blank${
+            isSingleLetterBlankAnswer(part.answer)
+              ? ' fill-in-the-blank-node__blank--single-letter'
+              : ''
+          }${
+            hideBlankNumbers
+              ? ' fill-in-the-blank-node__blank--without-number'
+              : ''
+          }`}
+          data-answer={part.answer}
+          data-example={showFirstAsExample && part.index === 1}
+          style={{
+            '--fill-blank-width-factor': part.widthFactor,
+          } as CSSProperties}
+        >
+          <span
+            aria-hidden="true"
+            className="custom-block__compact-label fill-in-the-blank-node__blank-number"
+          >
+            {String(part.index).padStart(2, '0')}
+          </span>
+        </span>
+      )}
+    </Fragment>
+  ));
+}
+
 function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
-  const { text, widthFactor, hideBlankNumbers } = node.attrs as FillInTheBlankAttrs;
-  const parts = parseFillInTheBlankText(text, widthFactor);
+  const {
+    text,
+    widthFactor,
+    hideBlankNumbers,
+    showWordBank,
+    showFirstAsExample,
+  } = node.attrs as FillInTheBlankAttrs;
+  const paragraphs = parseParagraphs(text, widthFactor);
+  const hasMultipleParagraphs = paragraphs.length > 1;
+  const wordBankItems = paragraphs.flatMap((parts) => (
+    parts.flatMap((part) => (
+      part.type === 'blank' && part.answer.trim()
+        ? [{ id: `blank-${part.index}`, text: part.answer.trim() }]
+        : []
+    ))
+  ));
 
   return (
     <CustomBlockRoot selected={selected} className="fill-in-the-blank-node">
       <BlockInstruction>Fill in the blanks with the correct words.</BlockInstruction>
-      <p className="fill-in-the-blank-node__text">
-        {parts.map((part, index) => (
-          <Fragment key={`${part.type}-${index}`}>
-            {part.type === 'text' ? part.value : (
-              <span
-                aria-label={`Blank ${part.index}`}
-                className={`fill-in-the-blank-node__blank${
-                  isSingleLetterBlankAnswer(part.answer)
-                    ? ' fill-in-the-blank-node__blank--single-letter'
-                    : ''
-                }${
-                  hideBlankNumbers
-                    ? ' fill-in-the-blank-node__blank--without-number'
-                    : ''
-                }`}
-                data-answer={part.answer}
-                style={{
-                  '--fill-blank-width-factor': part.widthFactor,
-                } as CSSProperties}
-              >
-                <span
-                  aria-hidden="true"
-                  className="custom-block__compact-label fill-in-the-blank-node__blank-number"
-                >
-                  {String(part.index).padStart(2, '0')}
-                </span>
+      {showWordBank && wordBankItems.length > 0 && (
+        <div className="custom-block__word-bank fill-in-the-blank-node__word-bank">
+          {wordBankItems.map((item) => (
+            <span className="custom-block__word-bank-item" key={item.id}>
+              {item.text}
+              {showFirstAsExample && item.id === 'blank-1' && (
+                <RoughExampleStrike seed={item.id} />
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+      {hasMultipleParagraphs ? (
+        <div className="fill-in-the-blank-node__items">
+          {paragraphs.map((parts, paragraphIndex) => (
+            <div className="fill-in-the-blank-node__item" key={paragraphIndex}>
+              <span className="custom-block__row-index">
+                {String(paragraphIndex + 1).padStart(2, '0')}
               </span>
-            )}
-          </Fragment>
-        ))}
-      </p>
+              <p className="fill-in-the-blank-node__text">
+                <FillInTheBlankParts
+                  hideBlankNumbers={hideBlankNumbers}
+                  parts={parts}
+                  showFirstAsExample={showFirstAsExample}
+                />
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="fill-in-the-blank-node__text">
+          <FillInTheBlankParts
+            hideBlankNumbers={hideBlankNumbers}
+            parts={paragraphs[0] ?? []}
+            showFirstAsExample={showFirstAsExample}
+          />
+        </p>
+      )}
     </CustomBlockRoot>
   );
 }
@@ -164,6 +247,26 @@ export const FillInTheBlank = Node.create({
           'data-fill-blank-hide-numbers': String(attributes.hideBlankNumbers),
         }),
       },
+      showWordBank: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-fill-blank-show-word-bank') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-fill-blank-show-word-bank': String(attributes.showWordBank),
+        }),
+      },
+      showFirstAsExample: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-fill-blank-show-first-example') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-fill-blank-show-first-example': String(
+            attributes.showFirstAsExample,
+          ),
+        }),
+      },
     };
   },
 
@@ -193,6 +296,8 @@ export const FillInTheBlank = Node.create({
               text: attrs.text ?? 'The {{blank:answer}} is the correct word.',
               widthFactor: attrs.widthFactor ?? 1,
               hideBlankNumbers: attrs.hideBlankNumbers ?? false,
+              showWordBank: attrs.showWordBank ?? false,
+              showFirstAsExample: attrs.showFirstAsExample ?? false,
             },
           }),
     };

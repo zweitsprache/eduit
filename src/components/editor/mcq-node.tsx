@@ -88,8 +88,8 @@ export const MCQ = Node.create({
   addAttributes() {
     return {
       question: {
-        default: 'Enter your question here',
-        parseHTML: (element) => element.getAttribute('data-mcq-question') ?? 'Enter your question here',
+        default: '',
+        parseHTML: (element) => element.getAttribute('data-mcq-question') ?? '',
         renderHTML: (attributes) => ({ 'data-mcq-question': attributes.question }),
       },
       options: {
@@ -143,7 +143,7 @@ export const MCQ = Node.create({
           commands.insertContent({
             type: this.name,
             attrs: {
-              question: attrs.question ?? 'Enter your question here',
+              question: attrs.question ?? '',
               options: attrs.options ?? DEFAULT_MCQ_OPTIONS.map((option) => ({ ...option })),
               columns: attrs.columns ?? 1,
               answerMode: attrs.answerMode ?? 'single',

@@ -4,18 +4,32 @@ import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import {
   ACTIVE_CUSTOM_BLOCK_BRAND,
-  formatHeadingNumber,
   formatInstructionNumber,
+  type HeadingNumberFormats,
+  type InstructionNumberFormat,
 } from '@/components/editor/custom-blocks/brand';
 
 export const CUSTOM_BLOCK_GROUP = 'customBlock';
 export const CUSTOM_BLOCK_NODE_GROUP = `block ${CUSTOM_BLOCK_GROUP}`;
 
+type NumberingBrand = {
+  headingNumberFormats: HeadingNumberFormats;
+  instructionNumberFormat: InstructionNumberFormat;
+};
+
+const numberingPluginKey = new PluginKey<{
+  brand: NumberingBrand;
+  decorations: DecorationSet;
+}>('customBlockNumbering');
+
 function isCustomBlock(node: ProseMirrorNode) {
   return node.type.spec.group?.split(/\s+/).includes(CUSTOM_BLOCK_GROUP) ?? false;
 }
 
-function buildNumberingDecorations(doc: ProseMirrorNode) {
+function buildNumberingDecorations(
+  doc: ProseMirrorNode,
+  brand: NumberingBrand,
+) {
   const decorations: Decoration[] = [];
   let ordinal = 0;
   const headingCounters = [0, 0, 0, 0, 0, 0];
@@ -34,10 +48,11 @@ function buildNumberingDecorations(doc: ProseMirrorNode) {
       headingCounters[level - 1] += 1;
       // A heading always restarts the counters of its descendant levels.
       headingCounters.fill(0, level);
-      const parts = headingCounters.slice(0, level);
-      const label = formatHeadingNumber(
-        parts,
-        ACTIVE_CUSTOM_BLOCK_BRAND.headingNumberFormats,
+      const label = formatInstructionNumber(
+        headingCounters[level - 1],
+        brand.headingNumberFormats[
+          level as keyof HeadingNumberFormats
+        ],
       );
       decorations.push(Decoration.node(pos, pos + node.nodeSize, {
         'data-heading-number': label,
@@ -51,7 +66,7 @@ function buildNumberingDecorations(doc: ProseMirrorNode) {
     ordinal += 1;
     const label = formatInstructionNumber(
       ordinal,
-      ACTIVE_CUSTOM_BLOCK_BRAND.instructionNumberFormat,
+      brand.instructionNumberFormat,
     );
     decorations.push(Decoration.node(pos, pos + node.nodeSize, {
       'data-custom-block-ordinal': String(ordinal),
@@ -63,24 +78,57 @@ function buildNumberingDecorations(doc: ProseMirrorNode) {
   return DecorationSet.create(doc, decorations);
 }
 
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    customBlockNumbering: {
+      setCustomBlockNumberingBrand: (brand: NumberingBrand) => ReturnType;
+    };
+  }
+}
+
 export const CustomBlockNumbering = Extension.create({
   name: 'customBlockNumbering',
 
+  addCommands() {
+    return {
+      setCustomBlockNumberingBrand:
+        (brand) =>
+        ({ dispatch, tr }) => {
+          if (dispatch) tr.setMeta(numberingPluginKey, brand);
+          return true;
+        },
+    };
+  },
+
   addProseMirrorPlugins() {
+    const defaultBrand: NumberingBrand = {
+      headingNumberFormats: ACTIVE_CUSTOM_BLOCK_BRAND.headingNumberFormats,
+      instructionNumberFormat:
+        ACTIVE_CUSTOM_BLOCK_BRAND.instructionNumberFormat,
+    };
     return [
       new Plugin({
-        key: new PluginKey('customBlockNumbering'),
+        key: numberingPluginKey,
         state: {
-          init: (_, state) => buildNumberingDecorations(state.doc),
-          apply: (transaction, decorations, _oldState, newState) => (
-            transaction.docChanged
-              ? buildNumberingDecorations(newState.doc)
-              : decorations
-          ),
+          init: (_, state) => ({
+            brand: defaultBrand,
+            decorations: buildNumberingDecorations(state.doc, defaultBrand),
+          }),
+          apply: (transaction, pluginState, _oldState, newState) => {
+            const brand = transaction.getMeta(numberingPluginKey) as
+              NumberingBrand | undefined;
+            const nextBrand = brand ?? pluginState.brand;
+            return {
+              brand: nextBrand,
+              decorations: transaction.docChanged || brand
+                ? buildNumberingDecorations(newState.doc, nextBrand)
+                : pluginState.decorations,
+            };
+          },
         },
         props: {
           decorations(state) {
-            return this.getState(state);
+            return this.getState(state)?.decorations ?? null;
           },
         },
       }),

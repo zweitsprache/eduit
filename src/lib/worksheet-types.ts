@@ -17,6 +17,7 @@ export type Worksheet = {
   title: string;
   contentHtml: string;
   documentSize: WorksheetDocumentSize;
+  showSolutions: boolean;
   status: WorksheetStatus;
   createdAt: string;
   updatedAt: string;
@@ -24,5 +25,10 @@ export type Worksheet = {
 
 export type WorksheetPatch = Partial<Pick<
   Worksheet,
-  'title' | 'contentHtml' | 'documentSize' | 'status' | 'brandProfileId'
+  | 'title'
+  | 'contentHtml'
+  | 'documentSize'
+  | 'showSolutions'
+  | 'status'
+  | 'brandProfileId'
 >>;

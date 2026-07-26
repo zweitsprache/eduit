@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 import {
@@ -7,6 +8,7 @@ import {
   CustomBlockRoot,
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
+import { RoughExampleStrike } from '@/components/editor/custom-blocks/rough-example-strike';
 
 export type SortingCategory = {
   id: string;
@@ -23,6 +25,7 @@ export type SortingCategoriesAttrs = {
   categories: SortingCategory[];
   items: SortingCategoryItem[];
   colorCoding: boolean;
+  showFirstAsExample: boolean;
 };
 
 export const DEFAULT_SORTING_CATEGORIES: SortingCategory[] = [
@@ -68,12 +71,23 @@ function stableHash(value: string) {
 }
 
 function SortingCategoriesNodeView({ node, selected }: NodeViewProps) {
-  const { categories, items, colorCoding } = node.attrs as SortingCategoriesAttrs;
+  const {
+    categories,
+    items,
+    colorCoding,
+    showFirstAsExample,
+  } = node.attrs as SortingCategoriesAttrs;
   const categoryColorIndex = new Map(
     categories.map((category, index) => [category.id, index + 1]),
   );
   const shuffledItems = [...items].sort(
     (first, second) => stableHash(first.id) - stableHash(second.id),
+  );
+  const writingLineCount = Math.max(
+    1,
+    ...categories.map((category) => (
+      items.filter((item) => item.categoryId === category.id).length
+    )),
   );
 
   return (
@@ -93,32 +107,50 @@ function SortingCategoriesNodeView({ node, selected }: NodeViewProps) {
             key={item.id}
           >
             <span className="custom-block__compact-label">{item.text}</span>
+            {showFirstAsExample && item.id === items[0]?.id && (
+              <RoughExampleStrike seed={item.id} />
+            )}
           </span>
         ))}
       </div>
       <div
         className="sorting-categories-node__categories"
         data-columns={categories.length}
+        style={{
+          '--sorting-categories-line-count': writingLineCount,
+          '--sorting-categories-row-span': writingLineCount + 1,
+        } as CSSProperties}
       >
-        {categories.map((category, categoryIndex) => (
-          <section className="sorting-categories-node__category" key={category.id}>
-            <h3
-              className="sorting-categories-node__category-title"
-              data-category-color={categoryIndex + 1}
-            >
-              <span className="sorting-categories-node__category-title-label">
-                {category.title || `Category ${categoryIndex + 1}`}
-              </span>
-            </h3>
-            {Array.from({ length: 4 }, (_, lineIndex) => (
-              <span
-                aria-hidden="true"
-                className="sorting-categories-node__writing-line"
-                key={lineIndex}
-              />
-            ))}
-          </section>
-        ))}
+        {categories.map((category, categoryIndex) => {
+          const categoryItems = items.filter(
+            (item) => item.categoryId === category.id,
+          );
+
+          return (
+            <section className="sorting-categories-node__category" key={category.id}>
+              <h3
+                className="sorting-categories-node__category-title"
+                data-category-color={categoryIndex + 1}
+              >
+                <span className="sorting-categories-node__category-title-label">
+                  {category.title || `Category ${categoryIndex + 1}`}
+                </span>
+              </h3>
+              {Array.from({ length: writingLineCount }, (_, lineIndex) => (
+                <span
+                  aria-hidden="true"
+                  className="sorting-categories-node__writing-line"
+                  data-example={
+                    showFirstAsExample
+                    && categoryItems[lineIndex]?.id === items[0]?.id
+                  }
+                  data-solution={categoryItems[lineIndex]?.text ?? ''}
+                  key={lineIndex}
+                />
+              ))}
+            </section>
+          );
+        })}
       </div>
     </CustomBlockRoot>
   );
@@ -172,6 +204,17 @@ export const SortingCategories = Node.create({
           'data-sorting-color-coding': String(attributes.colorCoding),
         }),
       },
+      showFirstAsExample: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-sorting-show-first-example') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-sorting-show-first-example': String(
+            attributes.showFirstAsExample,
+          ),
+        }),
+      },
     };
   },
 
@@ -201,6 +244,7 @@ export const SortingCategories = Node.create({
               categories: (attrs.categories ?? defaultCategories()).slice(0, 4),
               items: attrs.items ?? defaultItems(),
               colorCoding: attrs.colorCoding ?? false,
+              showFirstAsExample: attrs.showFirstAsExample ?? false,
             },
           }),
     };

@@ -11,6 +11,9 @@ import {
   MessageChatSquare,
   Edit05,
   File02,
+  Grid01,
+  Clipboard,
+  Table,
 } from '@untitledui/icons';
 
 export type CustomBlockDefinition = {
@@ -131,5 +134,52 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
     keywords: ['sorting', 'categories', 'classify', 'word bank', 'groups'],
     Icon: LayoutGrid01,
     insert: (editor) => editor.chain().focus().insertSortingCategories().run(),
+  },
+  {
+    type: 'wordGrid',
+    label: 'Word Grid',
+    description: 'A configurable word-search grid with selectable directions.',
+    category: 'Assessment',
+    keywords: ['word', 'grid', 'search', 'puzzle', 'letters', 'vocabulary'],
+    Icon: Grid01,
+    insert: (editor) => editor.chain().focus().insertWordGrid().run(),
+  },
+  {
+    type: 'chooseCorrectWords',
+    label: 'Choose Correct Words',
+    description: 'Choose the correctly written word from generated variants.',
+    category: 'Assessment',
+    keywords: ['word', 'spelling', 'correct', 'choose', 'variants'],
+    Icon: CheckSquare,
+    insert: (editor) => (
+      editor.chain().focus().insertChooseCorrectWords().run()
+    ),
+  },
+  {
+    type: 'inlineChoice',
+    label: 'Inline Choice',
+    description: 'Sentences with inline groups of selectable words.',
+    category: 'Assessment',
+    keywords: ['inline', 'choice', 'sentence', 'select', 'word', 'options'],
+    Icon: CheckSquare,
+    insert: (editor) => editor.chain().focus().insertInlineChoice().run(),
+  },
+  {
+    type: 'miniForm',
+    label: 'Mini Form',
+    description: 'Extract information from prompts into configurable fields.',
+    category: 'Assessment',
+    keywords: ['mini', 'form', 'fields', 'extract', 'reading', 'profile'],
+    Icon: Clipboard,
+    insert: (editor) => editor.chain().focus().insertMiniForm().run(),
+  },
+  {
+    type: 'worksheetTable',
+    label: 'Table',
+    description: 'A structured table with configurable 12-grid column spans.',
+    category: 'Content',
+    keywords: ['table', 'columns', 'rows', 'grid', 'span', 'blank', 'bold'],
+    Icon: Table,
+    insert: (editor) => editor.chain().focus().insertWorksheetTable().run(),
   },
 ];
