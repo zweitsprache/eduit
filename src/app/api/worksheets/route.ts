@@ -7,6 +7,7 @@ import {
   updateWorksheet,
   validateWorksheetPatch,
 } from '@/lib/worksheets';
+import { getCurrentAppUser } from '@/lib/auth/authorization';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,14 +21,16 @@ function errorResponse(error: unknown) {
 
 export async function GET(request: Request) {
   try {
+    const user = await getCurrentAppUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     const id = new URL(request.url).searchParams.get('id');
     if (!id) {
       return NextResponse.json(
-        { worksheets: await listWorksheets() },
+        { worksheets: await listWorksheets(user.id, user.isAdmin) },
         { headers: { 'Cache-Control': 'no-store' } },
       );
     }
-    const worksheet = await getWorksheet(id);
+    const worksheet = await getWorksheet(id, user.id, user.isAdmin);
     if (!worksheet) return NextResponse.json({ error: 'Worksheet not found.' }, { status: 404 });
     return NextResponse.json(
       { worksheet },
@@ -40,9 +43,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const user = await getCurrentAppUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     const payload = await request.json().catch(() => ({}));
     const input = validateWorksheetPatch(payload);
-    return NextResponse.json({ worksheet: await createWorksheet(input) }, { status: 201 });
+    return NextResponse.json(
+      { worksheet: await createWorksheet(user.id, input) },
+      { status: 201 },
+    );
   } catch (error) {
     return errorResponse(error);
   }
@@ -50,11 +58,13 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const user = await getCurrentAppUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     const payload = await request.json() as { id?: string; worksheet?: unknown };
     if (!payload.id) throw new Error('Worksheet ID is required.');
     const patch = validateWorksheetPatch(payload.worksheet);
     return NextResponse.json({
-      worksheet: await updateWorksheet(payload.id, patch),
+      worksheet: await updateWorksheet(payload.id, user.id, patch, user.isAdmin),
     });
   } catch (error) {
     return errorResponse(error);
@@ -63,9 +73,11 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const user = await getCurrentAppUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     const id = new URL(request.url).searchParams.get('id');
     if (!id) throw new Error('Worksheet ID is required.');
-    await deleteWorksheet(id);
+    await deleteWorksheet(id, user.id, user.isAdmin);
     return new Response(null, { status: 204 });
   } catch (error) {
     return errorResponse(error);

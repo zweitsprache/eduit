@@ -3,6 +3,7 @@ import {
   type BrandFontWeight,
   type BrandHeadingStyles,
   type BrandInstructionNumberColor,
+  type BrandStylePreset,
 } from '@/lib/brand-profile-types';
 
 export type InstructionNumberFormat =
@@ -38,6 +39,7 @@ export type CustomBlockBrand = {
   customColor1: string;
   customColor2: string;
   fontFamily: string;
+  stylePreset: BrandStylePreset;
   exampleFontFamily: string;
   exampleFontSize: number;
   exampleColor: string;
@@ -67,6 +69,7 @@ export const EDUIT_BRAND = {
   customColor1: '#101828',
   customColor2: '#667085',
   fontFamily: '"Encode Sans Semi Condensed", sans-serif',
+  stylePreset: 'educational',
   exampleFontFamily: '"Linotype Feltpen", cursive',
   exampleFontSize: 24.5,
   exampleColor: '#009fe3',

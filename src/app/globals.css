@@ -1,8 +1,10 @@
-@import url("/fonts/thesans.css");
+@import "../../public/fonts/thesans.css";
 @import "tailwindcss";
+@import "@neondatabase/auth/ui/tailwind";
 @import "../styles/theme.css";
 @import "../components/editor/custom-blocks/custom-blocks.css";
 @import "../components/editor/custom-blocks/brands/eduit.css";
+@import "../components/editor/custom-blocks/style-presets.css";
 
 @plugin "@tailwindcss/typography";
 @plugin "tailwindcss-animate";

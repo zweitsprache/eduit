@@ -6,6 +6,7 @@ import {
   updateBrandProfile,
   validateBrandProfileInput,
 } from '@/lib/brand-profiles';
+import { getCurrentAppUser } from '@/lib/auth/authorization';
 
 export const runtime = 'nodejs';
 
@@ -17,8 +18,17 @@ function errorResponse(error: unknown) {
   });
 }
 
+async function forbidNonAdmin() {
+  const user = await getCurrentAppUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+  if (!user.isAdmin) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
+  return null;
+}
+
 export async function GET() {
   try {
+    const forbidden = await forbidNonAdmin();
+    if (forbidden) return forbidden;
     return NextResponse.json({ profiles: await listBrandProfiles() });
   } catch (error) {
     return errorResponse(error);
@@ -27,6 +37,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const forbidden = await forbidNonAdmin();
+    if (forbidden) return forbidden;
     const input = validateBrandProfileInput(await request.json());
     return NextResponse.json({ profile: await createBrandProfile(input) }, { status: 201 });
   } catch (error) {
@@ -36,6 +48,8 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const forbidden = await forbidNonAdmin();
+    if (forbidden) return forbidden;
     const payload = await request.json() as { id?: string; profile?: unknown };
     if (!payload.id) throw new Error('Brand profile ID is required.');
     const input = validateBrandProfileInput(payload.profile);
@@ -47,6 +61,8 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const forbidden = await forbidNonAdmin();
+    if (forbidden) return forbidden;
     const id = new URL(request.url).searchParams.get('id');
     if (!id) throw new Error('Brand profile ID is required.');
     await deleteBrandProfile(id);

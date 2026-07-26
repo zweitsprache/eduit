@@ -1,5 +1,5 @@
-import { BrandProfilesAdmin } from '@/components/admin/brand-profiles-admin';
+import { redirect } from 'next/navigation';
 
-export default function BrandProfilesAdminPage() {
-  return <BrandProfilesAdmin />;
+export default function LegacyBrandProfilesAdminPage() {
+  redirect('/brands');
 }

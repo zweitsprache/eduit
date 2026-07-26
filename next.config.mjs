@@ -1,8 +1,6 @@
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    serverComponentsExternalPackages: ['playwright-core'],
-  },
+  serverExternalPackages: ['playwright-core'],
 };
 
 export default nextConfig;

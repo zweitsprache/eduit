@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ArrowLeft,
   Check,
   Edit05,
   Loading01,
@@ -15,6 +14,7 @@ import {
   DATE_FORMATS,
   DEFAULT_BRAND_HEADING_STYLES,
   NUMBER_FORMATS,
+  STYLE_PRESETS,
   type BrandProfile,
   type BrandProfileInput,
 } from '@/lib/brand-profile-types';
@@ -29,6 +29,7 @@ const EMPTY_PROFILE: BrandProfileInput = {
   customColor1: '#101828',
   customColor2: '#667085',
   fontFamily: '"Encode Sans Semi Condensed", sans-serif',
+  stylePreset: 'educational',
   exampleFontFamily: '"Linotype Feltpen", cursive',
   exampleFontSize: 24.5,
   exampleColor: '#009fe3',
@@ -199,17 +200,12 @@ export function BrandProfilesAdmin() {
   };
 
   return (
-    <main className="min-h-screen bg-secondary text-primary">
-      <header className="border-b border-secondary bg-primary">
+    <div className="min-h-full bg-secondary text-primary">
+      <div className="border-b border-secondary bg-primary">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <a href="/" className="flex size-9 items-center justify-center border border-primary text-quaternary hover:bg-primary_hover">
-              <ArrowLeft className="size-5" />
-            </a>
-            <div>
-              <p className="text-xs font-semibold text-brand-tertiary">Administration</p>
-              <h1 className="text-xl font-semibold">Brand profiles</h1>
-            </div>
+          <div>
+            <p className="text-xs font-semibold text-brand-tertiary">Administration</p>
+            <h1 className="text-xl font-semibold">Brand profiles</h1>
           </div>
           <button
             type="button"
@@ -220,7 +216,7 @@ export function BrandProfilesAdmin() {
             New profile
           </button>
         </div>
-      </header>
+      </div>
 
       <div className="mx-auto grid max-w-[1440px] grid-cols-[320px_minmax(0,1fr)] gap-6 p-6">
         <aside className="self-start border border-secondary bg-primary p-3 shadow-xs">
@@ -252,7 +248,12 @@ export function BrandProfilesAdmin() {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold">{profile.name}</span>
                     <span className="mt-0.5 block truncate text-xs text-quaternary">
-                      {profile.isDefault ? 'Default · ' : ''}{profile.isSystem ? 'System' : 'Custom'}
+                      {profile.isDefault ? 'Default · ' : ''}
+                      {profile.isSystem ? 'System' : 'Custom'}
+                      {' · '}
+                      {profile.stylePreset === 'academic'
+                        ? 'Academic'
+                        : 'Educational'}
                     </span>
                   </span>
                   {!profile.isActive && <span className="size-2 bg-quaternary" title="Inactive" />}
@@ -343,6 +344,30 @@ export function BrandProfilesAdmin() {
             <div>
               <label className={LABEL_CLASS} htmlFor="brand-font">Default font stack</label>
               <input id="brand-font" className={FIELD_CLASS} value={draft.fontFamily} onChange={(event) => update('fontFamily', event.target.value)} />
+            </div>
+            <div>
+              <label className={LABEL_CLASS} htmlFor="brand-style-preset">
+                Document style
+              </label>
+              <select
+                id="brand-style-preset"
+                className={FIELD_CLASS}
+                value={draft.stylePreset}
+                onChange={(event) => update(
+                  'stylePreset',
+                  event.target.value as BrandProfileInput['stylePreset'],
+                )}
+              >
+                {STYLE_PRESETS.map((preset) => (
+                  <option key={preset} value={preset}>
+                    {preset === 'educational' ? 'Educational' : 'Academic'}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-2 text-xs leading-5 text-quaternary">
+                Educational is spacious. Academic uses a denser layout and the
+                default document font for examples.
+              </p>
             </div>
             <div>
               <label className={LABEL_CLASS} htmlFor="brand-logo">Logo URL</label>
@@ -766,6 +791,6 @@ export function BrandProfilesAdmin() {
           </div>
         </section>
       </div>
-    </main>
+    </div>
   );
 }

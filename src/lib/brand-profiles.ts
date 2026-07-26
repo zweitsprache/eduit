@@ -5,6 +5,7 @@ import {
   DATE_FORMATS,
   DEFAULT_BRAND_HEADING_STYLES,
   NUMBER_FORMATS,
+  STYLE_PRESETS,
   type BrandProfile,
   type BrandHeadingNumberFormats,
   type BrandHeadingStyles,
@@ -21,6 +22,7 @@ type BrandProfileRow = {
   custom_color_1: string;
   custom_color_2: string;
   font_family: string;
+  style_preset: BrandProfile['stylePreset'];
   example_font_family: string;
   example_font_size: number | string;
   example_color: string;
@@ -56,6 +58,7 @@ function mapRow(row: BrandProfileRow): BrandProfile {
     customColor1: row.custom_color_1,
     customColor2: row.custom_color_2,
     fontFamily: row.font_family,
+    stylePreset: row.style_preset,
     exampleFontFamily: row.example_font_family,
     exampleFontSize: Number(row.example_font_size),
     exampleColor: row.example_color,
@@ -158,6 +161,9 @@ export function validateBrandProfileInput(value: unknown): BrandProfileInput {
     customColor1: color('customColor1'),
     customColor2: color('customColor2'),
     fontFamily: text('fontFamily'),
+    stylePreset: STYLE_PRESETS.includes(input.stylePreset as never)
+      ? input.stylePreset as BrandProfileInput['stylePreset']
+      : 'educational',
     exampleFontFamily: text('exampleFontFamily'),
     exampleFontSize: Math.min(
       72,
@@ -233,6 +239,7 @@ export async function createBrandProfile(input: BrandProfileInput) {
     insert into brand_profiles (
       slug, name, description, primary_color, accent_color,
       custom_color_1, custom_color_2, font_family,
+      style_preset,
       example_font_family, example_font_size, example_color,
       solution_font_family, solution_font_size, solution_color,
       logo_url, logo_scale,
@@ -245,7 +252,7 @@ export async function createBrandProfile(input: BrandProfileInput) {
     ) values (
       ${input.slug}, ${input.name}, ${input.description}, ${input.primaryColor},
       ${input.accentColor}, ${input.customColor1}, ${input.customColor2},
-      ${input.fontFamily}, ${input.exampleFontFamily},
+      ${input.fontFamily}, ${input.stylePreset}, ${input.exampleFontFamily},
       ${input.exampleFontSize}, ${input.exampleColor},
       ${input.solutionFontFamily}, ${input.solutionFontSize},
       ${input.solutionColor}, ${input.logoUrl},
@@ -275,6 +282,7 @@ export async function updateBrandProfile(id: string, input: BrandProfileInput) {
         custom_color_1 = ${input.customColor1},
         custom_color_2 = ${input.customColor2},
         font_family = ${input.fontFamily},
+        style_preset = ${input.stylePreset},
         example_font_family = ${input.exampleFontFamily},
         example_font_size = ${input.exampleFontSize},
         example_color = ${input.exampleColor},

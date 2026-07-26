@@ -5,8 +5,9 @@
   --custom-block-ink: var(--eduit-primary);
   --custom-block-inverse: #ffffff;
   --custom-block-selection: var(--eduit-accent);
-  --custom-block-example-font-family: "Linotype Feltpen", cursive;
-  --custom-block-example-font-size: 24.5px;
+  --custom-block-example-font-family:
+    var(--brand-example-font-family, "Linotype Feltpen", cursive);
+  --custom-block-example-font-size: var(--brand-example-font-size, 24.5px);
   --custom-block-example-solution-color: #009fe3;
   --custom-block-solution-font-family: "Linotype Feltpen", cursive;
   --custom-block-solution-font-size: 24.5px;
@@ -22,6 +23,7 @@
   --custom-block-question-font-size: 0.875rem;
   --custom-block-meta-font-size: 0.75rem;
   --custom-block-label-line-height: 1.35;
+  --custom-block-heading-h1-font-size: 1.5rem;
 
   font-family: var(--custom-block-font-family);
 }
@@ -29,7 +31,7 @@
 .tiptap[data-brand="eduit"] h1 {
   margin: 1.5rem 0 0.75rem;
   color: #101828;
-  font-size: 1.5rem;
+  font-size: var(--custom-block-heading-h1-font-size);
   font-weight: 700;
   line-height: 1.25;
 }
@@ -44,7 +46,7 @@
 
 .tiptap[data-brand="eduit"] .heading-node--h1 {
   margin: 1.5rem 0 0.75rem;
-  font-size: 1.5rem;
+  font-size: var(--custom-block-heading-h1-font-size);
   font-weight: 700;
   line-height: 1.25;
 }

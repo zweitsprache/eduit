@@ -42,19 +42,30 @@ const SELECT_WORKSHEET = `
   left join brand_profiles b on b.id = w.brand_profile_id
 `;
 
-export async function listWorksheets() {
-  const rows = await sql(`${SELECT_WORKSHEET} order by w.updated_at desc`) as WorksheetRow[];
+export async function listWorksheets(ownerUserId: string, includeAll = false) {
+  const rows = includeAll
+    ? await sql(`${SELECT_WORKSHEET} order by w.updated_at desc`) as WorksheetRow[]
+    : await sql(
+      `${SELECT_WORKSHEET} where w.owner_user_id = $1 order by w.updated_at desc`,
+      [ownerUserId],
+    ) as WorksheetRow[];
   return rows.map(mapRow);
 }
 
-export async function getWorksheet(id: string) {
-  const rows = await sql(`${SELECT_WORKSHEET} where w.id = $1`, [id]) as WorksheetRow[];
+export async function getWorksheet(id: string, ownerUserId: string, includeAll = false) {
+  const rows = includeAll
+    ? await sql(`${SELECT_WORKSHEET} where w.id = $1`, [id]) as WorksheetRow[]
+    : await sql(
+      `${SELECT_WORKSHEET} where w.id = $1 and w.owner_user_id = $2`,
+      [id, ownerUserId],
+    ) as WorksheetRow[];
   return rows[0] ? mapRow(rows[0]) : null;
 }
 
-export async function createWorksheet(input: WorksheetPatch = {}) {
+export async function createWorksheet(ownerUserId: string, input: WorksheetPatch = {}) {
   const rows = await sql`
     insert into worksheets (
+      owner_user_id,
       title,
       content_html,
       document_size,
@@ -62,6 +73,7 @@ export async function createWorksheet(input: WorksheetPatch = {}) {
       brand_profile_id
     )
     values (
+      ${ownerUserId},
       ${input.title?.trim() || 'Untitled Worksheet'},
       ${input.contentHtml ?? ''},
       ${input.documentSize ?? 'a4-portrait'},
@@ -70,7 +82,7 @@ export async function createWorksheet(input: WorksheetPatch = {}) {
     )
     returning *
   ` as WorksheetRow[];
-  return getWorksheet(rows[0].id);
+  return getWorksheet(rows[0].id, ownerUserId);
 }
 
 export function validateWorksheetPatch(value: unknown): WorksheetPatch {
@@ -118,8 +130,13 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
   return patch;
 }
 
-export async function updateWorksheet(id: string, patch: WorksheetPatch) {
-  const current = await getWorksheet(id);
+export async function updateWorksheet(
+  id: string,
+  ownerUserId: string,
+  patch: WorksheetPatch,
+  includeAll = false,
+) {
+  const current = await getWorksheet(id, ownerUserId, includeAll);
   if (!current) throw new Error('Worksheet not found.');
 
   await sql`
@@ -134,11 +151,17 @@ export async function updateWorksheet(id: string, patch: WorksheetPatch) {
           : patch.brandProfileId},
         updated_at = now()
     where id = ${id}
+      and (${includeAll} or owner_user_id = ${ownerUserId})
   `;
-  return getWorksheet(id);
+  return getWorksheet(id, ownerUserId, includeAll);
 }
 
-export async function deleteWorksheet(id: string) {
-  const rows = await sql`delete from worksheets where id = ${id} returning id`;
+export async function deleteWorksheet(id: string, ownerUserId: string, includeAll = false) {
+  const rows = await sql`
+    delete from worksheets
+    where id = ${id}
+      and (${includeAll} or owner_user_id = ${ownerUserId})
+    returning id
+  `;
   if (!rows[0]) throw new Error('Worksheet not found.');
 }

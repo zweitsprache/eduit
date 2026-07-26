@@ -156,7 +156,7 @@ export async function POST(request: Request) {
       preferCSSPageSize: true,
     });
 
-    return new Response(pdf, {
+    return new Response(new Uint8Array(pdf), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': 'attachment; filename="eduit-document.pdf"',

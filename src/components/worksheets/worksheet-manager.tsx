@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ArrowLeft,
   Edit05,
   File02,
   Loading01,
@@ -16,17 +15,19 @@ import type {
   WorksheetStatus,
 } from '@/lib/worksheet-types';
 import { cx } from '@/utils/cx';
+import { useI18n } from '@/components/i18n/locale-provider';
 
 const FIELD_CLASS = 'w-full border border-primary bg-primary px-3 py-2 text-sm text-secondary shadow-xs outline-none focus:border-brand focus:ring-2 focus:ring-brand';
 
-function formatUpdatedAt(value: string) {
-  return new Intl.DateTimeFormat('de-CH', {
+function formatUpdatedAt(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale === 'de' ? 'de-CH' : 'en-GB', {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value));
 }
 
 export function WorksheetManager() {
+  const { locale, t } = useI18n();
   const [worksheets, setWorksheets] = useState<Worksheet[]>([]);
   const [brands, setBrands] = useState<BrandProfile[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -55,18 +56,18 @@ export function WorksheetManager() {
         profiles?: BrandProfile[];
         error?: string;
       };
-      if (!worksheetResponse.ok) throw new Error(worksheetResult.error ?? 'Could not load worksheets.');
-      if (!brandResponse.ok) throw new Error(brandResult.error ?? 'Could not load brands.');
+      if (!worksheetResponse.ok) throw new Error(worksheetResult.error ?? t('documents.loadError'));
+      if (!brandResponse.ok) throw new Error(brandResult.error ?? t('documents.brandLoadError'));
       const nextWorksheets = worksheetResult.worksheets ?? [];
       setWorksheets(nextWorksheets);
       setBrands((brandResult.profiles ?? []).filter(({ isActive }) => isActive));
       setSelectedId((current) => current ?? nextWorksheets[0]?.id ?? null);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Could not load worksheets.');
+      setError(loadError instanceof Error ? loadError.message : t('documents.loadError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load();
@@ -94,15 +95,15 @@ export function WorksheetManager() {
       const response = await fetch('/api/worksheets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Untitled Worksheet' }),
+        body: JSON.stringify({ title: t('documents.untitledWorksheet') }),
       });
       const result = await response.json() as { worksheet?: Worksheet; error?: string };
       if (!response.ok || !result.worksheet) {
-        throw new Error(result.error ?? 'Could not create worksheet.');
+        throw new Error(result.error ?? t('documents.createError'));
       }
       window.location.href = `/editor?worksheet=${encodeURIComponent(result.worksheet.id)}`;
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : 'Could not create worksheet.');
+      setError(createError instanceof Error ? createError.message : t('documents.createError'));
       setSaving(false);
     }
   };
@@ -119,7 +120,7 @@ export function WorksheetManager() {
       });
       const result = await response.json() as { worksheet?: Worksheet; error?: string };
       if (!response.ok || !result.worksheet) {
-        throw new Error(result.error ?? 'Could not update worksheet.');
+        throw new Error(result.error ?? t('documents.updateError'));
       }
       setWorksheets((current) => current
         .map((worksheet) => worksheet.id === result.worksheet!.id
@@ -127,14 +128,14 @@ export function WorksheetManager() {
           : worksheet)
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
     } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : 'Could not update worksheet.');
+      setError(updateError instanceof Error ? updateError.message : t('documents.updateError'));
     } finally {
       setSaving(false);
     }
   };
 
   const deleteWorksheet = async () => {
-    if (!selected || !window.confirm(`Delete “${selected.title}”? This cannot be undone.`)) return;
+    if (!selected || !window.confirm(t('documents.deleteConfirm', { title: selected.title }))) return;
     setSaving(true);
     setError(null);
     try {
@@ -143,30 +144,25 @@ export function WorksheetManager() {
       });
       if (!response.ok) {
         const result = await response.json().catch(() => null) as { error?: string } | null;
-        throw new Error(result?.error ?? 'Could not delete worksheet.');
+        throw new Error(result?.error ?? t('documents.deleteError'));
       }
       const remaining = worksheets.filter(({ id }) => id !== selected.id);
       setWorksheets(remaining);
       setSelectedId(remaining[0]?.id ?? null);
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : 'Could not delete worksheet.');
+      setError(deleteError instanceof Error ? deleteError.message : t('documents.deleteError'));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-secondary text-primary">
-      <header className="border-b border-secondary bg-primary">
+    <div className="min-h-full bg-secondary text-primary">
+      <div className="border-b border-secondary bg-primary">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <a href="/" className="flex size-9 items-center justify-center border border-primary text-quaternary hover:bg-primary_hover">
-              <ArrowLeft className="size-5" />
-            </a>
-            <div>
-              <p className="text-xs font-semibold text-brand-tertiary">Workspace</p>
-              <h1 className="text-xl font-semibold">Worksheets</h1>
-            </div>
+          <div>
+            <p className="text-xs font-semibold text-brand-tertiary">{t('common.workspace')}</p>
+            <h1 className="text-xl font-semibold">{t('documents.title')}</h1>
           </div>
           <button
             type="button"
@@ -175,17 +171,17 @@ export function WorksheetManager() {
             className="flex items-center gap-2 bg-brand-solid px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-brand-solid_hover disabled:opacity-50"
           >
             {saving ? <Loading01 className="size-4.5 animate-spin" /> : <Plus className="size-4.5" />}
-            New worksheet
+            {t('documents.newWorksheet')}
           </button>
         </div>
-      </header>
+      </div>
 
       <div className="mx-auto grid max-w-[1440px] grid-cols-[360px_minmax(0,1fr)] gap-6 p-6">
         <aside className="self-start border border-secondary bg-primary p-3 shadow-xs">
-          <p className="px-2 pb-3 text-sm font-semibold">Documents</p>
+          <p className="px-2 pb-3 text-sm font-semibold">{t('documents.title')}</p>
           {loading ? (
             <div className="flex items-center gap-2 px-2 py-6 text-sm text-quaternary">
-              <Loading01 className="size-4 animate-spin" /> Loading worksheets…
+              <Loading01 className="size-4 animate-spin" /> {t('documents.loading')}
             </div>
           ) : worksheets.length ? (
             <div className="space-y-1">
@@ -203,7 +199,7 @@ export function WorksheetManager() {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold">{worksheet.title}</span>
                     <span className="mt-1 block text-xs text-quaternary">
-                      {worksheet.status} · {formatUpdatedAt(worksheet.updatedAt)}
+                      {t(`common.${worksheet.status}`)} · {formatUpdatedAt(worksheet.updatedAt, locale)}
                     </span>
                   </span>
                 </button>
@@ -212,8 +208,8 @@ export function WorksheetManager() {
           ) : (
             <div className="px-3 py-8 text-center">
               <File02 className="mx-auto size-7 text-fg-quaternary" />
-              <p className="mt-3 text-sm font-semibold">No worksheets yet</p>
-              <p className="mt-1 text-xs text-quaternary">Create one to start editing.</p>
+              <p className="mt-3 text-sm font-semibold">{t('documents.emptyTitle')}</p>
+              <p className="mt-1 text-xs text-quaternary">{t('documents.emptyDescription')}</p>
             </div>
           )}
         </aside>
@@ -225,7 +221,7 @@ export function WorksheetManager() {
                 <div>
                   <h2 className="text-lg font-semibold">{selected.title}</h2>
                   <p className="mt-1 text-xs text-quaternary">
-                    Last updated {formatUpdatedAt(selected.updatedAt)}
+                    {t('documents.lastUpdated', { date: formatUpdatedAt(selected.updatedAt, locale) })}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -235,13 +231,13 @@ export function WorksheetManager() {
                     onClick={deleteWorksheet}
                     className="flex items-center gap-2 border border-primary px-3.5 py-2.5 text-sm font-semibold text-error-primary hover:bg-error-primary disabled:opacity-50"
                   >
-                    <Trash01 className="size-4" /> Delete
+                    <Trash01 className="size-4" /> {t('common.delete')}
                   </button>
                   <a
                     href={`/editor?worksheet=${encodeURIComponent(selected.id)}`}
                     className="flex items-center gap-2 bg-brand-solid px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-solid_hover"
                   >
-                    <Edit05 className="size-4" /> Open editor
+                    <Edit05 className="size-4" /> {t('documents.openEditor')}
                   </a>
                 </div>
               </div>
@@ -254,7 +250,7 @@ export function WorksheetManager() {
 
               <div className="grid grid-cols-2 gap-6 p-6">
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-tertiary" htmlFor="worksheet-title">Title</label>
+                  <label className="block text-xs font-semibold text-tertiary" htmlFor="worksheet-title">{t('documents.fieldTitle')}</label>
                   <input
                     id="worksheet-title"
                     className={`${FIELD_CLASS} mt-2`}
@@ -268,7 +264,7 @@ export function WorksheetManager() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-tertiary" htmlFor="worksheet-status">Status</label>
+                  <label className="block text-xs font-semibold text-tertiary" htmlFor="worksheet-status">{t('common.status')}</label>
                   <select
                     id="worksheet-status"
                     className={`${FIELD_CLASS} mt-2`}
@@ -277,12 +273,12 @@ export function WorksheetManager() {
                       status: event.target.value as WorksheetStatus,
                     })}
                   >
-                    <option value="draft">Draft</option>
-                    <option value="published">Published</option>
+                    <option value="draft">{t('common.draft')}</option>
+                    <option value="published">{t('common.published')}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-tertiary" htmlFor="worksheet-size">Document size</label>
+                  <label className="block text-xs font-semibold text-tertiary" htmlFor="worksheet-size">{t('common.documentSize')}</label>
                   <select
                     id="worksheet-size"
                     className={`${FIELD_CLASS} mt-2`}
@@ -291,14 +287,14 @@ export function WorksheetManager() {
                       documentSize: event.target.value as WorksheetDocumentSize,
                     })}
                   >
-                    <option value="a4-portrait">DIN A4 Portrait</option>
-                    <option value="a4-landscape">DIN A4 Landscape</option>
-                    <option value="letter-portrait">US Letter Portrait</option>
-                    <option value="letter-landscape">US Letter Landscape</option>
+                    <option value="a4-portrait">{t('documents.a4Portrait')}</option>
+                    <option value="a4-landscape">{t('documents.a4Landscape')}</option>
+                    <option value="letter-portrait">{t('documents.letterPortrait')}</option>
+                    <option value="letter-landscape">{t('documents.letterLandscape')}</option>
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-tertiary" htmlFor="worksheet-brand">Brand profile</label>
+                  <label className="block text-xs font-semibold text-tertiary" htmlFor="worksheet-brand">{t('documents.brandProfile')}</label>
                   <select
                     id="worksheet-brand"
                     className={`${FIELD_CLASS} mt-2`}
@@ -307,7 +303,7 @@ export function WorksheetManager() {
                       brandProfileId: event.target.value || null,
                     })}
                   >
-                    <option value="">No brand profile</option>
+                    <option value="">{t('documents.noBrandProfile')}</option>
                     {brands.map((brand) => (
                       <option key={brand.id} value={brand.id}>{brand.name}</option>
                     ))}
@@ -318,12 +314,12 @@ export function WorksheetManager() {
           ) : (
             <div className="flex min-h-80 flex-col items-center justify-center p-8 text-center">
               <File02 className="size-8 text-fg-quaternary" />
-              <p className="mt-3 text-sm font-semibold">Select a worksheet</p>
-              <p className="mt-1 text-xs text-quaternary">Choose a document or create a new one.</p>
+              <p className="mt-3 text-sm font-semibold">{t('documents.selectTitle')}</p>
+              <p className="mt-1 text-xs text-quaternary">{t('documents.selectDescription')}</p>
             </div>
           )}
         </section>
       </div>
-    </main>
+    </div>
   );
 }

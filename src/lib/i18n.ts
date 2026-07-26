@@ -1,0 +1,214 @@
+export const locales = ['en', 'de'] as const;
+
+export type Locale = (typeof locales)[number];
+
+export const defaultLocale: Locale = 'de';
+export const localeCookieName = 'eduit-locale';
+
+export function isLocale(value: string | undefined): value is Locale {
+  return locales.includes(value as Locale);
+}
+
+export const messages = {
+  en: {
+    common: {
+      account: 'Account',
+      admin: 'Admin',
+      billing: 'Billing',
+      delete: 'Delete',
+      documentSize: 'Document size',
+      documents: 'Documents',
+      draft: 'Draft',
+      english: 'English',
+      german: 'German',
+      language: 'Language',
+      published: 'Published',
+      save: 'Save',
+      settings: 'Settings',
+      signOut: 'Sign out',
+      status: 'Status',
+      workspace: 'Workspace',
+    },
+    navigation: {
+      dashboard: 'Dashboard',
+      documents: 'Documents',
+      lessons: 'Lessons',
+      media: 'Media',
+      settings: 'Settings',
+      brandProfiles: 'Brand profiles',
+      accountSettings: 'Account settings',
+    },
+    documents: {
+      title: 'Documents',
+      newWorksheet: 'New worksheet',
+      untitledWorksheet: 'Untitled worksheet',
+      loading: 'Loading worksheets…',
+      emptyTitle: 'No worksheets yet',
+      emptyDescription: 'Create one to start editing.',
+      lastUpdated: 'Last updated {date}',
+      openEditor: 'Open editor',
+      fieldTitle: 'Title',
+      brandProfile: 'Brand profile',
+      noBrandProfile: 'No brand profile',
+      selectTitle: 'Select a worksheet',
+      selectDescription: 'Choose a document or create a new one.',
+      deleteConfirm: 'Delete “{title}”? This cannot be undone.',
+      loadError: 'Could not load worksheets.',
+      brandLoadError: 'Could not load brands.',
+      createError: 'Could not create worksheet.',
+      updateError: 'Could not update worksheet.',
+      deleteError: 'Could not delete worksheet.',
+      a4Portrait: 'DIN A4 portrait',
+      a4Landscape: 'DIN A4 landscape',
+      letterPortrait: 'US Letter portrait',
+      letterLandscape: 'US Letter landscape',
+    },
+    account: {
+      section: 'Account',
+      profile: 'Your profile',
+      name: 'Name',
+      email: 'Email',
+      saveProfile: 'Save profile',
+      profileSaved: 'Profile saved.',
+      subscription: 'Subscription',
+      noSubscription: 'No active subscription',
+      currentPeriod: 'Current period ends {date}',
+      choosePro: 'Choose Pro',
+      chooseScale: 'Choose Scale',
+      checkoutError: 'Checkout could not be started.',
+      userFallback: 'Eduit user',
+    },
+    editor: {
+      allChangesSaved: 'All changes saved',
+      saving: 'Saving…',
+      home: 'Home',
+      exporting: 'Exporting…',
+      exportPdf: 'Export PDF',
+      publish: 'Publish',
+    },
+    home: {
+      eyebrow: 'Next.js + Untitled UI + Neon + Auth',
+      title: 'Your education app foundation is ready.',
+      description: 'A polished starter with the Untitled UI design system, Tiptap editor, Neon Postgres, and authentication.',
+      signIn: 'Sign in',
+      openEditor: 'Open editor',
+      manageWorksheets: 'Manage worksheets',
+      manageBrands: 'Manage brands',
+      neonDocs: 'Neon docs',
+    },
+  },
+  de: {
+    common: {
+      account: 'Konto',
+      admin: 'Admin',
+      billing: 'Abrechnung',
+      delete: 'Löschen',
+      documentSize: 'Dokumentformat',
+      documents: 'Dokumente',
+      draft: 'Entwurf',
+      english: 'Englisch',
+      german: 'Deutsch',
+      language: 'Sprache',
+      published: 'Veröffentlicht',
+      save: 'Speichern',
+      settings: 'Einstellungen',
+      signOut: 'Abmelden',
+      status: 'Status',
+      workspace: 'Arbeitsbereich',
+    },
+    navigation: {
+      dashboard: 'Übersicht',
+      documents: 'Dokumente',
+      lessons: 'Lektionen',
+      media: 'Medien',
+      settings: 'Einstellungen',
+      brandProfiles: 'Markenprofile',
+      accountSettings: 'Kontoeinstellungen',
+    },
+    documents: {
+      title: 'Dokumente',
+      newWorksheet: 'Neues Arbeitsblatt',
+      untitledWorksheet: 'Unbenanntes Arbeitsblatt',
+      loading: 'Arbeitsblätter werden geladen…',
+      emptyTitle: 'Noch keine Arbeitsblätter',
+      emptyDescription: 'Erstelle ein Arbeitsblatt, um loszulegen.',
+      lastUpdated: 'Zuletzt aktualisiert: {date}',
+      openEditor: 'Editor öffnen',
+      fieldTitle: 'Titel',
+      brandProfile: 'Markenprofil',
+      noBrandProfile: 'Kein Markenprofil',
+      selectTitle: 'Arbeitsblatt auswählen',
+      selectDescription: 'Wähle ein Dokument aus oder erstelle ein neues.',
+      deleteConfirm: '„{title}“ löschen? Dies kann nicht rückgängig gemacht werden.',
+      loadError: 'Arbeitsblätter konnten nicht geladen werden.',
+      brandLoadError: 'Marken konnten nicht geladen werden.',
+      createError: 'Arbeitsblatt konnte nicht erstellt werden.',
+      updateError: 'Arbeitsblatt konnte nicht aktualisiert werden.',
+      deleteError: 'Arbeitsblatt konnte nicht gelöscht werden.',
+      a4Portrait: 'DIN A4 Hochformat',
+      a4Landscape: 'DIN A4 Querformat',
+      letterPortrait: 'US Letter Hochformat',
+      letterLandscape: 'US Letter Querformat',
+    },
+    account: {
+      section: 'Konto',
+      profile: 'Dein Profil',
+      name: 'Name',
+      email: 'E-Mail',
+      saveProfile: 'Profil speichern',
+      profileSaved: 'Profil gespeichert.',
+      subscription: 'Abonnement',
+      noSubscription: 'Kein aktives Abonnement',
+      currentPeriod: 'Aktuelle Periode bis {date}',
+      choosePro: 'Pro wählen',
+      chooseScale: 'Scale wählen',
+      checkoutError: 'Checkout konnte nicht gestartet werden.',
+      userFallback: 'Eduit-Nutzer',
+    },
+    editor: {
+      allChangesSaved: 'Alle Änderungen gespeichert',
+      saving: 'Wird gespeichert…',
+      home: 'Startseite',
+      exporting: 'Wird exportiert…',
+      exportPdf: 'PDF exportieren',
+      publish: 'Veröffentlichen',
+    },
+    home: {
+      eyebrow: 'Next.js + Untitled UI + Neon + Auth',
+      title: 'Die Grundlage für deine Bildungs-App ist bereit.',
+      description: 'Ein ausgereifter Starter mit Untitled UI, Tiptap-Editor, Neon Postgres und Authentifizierung.',
+      signIn: 'Anmelden',
+      openEditor: 'Editor öffnen',
+      manageWorksheets: 'Arbeitsblätter verwalten',
+      manageBrands: 'Marken verwalten',
+      neonDocs: 'Neon-Dokumentation',
+    },
+  },
+} as const;
+
+export type MessageKey =
+  | `common.${keyof typeof messages.en.common}`
+  | `navigation.${keyof typeof messages.en.navigation}`
+  | `documents.${keyof typeof messages.en.documents}`
+  | `account.${keyof typeof messages.en.account}`
+  | `editor.${keyof typeof messages.en.editor}`
+  | `home.${keyof typeof messages.en.home}`;
+
+export function translate(
+  locale: Locale,
+  key: MessageKey,
+  values?: Record<string, string | number>,
+) {
+  const [namespace, name] = key.split('.') as [
+    keyof typeof messages.en,
+    string,
+  ];
+  const dictionary = messages[locale][namespace] as Record<string, string>;
+  let message = dictionary[name] ?? key;
+
+  for (const [placeholder, value] of Object.entries(values ?? {})) {
+    message = message.replaceAll(`{${placeholder}}`, String(value));
+  }
+
+  return message;
+}

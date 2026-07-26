@@ -11,8 +11,11 @@ export const DATE_FORMATS = [
   'yyyy-MM-dd',
 ] as const;
 
+export const STYLE_PRESETS = ['educational', 'academic'] as const;
+
 export type BrandNumberFormat = typeof NUMBER_FORMATS[number];
 export type BrandProfileDateFormat = typeof DATE_FORMATS[number];
+export type BrandStylePreset = typeof STYLE_PRESETS[number];
 export type BrandInstructionBadgeStyle =
   | 'filled'
   | 'primary-text'
@@ -91,6 +94,7 @@ export type BrandProfile = {
   customColor1: string;
   customColor2: string;
   fontFamily: string;
+  stylePreset: BrandStylePreset;
   exampleFontFamily: string;
   exampleFontSize: number;
   exampleColor: string;

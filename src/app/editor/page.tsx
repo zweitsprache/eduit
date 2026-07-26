@@ -38,6 +38,9 @@ import {
 } from '@untitledui/icons';
 import { Button } from '@/components/base/buttons/button';
 import { cx } from '@/utils/cx';
+import { SidebarAccountCard } from '@/components/app/sidebar-account-card';
+import { LanguageSwitcher } from '@/components/i18n/language-switcher';
+import { useI18n } from '@/components/i18n/locale-provider';
 import {
   MCQ,
   type MCQAnswerMode,
@@ -183,6 +186,7 @@ const DEFAULT_DOCUMENT_BRAND = {
   customColor1: ACTIVE_CUSTOM_BLOCK_BRAND.customColor1,
   customColor2: ACTIVE_CUSTOM_BLOCK_BRAND.customColor2,
   fontFamily: ACTIVE_CUSTOM_BLOCK_BRAND.fontFamily,
+  stylePreset: ACTIVE_CUSTOM_BLOCK_BRAND.stylePreset,
   exampleFontFamily: ACTIVE_CUSTOM_BLOCK_BRAND.exampleFontFamily,
   exampleFontSize: ACTIVE_CUSTOM_BLOCK_BRAND.exampleFontSize,
   exampleColor: ACTIVE_CUSTOM_BLOCK_BRAND.exampleColor,
@@ -555,7 +559,7 @@ function ToolbarButton({
 
 const NAV_ITEMS = [
   { label: 'Dashboard', Icon: Grid01, href: '#' },
-  { label: 'Documents', Icon: File02, href: '/worksheets', active: true },
+  { label: 'Documents', Icon: File02, href: '/documents', active: true },
   { label: 'Lessons', Icon: GraduationHat01, href: '#' },
   { label: 'Media', Icon: Image01, href: '#' },
   { label: 'Settings', Icon: Settings01, href: '#' },
@@ -601,6 +605,7 @@ const WORD_GRID_DIRECTION_OPTIONS: {
 
 
 export default function EditorPage() {
+  const { t } = useI18n();
   const [saved, setSaved] = useState(true);
   const [docSize, setDocSize] = useState('a4-portrait');
   const [brandProfiles, setBrandProfiles] = useState<BrandProfile[]>([]);
@@ -755,6 +760,7 @@ export default function EditorPage() {
       attributes: {
         class: 'outline-none',
         'data-brand': ACTIVE_CUSTOM_BLOCK_BRAND.id,
+        'data-style-preset': ACTIVE_CUSTOM_BLOCK_BRAND.stylePreset,
         style: `--custom-block-font-family: ${ACTIVE_CUSTOM_BLOCK_BRAND.fontFamily}`,
       },
     },
@@ -965,6 +971,7 @@ export default function EditorPage() {
     const editorElement = editor.view.dom;
     // Eduit supplies the structural defaults; profiles override brand tokens.
     editorElement.setAttribute('data-brand', 'eduit');
+    editorElement.setAttribute('data-style-preset', activeBrand.stylePreset);
     editorElement.style.setProperty('--eduit-primary', activeBrand.primaryColor);
     editorElement.style.setProperty('--eduit-accent', activeBrand.accentColor);
     editorElement.style.setProperty(
@@ -980,11 +987,11 @@ export default function EditorPage() {
       activeBrand.fontFamily,
     );
     editorElement.style.setProperty(
-      '--custom-block-example-font-family',
+      '--brand-example-font-family',
       activeBrand.exampleFontFamily,
     );
     editorElement.style.setProperty(
-      '--custom-block-example-font-size',
+      '--brand-example-font-size',
       `${activeBrand.exampleFontSize}px`,
     );
     editorElement.style.setProperty(
@@ -1084,6 +1091,13 @@ export default function EditorPage() {
         return Math.max(1, width);
       };
       const taskFormat = activeBrand.instructionNumberFormat;
+      const editorStyles = getComputedStyle(editorElement);
+      const bodyFontSize = editorStyles
+        .getPropertyValue('--custom-block-body-font-size')
+        .trim() || '0.875rem';
+      const headingOneFontSize = editorStyles
+        .getPropertyValue('--custom-block-heading-h1-font-size')
+        .trim() || '1.5rem';
       const taskSample = taskFormat === 'upper-alpha'
         ? 'A'
         : taskFormat === 'lower-alpha'
@@ -1095,7 +1109,7 @@ export default function EditorPage() {
         '--brand-task-number-measured-width',
         `${measure(
           taskSample,
-          '0.875rem',
+          bodyFontSize,
           activeBrand.instructionNumberFontWeight,
         )}px`,
       );
@@ -1110,7 +1124,7 @@ export default function EditorPage() {
           '--brand-heading-fixed-number-width',
           `${measure(
             headingSample,
-            '1.5rem',
+            headingOneFontSize,
             activeBrand.headingStyles[1].numberFontWeight,
           )}px`,
         );
@@ -2007,9 +2021,12 @@ export default function EditorPage() {
           <span className="text-sm font-semibold text-secondary">{worksheetTitle}</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-quaternary">{saved ? 'All changes saved' : 'Saving…'}</span>
+          <span className="text-xs text-quaternary">
+            {saved ? t('editor.allChangesSaved') : t('editor.saving')}
+          </span>
+          <LanguageSwitcher compact />
           <Button color="secondary" size="md" iconLeading={<Home03 className="size-4.5" />} onPress={() => { window.location.href = '/'; }}>
-            Home
+            {t('editor.home')}
           </Button>
           <Button
             color="secondary"
@@ -2020,9 +2037,9 @@ export default function EditorPage() {
               : <Download01 className="size-4.5" />}
             onPress={exportPDF}
           >
-            {exportingPDF ? 'Exporting…' : 'Export PDF'}
+            {exportingPDF ? t('editor.exporting') : t('editor.exportPdf')}
           </Button>
-          <Button color="primary" size="md">Publish</Button>
+          <Button color="primary" size="md">{t('editor.publish')}</Button>
         </div>
       </header>
 
@@ -2031,7 +2048,7 @@ export default function EditorPage() {
 
         {/* Left dashboard sidebar (sticky) */}
         <aside className="editor-left-sidebar hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-secondary bg-primary p-4 md:flex">
-          <p className="px-3 pb-2 text-xs font-semibold text-quaternary">Workspace</p>
+          <p className="px-3 pb-2 text-xs font-semibold text-quaternary">{t('common.workspace')}</p>
           <nav className="flex flex-col gap-1">
             {NAV_ITEMS.map(({ label, Icon, href, active }) => (
               <a
@@ -2045,7 +2062,15 @@ export default function EditorPage() {
                 )}
               >
                 <Icon className={cx('size-5', active ? 'text-fg-brand-primary' : 'text-fg-quaternary')} />
-                {label}
+                {label === 'Documents'
+                  ? t('navigation.documents')
+                  : label === 'Lessons'
+                    ? t('navigation.lessons')
+                    : label === 'Media'
+                      ? t('navigation.media')
+                      : label === 'Settings'
+                        ? t('navigation.settings')
+                        : label}
               </a>
             ))}
           </nav>
@@ -2053,21 +2078,15 @@ export default function EditorPage() {
             <p className="px-3 pb-2 text-xs font-semibold text-quaternary">Admin</p>
             <nav>
               <a
-                href="/admin/brands"
+                href="/brands"
                 className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold text-secondary transition hover:bg-primary_hover"
               >
                 <Settings01 className="size-5 text-fg-quaternary" />
-                Brand Profiles
+                {t('navigation.brandProfiles')}
               </a>
             </nav>
           </div>
-          <div className="mt-auto rounded-xl border border-secondary bg-secondary p-4">
-            <p className="text-sm font-semibold text-secondary">Storage</p>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-quaternary">
-              <div className="h-full w-1/3 rounded-full bg-brand-solid" />
-            </div>
-            <p className="mt-2 text-xs text-tertiary">2.1 GB of 6 GB used</p>
-          </div>
+          <SidebarAccountCard />
         </aside>
 
         {/* Editor column */}
@@ -2093,7 +2112,10 @@ export default function EditorPage() {
           </div>
 
           {/* Editable area — Pages renders A4 pages on this backdrop */}
-          <div className="editor-workspace min-h-0 flex-1 overflow-auto bg-tertiary px-4 py-8">
+          <div
+            className="editor-workspace min-h-0 flex-1 overflow-auto bg-tertiary px-4 py-8"
+            data-i18n-content
+          >
             <EditorContent editor={editor} className="editor-content mx-auto w-fit" />
           </div>
         </main>
