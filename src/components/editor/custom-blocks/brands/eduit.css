@@ -5,6 +5,12 @@
   --custom-block-ink: var(--eduit-primary);
   --custom-block-inverse: #ffffff;
   --custom-block-selection: var(--eduit-accent);
+  --custom-block-example-font-family: "Linotype Feltpen", cursive;
+  --custom-block-example-font-size: 24.5px;
+  --custom-block-example-solution-color: #009fe3;
+  --custom-block-solution-font-family: "Linotype Feltpen", cursive;
+  --custom-block-solution-font-size: 24.5px;
+  --custom-block-solution-color: #079455;
 
   --custom-block-row-border-width: 1px;
   --custom-block-row-border-color: var(--color-border-secondary);

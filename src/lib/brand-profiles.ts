@@ -21,6 +21,12 @@ type BrandProfileRow = {
   custom_color_1: string;
   custom_color_2: string;
   font_family: string;
+  example_font_family: string;
+  example_font_size: number | string;
+  example_color: string;
+  solution_font_family: string;
+  solution_font_size: number | string;
+  solution_color: string;
   logo_url: string | null;
   logo_scale: number | string;
   instruction_number_format: BrandProfile['instructionNumberFormat'];
@@ -50,6 +56,12 @@ function mapRow(row: BrandProfileRow): BrandProfile {
     customColor1: row.custom_color_1,
     customColor2: row.custom_color_2,
     fontFamily: row.font_family,
+    exampleFontFamily: row.example_font_family,
+    exampleFontSize: Number(row.example_font_size),
+    exampleColor: row.example_color,
+    solutionFontFamily: row.solution_font_family,
+    solutionFontSize: Number(row.solution_font_size),
+    solutionColor: row.solution_color,
     logoUrl: row.logo_url,
     logoScale: Number(row.logo_scale),
     instructionNumberFormat: row.instruction_number_format,
@@ -146,6 +158,28 @@ export function validateBrandProfileInput(value: unknown): BrandProfileInput {
     customColor1: color('customColor1'),
     customColor2: color('customColor2'),
     fontFamily: text('fontFamily'),
+    exampleFontFamily: text('exampleFontFamily'),
+    exampleFontSize: Math.min(
+      72,
+      Math.max(
+        8,
+        Number.isFinite(Number(input.exampleFontSize))
+          ? Number(input.exampleFontSize)
+          : 24.5,
+      ),
+    ),
+    exampleColor: color('exampleColor'),
+    solutionFontFamily: text('solutionFontFamily'),
+    solutionFontSize: Math.min(
+      72,
+      Math.max(
+        8,
+        Number.isFinite(Number(input.solutionFontSize))
+          ? Number(input.solutionFontSize)
+          : 24.5,
+      ),
+    ),
+    solutionColor: color('solutionColor'),
     logoUrl: text('logoUrl', false) || null,
     logoScale: Math.min(
       2,
@@ -199,6 +233,8 @@ export async function createBrandProfile(input: BrandProfileInput) {
     insert into brand_profiles (
       slug, name, description, primary_color, accent_color,
       custom_color_1, custom_color_2, font_family,
+      example_font_family, example_font_size, example_color,
+      solution_font_family, solution_font_size, solution_color,
       logo_url, logo_scale,
       instruction_number_format, instruction_number_color,
       instruction_number_font_weight, instruction_badge_style,
@@ -209,7 +245,10 @@ export async function createBrandProfile(input: BrandProfileInput) {
     ) values (
       ${input.slug}, ${input.name}, ${input.description}, ${input.primaryColor},
       ${input.accentColor}, ${input.customColor1}, ${input.customColor2},
-      ${input.fontFamily}, ${input.logoUrl},
+      ${input.fontFamily}, ${input.exampleFontFamily},
+      ${input.exampleFontSize}, ${input.exampleColor},
+      ${input.solutionFontFamily}, ${input.solutionFontSize},
+      ${input.solutionColor}, ${input.logoUrl},
       ${input.logoScale},
       ${input.instructionNumberFormat}, ${input.instructionNumberColor},
       ${input.instructionNumberFontWeight}, ${input.instructionBadgeStyle},
@@ -236,6 +275,12 @@ export async function updateBrandProfile(id: string, input: BrandProfileInput) {
         custom_color_1 = ${input.customColor1},
         custom_color_2 = ${input.customColor2},
         font_family = ${input.fontFamily},
+        example_font_family = ${input.exampleFontFamily},
+        example_font_size = ${input.exampleFontSize},
+        example_color = ${input.exampleColor},
+        solution_font_family = ${input.solutionFontFamily},
+        solution_font_size = ${input.solutionFontSize},
+        solution_color = ${input.solutionColor},
         logo_url = ${input.logoUrl},
         logo_scale = ${input.logoScale},
         instruction_number_format = ${input.instructionNumberFormat},

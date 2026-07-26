@@ -38,6 +38,12 @@ export type CustomBlockBrand = {
   customColor1: string;
   customColor2: string;
   fontFamily: string;
+  exampleFontFamily: string;
+  exampleFontSize: number;
+  exampleColor: string;
+  solutionFontFamily: string;
+  solutionFontSize: number;
+  solutionColor: string;
   instructionNumberFormat: InstructionNumberFormat;
   instructionNumberColor: BrandInstructionNumberColor;
   instructionNumberFontWeight: BrandFontWeight;
@@ -61,6 +67,12 @@ export const EDUIT_BRAND = {
   customColor1: '#101828',
   customColor2: '#667085',
   fontFamily: '"Encode Sans Semi Condensed", sans-serif',
+  exampleFontFamily: '"Linotype Feltpen", cursive',
+  exampleFontSize: 24.5,
+  exampleColor: '#009fe3',
+  solutionFontFamily: '"Linotype Feltpen", cursive',
+  solutionFontSize: 24.5,
+  solutionColor: '#079455',
   instructionNumberFormat: 'upper-alpha',
   instructionNumberColor: 'inverse',
   instructionNumberFontWeight: 700,

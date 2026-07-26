@@ -100,7 +100,16 @@ export async function POST(request: Request) {
   const browser = await chromium.launch({ executablePath, headless: true });
   try {
     const page = await browser.newPage();
+    const renderShellUrl = new URL('/__eduit-pdf-render-shell__', origin).href;
     await page.route('**/*', async (route) => {
+      if (route.request().url() === renderShellUrl) {
+        await route.fulfill({
+          contentType: 'text/html',
+          body: '<!doctype html><html><head></head><body></body></html>',
+        });
+        return;
+      }
+
       const url = new URL(route.request().url());
       const allowed = url.origin === origin
         || url.hostname === 'fonts.googleapis.com'
@@ -110,6 +119,11 @@ export async function POST(request: Request) {
       if (allowed) await route.continue();
       else await route.abort();
     });
+    // page.setContent() otherwise runs from an opaque `null` origin. Chrome
+    // then rejects our same-origin font files for CORS, despite the document's
+    // base URL. Start from a controlled same-origin shell before injecting the
+    // printable document.
+    await page.goto(renderShellUrl, { waitUntil: 'domcontentloaded' });
     await page.setContent(html, { waitUntil: 'networkidle' });
     await page.evaluate(async ({ pageHeight }) => {
       await document.fonts.ready;

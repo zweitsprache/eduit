@@ -91,6 +91,12 @@ export type BrandProfile = {
   customColor1: string;
   customColor2: string;
   fontFamily: string;
+  exampleFontFamily: string;
+  exampleFontSize: number;
+  exampleColor: string;
+  solutionFontFamily: string;
+  solutionFontSize: number;
+  solutionColor: string;
   logoUrl: string | null;
   logoScale: number;
   instructionNumberFormat: BrandNumberFormat;

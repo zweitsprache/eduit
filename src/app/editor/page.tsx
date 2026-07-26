@@ -152,6 +152,30 @@ const SelectablePageBreak = PageBreak.extend({
 const DOCUMENT_HEADER = '<p></p>';
 const DOCUMENT_CREATOR = 'Creator name';
 const DOCUMENT_ID = 'Document ID';
+
+function serializeStyleSheet(
+  styleSheet: CSSStyleSheet,
+  visited: Set<CSSStyleSheet>,
+): string {
+  if (visited.has(styleSheet)) return '';
+  visited.add(styleSheet);
+
+  return Array.from(styleSheet.cssRules).map((rule) => {
+    if (rule.type !== CSSRule.IMPORT_RULE) return rule.cssText;
+
+    const importRule = rule as CSSImportRule;
+    if (!importRule.styleSheet) return rule.cssText;
+
+    try {
+      const importedCss = serializeStyleSheet(importRule.styleSheet, visited);
+      const media = importRule.media.mediaText;
+      return media ? `@media ${media}{${importedCss}}` : importedCss;
+    } catch {
+      return rule.cssText;
+    }
+  }).join('\n');
+}
+
 const DEFAULT_DOCUMENT_BRAND = {
   name: ACTIVE_CUSTOM_BLOCK_BRAND.name,
   primaryColor: ACTIVE_CUSTOM_BLOCK_BRAND.primaryColor,
@@ -159,6 +183,12 @@ const DEFAULT_DOCUMENT_BRAND = {
   customColor1: ACTIVE_CUSTOM_BLOCK_BRAND.customColor1,
   customColor2: ACTIVE_CUSTOM_BLOCK_BRAND.customColor2,
   fontFamily: ACTIVE_CUSTOM_BLOCK_BRAND.fontFamily,
+  exampleFontFamily: ACTIVE_CUSTOM_BLOCK_BRAND.exampleFontFamily,
+  exampleFontSize: ACTIVE_CUSTOM_BLOCK_BRAND.exampleFontSize,
+  exampleColor: ACTIVE_CUSTOM_BLOCK_BRAND.exampleColor,
+  solutionFontFamily: ACTIVE_CUSTOM_BLOCK_BRAND.solutionFontFamily,
+  solutionFontSize: ACTIVE_CUSTOM_BLOCK_BRAND.solutionFontSize,
+  solutionColor: ACTIVE_CUSTOM_BLOCK_BRAND.solutionColor,
   logoUrl: '/logo/eduit_logo.svg',
   logoScale: 1,
   instructionNumberFormat:
@@ -948,6 +978,30 @@ export default function EditorPage() {
     editorElement.style.setProperty(
       '--custom-block-font-family',
       activeBrand.fontFamily,
+    );
+    editorElement.style.setProperty(
+      '--custom-block-example-font-family',
+      activeBrand.exampleFontFamily,
+    );
+    editorElement.style.setProperty(
+      '--custom-block-example-font-size',
+      `${activeBrand.exampleFontSize}px`,
+    );
+    editorElement.style.setProperty(
+      '--custom-block-example-solution-color',
+      activeBrand.exampleColor,
+    );
+    editorElement.style.setProperty(
+      '--custom-block-solution-font-family',
+      activeBrand.solutionFontFamily,
+    );
+    editorElement.style.setProperty(
+      '--custom-block-solution-font-size',
+      `${activeBrand.solutionFontSize}px`,
+    );
+    editorElement.style.setProperty(
+      '--custom-block-solution-color',
+      activeBrand.solutionColor,
     );
     editorElement.style.setProperty(
       '--document-brand-logo',
@@ -1894,11 +1948,10 @@ export default function EditorPage() {
 
     try {
       await document.fonts.ready;
+      const visitedStyleSheets = new Set<CSSStyleSheet>();
       const head = Array.from(document.styleSheets).map((styleSheet) => {
         try {
-          const css = Array.from(styleSheet.cssRules)
-            .map((rule) => rule.cssText)
-            .join('\n')
+          const css = serializeStyleSheet(styleSheet, visitedStyleSheets)
             .replace(/<\/style/gi, '<\\/style');
           return `<style>${css}</style>`;
         } catch {
@@ -4263,7 +4316,7 @@ export default function EditorPage() {
                       onChange={(event) => updateDialogueItem(item.id, {
                         text: event.target.value,
                       })}
-                      className="mt-2 ml-7 w-[calc(100%_-_1.75rem)] resize-y border border-primary bg-primary px-2.5 py-2 font-mono text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                      className="mt-2 ml-7 w-[calc(100%_-_1.75rem)] resize-y border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
                     />
                   </div>
                 ))}
@@ -4458,7 +4511,7 @@ export default function EditorPage() {
                   'text',
                   event.target.value,
                 )}
-                className="mt-2 w-full resize-y rounded-lg border border-primary bg-primary px-3 py-2 font-mono text-sm text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
+                className="mt-2 w-full resize-y rounded-lg border border-primary bg-primary px-3 py-2 text-sm text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
               />
               <p className="mt-2 text-xs leading-5 text-quaternary">
                 Insert a blank with <code className="rounded bg-secondary px-1 py-0.5">{'{{blank:answer}}'}</code>.

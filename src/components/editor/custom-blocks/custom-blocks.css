@@ -30,12 +30,6 @@
   --custom-block-matrix-options-max-width: 70%;
   --custom-block-blank-min-width: 7rem;
   --custom-block-fill-blank-line-height: 2rem;
-  --custom-block-solution-color: var(--color-fg-success-primary);
-  --custom-block-example-solution-color: #009fe3;
-  --custom-block-solution-font-family: "Linotype Feltpen", cursive;
-  --custom-block-solution-font-size: calc(
-    var(--custom-block-body-font-size) * 1.75
-  );
   --custom-block-solution-baseline-shift: -0.1em;
   --custom-block-selection-offset: 0.75rem;
   --brand-task-number-container-width: var(--custom-block-badge-size);
@@ -659,6 +653,8 @@
   )
   .fill-in-the-blank-node__blank[data-example="true"]::after {
   color: var(--custom-block-example-solution-color);
+  font-family: var(--custom-block-example-font-family);
+  font-size: var(--custom-block-example-font-size);
 }
 
 .tiptap[data-show-solutions="true"]
@@ -958,6 +954,8 @@
     .sorting-categories-node__writing-line
   )[data-example="true"]::after {
   color: var(--custom-block-example-solution-color);
+  font-family: var(--custom-block-example-font-family);
+  font-size: var(--custom-block-example-font-size);
 }
 
 .tiptap[data-show-solutions="true"]
@@ -1214,10 +1212,11 @@
   border-color: transparent;
   background: color-mix(
     in srgb,
-    var(--custom-block-example-solution-color) 8%,
+    var(--custom-block-solution-color) 8%,
     var(--color-bg-primary)
   );
-  color: var(--custom-block-example-solution-color);
+  color: var(--custom-block-solution-color);
+  font-weight: 500;
 }
 
 .inline-choice-node__rows {
@@ -1392,6 +1391,8 @@
 
 .mini-form-node__answer[data-example="true"]::after {
   color: var(--custom-block-example-solution-color);
+  font-family: var(--custom-block-example-font-family);
+  font-size: var(--custom-block-example-font-size);
 }
 
 .tiptap[data-show-solutions="true"]

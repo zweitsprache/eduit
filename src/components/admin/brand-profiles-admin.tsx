@@ -29,6 +29,12 @@ const EMPTY_PROFILE: BrandProfileInput = {
   customColor1: '#101828',
   customColor2: '#667085',
   fontFamily: '"Encode Sans Semi Condensed", sans-serif',
+  exampleFontFamily: '"Linotype Feltpen", cursive',
+  exampleFontSize: 24.5,
+  exampleColor: '#009fe3',
+  solutionFontFamily: '"Linotype Feltpen", cursive',
+  solutionFontSize: 24.5,
+  solutionColor: '#079455',
   logoUrl: null,
   logoScale: 1,
   instructionNumberFormat: 'upper-alpha',
@@ -329,7 +335,7 @@ export function BrandProfilesAdmin() {
                     id={`brand-${key}`}
                     value={draft[key]}
                     onChange={(event) => update(key, event.target.value)}
-                    className="min-w-0 flex-1 border border-primary bg-primary px-3 py-2 font-mono text-sm uppercase outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                    className="min-w-0 flex-1 border border-primary bg-primary px-3 py-2 text-sm uppercase outline-none focus:border-brand focus:ring-2 focus:ring-brand"
                   />
                 </div>
               </div>
@@ -373,6 +379,134 @@ export function BrandProfilesAdmin() {
                 Scaling keeps the logo’s top-right origin and does not change
                 header geometry.
               </p>
+            </div>
+
+            <div className="col-span-2 border-t border-secondary pt-5">
+              <h3 className="text-sm font-semibold">Solution styling</h3>
+            </div>
+            <div>
+              <label className={LABEL_CLASS} htmlFor="brand-solution-font">
+                Solution font stack
+              </label>
+              <input
+                id="brand-solution-font"
+                className={FIELD_CLASS}
+                value={draft.solutionFontFamily}
+                onChange={(event) => update(
+                  'solutionFontFamily',
+                  event.target.value,
+                )}
+              />
+            </div>
+            <div>
+              <label className={LABEL_CLASS} htmlFor="brand-solution-font-size">
+                Solution font size (px)
+              </label>
+              <input
+                id="brand-solution-font-size"
+                type="number"
+                min="8"
+                max="72"
+                step="0.5"
+                className={FIELD_CLASS}
+                value={draft.solutionFontSize}
+                onChange={(event) => {
+                  const size = event.currentTarget.valueAsNumber;
+                  if (Number.isFinite(size)) {
+                    update('solutionFontSize', size);
+                  }
+                }}
+              />
+            </div>
+            <div>
+              <label className={LABEL_CLASS} htmlFor="brand-solution-color">
+                Solution color
+              </label>
+              <div className="mt-2 flex">
+                <input
+                  type="color"
+                  aria-label="Solution color picker"
+                  value={draft.solutionColor}
+                  onChange={(event) => update(
+                    'solutionColor',
+                    event.target.value,
+                  )}
+                  className="h-10 w-12 border border-r-0 border-primary bg-primary p-1"
+                />
+                <input
+                  id="brand-solution-color"
+                  value={draft.solutionColor}
+                  onChange={(event) => update(
+                    'solutionColor',
+                    event.target.value,
+                  )}
+                  className="min-w-0 flex-1 border border-primary bg-primary px-3 py-2 text-sm uppercase outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                />
+              </div>
+            </div>
+
+            <div className="col-span-2 border-t border-secondary pt-5">
+              <h3 className="text-sm font-semibold">Example styling</h3>
+            </div>
+            <div>
+              <label className={LABEL_CLASS} htmlFor="brand-example-font">
+                Example font stack
+              </label>
+              <input
+                id="brand-example-font"
+                className={FIELD_CLASS}
+                value={draft.exampleFontFamily}
+                onChange={(event) => update(
+                  'exampleFontFamily',
+                  event.target.value,
+                )}
+              />
+            </div>
+            <div>
+              <label className={LABEL_CLASS} htmlFor="brand-example-font-size">
+                Example font size (px)
+              </label>
+              <input
+                id="brand-example-font-size"
+                type="number"
+                min="8"
+                max="72"
+                step="0.5"
+                className={FIELD_CLASS}
+                value={draft.exampleFontSize}
+                onChange={(event) => {
+                  const size = event.currentTarget.valueAsNumber;
+                  if (Number.isFinite(size)) {
+                    update('exampleFontSize', size);
+                  }
+                }}
+              />
+            </div>
+            <div>
+              <label className={LABEL_CLASS} htmlFor="brand-example-color">
+                Example color
+              </label>
+              <div className="mt-2 flex">
+                <input
+                  type="color"
+                  aria-label="Example color picker"
+                  value={draft.exampleColor}
+                  onChange={(event) => update(
+                    'exampleColor',
+                    event.target.value,
+                  )}
+                  className="h-10 w-12 border border-r-0 border-primary bg-primary p-1"
+                />
+                <input
+                  id="brand-example-color"
+                  value={draft.exampleColor}
+                  onChange={(event) => update(
+                    'exampleColor',
+                    event.target.value,
+                  )}
+                  className="min-w-0 flex-1 border border-primary bg-primary px-3 py-2 text-sm uppercase outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                />
+              </div>
             </div>
 
             <div className="col-span-2 border-t border-secondary pt-5">
