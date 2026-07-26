@@ -1,11 +1,237 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "../styles/theme.css";
+@import "../components/editor/custom-blocks/custom-blocks.css";
+@import "../components/editor/custom-blocks/brands/eduit.css";
 
-:root {
-  color-scheme: dark;
+@plugin "@tailwindcss/typography";
+@plugin "tailwindcss-animate";
+@plugin "tailwindcss-react-aria-components";
+
+@custom-variant dark (&:where(.dark-mode, .dark-mode *));
+
+@layer base {
+  html,
+  body {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+  }
+
+  :where(button, input, select, textarea) {
+    border-radius: var(--radius-control) !important;
+  }
 }
 
-body {
-  @apply min-h-screen bg-slate-950 text-slate-100 antialiased;
+/* Tiptap placeholder (StarterKit + Placeholder extension) */
+.editor-content .tiptap {
+  display: flow-root;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--color-text-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap-page-header {
+  position: relative;
+  padding-top: 10mm !important;
+  padding-right: 15mm !important;
+}
+
+.tiptap-page-header p {
+  width: 100%;
+  margin: 0 !important;
+  line-height: 0 !important;
+  text-align: right !important;
+}
+
+.tiptap-page-header img,
+[data-header-footer-sub-type] img {
+  display: none !important;
+}
+
+.tiptap-page-header::after {
+  position: absolute;
+  top: 10mm;
+  right: 15mm;
+  width: 52px;
+  height: 16px;
+  background: url("/logo/eduit_logo.svg") center / contain no-repeat;
+  content: "";
+  pointer-events: none;
+}
+
+.tiptap-page-footer {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  font-size: 10px !important;
+  line-height: 1.4;
+}
+
+.tiptap-page-footer p {
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.tiptap-page-footer p:nth-child(2) {
+  text-align: center;
+}
+
+.tiptap-page-footer p:nth-child(3) {
+  text-align: right;
+}
+
+[data-header-footer-sub-type] .ProseMirror {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+[data-header-footer-sub-type] .ProseMirror p {
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.pdf-exporting .tiptap {
+  margin: 0 !important;
+  border: 0 !important;
+}
+
+.pdf-exporting .tiptap-pagination-gap {
+  display: none !important;
+  height: 0 !important;
+  border: 0 !important;
+}
+
+.pdf-exporting .custom-block.ProseMirror-selectednode {
+  border-color: transparent !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+.pdf-exporting .heading-node.ProseMirror-selectednode {
+  border-color: transparent !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+.pdf-exporting .custom-block.ProseMirror-selectednode::after,
+.pdf-exporting .heading-node.ProseMirror-selectednode::after {
+  display: none !important;
+}
+
+.editor-content .tiptap-page-break-node {
+  position: relative;
+  border-top: 1px dashed var(--color-border-primary);
+}
+
+.editor-content .tiptap-page-break-node::before {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  padding-inline: 0.5rem;
+  background: var(--color-bg-primary);
+  color: var(--color-text-quaternary);
+  content: "Page break";
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  transform: translate(-50%, -50%);
+}
+
+.pdf-exporting .tiptap-page-break-node {
+  border-top-color: transparent;
+}
+
+.pdf-exporting .tiptap-page-break-node::before {
+  display: none;
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  .editor-app,
+  .editor-body,
+  .editor-column,
+  .editor-workspace {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  .editor-workspace {
+    padding: 0 !important;
+  }
+
+  .editor-topbar,
+  .editor-left-sidebar,
+  .editor-right-sidebar,
+  .editor-toolbar {
+    display: none !important;
+  }
+
+  .editor-content {
+    width: auto !important;
+    margin: 0 !important;
+  }
+
+  .editor-content .tiptap {
+    margin: 0 auto !important;
+    border: 0 !important;
+  }
+
+  .editor-content .tiptap-pagination-gap {
+    display: none !important;
+    height: 0 !important;
+    border: 0 !important;
+  }
+
+  .custom-block.ProseMirror-selectednode {
+    border-color: transparent !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .heading-node.ProseMirror-selectednode {
+    border-color: transparent !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .custom-block.ProseMirror-selectednode::after,
+  .heading-node.ProseMirror-selectednode::after {
+    display: none !important;
+  }
+
+  .tiptap-page-break-node {
+    border-top-color: transparent !important;
+  }
+
+  .tiptap-page-break-node::before {
+    display: none !important;
+  }
 }

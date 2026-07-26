@@ -9,3 +9,10 @@ out
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Tiptap Pro registry auth (never commit the token)
+.npmrc
+
+# Local build and visual QA artifacts
+tsconfig.tsbuildinfo
+tmp/

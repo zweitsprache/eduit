@@ -1,0 +1,77 @@
+.tiptap[data-brand="eduit"] {
+  --eduit-primary: #11224d;
+  --eduit-accent: #cc6600;
+
+  --custom-block-ink: var(--eduit-primary);
+  --custom-block-inverse: #ffffff;
+  --custom-block-selection: var(--eduit-accent);
+
+  --custom-block-row-border-width: 1px;
+  --custom-block-row-border-color: var(--color-border-secondary);
+
+  --custom-block-radius-control: 0.25rem;
+  --custom-block-radius-selection: 0.25rem;
+
+  --custom-block-body-font-size: 0.875rem;
+  --custom-block-question-font-size: 0.875rem;
+  --custom-block-meta-font-size: 0.75rem;
+  --custom-block-label-line-height: 1.35;
+
+  font-family: var(--custom-block-font-family);
+}
+
+.tiptap[data-brand="eduit"] h1 {
+  margin: 1.5rem 0 0.75rem;
+  color: #101828;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.tiptap[data-brand="eduit"] h2 {
+  margin: 1.25rem 0 0.5rem;
+  color: #101828;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.tiptap[data-brand="eduit"] .heading-node--h1 {
+  margin: 1.5rem 0 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.tiptap[data-brand="eduit"] .heading-node--h2 {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.tiptap[data-brand="eduit"] .heading-node--h3 {
+  margin: 1rem 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.tiptap[data-brand="eduit"] .heading-node--h4 {
+  margin: 0.875rem 0 0.375rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.tiptap[data-brand="eduit"] .heading-node--h5 {
+  margin: 0.75rem 0 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.tiptap[data-brand="eduit"] .heading-node__content {
+  color: #101828;
+  font: inherit;
+}

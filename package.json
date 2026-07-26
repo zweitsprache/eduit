@@ -10,10 +10,25 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/typography": "^0.5.20",
+    "@tiptap-pro/extension-convert-kit": "^0.7.0",
+    "@tiptap-pro/extension-pages": "^0.28.1",
+    "@tiptap-pro/extension-pages-tablekit": "^0.2.10",
+    "@tiptap/extension-placeholder": "^3.29.0",
+    "@tiptap/pm": "^3.29.0",
+    "@tiptap/react": "^3.29.0",
+    "@tiptap/starter-kit": "^3.29.0",
+    "@untitledui/icons": "^0.0.22",
     "next": "14.2.15",
     "next-auth": "^4.24.10",
+    "playwright-core": "^1.62.0",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-aria-components": "^1.19.0",
+    "react-dom": "18.3.1",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss-animate": "^1.0.7",
+    "tailwindcss-react-aria-components": "^2.2.0"
   },
   "devDependencies": {
     "@types/node": "20.14.15",
@@ -21,7 +36,7 @@
     "@types/react-dom": "18.3.1",
     "autoprefixer": "10.4.20",
     "postcss": "8.4.47",
-    "tailwindcss": "3.4.14",
+    "tailwindcss": "^4.3.3",
     "typescript": "5.5.4"
   }
 }

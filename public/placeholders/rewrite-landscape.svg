@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title description">
+  <title id="title">Worksheet image placeholder</title>
+  <desc id="description">A neutral landscape illustration used until media storage is connected.</desc>
+  <rect width="640" height="480" fill="#f2f4f7"/>
+  <circle cx="486" cy="126" r="46" fill="#cc6600" opacity=".22"/>
+  <path d="M0 390 168 218l112 108 86-82 274 236H0Z" fill="#11224d" opacity=".16"/>
+  <path d="m0 438 202-150 106 79 92-62 240 175H0Z" fill="#11224d" opacity=".28"/>
+  <rect x="24" y="24" width="592" height="432" rx="14" fill="none" stroke="#11224d" stroke-opacity=".18" stroke-width="4"/>
+</svg>
