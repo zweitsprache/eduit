@@ -1,0 +1,14 @@
+:root {
+  --eduit-navy: #11224d;
+  --eduit-navy-deep: #081432;
+  --eduit-navy-soft: #263865;
+  --eduit-orange: #cc6600;
+  --eduit-orange-bright: #f28a2a;
+  --eduit-cream: #fff8ef;
+  --eduit-paper: #fffdf9;
+  --eduit-sand: #f2e8d9;
+  --eduit-ink: #18213b;
+  --eduit-muted: #667085;
+  --eduit-font-sans: "Encode Sans Semi Condensed", "Segoe UI", Arial, sans-serif;
+  --eduit-radius-control: 0.5rem;
+}

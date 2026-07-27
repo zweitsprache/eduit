@@ -2,43 +2,17 @@
   "name": "eduit",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@neondatabase/auth": "^0.4.2-beta",
-    "@neondatabase/serverless": "^0.10.4",
-    "@polar-sh/sdk": "^0.49.0",
-    "@tailwindcss/postcss": "^4.3.3",
-    "@tailwindcss/typography": "^0.5.20",
-    "@tiptap-pro/extension-convert-kit": "^0.7.0",
-    "@tiptap-pro/extension-pages": "^0.28.1",
-    "@tiptap-pro/extension-pages-tablekit": "^0.2.10",
-    "@tiptap/extension-placeholder": "^3.29.0",
-    "@tiptap/pm": "^3.29.0",
-    "@tiptap/react": "^3.29.0",
-    "@tiptap/starter-kit": "^3.29.0",
-    "@untitledui/icons": "^0.0.22",
-    "next": "^16.2.12",
-    "playwright-core": "^1.62.0",
-    "react": "^19.2.8",
-    "react-aria-components": "^1.19.0",
-    "react-dom": "^19.2.8",
-    "roughjs": "^4.6.6",
-    "tailwind-merge": "^3.6.0",
-    "tailwindcss-animate": "^1.0.7",
-    "tailwindcss-react-aria-components": "^2.2.0"
-  },
-  "devDependencies": {
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "autoprefixer": "10.4.20",
-    "postcss": "8.4.47",
-    "tailwindcss": "^4.3.3",
-    "typescript": "^6.0.3"
+    "dev": "npm run dev --workspace=@eduit/app",
+    "dev:app": "npm run dev --workspace=@eduit/app",
+    "dev:marketing": "npm run dev --workspace=@eduit/marketing",
+    "build": "npm run build --workspaces --if-present",
+    "build:app": "npm run build --workspace=@eduit/app",
+    "build:marketing": "npm run build --workspace=@eduit/marketing",
+    "lint": "npm run lint --workspaces --if-present"
   }
 }
