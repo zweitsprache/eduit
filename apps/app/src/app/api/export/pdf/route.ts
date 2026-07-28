@@ -88,9 +88,18 @@ export async function POST(request: Request) {
             height: 0 !important;
             border: 0 !important;
           }
-          .custom-block--selected {
+          .custom-block--selected,
+          .heading-node--selected,
+          .ProseMirror-selectednode {
             border-color: transparent !important;
+            outline: 0 !important;
             box-shadow: none !important;
+          }
+          .custom-block--selected::after,
+          .heading-node--selected::after,
+          .ProseMirror-selectednode::after,
+          .rich-text-node__selection-fragment {
+            display: none !important;
           }
         </style>
       </head>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Loading01, XClose } from '@untitledui/icons';
 import { WandSparkles } from 'lucide-react';
+import { useAIModalLocalization } from '@/components/editor/ai-modal-localization';
 
 export function AIGenerationModal({
   children,
@@ -12,6 +13,7 @@ export function AIGenerationModal({
   onGenerate,
   open,
   pending,
+  progressLabel,
   title,
 }: {
   children: ReactNode;
@@ -20,8 +22,12 @@ export function AIGenerationModal({
   onGenerate: () => void;
   open: boolean;
   pending: boolean;
+  progressLabel?: string;
   title: string;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useAIModalLocalization(dialogRef, open);
+
   useEffect(() => {
     if (!open) return;
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -41,6 +47,7 @@ export function AIGenerationModal({
       }}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -94,7 +101,12 @@ export function AIGenerationModal({
             {pending ? <Loading01 className="size-4 animate-spin" /> : (
               <WandSparkles className="size-4" />
             )}
-            {pending ? 'Generating…' : 'Generate'}
+            <span
+              key={pending ? (progressLabel || 'Generating…') : 'Generate'}
+              className={pending ? 'ai-generation-progress-label' : undefined}
+            >
+              {pending ? (progressLabel || 'Generating…') : 'Generate'}
+            </span>
           </button>
         </footer>
       </div>

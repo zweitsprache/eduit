@@ -108,6 +108,33 @@ import type {
   WorksheetTableRow,
 } from '@/components/editor/worksheet-table-node';
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
+import {
+  DEFAULT_STANDALONE_INSTRUCTION,
+  type InstructionBlockAttrs,
+} from '@/components/editor/instruction-node';
+import type {
+  LetterNodeAttrs,
+  LetterNodeItem,
+} from '@/components/editor/letter-node';
+import {
+  DEFAULT_LETTER_INSTRUCTION,
+  ENGLISH_LETTER_ALPHABET,
+  GERMAN_LETTER_ALPHABET,
+} from '@/components/editor/letter-node';
+import {
+  DEFAULT_CROSSWORD_INSTRUCTION,
+  generateCrosswordLayout,
+  type CrosswordAttrs,
+  type CrosswordEntry,
+} from '@/components/editor/crossword-node';
+import {
+  createErrorCorrectionMarkup,
+  DEFAULT_ERROR_CORRECTION_INSTRUCTION,
+  parseErrorCorrectionMarkup,
+  type ErrorCorrectionAttrs,
+  type ErrorCorrectionError,
+} from '@/components/editor/error-correction-node';
+import { errorTypeById } from '@/lib/error-correction-types';
 import { InlineFormattedInput } from '@/components/editor/custom-blocks/inline-formatted-input';
 import { Toggle } from '@/components/base/toggle/toggle';
 import {
@@ -127,6 +154,10 @@ import {
   ContentSwitchGrid,
   CorrectState,
 } from '@/components/editor/content-modal-ui';
+import {
+  DEFAULT_BLOCK_INSTRUCTIONS,
+  type InstructionOverrideBlock,
+} from '@/components/editor/custom-blocks/instructions';
 
 export type ContentEditorBlock = {
   pos: number;
@@ -149,7 +180,11 @@ export type ContentEditorBlock = {
     | 'inlineChoice'
     | 'miniForm'
     | 'worksheetTable'
-    | 'richText';
+    | 'richText'
+    | 'instructionBlock'
+    | 'letterNode'
+    | 'crossword'
+    | 'errorCorrection';
 };
 
 const TITLES: Record<ContentEditorBlock['type'], string> = {
@@ -172,6 +207,10 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   miniForm: 'Mini form content',
   worksheetTable: 'Table content',
   richText: 'Rich Text content',
+  instructionBlock: 'Instruction content',
+  letterNode: 'Letter Node content',
+  crossword: 'Crossword content',
+  errorCorrection: 'Error correction text content',
 };
 
 function updateAttrs(
@@ -189,12 +228,96 @@ function updateAttrs(
   }).run();
 }
 
+function InstructionOverrideEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: Record<string, unknown>;
+  block: ContentEditorBlock & { type: InstructionOverrideBlock };
+  editor: Editor;
+}) {
+  const defaultInstruction = DEFAULT_BLOCK_INSTRUCTIONS[block.type];
+  const instruction = typeof attrs.instruction === 'string'
+    ? attrs.instruction
+    : defaultInstruction;
+
+  return (
+    <div className="mb-5">
+      <div className="flex items-center justify-between gap-3">
+        <ContentFieldLabel>Instruction</ContentFieldLabel>
+        <button
+          type="button"
+          aria-label="Reset instruction"
+          title="Reset instruction"
+          disabled={!attrs.instruction}
+          onClick={() => updateAttrs(editor, block, { instruction: null })}
+          className="flex size-8 items-center justify-center rounded-md text-quaternary hover:bg-primary_hover hover:text-secondary disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          <RotateCcw className="size-4" />
+        </button>
+      </div>
+      <input
+        type="text"
+        aria-label={`${TITLES[block.type]} instruction`}
+        value={instruction}
+        onChange={(event) => updateAttrs(editor, block, {
+          instruction: event.target.value,
+        })}
+        className="mt-2 h-9 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+    </div>
+  );
+}
+
 function moveItem<T>(items: T[], index: number, direction: -1 | 1) {
   const target = index + direction;
   if (target < 0 || target >= items.length) return items;
   const result = [...items];
   [result[index], result[target]] = [result[target], result[index]];
   return result;
+}
+
+function StandaloneInstructionEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: InstructionBlockAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  return (
+    <>
+      <ContentFieldLabel
+        action={(
+          <button
+            type="button"
+            aria-label="Reset instruction"
+            title="Reset instruction"
+            disabled={attrs.instruction === DEFAULT_STANDALONE_INSTRUCTION}
+            onClick={() => updateAttrs(editor, block, {
+              instruction: DEFAULT_STANDALONE_INSTRUCTION,
+            })}
+            className="flex size-7 items-center justify-center rounded-md text-secondary transition hover:bg-primary_hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            <RotateCcw className="size-4" />
+          </button>
+        )}
+      >
+        Instruction
+      </ContentFieldLabel>
+      <input
+        type="text"
+        aria-label="Instruction text"
+        value={attrs.instruction}
+        onChange={(event) => updateAttrs(editor, block, {
+          instruction: event.target.value,
+        })}
+        className="mt-2 h-9 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+    </>
+  );
 }
 
 function RichTextEditor({
@@ -918,6 +1041,38 @@ function Preview({
           </ContentManualItem>
         </ContentManual>
       )}
+      {block.type === 'crossword' && (
+        <ContentManual>
+          <ContentManualItem icon="✣" title="Build the puzzle">
+            Add an answer and its learner-facing clue. The layout connects
+            matching letters automatically.
+          </ContentManualItem>
+          <ContentManualItem icon="↻" title="Try another layout">
+            Regenerate the grid to choose a different valid arrangement without
+            changing answers or clues.
+          </ContentManualItem>
+          <ContentManualItem icon="✓" title="Show solutions">
+            Worksheet solutions reveal the letters in every crossword cell.
+            The optional word bank can provide additional learner support.
+          </ContentManualItem>
+        </ContentManual>
+      )}
+      {block.type === 'errorCorrection' && (
+        <ContentManual>
+          <ContentManualItem icon="✎" title="Create controlled errors">
+            The learner sees the error text. Every stored correction connects
+            an exact incorrect form to its correct replacement.
+          </ContentManualItem>
+          <ContentManualItem icon="◌" title="Control visibility">
+            Mark error positions when learners should focus on correction, or
+            hide them when learners should also locate the errors.
+          </ContentManualItem>
+          <ContentManualItem icon="✓" title="Use the correction key">
+            Worksheet solutions reveal the complete corrected text, individual
+            replacements, and their short explanations.
+          </ContentManualItem>
+        </ContentManual>
+      )}
     </div>
   );
 }
@@ -983,34 +1138,38 @@ function MCQEditor({
 
   return (
     <>
-      <div className="flex items-center justify-between gap-3">
-        <label className="block text-sm font-semibold text-secondary">
-          Instruction
-        </label>
-        <button
-          type="button"
-          aria-label="Reset instruction"
-          title="Reset instruction"
-          disabled={attrs.instruction === DEFAULT_MCQ_INSTRUCTION}
-          onClick={() => updateAttrs(editor, block, {
-            instruction: DEFAULT_MCQ_INSTRUCTION,
-          })}
-          className="flex size-7 items-center justify-center rounded-md text-secondary transition hover:bg-primary_hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
-        >
-          <RotateCcw className="size-4" />
-        </button>
-      </div>
-      <textarea
-        rows={1}
-        value={attrs.instruction || DEFAULT_MCQ_INSTRUCTION}
-        placeholder={DEFAULT_MCQ_INSTRUCTION}
-        onChange={(event) => updateAttrs(editor, block, {
-          instruction: event.target.value,
-        })}
-        className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-      />
+      {attrs.showInstruction && (
+        <>
+          <div className="flex items-center justify-between gap-3">
+            <label className="block text-sm font-semibold text-secondary">
+              Instruction
+            </label>
+            <button
+              type="button"
+              aria-label="Reset instruction"
+              title="Reset instruction"
+              disabled={attrs.instruction === DEFAULT_MCQ_INSTRUCTION}
+              onClick={() => updateAttrs(editor, block, {
+                instruction: DEFAULT_MCQ_INSTRUCTION,
+              })}
+              className="flex size-7 items-center justify-center rounded-md text-secondary transition hover:bg-primary_hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
+            >
+              <RotateCcw className="size-4" />
+            </button>
+          </div>
+          <textarea
+            rows={1}
+            value={attrs.instruction || DEFAULT_MCQ_INSTRUCTION}
+            placeholder={DEFAULT_MCQ_INSTRUCTION}
+            onChange={(event) => updateAttrs(editor, block, {
+              instruction: event.target.value,
+            })}
+            className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          />
+        </>
+      )}
 
-      <label className="mt-6 block text-sm font-semibold text-secondary">Question</label>
+      <label className={`${attrs.showInstruction ? 'mt-6' : ''} block text-sm font-semibold text-secondary`}>Question</label>
       <InlineFormattedInput
         ariaLabel="Multiple-choice question"
         multiline
@@ -1646,7 +1805,7 @@ function FillInTheBlankEditor({
         onChange={(widthFactor) => updateAttrs(editor, block, {
           widthFactor: Number(widthFactor),
         })}
-        options={[1, 2, 3, 4, 5].map((width) => ({
+        options={[1, 1.25, 1.5, 1.75, 2].map((width) => ({
           label: `${width} ×`,
           value: String(width),
         }))}
@@ -1672,7 +1831,37 @@ function FillInTheBlankEditor({
             hideBlankNumbers,
           })}
         />
+        <ContentSwitch
+          label="Hide item numbers"
+          isSelected={attrs.hideItemNumbers}
+          onChange={(hideItemNumbers) => updateAttrs(editor, block, {
+            hideItemNumbers,
+          })}
+        />
+        {attrs.hideItemNumbers && (
+          <ContentSwitch
+            label="Display line numbers"
+            isSelected={attrs.showLineNumbers}
+            onChange={(showLineNumbers) => updateAttrs(editor, block, {
+              showLineNumbers,
+            })}
+          />
+        )}
       </ContentSwitchGrid>
+      <ContentSectionHeader>Word bank distractors</ContentSectionHeader>
+      <ContentFieldLabel>
+        Distractors <span className="font-normal">(one per line)</span>
+      </ContentFieldLabel>
+      <textarea
+        aria-label="Word bank distractors"
+        rows={3}
+        value={attrs.distractors.join('\n')}
+        onChange={(event) => updateAttrs(editor, block, {
+          distractors: event.target.value.split(/\r?\n/),
+        })}
+        placeholder="Add plausible incorrect answers…"
+        className="mt-2 w-full resize-y rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
     </>
   );
 }
@@ -3007,6 +3196,712 @@ function MiniFormEditor({
   );
 }
 
+function LetterNodeEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: LetterNodeAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const setItems = (items: LetterNodeItem[]) => updateAttrs(
+    editor,
+    block,
+    { items },
+  );
+  const selectedAlphabet = attrs.alphabetChoice === 'english'
+    ? ENGLISH_LETTER_ALPHABET
+    : GERMAN_LETTER_ALPHABET;
+  const alphabet = new Set(Array.from(selectedAlphabet));
+
+  return (
+    <>
+      <ContentFieldLabel
+        action={(
+          <button
+            type="button"
+            aria-label="Reset instruction"
+            title="Reset instruction"
+            disabled={attrs.instruction === DEFAULT_LETTER_INSTRUCTION}
+            onClick={() => updateAttrs(editor, block, {
+              instruction: DEFAULT_LETTER_INSTRUCTION,
+            })}
+            className="flex size-7 items-center justify-center rounded-md text-secondary transition hover:bg-primary_hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            <RotateCcw className="size-4" />
+          </button>
+        )}
+      >
+        Instruction
+      </ContentFieldLabel>
+      <textarea
+        rows={1}
+        value={attrs.instruction || DEFAULT_LETTER_INSTRUCTION}
+        placeholder={DEFAULT_LETTER_INSTRUCTION}
+        onChange={(event) => updateAttrs(editor, block, {
+          instruction: event.target.value,
+        })}
+        className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+      <ContentSectionHeader>Setup</ContentSectionHeader>
+      <div className="mt-3 grid grid-cols-[minmax(0,1fr)_8rem] gap-3">
+        <label>
+          <ContentFieldLabel>Alphabet choice</ContentFieldLabel>
+          <select
+            value={attrs.alphabetChoice}
+            onChange={(event) => updateAttrs(editor, block, {
+              alphabetChoice: event.target.value as LetterNodeAttrs['alphabetChoice'],
+              alphabet: event.target.value === 'english'
+                ? ENGLISH_LETTER_ALPHABET
+                : GERMAN_LETTER_ALPHABET,
+            })}
+            className="mt-1.5 h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          >
+            <option value="english">English (26 letters)</option>
+            <option value="german">German (29 letters)</option>
+          </select>
+        </label>
+        <label>
+          <ContentFieldLabel>Helper letters</ContentFieldLabel>
+          <input
+            value={attrs.helperLetters}
+            onChange={(event) => updateAttrs(editor, block, {
+              helperLetters: event.target.value.toLocaleUpperCase('de-CH'),
+            })}
+            className="mt-1.5 h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm tracking-wide text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            placeholder="e.g. U"
+          />
+        </label>
+      </div>
+      <p className="mt-2 text-xs leading-5 text-quaternary">
+        Alphabet order defines each letter&apos;s number.
+      </p>
+
+      <ContentSectionHeader>Layout</ContentSectionHeader>
+      <div className="mt-3">
+        <label className="block max-w-[12rem]">
+          <ContentFieldLabel>Key columns</ContentFieldLabel>
+          <input
+            type="number"
+            min={5}
+            max={20}
+            value={attrs.keyColumns}
+            onChange={(event) => updateAttrs(editor, block, {
+              keyColumns: Math.min(20, Math.max(5, Number(event.target.value))),
+            })}
+            className="mt-1.5 h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm tabular-nums text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          />
+        </label>
+      </div>
+      <ContentSectionHeader>Learner support</ContentSectionHeader>
+      <ContentSwitchGrid>
+        <ContentSwitch
+          label="Show alphabet key"
+          isSelected={attrs.showKey}
+          onChange={(showKey) => updateAttrs(editor, block, { showKey })}
+        />
+        <ContentSwitch
+          label="Show item numbers"
+          isSelected={attrs.showItemNumbers}
+          onChange={(showItemNumbers) => updateAttrs(editor, block, {
+            showItemNumbers,
+          })}
+        />
+        <ContentSwitch
+          label="Show first as example"
+          isSelected={attrs.showFirstAsExample}
+          onChange={(showFirstAsExample) => updateAttrs(editor, block, {
+            showFirstAsExample,
+          })}
+        />
+      </ContentSwitchGrid>
+
+      <ContentSectionHeader count={`${attrs.items.length} items`}>
+        Items
+      </ContentSectionHeader>
+      <div className="mt-3 space-y-2">
+        {attrs.items.map((item, index) => {
+          const unknownCharacters = [...new Set(Array.from(
+            item.answer.toLocaleUpperCase('de-CH'),
+          ).filter((character) => (
+            !/\s/.test(character)
+            && !alphabet.has(character)
+            && !/[-–—'’.,/]/.test(character)
+          )))];
+          return (
+            <ContentCard key={item.id}>
+              <ContentItemGrid>
+                <ContentItemNumber>
+                  {String(index + 1).padStart(2, '0')}
+                </ContentItemNumber>
+                <input
+                  aria-label={`Clue ${index + 1}`}
+                  value={item.clue}
+                  onChange={(event) => setItems(attrs.items.map((current) => (
+                    current.id === item.id
+                      ? { ...current, clue: event.target.value }
+                      : current
+                  )))}
+                  className="h-9 min-w-0 w-full rounded-md border border-primary bg-primary px-2.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  placeholder="Clue"
+                />
+                <ContentItemActions
+                  label={`item ${index + 1}`}
+                  canDelete={attrs.items.length > 1}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < attrs.items.length - 1}
+                  onDelete={() => setItems(
+                    attrs.items.filter(({ id }) => id !== item.id),
+                  )}
+                  onMoveUp={() => setItems(moveItem(attrs.items, index, -1))}
+                  onMoveDown={() => setItems(moveItem(attrs.items, index, 1))}
+                />
+                <span aria-hidden="true" />
+                <input
+                  aria-label={`Answer ${index + 1}`}
+                  value={item.answer}
+                  onChange={(event) => setItems(attrs.items.map((current) => (
+                    current.id === item.id
+                      ? {
+                          ...current,
+                          answer: event.target.value.toLocaleUpperCase('de-CH'),
+                        }
+                      : current
+                  )))}
+                  className="h-9 min-w-0 w-full rounded-md border border-primary bg-primary px-2.5 text-sm tracking-wide text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  placeholder="Answer"
+                />
+                <span aria-hidden="true" />
+              </ContentItemGrid>
+              {unknownCharacters.length > 0 && (
+                <p className="mt-2 pl-10 text-xs text-warning-primary">
+                  Not in alphabet: {unknownCharacters.join(', ')}
+                </p>
+              )}
+            </ContentCard>
+          );
+        })}
+      </div>
+      <ContentAddButton
+        onClick={() => setItems([
+          ...attrs.items,
+          {
+            id: `letter-item-${Date.now()}`,
+            clue: '',
+            answer: '',
+          },
+        ])}
+      >
+        Add item
+      </ContentAddButton>
+    </>
+  );
+}
+
+function CrosswordEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: CrosswordAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const setEntries = (entries: CrosswordEntry[]) => updateAttrs(
+    editor,
+    block,
+    { entries },
+  );
+  const layout = generateCrosswordLayout(attrs.entries, attrs.layoutSeed);
+  const connectedCount = layout.entries.length - layout.entries.filter(
+    (entry) => {
+      const crossingCells = layout.entries.filter((other) => (
+        other.id !== entry.id
+        && Array.from(entry.word).some((_, entryIndex) => {
+          const x = entry.x + (entry.direction === 'across' ? entryIndex : 0);
+          const y = entry.y + (entry.direction === 'down' ? entryIndex : 0);
+          return Array.from(other.word).some((__, otherIndex) => (
+            x === other.x + (other.direction === 'across' ? otherIndex : 0)
+            && y === other.y + (other.direction === 'down' ? otherIndex : 0)
+          ));
+        })
+      )).length;
+      return crossingCells === 0;
+    },
+  ).length;
+
+  return (
+    <>
+      <ContentFieldLabel
+        action={(
+          <button
+            type="button"
+            aria-label="Reset instruction"
+            title="Reset instruction"
+            disabled={attrs.instruction === DEFAULT_CROSSWORD_INSTRUCTION}
+            onClick={() => updateAttrs(editor, block, {
+              instruction: DEFAULT_CROSSWORD_INSTRUCTION,
+            })}
+            className="flex size-7 items-center justify-center rounded-md text-secondary transition hover:bg-primary_hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            <RotateCcw className="size-4" />
+          </button>
+        )}
+      >
+        Instruction
+      </ContentFieldLabel>
+      <textarea
+        rows={1}
+        value={attrs.instruction || DEFAULT_CROSSWORD_INSTRUCTION}
+        placeholder={DEFAULT_CROSSWORD_INSTRUCTION}
+        onChange={(event) => updateAttrs(editor, block, {
+          instruction: event.target.value,
+        })}
+        className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+
+      <ContentSectionHeader>Layout</ContentSectionHeader>
+      <ContentOptionButtonGroup
+        ariaLabel="Crossword cell size"
+        value={String(attrs.cellSize)}
+        onChange={(cellSize) => updateAttrs(editor, block, {
+          cellSize: Number(cellSize),
+        })}
+        options={[
+          { label: '0.75 ×', value: '24' },
+          { label: '1 ×', value: '30' },
+          { label: '1.25 ×', value: '36' },
+        ]}
+      />
+      <ContentSecondaryButton
+        className="mt-3 w-full"
+        icon={<RotateCcw className="size-4" />}
+        onClick={() => updateAttrs(editor, block, {
+          layoutSeed: attrs.layoutSeed + 1,
+        })}
+      >
+        Regenerate grid
+      </ContentSecondaryButton>
+      <p className="mt-2 text-xs leading-5 text-quaternary">
+        {layout.entries.length} placed · {connectedCount} connected
+        {layout.unplaced.length > 0
+          ? ` · ${layout.unplaced.length} invalid`
+          : ''}
+      </p>
+
+      <ContentSectionHeader>Learner support</ContentSectionHeader>
+      <ContentSwitchGrid>
+        <ContentSwitch
+          label="Show word bank"
+          isSelected={attrs.showWordBank}
+          onChange={(showWordBank) => updateAttrs(editor, block, {
+            showWordBank,
+          })}
+        />
+      </ContentSwitchGrid>
+
+      <ContentSectionHeader count={`${attrs.entries.length} entries`}>
+        Answers and clues
+      </ContentSectionHeader>
+      <div className="mt-3 space-y-2">
+        {attrs.entries.map((entry, index) => (
+          <ContentCard key={entry.id}>
+            <ContentItemGrid>
+              <ContentItemNumber>
+                {String(index + 1).padStart(2, '0')}
+              </ContentItemNumber>
+              <input
+                aria-label={`Crossword answer ${index + 1}`}
+                value={entry.answer}
+                onChange={(event) => setEntries(attrs.entries.map((current) => (
+                  current.id === entry.id
+                    ? {
+                        ...current,
+                        answer: event.target.value.toLocaleUpperCase('de-CH'),
+                      }
+                    : current
+                )))}
+                placeholder="Answer"
+                className="h-9 min-w-0 w-full rounded-md border border-primary bg-primary px-2.5 text-sm font-semibold tracking-wide text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+              <ContentItemActions
+                label={`crossword entry ${index + 1}`}
+                canDelete={attrs.entries.length > 1}
+                canMoveUp={index > 0}
+                canMoveDown={index < attrs.entries.length - 1}
+                onDelete={() => setEntries(
+                  attrs.entries.filter(({ id }) => id !== entry.id),
+                )}
+                onMoveUp={() => setEntries(moveItem(attrs.entries, index, -1))}
+                onMoveDown={() => setEntries(moveItem(attrs.entries, index, 1))}
+              />
+              <span aria-hidden="true" />
+              <input
+                aria-label={`Crossword clue ${index + 1}`}
+                value={entry.clue}
+                onChange={(event) => setEntries(attrs.entries.map((current) => (
+                  current.id === entry.id
+                    ? { ...current, clue: event.target.value }
+                    : current
+                )))}
+                placeholder="Clue"
+                className="h-9 min-w-0 w-full rounded-md border border-primary bg-primary px-2.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+              <span aria-hidden="true" />
+            </ContentItemGrid>
+          </ContentCard>
+        ))}
+      </div>
+      <ContentAddButton
+        disabled={attrs.entries.length >= 20}
+        onClick={() => setEntries([
+          ...attrs.entries,
+          {
+            id: `crossword-${Date.now()}`,
+            answer: '',
+            clue: '',
+          },
+        ])}
+      >
+        Add entry
+      </ContentAddButton>
+    </>
+  );
+}
+
+function LegacyErrorCorrectionEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: ErrorCorrectionAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const setErrors = (errors: ErrorCorrectionError[]) => updateAttrs(
+    editor,
+    block,
+    { errors },
+  );
+  const updateError = (
+    id: string,
+    patch: Partial<ErrorCorrectionError>,
+  ) => setErrors(attrs.errors.map((error) => (
+    error.id === id ? { ...error, ...patch } : error
+  )));
+
+  return (
+    <>
+      <ContentFieldLabel
+        action={(
+          <button
+            type="button"
+            aria-label="Reset instruction"
+            title="Reset instruction"
+            disabled={attrs.instruction === DEFAULT_ERROR_CORRECTION_INSTRUCTION}
+            onClick={() => updateAttrs(editor, block, {
+              instruction: DEFAULT_ERROR_CORRECTION_INSTRUCTION,
+            })}
+            className="flex size-7 items-center justify-center rounded-md text-secondary transition hover:bg-primary_hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            <RotateCcw className="size-4" />
+          </button>
+        )}
+      >
+        Instruction
+      </ContentFieldLabel>
+      <textarea
+        rows={1}
+        value={attrs.instruction || DEFAULT_ERROR_CORRECTION_INSTRUCTION}
+        onChange={(event) => updateAttrs(editor, block, {
+          instruction: event.target.value,
+        })}
+        className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+
+      <ContentSectionHeader>Text</ContentSectionHeader>
+      <label>
+        <ContentFieldLabel>Text with errors</ContentFieldLabel>
+        <textarea
+          rows={6}
+          value={attrs.incorrectText}
+          onChange={(event) => updateAttrs(editor, block, {
+            incorrectText: event.target.value,
+          })}
+          className="mt-1.5 w-full resize-y rounded-md border border-primary bg-primary px-3 py-2 text-sm leading-6 text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+        />
+      </label>
+      <label className="mt-3 block">
+        <ContentFieldLabel>Correct text</ContentFieldLabel>
+        <textarea
+          rows={6}
+          value={attrs.correctText}
+          onChange={(event) => updateAttrs(editor, block, {
+            correctText: event.target.value,
+          })}
+          className="mt-1.5 w-full resize-y rounded-md border border-primary bg-primary px-3 py-2 text-sm leading-6 text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+        />
+      </label>
+
+      <ContentSectionHeader>Learner support</ContentSectionHeader>
+      <ContentSwitchGrid>
+        <ContentSwitch
+          label="Mark error positions"
+          isSelected={attrs.markErrorPositions}
+          onChange={(markErrorPositions) => updateAttrs(editor, block, {
+            markErrorPositions,
+          })}
+        />
+      </ContentSwitchGrid>
+      <div className="mt-4">
+        <ContentFieldLabel>Correction space</ContentFieldLabel>
+        <ContentOptionButtonGroup
+          ariaLabel="Correction space"
+          value={String(attrs.correctionLines)}
+          onChange={(correctionLines) => updateAttrs(editor, block, {
+            correctionLines: Number(correctionLines),
+          })}
+          options={[
+            { label: 'None', value: '0' },
+            { label: '2 lines', value: '2' },
+            { label: '4 lines', value: '4' },
+            { label: '6 lines', value: '6' },
+          ]}
+        />
+      </div>
+
+      <ContentSectionHeader count={`${attrs.errors.length} errors`}>
+        Correction key
+      </ContentSectionHeader>
+      <div className="mt-3 space-y-2">
+        {attrs.errors.map((error, index) => (
+          <ContentCard key={error.id}>
+            <ContentItemGrid>
+              <ContentItemNumber>
+                {String(index + 1).padStart(2, '0')}
+              </ContentItemNumber>
+              <div className="grid min-w-0 grid-cols-2 gap-2">
+                <input
+                  aria-label={`Incorrect text ${index + 1}`}
+                  value={error.incorrect}
+                  onChange={(event) => updateError(error.id, {
+                    incorrect: event.target.value,
+                    start: -1,
+                    end: -1,
+                  })}
+                  placeholder="Incorrect"
+                  className="h-9 min-w-0 rounded-md border border-primary bg-primary px-2.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                />
+                <input
+                  aria-label={`Correction ${index + 1}`}
+                  value={error.correct}
+                  onChange={(event) => updateError(error.id, {
+                    correct: event.target.value,
+                  })}
+                  placeholder="Correct"
+                  className="h-9 min-w-0 rounded-md border border-primary bg-primary px-2.5 text-sm font-semibold text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                />
+              </div>
+              <span aria-hidden="true" />
+              <span aria-hidden="true" />
+              <div className="min-w-0">
+                <input
+                  aria-label={`Explanation ${index + 1}`}
+                  value={error.explanation}
+                  onChange={(event) => updateError(error.id, {
+                    explanation: event.target.value,
+                  })}
+                  placeholder="Short explanation"
+                  className="h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                />
+                <p className="mt-1 truncate text-xs text-quaternary">
+                  {errorTypeById(error.typeId)?.label || 'Custom error'}
+                </p>
+              </div>
+              <span aria-hidden="true" />
+            </ContentItemGrid>
+          </ContentCard>
+        ))}
+      </div>
+      <ContentAddButton
+        onClick={() => setErrors([
+          ...attrs.errors,
+          {
+            id: `error-correction-${Date.now()}`,
+            typeId: '',
+            incorrect: '',
+            correct: '',
+            explanation: '',
+            start: -1,
+            end: -1,
+          },
+        ])}
+      >
+        Add correction
+      </ContentAddButton>
+    </>
+  );
+}
+
+function ErrorCorrectionEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: ErrorCorrectionAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const setErrors = (errors: ErrorCorrectionError[]) => updateAttrs(
+    editor,
+    block,
+    { errors },
+  );
+  const updateError = (
+    id: string,
+    patch: Partial<ErrorCorrectionError>,
+  ) => setErrors(attrs.errors.map((error) => (
+    error.id === id ? { ...error, ...patch, start: -1, end: -1 } : error
+  )));
+  const markup = attrs.markup || createErrorCorrectionMarkup(
+    attrs.incorrectText,
+    attrs.errors,
+  );
+
+  return (
+    <>
+      <ContentFieldLabel
+        action={(
+          <button
+            type="button"
+            aria-label="Reset instruction"
+            title="Reset instruction"
+            disabled={attrs.instruction === DEFAULT_ERROR_CORRECTION_INSTRUCTION}
+            onClick={() => updateAttrs(editor, block, {
+              instruction: DEFAULT_ERROR_CORRECTION_INSTRUCTION,
+            })}
+            className="flex size-7 items-center justify-center rounded-md text-secondary transition hover:bg-primary_hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            <RotateCcw className="size-4" />
+          </button>
+        )}
+      >
+        Instruction
+      </ContentFieldLabel>
+      <textarea
+        rows={1}
+        value={attrs.instruction || DEFAULT_ERROR_CORRECTION_INSTRUCTION}
+        onChange={(event) => updateAttrs(editor, block, {
+          instruction: event.target.value,
+        })}
+        className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+
+      <ContentSectionHeader>Annotated text</ContentSectionHeader>
+      <ContentFieldLabel>Error text and corrections</ContentFieldLabel>
+      <textarea
+        rows={9}
+        value={markup}
+        onChange={(event) => {
+          const nextMarkup = event.target.value;
+          const parsed = parseErrorCorrectionMarkup(nextMarkup, attrs.errors);
+          updateAttrs(editor, block, {
+            markup: nextMarkup,
+            incorrectText: parsed.incorrectText,
+            correctText: parsed.correctText,
+            errors: parsed.errors,
+          });
+        }}
+        className="mt-2 w-full resize-y rounded-md border border-primary bg-primary px-3 py-2 text-sm leading-6 text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+      <p className="mt-2 text-xs leading-5 text-quaternary">
+        Use <strong>{'{{error:correct text}}incorrect text{{/error}}'}</strong>.
+        Multi-word corrections and line breaks are supported; nested error
+        markers are not.
+      </p>
+
+      <ContentSectionHeader>Learner support</ContentSectionHeader>
+      <ContentSwitchGrid>
+        <ContentSwitch
+          label="Mark error positions"
+          isSelected={attrs.markErrorPositions}
+          onChange={(markErrorPositions) => updateAttrs(editor, block, {
+            markErrorPositions,
+          })}
+        />
+      </ContentSwitchGrid>
+      <div className="mt-4 max-w-xs">
+        <ContentFieldLabel>Correction space</ContentFieldLabel>
+        <ContentOptionButtonGroup
+          ariaLabel="Correction lines"
+          value={String(attrs.correctionLines)}
+          onChange={(correctionLines) => updateAttrs(editor, block, {
+            correctionLines: Number(correctionLines),
+          })}
+          options={[
+            { label: 'None', value: '0' },
+            { label: '2 lines', value: '2' },
+            { label: '4 lines', value: '4' },
+            { label: '6 lines', value: '6' },
+          ]}
+        />
+      </div>
+
+      <ContentSectionHeader count={`${attrs.errors.length} errors`}>
+        Correction key
+      </ContentSectionHeader>
+      <div className="mt-3 space-y-2">
+        {attrs.errors.map((error, index) => (
+          <ContentCard key={error.id}>
+            <ContentItemGrid>
+              <ContentItemNumber>
+                {String(index + 1).padStart(2, '0')}
+              </ContentItemNumber>
+              <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+                <span className="truncate text-sm text-secondary">
+                  {error.incorrect}
+                </span>
+                <span className="text-xs text-quaternary">→</span>
+                <strong className="truncate text-sm text-secondary">
+                  {error.correct}
+                </strong>
+              </div>
+              <ContentItemActions
+                label={`error ${index + 1}`}
+                canDelete={attrs.errors.length > 1}
+                canMoveUp={index > 0}
+                canMoveDown={index < attrs.errors.length - 1}
+                onDelete={() => setErrors(
+                  attrs.errors.filter(({ id }) => id !== error.id),
+                )}
+                onMoveUp={() => setErrors(moveItem(attrs.errors, index, -1))}
+                onMoveDown={() => setErrors(moveItem(attrs.errors, index, 1))}
+              />
+              <span aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="mb-1 text-[11px] font-semibold text-quaternary">
+                  {errorTypeById(error.typeId)?.label || 'Custom error'}
+                </p>
+                <input
+                  aria-label={`Explanation ${index + 1}`}
+                  value={error.explanation}
+                  onChange={(event) => updateError(error.id, {
+                    explanation: event.target.value,
+                  })}
+                  placeholder="Short explanation"
+                  className="h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                />
+              </div>
+              <span aria-hidden="true" />
+            </ContentItemGrid>
+          </ContentCard>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function WorksheetTableEditor({
   attrs,
   block,
@@ -3463,6 +4358,15 @@ export function BlockContentEditorModal({
         </header>
         <div className="grid min-h-0 flex-1 grid-cols-[minmax(22rem,0.85fr)_minmax(30rem,1.15fr)] overflow-hidden">
           <div className="overflow-y-auto border-r border-secondary p-6">
+            {block.type in DEFAULT_BLOCK_INSTRUCTIONS && (
+              <InstructionOverrideEditor
+                attrs={attrs}
+                block={block as ContentEditorBlock & {
+                  type: InstructionOverrideBlock;
+                }}
+                editor={editor}
+              />
+            )}
             {block.type === 'mcq' && <MCQEditor attrs={attrs as unknown as MCQAttrs} block={block} editor={editor} />}
             {block.type === 'ordering' && <OrderingEditor attrs={attrs as unknown as OrderingAttrs} block={block} editor={editor} />}
             {block.type === 'matchingPairs' && <MatchingEditor attrs={attrs as unknown as MatchingPairsAttrs} block={block} editor={editor} />}
@@ -3482,6 +4386,10 @@ export function BlockContentEditorModal({
             {block.type === 'miniForm' && <MiniFormEditor attrs={attrs as unknown as MiniFormAttrs} block={block} editor={editor} />}
             {block.type === 'worksheetTable' && <WorksheetTableEditor attrs={attrs as unknown as WorksheetTableAttrs} block={block} editor={editor} />}
             {block.type === 'richText' && <RichTextEditor attrs={attrs as unknown as RichTextAttrs} block={block} editor={editor} />}
+            {block.type === 'instructionBlock' && <StandaloneInstructionEditor attrs={attrs as unknown as InstructionBlockAttrs} block={block} editor={editor} />}
+            {block.type === 'letterNode' && <LetterNodeEditor attrs={attrs as unknown as LetterNodeAttrs} block={block} editor={editor} />}
+            {block.type === 'crossword' && <CrosswordEditor attrs={attrs as unknown as CrosswordAttrs} block={block} editor={editor} />}
+            {block.type === 'errorCorrection' && <ErrorCorrectionEditor attrs={attrs as unknown as ErrorCorrectionAttrs} block={block} editor={editor} />}
           </div>
           <div className="overflow-y-auto bg-primary p-6">
             <Preview attrs={attrs} block={block} editor={editor} />

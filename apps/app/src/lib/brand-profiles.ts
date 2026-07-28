@@ -4,16 +4,20 @@ import {
   BRAND_FONT_WEIGHTS,
   DATE_FORMATS,
   DEFAULT_BRAND_HEADING_STYLES,
+  BRAND_PROFILE_SETTING_KEYS,
   NUMBER_FORMATS,
   STYLE_PRESETS,
   type BrandProfile,
   type BrandHeadingNumberFormats,
   type BrandHeadingStyles,
   type BrandProfileInput,
+  type BrandProfileSettingKey,
 } from '@/lib/brand-profile-types';
 
 type BrandProfileRow = {
   id: string;
+  parent_profile_id: string | null;
+  settings_overrides: BrandProfileSettingKey[] | null;
   slug: string;
   name: string;
   description: string;
@@ -50,6 +54,10 @@ type BrandProfileRow = {
 function mapRow(row: BrandProfileRow): BrandProfile {
   return {
     id: row.id,
+    parentProfileId: row.parent_profile_id,
+    overriddenFields: row.settings_overrides ?? [
+      ...BRAND_PROFILE_SETTING_KEYS,
+    ],
     slug: row.slug,
     name: row.name,
     description: row.description,
@@ -153,6 +161,18 @@ export function validateBrandProfileInput(value: unknown): BrandProfileInput {
   }
 
   return {
+    parentProfileId: typeof input.parentProfileId === 'string'
+      && input.parentProfileId
+      ? input.parentProfileId
+      : null,
+    overriddenFields: Array.isArray(input.overriddenFields)
+      ? input.overriddenFields.filter(
+        (key): key is BrandProfileSettingKey => (
+          typeof key === 'string'
+          && BRAND_PROFILE_SETTING_KEYS.includes(key as BrandProfileSettingKey)
+        ),
+      )
+      : [...BRAND_PROFILE_SETTING_KEYS],
     slug,
     name: text('name'),
     description: text('description', false),
@@ -230,7 +250,34 @@ export async function listBrandProfiles() {
     from brand_profiles
     order by is_default desc, is_system desc, name asc
   ` as BrandProfileRow[];
-  return rows.map(mapRow);
+  const rawProfiles = rows.map(mapRow);
+  const byId = new Map(rawProfiles.map((profile) => [profile.id, profile]));
+  const resolved = new Map<string, BrandProfile>();
+  const resolve = (profile: BrandProfile, ancestors = new Set<string>()): BrandProfile => {
+    const cached = resolved.get(profile.id);
+    if (cached) return cached;
+    if (ancestors.has(profile.id)) {
+      throw new Error('Brand profile inheritance contains a cycle.');
+    }
+    const parent = profile.parentProfileId
+      ? byId.get(profile.parentProfileId)
+      : null;
+    if (!parent) {
+      resolved.set(profile.id, profile);
+      return profile;
+    }
+    const nextAncestors = new Set(ancestors).add(profile.id);
+    const effectiveParent = resolve(parent, nextAncestors);
+    const effective = { ...profile };
+    BRAND_PROFILE_SETTING_KEYS.forEach((key) => {
+      if (!profile.overriddenFields.includes(key)) {
+        Object.assign(effective, { [key]: effectiveParent[key] });
+      }
+    });
+    resolved.set(profile.id, effective);
+    return effective;
+  };
+  return rawProfiles.map((profile) => resolve(profile));
 }
 
 export async function createBrandProfile(input: BrandProfileInput) {
@@ -249,6 +296,7 @@ export async function createBrandProfile(input: BrandProfileInput) {
       content_indentation,
       date_format,
       is_default, is_system, is_active
+      , parent_profile_id, settings_overrides
     ) values (
       ${input.slug}, ${input.name}, ${input.description}, ${input.primaryColor},
       ${input.accentColor}, ${input.customColor1}, ${input.customColor2},
@@ -263,14 +311,38 @@ export async function createBrandProfile(input: BrandProfileInput) {
       ${JSON.stringify(input.headingStyles)}::jsonb,
       ${input.fixedHeadingNumberWidth},
       ${input.contentIndentation},
-      ${input.dateFormat}, ${input.isDefault}, false, ${input.isActive}
+      ${input.dateFormat}, ${input.isDefault}, false, ${input.isActive},
+      ${input.parentProfileId}::uuid,
+      ${JSON.stringify(input.overriddenFields)}::jsonb
     )
     returning *
   ` as BrandProfileRow[];
-  return mapRow(rows[0]);
+  const profiles = await listBrandProfiles();
+  return profiles.find(({ id }) => id === rows[0].id) ?? mapRow(rows[0]);
 }
 
 export async function updateBrandProfile(id: string, input: BrandProfileInput) {
+  if (input.parentProfileId === id) {
+    throw new Error('A brand profile cannot inherit from itself.');
+  }
+  if (input.parentProfileId) {
+    const profiles = await listBrandProfiles();
+    let parent = profiles.find(({ id: profileId }) => (
+      profileId === input.parentProfileId
+    ));
+    const visited = new Set([id]);
+    while (parent) {
+      if (visited.has(parent.id)) {
+        throw new Error('Brand profile inheritance would create a cycle.');
+      }
+      visited.add(parent.id);
+      parent = parent.parentProfileId
+        ? profiles.find(({ id: profileId }) => (
+          profileId === parent?.parentProfileId
+        ))
+        : undefined;
+    }
+  }
   if (input.isDefault) await sql`update brand_profiles set is_default = false where id <> ${id}`;
   const rows = await sql`
     update brand_profiles
@@ -302,12 +374,15 @@ export async function updateBrandProfile(id: string, input: BrandProfileInput) {
         date_format = ${input.dateFormat},
         is_default = ${input.isDefault},
         is_active = ${input.isActive},
+        parent_profile_id = ${input.parentProfileId}::uuid,
+        settings_overrides = ${JSON.stringify(input.overriddenFields)}::jsonb,
         updated_at = now()
     where id = ${id}
     returning *
   ` as BrandProfileRow[];
   if (!rows[0]) throw new Error('Brand profile not found.');
-  return mapRow(rows[0]);
+  const profiles = await listBrandProfiles();
+  return profiles.find(({ id: profileId }) => profileId === id) ?? mapRow(rows[0]);
 }
 
 export async function deleteBrandProfile(id: string) {

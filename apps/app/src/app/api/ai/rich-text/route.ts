@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic';
 
 const requestSchema = z.object({
   topic: z.string().trim().min(1).max(300),
+  challengeFocus: z.string().trim().max(1_000).optional().default(''),
   textType: z.string().trim().refine(
     (value) => RICH_TEXT_TYPES.includes(
       value as (typeof RICH_TEXT_TYPES)[number],
@@ -79,8 +80,21 @@ mandatory, not suggestions.`,
 Topic or draft title: ${input.topic}
 Textsorte: ${input.textType}
 
+${input.challengeFocus ? `MANDATORY CHALLENGE FOCUS:
+${input.challengeFocus}
+
+Use this focus extensively throughout the text. Build multiple meaningful,
+varied contexts around it so it is central to the text rather than appearing
+once or being mentioned explicitly. Preserve naturalness, coherence, the
+selected text type, and the configured proficiency level. Do not explain,
+label, teach, or comment on the challenge in the learner-facing text.
+` : ''}
 Worksheet context:
-${worksheetContextPrompt(context)}
+${worksheetContextPrompt(context, [
+  input.topic,
+  input.textType,
+  input.challengeFocus,
+].join(' '))}
 
 Mandatory language proficiency:
 ${languageProficiencyInstruction(context?.languageLevel ?? '')}
@@ -95,6 +109,8 @@ Didactic and editorial requirements:
   the learner context without inventing sensitive claims about real people.
 - Make the text coherent and information-rich enough for later comprehension
   activities.
+- When a challenge focus is provided, realize it repeatedly through varied,
+  authentic examples and relationships rather than mechanical repetition.
 - Keep vocabulary, syntax, sentence length, and implied knowledge within the
   configured proficiency level.
 - Choose a sensible length for the text type and proficiency. Prefer concise

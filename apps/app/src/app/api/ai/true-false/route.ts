@@ -107,7 +107,10 @@ Statements must be unambiguous, factual, and assess meaningful comprehension.`,
 ${countInstruction}
 
 Worksheet context:
-${worksheetContextPrompt(context)}
+${worksheetContextPrompt(context, [
+  input.sourceText,
+  input.cognitiveLevel,
+].join(' '))}
 
 Mandatory language proficiency:
 ${languageProficiencyInstruction(context?.languageLevel ?? '')}

@@ -73,7 +73,32 @@ function RichTextNodeView({ node, selected }: NodeViewProps) {
     const resizeObserver = new ResizeObserver(scheduleMeasure);
     resizeObserver.observe(root);
     const mutationObserver = editor
-      ? new MutationObserver(scheduleMeasure)
+      ? new MutationObserver((mutations) => {
+        const onlySelectionFrameChanges = mutations.every((mutation) => {
+          if (
+            mutation.type === 'attributes'
+            && mutation.target instanceof HTMLElement
+            && mutation.target.classList.contains(
+              'rich-text-node__selection-fragment',
+            )
+          ) {
+            return true;
+          }
+          const changedNodes = [
+            ...Array.from(mutation.addedNodes),
+            ...Array.from(mutation.removedNodes),
+          ];
+          return mutation.type === 'childList'
+            && changedNodes.length > 0
+            && changedNodes.every((changedNode) => (
+              changedNode instanceof HTMLElement
+              && changedNode.classList.contains(
+                'rich-text-node__selection-fragment',
+              )
+            ));
+        });
+        if (!onlySelectionFrameChanges) scheduleMeasure();
+      })
       : null;
     mutationObserver?.observe(editor!, {
       attributes: true,

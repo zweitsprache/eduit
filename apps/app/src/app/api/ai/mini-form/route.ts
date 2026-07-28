@@ -169,7 +169,11 @@ Shared form fields, in required output order:
 ${fields}
 
 Worksheet context:
-${worksheetContextPrompt(context)}
+${worksheetContextPrompt(context, [
+  input.topic,
+  input.textType,
+  fields,
+].join(' '))}
 
 Didactic purpose:
 This activity trains functional reading comprehension, selective reading, and the transfer of information from continuous text or direct instructions into a structured form.

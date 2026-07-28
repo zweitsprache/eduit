@@ -8,6 +8,7 @@ import {
   CustomBlockRoot,
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
+import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/instructions';
 import { RoughExampleStrike } from '@/components/editor/custom-blocks/rough-example-strike';
 
 export type SortingCategory = {
@@ -97,7 +98,9 @@ function SortingCategoriesNodeView({ node, selected }: NodeViewProps) {
         ? 'sorting-categories-node sorting-categories-node--color-coded'
         : 'sorting-categories-node'}
     >
-      <BlockInstruction>Sort the items into the correct categories.</BlockInstruction>
+      <BlockInstruction>
+        {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.sortingCategories}
+      </BlockInstruction>
       <div className="custom-block__word-bank sorting-categories-node__bank">
         {shuffledItems.map((item) => (
           <span

@@ -24,7 +24,7 @@ export function MediaLibraryModal({
     <div
       aria-label="Media library"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-overlay/70 p-4"
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-overlay/70 p-4"
       role="dialog"
     >
       <div className="w-full max-w-2xl overflow-hidden rounded-lg border border-secondary bg-primary shadow-xl">

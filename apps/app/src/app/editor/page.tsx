@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -46,11 +47,13 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/base/buttons/button';
 import { SearchSelect } from '@/components/base/select/select';
+import { Toggle } from '@/components/base/toggle/toggle';
 import { cx } from '@/utils/cx';
 import { SidebarAccountCard } from '@/components/app/sidebar-account-card';
 import { LanguageSwitcher } from '@/components/i18n/language-switcher';
 import { useI18n } from '@/components/i18n/locale-provider';
 import { EduitLogo } from '@eduit/ui';
+import { CustomBlockInstructions } from '@/components/editor/custom-blocks/instructions';
 import {
   MCQ,
   type MCQAnswerMode,
@@ -185,6 +188,7 @@ import {
   type ContentEditorBlock,
 } from '@/components/editor/block-content-editor-modal';
 import { WordGridAIModal } from '@/components/editor/word-grid-ai-modal';
+import { CrosswordAIModal } from '@/components/editor/crossword-ai-modal';
 import { WordGridCSVImportModal } from '@/components/editor/word-grid-csv-import-modal';
 import { DialogueAIModal } from '@/components/editor/dialogue-ai-modal';
 import { MiniFormAIModal } from '@/components/editor/mini-form-ai-modal';
@@ -192,15 +196,63 @@ import {
   FillInTheBlankAIModal,
 } from '@/components/editor/fill-in-the-blank-ai-modal';
 import { RichText } from '@/components/editor/rich-text-node';
+import { InstructionBlock } from '@/components/editor/instruction-node';
+import { MediaLayout } from '@/components/editor/media-layout-node';
+import { MediaLayoutEditorModal } from '@/components/editor/media-layout-editor-modal';
+import { BlockHoverToolbar } from '@/components/editor/block-hover-toolbar';
+import { LetterNode } from '@/components/editor/letter-node';
+import { Crossword } from '@/components/editor/crossword-node';
+import {
+  createErrorCorrectionMarkup,
+  ErrorCorrection,
+} from '@/components/editor/error-correction-node';
+import {
+  ErrorCorrectionAIModal,
+} from '@/components/editor/error-correction-ai-modal';
 import {
   TrueFalseAIModal,
   type RichTextSource,
 } from '@/components/editor/true-false-ai-modal';
 import { RichTextAIModal } from '@/components/editor/rich-text-ai-modal';
+import { MCQAIModal } from '@/components/editor/mcq-ai-modal';
 
 const STORAGE_KEY = 'eduit-editor-content';
+const BRAND_PROFILES_UPDATED_KEY = 'eduit-brand-profiles-updated';
+const BRAND_PROFILES_UPDATED_EVENT = 'eduit:brand-profiles-updated';
+
+function plainTextToRichTextHtml(value: string) {
+  const escapeHtml = (text: string) => text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+  return value
+    .trim()
+    .split(/\n{2,}/)
+    .filter((paragraph) => paragraph.trim())
+    .map((paragraph) => (
+      `<p>${escapeHtml(paragraph.trim()).replaceAll('\n', '<br>')}</p>`
+    ))
+    .join('');
+}
+
 const SelectablePageBreak = PageBreak.extend({
   selectable: true,
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      restartPagination: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-restart-pagination') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-restart-pagination': String(attributes.restartPagination),
+        }),
+      },
+    };
+  },
 });
 const DOCUMENT_HEADER = '<p></p>';
 const DOCUMENT_CREATOR = 'Creator name';
@@ -228,6 +280,11 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'miniForm',
   'worksheetTable',
   'richText',
+  'instructionBlock',
+  'mediaLayout',
+  'letterNode',
+  'crossword',
+  'errorCorrection',
 ]);
 
 function richTextToPlainText(html: string) {
@@ -267,6 +324,56 @@ function serializeStyleSheet(
       return rule.cssText;
     }
   }).join('\n');
+}
+
+function serializedDocumentHead() {
+  const visitedStyleSheets = new Set<CSSStyleSheet>();
+  return Array.from(document.styleSheets).map((styleSheet) => {
+    try {
+      const css = serializeStyleSheet(styleSheet, visitedStyleSheets)
+        .replace(/<\/style/gi, '<\\/style');
+      return `<style>${css}</style>`;
+    } catch {
+      return styleSheet.ownerNode instanceof HTMLElement
+        ? styleSheet.ownerNode.outerHTML
+        : '';
+    }
+  }).join('\n');
+}
+
+async function generateWorksheetPreview(editor: Editor, worksheetId: string) {
+  if (editor.isDestroyed) return;
+  const editorElement = editor.view.dom;
+  const sourceWidth = Math.ceil(editorElement.getBoundingClientRect().width);
+  if (sourceWidth < 300) return;
+  const clone = editorElement.cloneNode(true) as HTMLElement;
+  clone.removeAttribute('contenteditable');
+  clone.classList.remove('ProseMirror-focused');
+  clone.querySelectorAll<HTMLElement>('[contenteditable]').forEach((element) => {
+    element.removeAttribute('contenteditable');
+  });
+  clone.querySelectorAll<HTMLElement>(
+    '.ProseMirror-selectednode, .custom-block--selected, .heading-node--selected',
+  ).forEach((element) => {
+    element.classList.remove(
+      'ProseMirror-selectednode',
+      'custom-block--selected',
+      'heading-node--selected',
+    );
+  });
+  clone.querySelectorAll('.rich-text-node__selection-fragment').forEach(
+    (element) => element.remove(),
+  );
+  await fetch('/api/worksheets/preview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: worksheetId,
+      content: clone.outerHTML,
+      head: serializedDocumentHead(),
+      sourceWidth,
+    }),
+  });
 }
 
 const DEFAULT_DOCUMENT_BRAND = {
@@ -786,6 +893,10 @@ export default function EditorPage() {
   const [documentContext, setDocumentContext] = useState<WorksheetContext>({
     ...EMPTY_WORKSHEET_CONTEXT,
   });
+  const contextPdfInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingContextPdf, setUploadingContextPdf] = useState(false);
+  const [contextPdfError, setContextPdfError] = useState('');
+  const [contextPdfDragActive, setContextPdfDragActive] = useState(false);
   const [contextProfiles, setContextProfiles] = useState<ContextProfile[]>([]);
   const [worksheetTitle, setWorksheetTitle] = useState('Untitled Document');
   const worksheetIdRef = useRef<string | null>(
@@ -794,6 +905,8 @@ export default function EditorPage() {
       : null,
   );
   const worksheetSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const worksheetPreviewTimerRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
   const contextSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const worksheetInitializationStartedRef = useRef(false);
   const [selectedMCQPos, setSelectedMCQPos] = useState<number | null>(null);
@@ -824,6 +937,10 @@ export default function EditorPage() {
     useState<ContentEditorBlock | null>(null);
   const [wordGridAIBlock, setWordGridAIBlock] =
     useState<ContentEditorBlock | null>(null);
+  const [crosswordAIBlock, setCrosswordAIBlock] =
+    useState<ContentEditorBlock | null>(null);
+  const [mcqAIBlock, setMCQAIBlock] =
+    useState<ContentEditorBlock | null>(null);
   const [wordGridCSVBlock, setWordGridCSVBlock] =
     useState<ContentEditorBlock | null>(null);
   const [dialogueAIBlock, setDialogueAIBlock] =
@@ -836,20 +953,31 @@ export default function EditorPage() {
     useState<ContentEditorBlock | null>(null);
   const [richTextAIBlock, setRichTextAIBlock] =
     useState<ContentEditorBlock | null>(null);
+  const [errorCorrectionAIBlock, setErrorCorrectionAIBlock] =
+    useState<ContentEditorBlock | null>(null);
+  const [mediaLayoutEditorBlock, setMediaLayoutEditorBlock] = useState<{
+    pos: number;
+    type: 'mediaLayout';
+  } | null>(null);
   const [selectedCustomBlock, setSelectedCustomBlock] = useState<{
     pos: number;
     type: string;
   } | null>(null);
   const [insertPaletteOpen, setInsertPaletteOpen] = useState(false);
+  const [insertBlockAt, setInsertBlockAt] = useState<number | null>(null);
   const [rewriteImageItemId, setRewriteImageItemId] = useState<string | null>(null);
   const [miniFormImageItemId, setMiniFormImageItemId] = useState<string | null>(null);
 
   const editor = useEditor({
     extensions: [
-      ConvertKit.configure({ table: false }),
+      ConvertKit.configure({
+        table: false,
+        gapcursor: false,
+      }),
       TableKit,
       CustomBlockNumbering,
       MCQ,
+      CustomBlockInstructions,
       MCM,
       MCH,
       MatchingPairs,
@@ -869,6 +997,11 @@ export default function EditorPage() {
       MiniForm,
       WorksheetTable,
       RichText,
+      InstructionBlock,
+      MediaLayout,
+      LetterNode,
+      Crossword,
+      ErrorCorrection,
       SelectablePageBreak.configure({
         label: 'Page break',
       }),
@@ -906,6 +1039,14 @@ export default function EditorPage() {
             }),
           });
           setSaved(response.ok);
+          if (response.ok) {
+            if (worksheetPreviewTimerRef.current) {
+              clearTimeout(worksheetPreviewTimerRef.current);
+            }
+            worksheetPreviewTimerRef.current = setTimeout(() => {
+              void generateWorksheetPreview(editor, worksheetId);
+            }, 1600);
+          }
         } catch {
           setSaved(false);
         }
@@ -992,6 +1133,16 @@ export default function EditorPage() {
       if (!currentEditor || selectedMCQPos === null) return null;
       const node = currentEditor.state.doc.nodeAt(selectedMCQPos);
       return node?.type.name === 'mcq' ? node.attrs as MCQAttrs : null;
+    },
+  });
+
+  const selectedPageBreakRestartPagination = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor || selectedPageBreakPos === null) return false;
+      const node = currentEditor.state.doc.nodeAt(selectedPageBreakPos);
+      return node?.type.name === 'pageBreak'
+        && node.attrs.restartPagination === true;
     },
   });
 
@@ -1210,35 +1361,59 @@ export default function EditorPage() {
     },
   });
 
+  const loadBrandProfiles = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/brand-profiles', {
+        cache: 'no-store',
+      });
+      const result = await response.json() as {
+        profiles?: BrandProfile[];
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(result.error ?? 'Could not load brand profiles.');
+      }
+      setBrandProfiles(
+        (result.profiles ?? []).filter(({ isActive }) => isActive),
+      );
+    } catch {
+      setBrandProfiles([]);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-    void fetch('/api/admin/brand-profiles', { cache: 'no-store' })
-      .then(async (response) => {
-        const result = await response.json() as {
-          profiles?: BrandProfile[];
-          error?: string;
-        };
-        if (!response.ok) {
-          throw new Error(result.error ?? 'Could not load brand profiles.');
-        }
-        if (!cancelled) {
-          setBrandProfiles(
-            (result.profiles ?? []).filter(({ isActive }) => isActive),
-          );
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setBrandProfiles([]);
-      });
+    const refresh = () => {
+      if (!cancelled) void loadBrandProfiles();
+    };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    const refreshFromStorage = (event: StorageEvent) => {
+      if (event.key === BRAND_PROFILES_UPDATED_KEY) refresh();
+    };
+
+    refresh();
+    window.addEventListener('focus', refresh);
+    window.addEventListener(BRAND_PROFILES_UPDATED_EVENT, refresh);
+    window.addEventListener('storage', refreshFromStorage);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
     return () => {
       cancelled = true;
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener(BRAND_PROFILES_UPDATED_EVENT, refresh);
+      window.removeEventListener('storage', refreshFromStorage);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
     };
-  }, []);
+  }, [loadBrandProfiles]);
 
   const selectedBrandProfile = brandProfiles.find(
     ({ id }) => id === brandProfileId,
   );
-  const activeBrand = selectedBrandProfile ?? DEFAULT_DOCUMENT_BRAND;
+  const defaultBrandProfile = brandProfiles.find(({ isDefault }) => isDefault);
+  const activeBrand = selectedBrandProfile
+    ?? defaultBrandProfile
+    ?? DEFAULT_DOCUMENT_BRAND;
 
   useEffect(() => {
     if (!editor) return;
@@ -1273,13 +1448,15 @@ export default function EditorPage() {
       activeBrand.exampleColor,
     );
     editorElement.style.setProperty(
-      '--custom-block-solution-font-family',
+      '--brand-solution-font-family',
       activeBrand.solutionFontFamily,
     );
+    editorElement.style.removeProperty('--custom-block-solution-font-family');
     editorElement.style.setProperty(
-      '--custom-block-solution-font-size',
+      '--brand-solution-font-size',
       `${activeBrand.solutionFontSize}px`,
     );
+    editorElement.style.removeProperty('--custom-block-solution-font-size');
     editorElement.style.setProperty(
       '--custom-block-solution-color',
       activeBrand.solutionColor,
@@ -1418,11 +1595,95 @@ export default function EditorPage() {
 
   useEffect(() => {
     if (!editor) return;
+    const editorElement = editor.view.dom;
+    let outerFrame = 0;
+    let innerFrame = 0;
+
+    const applySectionPageNumbers = () => {
+      const footers = Array.from(
+        editorElement.querySelectorAll<HTMLElement>('.tiptap-page-footer'),
+      );
+      if (!footers.length) return;
+
+      const pagesStorage = editor.storage.pages as {
+        getPageForPosition?: (pos: number) => number;
+      };
+      const restartPages: number[] = [];
+      editor.state.doc.descendants((node, pos) => {
+        if (
+          node.type.name === 'pageBreak'
+          && node.attrs.restartPagination === true
+        ) {
+          const nextPosition = Math.min(
+            editor.state.doc.content.size,
+            pos + node.nodeSize,
+          );
+          const page = pagesStorage.getPageForPosition?.(nextPosition);
+          if (page && page > 1 && page <= footers.length) {
+            restartPages.push(page);
+          }
+          return false;
+        }
+        return true;
+      });
+
+      const sectionStarts = Array.from(new Set([1, ...restartPages]))
+        .sort((left, right) => left - right);
+      footers.forEach((footer, index) => {
+        const physicalPage = index + 1;
+        const sectionIndex = sectionStarts.findLastIndex(
+          (start) => start <= physicalPage,
+        );
+        const sectionStart = sectionStarts[Math.max(0, sectionIndex)] ?? 1;
+        const nextSectionStart = sectionStarts[sectionIndex + 1];
+        const sectionEnd = nextSectionStart
+          ? nextSectionStart - 1
+          : footers.length;
+        const displayedPage = physicalPage - sectionStart + 1;
+        const sectionTotal = sectionEnd - sectionStart + 1;
+        const pageLabel = footer.querySelector<HTMLElement>('p:nth-child(2)');
+        const label = `${displayedPage}/${sectionTotal}`;
+        if (pageLabel && pageLabel.textContent !== label) {
+          pageLabel.textContent = label;
+        }
+      });
+    };
+
+    const schedulePageNumbers = () => {
+      cancelAnimationFrame(outerFrame);
+      cancelAnimationFrame(innerFrame);
+      outerFrame = requestAnimationFrame(() => {
+        innerFrame = requestAnimationFrame(applySectionPageNumbers);
+      });
+    };
+    const observer = new MutationObserver(schedulePageNumbers);
+    observer.observe(editorElement, { childList: true, subtree: true });
+    editor.on('update', schedulePageNumbers);
+    schedulePageNumbers();
+
+    return () => {
+      cancelAnimationFrame(outerFrame);
+      cancelAnimationFrame(innerFrame);
+      observer.disconnect();
+      editor.off('update', schedulePageNumbers);
+    };
+  }, [editor]);
+
+  useEffect(() => {
+    if (!editor) return;
     editor.view.dom.setAttribute(
       'data-show-solutions',
       String(showSolutions),
     );
   }, [editor, showSolutions]);
+
+  useEffect(() => {
+    if (!editor) return;
+    editor.view.dom.setAttribute(
+      'data-worksheet-language',
+      documentContext.worksheetLanguage,
+    );
+  }, [documentContext.worksheetLanguage, editor]);
 
   useEffect(() => {
     const loadContextProfiles = async () => {
@@ -1511,9 +1772,30 @@ export default function EditorPage() {
     void initializeWorksheet();
     return () => {
       if (worksheetSaveTimerRef.current) clearTimeout(worksheetSaveTimerRef.current);
+      if (worksheetPreviewTimerRef.current) {
+        clearTimeout(worksheetPreviewTimerRef.current);
+      }
       if (contextSaveTimerRef.current) clearTimeout(contextSaveTimerRef.current);
     };
   }, [docSize, editor]);
+
+  useEffect(() => {
+    const worksheetId = worksheetIdRef.current;
+    if (!editor || !worksheetId || !worksheetInitializationStartedRef.current) {
+      return;
+    }
+    if (worksheetPreviewTimerRef.current) {
+      clearTimeout(worksheetPreviewTimerRef.current);
+    }
+    worksheetPreviewTimerRef.current = setTimeout(() => {
+      void generateWorksheetPreview(editor, worksheetId);
+    }, 1600);
+    return () => {
+      if (worksheetPreviewTimerRef.current) {
+        clearTimeout(worksheetPreviewTimerRef.current);
+      }
+    };
+  }, [brandProfileId, docSize, editor, showSolutions]);
 
   if (!editor) return null;
 
@@ -2278,6 +2560,59 @@ export default function EditorPage() {
     });
   };
 
+  const uploadContextPdf = async (file: File) => {
+    if (!file.name.toLocaleLowerCase().endsWith('.pdf')) {
+      setContextPdfError('Choose a PDF file.');
+      return;
+    }
+    setUploadingContextPdf(true);
+    setContextPdfError('');
+    try {
+      const formData = new FormData();
+      formData.set('file', file);
+      const response = await fetch('/api/ai/context-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await response.json() as {
+        name?: string;
+        pageCount?: number;
+        text?: string;
+        truncated?: boolean;
+        error?: string;
+      };
+      if (!response.ok || !result.name || !result.text) {
+        throw new Error(result.error ?? 'Could not read the PDF.');
+      }
+      updateDocumentContext({
+        contextPdfName: result.name,
+        contextPdfText: result.text,
+        contextPdfPageCount: result.pageCount ?? null,
+      });
+      if (result.truncated) {
+        setContextPdfError(
+          'The PDF was attached. Its extracted text exceeded the 1,000,000-character storage limit.',
+        );
+      }
+    } catch (error) {
+      setContextPdfError(
+        error instanceof Error ? error.message : 'Could not read the PDF.',
+      );
+    } finally {
+      setUploadingContextPdf(false);
+      if (contextPdfInputRef.current) contextPdfInputRef.current.value = '';
+    }
+  };
+
+  const removeContextPdf = () => {
+    updateDocumentContext({
+      contextPdfName: '',
+      contextPdfText: '',
+      contextPdfPageCount: null,
+    });
+    setContextPdfError('');
+  };
+
   const loadDocumentContextProfile = (profileId: string) => {
     const profile = contextProfiles.find(({ id }) => id === profileId);
     if (!profile) return;
@@ -2296,6 +2631,9 @@ export default function EditorPage() {
       ...EMPTY_WORKSHEET_CONTEXT,
       ...profile.context,
       sourceProfileId: profile.id,
+      contextPdfName: documentContext.contextPdfName,
+      contextPdfText: documentContext.contextPdfText,
+      contextPdfPageCount: documentContext.contextPdfPageCount,
     });
   };
 
@@ -2311,6 +2649,9 @@ export default function EditorPage() {
       ...EMPTY_WORKSHEET_CONTEXT,
       ...profile.context,
       sourceProfileId: profile.id,
+      contextPdfName: documentContext.contextPdfName,
+      contextPdfText: documentContext.contextPdfText,
+      contextPdfPageCount: documentContext.contextPdfPageCount,
     });
   };
 
@@ -2323,7 +2664,13 @@ export default function EditorPage() {
       body: JSON.stringify({
         name,
         description: `Created from worksheet “${worksheetTitle}”.`,
-        context: { ...documentContext, sourceProfileId: null },
+        context: {
+          ...documentContext,
+          sourceProfileId: null,
+          contextPdfName: '',
+          contextPdfText: '',
+          contextPdfPageCount: null,
+        },
       }),
     });
     const result = await response.json() as {
@@ -2409,6 +2756,23 @@ export default function EditorPage() {
     setSelectedPageBreakPos(null);
   };
 
+  const updateSelectedPageBreakRestartPagination = (value: boolean) => {
+    if (selectedPageBreakPos === null) return;
+    editor
+      .chain()
+      .command(({ tr }) => {
+        const node = tr.doc.nodeAt(selectedPageBreakPos);
+        if (node?.type.name !== 'pageBreak') return false;
+        tr.setNodeAttribute(
+          selectedPageBreakPos,
+          'restartPagination',
+          value,
+        );
+        return true;
+      })
+      .run();
+  };
+
   const exportPDF = async () => {
     const editorElement = document.querySelector<HTMLElement>('.editor-content .tiptap');
     const appElement = document.querySelector<HTMLElement>('.editor-app');
@@ -2432,11 +2796,24 @@ export default function EditorPage() {
             : '';
         }
       }).join('\n');
+      const exportContent = editorElement.cloneNode(true) as HTMLElement;
+      exportContent.querySelectorAll<HTMLElement>(
+        '.ProseMirror-selectednode, .custom-block--selected, .heading-node--selected',
+      ).forEach((element) => {
+        element.classList.remove(
+          'ProseMirror-selectednode',
+          'custom-block--selected',
+          'heading-node--selected',
+        );
+      });
+      exportContent.querySelectorAll(
+        '.rich-text-node__selection-fragment',
+      ).forEach((element) => element.remove());
       const response = await fetch('/api/export/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content: editorElement.outerHTML,
+          content: exportContent.outerHTML,
           head,
           docSize,
         }),
@@ -2632,7 +3009,15 @@ export default function EditorPage() {
             <ToolbarButton title="Code block" active={editor.isActive('codeBlock')} onClick={() => editor.chain().focus().toggleCodeBlock().run()}><Code01 className="size-4.5" /></ToolbarButton>
             <ToolbarButton title="Blockquote" active={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()}><MessageChatSquare className="size-4.5" /></ToolbarButton>
             <div className="mx-1 h-5 w-px bg-secondary" />
-            <ToolbarButton title="Insert custom block" onClick={() => setInsertPaletteOpen(true)}><PlusSquare className="size-4.5" /></ToolbarButton>
+            <ToolbarButton
+              title="Insert custom block"
+              onClick={() => {
+                setInsertBlockAt(null);
+                setInsertPaletteOpen(true);
+              }}
+            >
+              <PlusSquare className="size-4.5" />
+            </ToolbarButton>
             <div className="ml-auto flex gap-1">
               <ToolbarButton title="Undo" onClick={() => editor.chain().focus().undo().run()}><ReverseLeft className="size-4.5" /></ToolbarButton>
               <ToolbarButton title="Redo" onClick={() => editor.chain().focus().redo().run()}><ReverseRight className="size-4.5" /></ToolbarButton>
@@ -2666,25 +3051,42 @@ export default function EditorPage() {
             <div className="flex flex-col gap-2">
               <button
                 type="button"
-                onClick={() => setContentEditorBlock({
-                  pos: selectedCustomBlock.pos,
-                  type: selectedCustomBlock.type as ContentEditorBlock['type'],
-                })}
+                onClick={() => {
+                  if (selectedCustomBlock.type === 'mediaLayout') {
+                    setMediaLayoutEditorBlock({
+                      pos: selectedCustomBlock.pos,
+                      type: 'mediaLayout',
+                    });
+                    return;
+                  }
+                  setContentEditorBlock({
+                    pos: selectedCustomBlock.pos,
+                    type: selectedCustomBlock.type as ContentEditorBlock['type'],
+                  });
+                }}
                 className="flex w-full items-center justify-start gap-2 rounded-lg bg-brand-solid px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-solid_hover"
               >
                 <Edit05 className="size-4" />
                 Edit content
               </button>
-              {(selectedCustomBlock.type === 'wordGrid'
+              {(selectedCustomBlock.type === 'mcq'
+                || selectedCustomBlock.type === 'wordGrid'
                 || selectedCustomBlock.type === 'dialogue'
                 || selectedCustomBlock.type === 'miniForm'
                 || selectedCustomBlock.type === 'fillInTheBlank'
                 || selectedCustomBlock.type === 'trueFalse'
-                || selectedCustomBlock.type === 'richText') && (
+                || selectedCustomBlock.type === 'richText'
+                || selectedCustomBlock.type === 'errorCorrection'
+                || selectedCustomBlock.type === 'crossword') && (
                 <button
                   type="button"
                   onClick={() => {
-                    if (selectedCustomBlock.type === 'wordGrid') {
+                    if (selectedCustomBlock.type === 'mcq') {
+                      setMCQAIBlock({
+                        pos: selectedCustomBlock.pos,
+                        type: 'mcq',
+                      });
+                    } else if (selectedCustomBlock.type === 'wordGrid') {
                       setWordGridAIBlock({
                         pos: selectedCustomBlock.pos,
                         type: 'wordGrid',
@@ -2708,6 +3110,16 @@ export default function EditorPage() {
                       setTrueFalseAIBlock({
                         pos: selectedCustomBlock.pos,
                         type: 'trueFalse',
+                      });
+                    } else if (selectedCustomBlock.type === 'crossword') {
+                      setCrosswordAIBlock({
+                        pos: selectedCustomBlock.pos,
+                        type: 'crossword',
+                      });
+                    } else if (selectedCustomBlock.type === 'errorCorrection') {
+                      setErrorCorrectionAIBlock({
+                        pos: selectedCustomBlock.pos,
+                        type: 'errorCorrection',
                       });
                     } else {
                       setRichTextAIBlock({
@@ -5737,6 +6149,12 @@ export default function EditorPage() {
               <p className="text-xs font-semibold text-quaternary">
                 Page break
               </p>
+              <Toggle
+                className="mt-3"
+                label="Restart pagination"
+                isSelected={Boolean(selectedPageBreakRestartPagination)}
+                onChange={updateSelectedPageBreakRestartPagination}
+              />
               <button
                 type="button"
                 onClick={deleteSelectedPageBreak}
@@ -5844,7 +6262,114 @@ export default function EditorPage() {
                   </button>
                 </div>
               </div>
+              <div className="mt-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold text-tertiary">
+                    Context PDF
+                  </p>
+                  {documentContext.contextPdfName && (
+                    <button
+                      type="button"
+                      onClick={removeContextPdf}
+                      className="text-xs font-semibold text-error-primary hover:underline"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={contextPdfInputRef}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="sr-only"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void uploadContextPdf(file);
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={uploadingContextPdf}
+                  onClick={() => contextPdfInputRef.current?.click()}
+                  onDragEnter={(event) => {
+                    event.preventDefault();
+                    setContextPdfDragActive(true);
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'copy';
+                    setContextPdfDragActive(true);
+                  }}
+                  onDragLeave={(event) => {
+                    event.preventDefault();
+                    if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                      setContextPdfDragActive(false);
+                    }
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    setContextPdfDragActive(false);
+                    const file = event.dataTransfer.files?.[0];
+                    if (file) void uploadContextPdf(file);
+                  }}
+                  className={cx(
+                    'mt-1.5 flex w-full items-center gap-3 rounded-md border border-dashed px-3 py-3 text-left transition',
+                    contextPdfDragActive
+                      ? 'border-brand bg-brand-primary'
+                      : 'border-primary bg-primary hover:bg-primary_hover',
+                    uploadingContextPdf && 'cursor-wait opacity-60',
+                  )}
+                >
+                  {uploadingContextPdf
+                    ? <Loading01 className="size-5 shrink-0 animate-spin text-brand-secondary" />
+                    : <FileUp className="size-5 shrink-0 text-brand-secondary" />}
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-semibold text-secondary">
+                      {uploadingContextPdf
+                        ? 'Reading PDF…'
+                        : documentContext.contextPdfName || 'Upload or drop a PDF'}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] leading-4 text-quaternary">
+                      {documentContext.contextPdfName
+                        ? documentContext.contextPdfText.length === 40_000
+                          ? 'Re-upload once to index the complete PDF'
+                          : `${
+                            documentContext.contextPdfPageCount
+                              ? `${documentContext.contextPdfPageCount} pages · `
+                              : ''
+                          }Click or drop to replace`
+                        : 'PDF up to 10 MB · extracted text is used by AI'}
+                    </span>
+                  </span>
+                </button>
+                {contextPdfError && (
+                  <p
+                    role="status"
+                    className="mt-1.5 text-xs leading-5 text-error-primary"
+                  >
+                    {contextPdfError}
+                  </p>
+                )}
+              </div>
               <div className="mt-3 space-y-3">
+                <fieldset>
+                  <legend className="text-xs font-semibold text-tertiary">
+                    Worksheet language
+                  </legend>
+                  <select
+                    value={documentContext.worksheetLanguage}
+                    onChange={(event) => updateDocumentContext({
+                      worksheetLanguage: event.target.value as
+                        WorksheetContext['worksheetLanguage'],
+                    })}
+                    className="mt-1.5 w-full rounded-md border border-primary bg-primary px-3 py-2 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  >
+                    <option value="en">EN</option>
+                    <option value="de-formal">DE formell</option>
+                    <option value="de-informal">DE informell</option>
+                  </select>
+                </fieldset>
+
                 <label className="block text-xs font-semibold text-tertiary">
                   Subject
                   <span className="mt-1.5 block font-normal">
@@ -6077,13 +6602,98 @@ export default function EditorPage() {
 
       <InsertBlockPalette
         editor={editor}
+        insertAt={insertBlockAt}
         open={insertPaletteOpen}
-        onClose={() => setInsertPaletteOpen(false)}
+        onClose={() => {
+          setInsertPaletteOpen(false);
+          setInsertBlockAt(null);
+        }}
       />
       <BlockContentEditorModal
         block={contentEditorBlock}
         editor={editor}
         onClose={() => setContentEditorBlock(null)}
+      />
+      <MCQAIModal
+        context={documentContext}
+        initialOptionCount={selectedMCQAttrs?.options.length ?? 4}
+        open={mcqAIBlock?.type === 'mcq'}
+        sources={richTextSources ?? []}
+        onClose={() => setMCQAIBlock(null)}
+        onGenerated={({
+          questions,
+          sourceText,
+          sourceWasGenerated,
+        }) => {
+          if (!mcqAIBlock) return false;
+          const block = mcqAIBlock;
+          let resolvedPos: number | null = null;
+          const generatedAt = Date.now();
+          const applied = editor.chain().command(({ tr }) => {
+            if (tr.doc.nodeAt(block.pos)?.type.name === 'mcq') {
+              resolvedPos = block.pos;
+            } else {
+              let nearestDistance = Number.POSITIVE_INFINITY;
+              tr.doc.descendants((node, pos) => {
+                if (node.type.name !== 'mcq') return;
+                const distance = Math.abs(pos - block.pos);
+                if (distance < nearestDistance) {
+                  nearestDistance = distance;
+                  resolvedPos = pos;
+                }
+              });
+            }
+            if (resolvedPos === null) return false;
+            const originalNode = tr.doc.nodeAt(resolvedPos);
+            if (originalNode?.type.name !== 'mcq') return false;
+            const schema = tr.doc.type.schema;
+            const replacementNodes = [];
+            if (sourceWasGenerated) {
+              const richTextType = schema.nodes.richText;
+              if (!richTextType) return false;
+              replacementNodes.push(richTextType.create({
+                html: plainTextToRichTextHtml(sourceText),
+              }));
+            }
+            const multipleQuestions = questions.length > 1;
+            questions.forEach((generatedQuestion, questionIndex) => {
+              replacementNodes.push(originalNode.type.create({
+                ...originalNode.attrs,
+                question: generatedQuestion.question,
+                answerMode: 'single',
+                shuffleAnswers: false,
+                questionNumber: multipleQuestions ? questionIndex + 1 : null,
+                showInstruction: !multipleQuestions || questionIndex === 0,
+                options: generatedQuestion.options.map((option, optionIndex) => ({
+                  id: `mcq-ai-${generatedAt}-${questionIndex}-${optionIndex}`,
+                  text: option.text,
+                  correct: option.correct,
+                })),
+              }));
+            });
+            tr.replaceWith(
+              resolvedPos,
+              resolvedPos + originalNode.nodeSize,
+              replacementNodes,
+            );
+            let firstMCQPos = resolvedPos;
+            if (sourceWasGenerated) {
+              firstMCQPos += replacementNodes[0].nodeSize;
+            }
+            tr.setSelection(NodeSelection.create(tr.doc, firstMCQPos));
+            resolvedPos = firstMCQPos;
+            return true;
+          }).run();
+          if (!applied || resolvedPos === null) return false;
+          const updatedBlock: ContentEditorBlock = {
+            ...block,
+            pos: resolvedPos,
+          };
+          setMCQAIBlock(null);
+          setContentEditorBlock(updatedBlock);
+          setSelectedCustomBlock(updatedBlock);
+          return true;
+        }}
       />
       <WordGridAIModal
         context={documentContext}
@@ -6119,6 +6729,40 @@ export default function EditorPage() {
           }).run();
           setWordGridAIBlock(null);
           setContentEditorBlock(block);
+        }}
+      />
+      <CrosswordAIModal
+        context={documentContext}
+        open={crosswordAIBlock?.type === 'crossword'}
+        onClose={() => setCrosswordAIBlock(null)}
+        onGenerated={(entries) => {
+          if (!crosswordAIBlock) return;
+          const block = crosswordAIBlock;
+          const generatedAt = Date.now();
+          const applied = editor.chain().command(({ tr }) => {
+            const node = tr.doc.nodeAt(block.pos);
+            if (node?.type.name !== 'crossword') return false;
+            tr.setNodeAttribute(
+              block.pos,
+              'entries',
+              entries.map((entry, index) => ({
+                id: `crossword-ai-${generatedAt}-${index}`,
+                answer: entry.answer,
+                clue: entry.clue,
+              })),
+            );
+            tr.setNodeAttribute(
+              block.pos,
+              'layoutSeed',
+              Math.max(0, Number(node.attrs.layoutSeed) || 0) + 1,
+            );
+            tr.setSelection(NodeSelection.create(tr.doc, block.pos));
+            return true;
+          }).run();
+          if (!applied) return;
+          setCrosswordAIBlock(null);
+          setContentEditorBlock(block);
+          setSelectedCustomBlock(block);
         }}
       />
       <WordGridCSVImportModal
@@ -6219,18 +6863,43 @@ export default function EditorPage() {
       <FillInTheBlankAIModal
         context={documentContext}
         open={fillInTheBlankAIBlock?.type === 'fillInTheBlank'}
+        sources={richTextSources ?? []}
         onClose={() => setFillInTheBlankAIBlock(null)}
-        onGenerated={(text) => {
-          if (!fillInTheBlankAIBlock) return;
+        onGenerated={({ text, distractors }) => {
+          if (!fillInTheBlankAIBlock) return false;
           const block = fillInTheBlankAIBlock;
-          editor.chain().command(({ tr }) => {
-            const node = tr.doc.nodeAt(block.pos);
-            if (node?.type.name !== 'fillInTheBlank') return false;
-            tr.setNodeAttribute(block.pos, 'text', text);
+          let resolvedPos: number | null = null;
+          const applied = editor.chain().command(({ tr }) => {
+            if (tr.doc.nodeAt(block.pos)?.type.name === 'fillInTheBlank') {
+              resolvedPos = block.pos;
+            } else {
+              let nearestDistance = Number.POSITIVE_INFINITY;
+              tr.doc.descendants((node, pos) => {
+                if (node.type.name !== 'fillInTheBlank') return;
+                const distance = Math.abs(pos - block.pos);
+                if (distance < nearestDistance) {
+                  nearestDistance = distance;
+                  resolvedPos = pos;
+                }
+              });
+            }
+            if (resolvedPos === null) return false;
+            tr.setNodeAttribute(resolvedPos, 'text', text);
+            tr.setNodeAttribute(resolvedPos, 'distractors', distractors);
+            if (distractors.length > 0) {
+              tr.setNodeAttribute(resolvedPos, 'showWordBank', true);
+            }
             return true;
           }).run();
+          if (!applied || resolvedPos === null) return false;
+          const updatedBlock = {
+            ...block,
+            pos: resolvedPos,
+          };
           setFillInTheBlankAIBlock(null);
-          setContentEditorBlock(block);
+          setContentEditorBlock(updatedBlock);
+          setSelectedCustomBlock(updatedBlock);
+          return true;
         }}
       />
       <TrueFalseAIModal
@@ -6284,6 +6953,61 @@ export default function EditorPage() {
           setContentEditorBlock(block);
         }}
       />
+      <ErrorCorrectionAIModal
+        context={documentContext}
+        open={errorCorrectionAIBlock?.type === 'errorCorrection'}
+        sources={richTextSources ?? []}
+        onClose={() => setErrorCorrectionAIBlock(null)}
+        onGenerated={(result) => {
+          if (!errorCorrectionAIBlock) return false;
+          const block = errorCorrectionAIBlock;
+          let resolvedPos: number | null = null;
+          const applied = editor.chain().command(({ tr }) => {
+            if (tr.doc.nodeAt(block.pos)?.type.name === 'errorCorrection') {
+              resolvedPos = block.pos;
+            } else {
+              let nearestDistance = Number.POSITIVE_INFINITY;
+              tr.doc.descendants((node, pos) => {
+                if (node.type.name !== 'errorCorrection') return;
+                const distance = Math.abs(pos - block.pos);
+                if (distance < nearestDistance) {
+                  nearestDistance = distance;
+                  resolvedPos = pos;
+                }
+              });
+            }
+            if (resolvedPos === null) return false;
+            tr.setNodeAttribute(resolvedPos, 'language', result.language);
+            tr.setNodeAttribute(
+              resolvedPos,
+              'incorrectText',
+              result.incorrectText,
+            );
+            tr.setNodeAttribute(resolvedPos, 'correctText', result.correctText);
+            tr.setNodeAttribute(resolvedPos, 'errors', result.errors);
+            tr.setNodeAttribute(
+              resolvedPos,
+              'markup',
+              createErrorCorrectionMarkup(result.incorrectText, result.errors),
+            );
+            tr.setNodeAttribute(
+              resolvedPos,
+              'markErrorPositions',
+              result.markErrorPositions,
+            );
+            return true;
+          }).run();
+          if (!applied || resolvedPos === null) return false;
+          const updatedBlock = {
+            ...block,
+            pos: resolvedPos,
+          };
+          setErrorCorrectionAIBlock(null);
+          setContentEditorBlock(updatedBlock);
+          setSelectedCustomBlock(updatedBlock);
+          return true;
+        }}
+      />
       <MediaLibraryModal
         onClose={() => setRewriteImageItemId(null)}
         onSelect={selectRewriteSentenceImage}
@@ -6293,6 +7017,22 @@ export default function EditorPage() {
         onClose={() => setMiniFormImageItemId(null)}
         onSelect={selectMiniFormImage}
         open={miniFormImageItemId !== null}
+      />
+      <MediaLayoutEditorModal
+        block={mediaLayoutEditorBlock}
+        editor={editor}
+        onClose={() => setMediaLayoutEditorBlock(null)}
+      />
+      <BlockHoverToolbar
+        editor={editor}
+        onInsertAbove={(pos) => {
+          setInsertBlockAt(pos);
+          setInsertPaletteOpen(true);
+        }}
+        onInsertBelow={(pos) => {
+          setInsertBlockAt(pos);
+          setInsertPaletteOpen(true);
+        }}
       />
     </div>
   );

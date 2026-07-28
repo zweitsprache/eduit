@@ -62,6 +62,7 @@ function buildNumberingDecorations(
     }
 
     if (!isCustomBlock(node)) return true;
+    if (node.attrs.showInstruction === false) return false;
 
     ordinal += 1;
     const label = formatInstructionNumber(

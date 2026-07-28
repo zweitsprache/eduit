@@ -11,7 +11,11 @@ export const DATE_FORMATS = [
   'yyyy-MM-dd',
 ] as const;
 
-export const STYLE_PRESETS = ['educational', 'academic'] as const;
+export const STYLE_PRESETS = [
+  'educational',
+  'semi-academic',
+  'academic',
+] as const;
 
 export type BrandNumberFormat = typeof NUMBER_FORMATS[number];
 export type BrandProfileDateFormat = typeof DATE_FORMATS[number];
@@ -84,8 +88,39 @@ export type BrandHeadingNumberFormats = {
   5: BrandNumberFormat;
 };
 
+export const BRAND_PROFILE_SETTING_KEYS = [
+  'primaryColor',
+  'accentColor',
+  'customColor1',
+  'customColor2',
+  'fontFamily',
+  'stylePreset',
+  'exampleFontFamily',
+  'exampleFontSize',
+  'exampleColor',
+  'solutionFontFamily',
+  'solutionFontSize',
+  'solutionColor',
+  'logoUrl',
+  'logoScale',
+  'instructionNumberFormat',
+  'instructionNumberColor',
+  'instructionNumberFontWeight',
+  'instructionBadgeStyle',
+  'headingNumberFormats',
+  'headingStyles',
+  'fixedHeadingNumberWidth',
+  'contentIndentation',
+  'dateFormat',
+] as const;
+
+export type BrandProfileSettingKey =
+  typeof BRAND_PROFILE_SETTING_KEYS[number];
+
 export type BrandProfile = {
   id: string;
+  parentProfileId: string | null;
+  overriddenFields: BrandProfileSettingKey[];
   slug: string;
   name: string;
   description: string;

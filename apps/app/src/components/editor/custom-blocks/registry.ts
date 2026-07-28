@@ -17,6 +17,7 @@ import {
   BookOpen01,
   List,
   GraduationHat01,
+  Image01,
 } from '@untitledui/icons';
 
 export type CustomBlockDefinition = {
@@ -56,6 +57,53 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
     keywords: ['rich', 'text', 'paragraph', 'heading', 'list', 'link', 'formatted'],
     Icon: TypeSquare,
     insert: (editor) => editor.chain().focus().insertRichText().run(),
+  },
+  {
+    type: 'instructionBlock',
+    label: 'Instruction',
+    description: 'A standalone numbered instruction using the document design system.',
+    category: 'Content',
+    keywords: ['instruction', 'task', 'prompt', 'numbered', 'direction'],
+    Icon: Clipboard,
+    insert: (editor) => (
+      editor.chain().focus().insertInstructionBlock().run()
+    ),
+  },
+  {
+    type: 'mediaLayout',
+    label: 'Media layout',
+    description: 'Images, image-and-text splits, galleries, and configurable grids.',
+    category: 'Content',
+    keywords: ['image', 'media', 'photo', 'gallery', 'grid', 'caption', 'text'],
+    Icon: Image01,
+    insert: (editor) => editor.chain().focus().insertMediaLayout().run(),
+  },
+  {
+    type: 'letterNode',
+    label: 'Letter Node',
+    description: 'Decode answer words using numbered alphabet cells and helper letters.',
+    category: 'Assessment',
+    keywords: ['letter', 'alphabet', 'code', 'decode', 'word', 'helper'],
+    Icon: Grid01,
+    insert: (editor) => editor.chain().focus().insertLetterNode().run(),
+  },
+  {
+    type: 'crossword',
+    label: 'Crossword',
+    description: 'Generate an intersecting crossword from answer and clue pairs.',
+    category: 'Assessment',
+    keywords: ['crossword', 'clues', 'terms', 'puzzle', 'vocabulary', 'grid'],
+    Icon: Grid01,
+    insert: (editor) => editor.chain().focus().insertCrossword().run(),
+  },
+  {
+    type: 'errorCorrection',
+    label: 'Error Correction Text',
+    description: 'A controlled text with errors for learners to identify and correct.',
+    category: 'Assessment',
+    keywords: ['error', 'correction', 'grammar', 'spelling', 'editing', 'text'],
+    Icon: Edit05,
+    insert: (editor) => editor.chain().focus().insertErrorCorrection().run(),
   },
   {
     type: 'mcq',

@@ -7,10 +7,12 @@ import {
   type WorksheetContext,
   type WorksheetPatch,
 } from '@/lib/worksheet-types';
+import { requireOwnedWorksheetFolder } from '@/lib/worksheet-folders';
 
 type WorksheetRow = {
   id: string;
   owner_user_id: string | null;
+  folder_id: string | null;
   brand_profile_id: string | null;
   brand_profile_name: string | null;
   title: string;
@@ -19,6 +21,8 @@ type WorksheetRow = {
   show_solutions: boolean;
   context: WorksheetContext | null;
   status: Worksheet['status'];
+  has_preview: boolean;
+  preview_updated_at: Date | string | null;
   created_at: Date | string;
   updated_at: Date | string;
 };
@@ -32,6 +36,7 @@ function mapRow(row: WorksheetRow): Worksheet {
   return {
     id: row.id,
     ownerUserId: row.owner_user_id,
+    folderId: row.folder_id,
     brandProfileId: row.brand_profile_id,
     brandProfileName: row.brand_profile_name,
     title: row.title,
@@ -41,16 +46,41 @@ function mapRow(row: WorksheetRow): Worksheet {
     context: {
       ...EMPTY_WORKSHEET_CONTEXT,
       ...(row.context ?? {}),
+      worksheetLanguage: row.context?.worksheetLanguage === 'de-formal'
+        ? 'de-formal'
+        : row.context?.worksheetLanguage === 'de-informal'
+          || (row.context?.worksheetLanguage as string | undefined) === 'de'
+          ? 'de-informal'
+          : 'en',
       subject: row.context?.subject || legacySubjects[0] || '',
     },
     status: row.status,
+    hasPreview: row.has_preview,
+    previewUpdatedAt: row.preview_updated_at
+      ? new Date(row.preview_updated_at).toISOString()
+      : null,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
   };
 }
 
 const SELECT_WORKSHEET = `
-  select w.*, b.name as brand_profile_name
+  select
+    w.id,
+    w.owner_user_id,
+    w.folder_id,
+    w.brand_profile_id,
+    b.name as brand_profile_name,
+    w.title,
+    w.content_html,
+    w.document_size,
+    w.show_solutions,
+    w.context,
+    w.status,
+    (w.preview_blob_path is not null) as has_preview,
+    w.preview_updated_at,
+    w.created_at,
+    w.updated_at
   from worksheets w
   left join brand_profiles b on b.id = w.brand_profile_id
 `;
@@ -76,24 +106,33 @@ export async function getWorksheet(id: string, ownerUserId: string, includeAll =
 }
 
 export async function createWorksheet(ownerUserId: string, input: WorksheetPatch = {}) {
+  await requireOwnedWorksheetFolder(input.folderId ?? null, ownerUserId);
   const rows = await sql`
     insert into worksheets (
       owner_user_id,
       title,
       content_html,
       document_size,
+      show_solutions,
       status,
       context,
-      brand_profile_id
+      brand_profile_id,
+      folder_id
     )
     values (
       ${ownerUserId},
       ${input.title?.trim() || 'Untitled Worksheet'},
       ${input.contentHtml ?? ''},
       ${input.documentSize ?? 'a4-portrait'},
+      ${input.showSolutions ?? false},
       ${input.status ?? 'draft'},
       ${JSON.stringify(input.context ?? EMPTY_WORKSHEET_CONTEXT)}::jsonb,
-      (select id from brand_profiles where is_default = true limit 1)
+      case
+        when ${input.brandProfileId === undefined}
+          then (select id from brand_profiles where is_default = true limit 1)
+        else ${input.brandProfileId}::uuid
+      end,
+      ${input.folderId ?? null}::uuid
     )
     returning *
   ` as WorksheetRow[];
@@ -153,7 +192,14 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
         ? Math.min(120, Math.max(0, Math.round(number)))
         : null;
     };
+    const pageCount = Number(context.contextPdfPageCount);
     patch.context = {
+      worksheetLanguage: context.worksheetLanguage === 'de-formal'
+        ? 'de-formal'
+        : context.worksheetLanguage === 'de-informal'
+          || context.worksheetLanguage === 'de'
+          ? 'de-informal'
+          : 'en',
       sourceProfileId: typeof context.sourceProfileId === 'string'
         ? context.sourceProfileId.slice(0, 100)
         : null,
@@ -168,6 +214,11 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
       curriculum: text('curriculum', 250),
       languageLevel: text('languageLevel', 100),
       learnerContext: text('learnerContext', 1000),
+      contextPdfName: text('contextPdfName', 250),
+      contextPdfText: text('contextPdfText', 1_000_000),
+      contextPdfPageCount: Number.isFinite(pageCount)
+        ? Math.min(10_000, Math.max(1, Math.round(pageCount)))
+        : null,
     };
   }
   if ('brandProfileId' in input) {
@@ -175,6 +226,12 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
       throw new Error('Invalid brand profile.');
     }
     patch.brandProfileId = input.brandProfileId as string | null;
+  }
+  if ('folderId' in input) {
+    if (input.folderId !== null && typeof input.folderId !== 'string') {
+      throw new Error('Invalid worksheet folder.');
+    }
+    patch.folderId = input.folderId as string | null;
   }
 
   return patch;
@@ -188,6 +245,9 @@ export async function updateWorksheet(
 ) {
   const current = await getWorksheet(id, ownerUserId, includeAll);
   if (!current) throw new Error('Worksheet not found.');
+  if (patch.folderId !== undefined) {
+    await requireOwnedWorksheetFolder(patch.folderId, ownerUserId);
+  }
 
   await sql`
     update worksheets
@@ -200,6 +260,9 @@ export async function updateWorksheet(
         brand_profile_id = ${patch.brandProfileId === undefined
           ? current.brandProfileId
           : patch.brandProfileId},
+        folder_id = ${patch.folderId === undefined
+          ? current.folderId
+          : patch.folderId}::uuid,
         updated_at = now()
     where id = ${id}
       and (${includeAll} or owner_user_id = ${ownerUserId})
@@ -215,4 +278,61 @@ export async function deleteWorksheet(id: string, ownerUserId: string, includeAl
     returning id
   `;
   if (!rows[0]) throw new Error('Worksheet not found.');
+}
+
+export async function updateWorksheetPreview(
+  id: string,
+  ownerUserId: string,
+  blobPath: string,
+  includeAll = false,
+) {
+  const currentRows = await sql(
+    `select preview_blob_path
+     from worksheets
+     where id = $1
+       and ($2 or owner_user_id = $3)`,
+    [id, includeAll, ownerUserId],
+  ) as Array<{ preview_blob_path: string | null }>;
+  if (!currentRows[0]) throw new Error('Worksheet not found.');
+  const rows = await sql(
+    `update worksheets
+     set preview_blob_path = $1,
+         preview_updated_at = now()
+     where id = $2
+       and ($3 or owner_user_id = $4)
+     returning preview_updated_at`,
+    [blobPath, id, includeAll, ownerUserId],
+  ) as Array<{ preview_updated_at: Date | string }>;
+  if (!rows[0]) throw new Error('Worksheet not found.');
+  return {
+    previousBlobPath: currentRows[0].preview_blob_path,
+    previewUpdatedAt: new Date(rows[0].preview_updated_at).toISOString(),
+  };
+}
+
+export async function getWorksheetPreviewLocation(
+  id: string,
+  ownerUserId: string,
+  includeAll = false,
+) {
+  const rows = await sql(
+    `select
+       preview_blob_path,
+       preview_updated_at
+     from worksheets
+     where id = $1
+       and ($2 or owner_user_id = $3)
+       and preview_blob_path is not null`,
+    [id, includeAll, ownerUserId],
+  ) as Array<{
+    preview_blob_path: string;
+    preview_updated_at: Date | string | null;
+  }>;
+  if (!rows[0]) return null;
+  return {
+    blobPath: rows[0].preview_blob_path,
+    updatedAt: rows[0].preview_updated_at
+      ? new Date(rows[0].preview_updated_at).toISOString()
+      : null,
+  };
 }

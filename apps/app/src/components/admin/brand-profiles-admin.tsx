@@ -11,6 +11,7 @@ import {
 import {
   BRAND_COLOR_TOKENS,
   BRAND_FONT_WEIGHTS,
+  BRAND_PROFILE_SETTING_KEYS,
   DATE_FORMATS,
   DEFAULT_BRAND_HEADING_STYLES,
   NUMBER_FORMATS,
@@ -21,6 +22,8 @@ import {
 import { cx } from '@/utils/cx';
 
 const EMPTY_PROFILE: BrandProfileInput = {
+  parentProfileId: null,
+  overriddenFields: [...BRAND_PROFILE_SETTING_KEYS],
   slug: '',
   name: '',
   description: '',
@@ -84,6 +87,8 @@ const TASK_NUMBER_COLOR_OPTIONS = [
     label: COLOR_TOKEN_LABELS[value],
   })),
 ] as const;
+const BRAND_PROFILES_UPDATED_KEY = 'eduit-brand-profiles-updated';
+const BRAND_PROFILES_UPDATED_EVENT = 'eduit:brand-profiles-updated';
 
 export function BrandProfilesAdmin() {
   const [profiles, setProfiles] = useState<BrandProfile[]>([]);
@@ -134,7 +139,67 @@ export function BrandProfilesAdmin() {
     key: Key,
     value: BrandProfileInput[Key],
   ) => {
-    setDraft((current) => ({ ...current, [key]: value }));
+    setDraft((current) => ({
+      ...current,
+      [key]: value,
+      overriddenFields: current.parentProfileId
+        && BRAND_PROFILE_SETTING_KEYS.includes(
+          key as (typeof BRAND_PROFILE_SETTING_KEYS)[number],
+        )
+        && !current.overriddenFields.includes(
+          key as (typeof BRAND_PROFILE_SETTING_KEYS)[number],
+        )
+        ? [
+          ...current.overriddenFields,
+          key as (typeof BRAND_PROFILE_SETTING_KEYS)[number],
+        ]
+        : current.overriddenFields,
+    }));
+    setSaved(false);
+  };
+
+  const updateParent = (parentProfileId: string | null) => {
+    setDraft((current) => {
+      if (!parentProfileId) {
+        return {
+          ...current,
+          parentProfileId: null,
+          overriddenFields: [...BRAND_PROFILE_SETTING_KEYS],
+        };
+      }
+      const parent = profiles.find(({ id }) => id === parentProfileId);
+      if (!parent) return current;
+      const overriddenFields = selectedId === 'new' && !current.parentProfileId
+        ? []
+        : current.overriddenFields;
+      const next = {
+        ...current,
+        parentProfileId,
+        overriddenFields,
+      };
+      BRAND_PROFILE_SETTING_KEYS.forEach((key) => {
+        if (!overriddenFields.includes(key)) {
+          Object.assign(next, { [key]: parent[key] });
+        }
+      });
+      return next;
+    });
+    setSaved(false);
+  };
+
+  const resetToParent = () => {
+    const parent = profiles.find(({ id }) => id === draft.parentProfileId);
+    if (!parent) return;
+    setDraft((current) => {
+      const next = {
+        ...current,
+        overriddenFields: [],
+      };
+      BRAND_PROFILE_SETTING_KEYS.forEach((key) => {
+        Object.assign(next, { [key]: parent[key] });
+      });
+      return next;
+    });
     setSaved(false);
   };
 
@@ -154,18 +219,10 @@ export function BrandProfilesAdmin() {
       if (!response.ok || !result.profile) {
         throw new Error(result.error ?? 'Could not save brand profile.');
       }
-      setProfiles((current) => {
-        const next = creating
-          ? [...current, result.profile!]
-          : current.map((profile) => profile.id === result.profile!.id
-            ? result.profile!
-            : draft.isDefault
-              ? { ...profile, isDefault: false }
-              : profile);
-        return next.sort((a, b) => Number(b.isDefault) - Number(a.isDefault)
-          || a.name.localeCompare(b.name));
-      });
       setSelectedId(result.profile.id);
+      await loadProfiles();
+      localStorage.setItem(BRAND_PROFILES_UPDATED_KEY, String(Date.now()));
+      window.dispatchEvent(new Event(BRAND_PROFILES_UPDATED_EVENT));
       setSaved(true);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save brand profile.');
@@ -251,9 +308,11 @@ export function BrandProfilesAdmin() {
                       {profile.isDefault ? 'Default · ' : ''}
                       {profile.isSystem ? 'System' : 'Custom'}
                       {' · '}
-                      {profile.stylePreset === 'academic'
-                        ? 'Academic'
-                        : 'Educational'}
+                      {profile.stylePreset === 'educational'
+                        ? 'Educational'
+                        : profile.stylePreset === 'semi-academic'
+                          ? 'Semi-Academic'
+                          : 'Academic'}
                     </span>
                   </span>
                   {!profile.isActive && <span className="size-2 bg-quaternary" title="Inactive" />}
@@ -312,6 +371,44 @@ export function BrandProfilesAdmin() {
               <label className={LABEL_CLASS} htmlFor="brand-description">Description</label>
               <textarea id="brand-description" rows={2} className={`${FIELD_CLASS} resize-y`} value={draft.description} onChange={(event) => update('description', event.target.value)} />
             </div>
+            <div className="col-span-2">
+              <div className="flex items-end justify-between gap-4">
+                <label className={`${LABEL_CLASS} min-w-0 flex-1`} htmlFor="brand-parent-profile">
+                  Parent profile
+                  <select
+                    id="brand-parent-profile"
+                    className={FIELD_CLASS}
+                    value={draft.parentProfileId ?? ''}
+                    onChange={(event) => updateParent(event.target.value || null)}
+                  >
+                    <option value="">No parent profile</option>
+                    {profiles
+                      .filter(({ id }) => id !== selectedId)
+                      .map((profile) => (
+                        <option key={profile.id} value={profile.id}>
+                          {profile.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                {draft.parentProfileId && (
+                  <button
+                    type="button"
+                    onClick={resetToParent}
+                    className="mb-0.5 shrink-0 border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover"
+                  >
+                    Reset settings to parent
+                  </button>
+                )}
+              </div>
+              {draft.parentProfileId && (
+                <p className="mt-2 text-xs leading-5 text-quaternary">
+                  {draft.overriddenFields.length
+                    ? `${draft.overriddenFields.length} settings override the parent.`
+                    : 'All settings are inherited from the parent.'}
+                </p>
+              )}
+            </div>
 
             <div className="col-span-2 border-t border-secondary pt-5">
               <h3 className="text-sm font-semibold">Visual identity</h3>
@@ -360,13 +457,18 @@ export function BrandProfilesAdmin() {
               >
                 {STYLE_PRESETS.map((preset) => (
                   <option key={preset} value={preset}>
-                    {preset === 'educational' ? 'Educational' : 'Academic'}
+                    {preset === 'educational'
+                      ? 'Educational'
+                      : preset === 'semi-academic'
+                        ? 'Semi-Academic'
+                        : 'Academic'}
                   </option>
                 ))}
               </select>
               <p className="mt-2 text-xs leading-5 text-quaternary">
-                Educational is spacious. Academic uses a denser layout and the
-                default document font for examples.
+                Educational is spacious. Semi-Academic keeps the academic
+                layout with slightly larger body text. Academic is the most
+                compact.
               </p>
             </div>
             <div>

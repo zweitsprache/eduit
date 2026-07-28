@@ -14,6 +14,7 @@ import {
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
 import { useMatrixOptionWidth } from '@/components/editor/custom-blocks/use-matrix-option-width';
 import { useRoughSolutionXs } from '@/components/editor/custom-blocks/use-rough-solution-xs';
+import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/instructions';
 
 export type TrueFalseValue = 'true' | 'false' | 'na';
 
@@ -87,7 +88,9 @@ function TrueFalseNodeView({ node, selected }: NodeViewProps) {
           preserveAspectRatio="none"
           ref={solutionsRef}
         />
-        <BlockInstruction>Mark each statement as true or false.</BlockInstruction>
+        <BlockInstruction>
+          {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.trueFalse}
+        </BlockInstruction>
         <BlockQuestion>{question}</BlockQuestion>
         <div className="mch-node__header">
           <span aria-hidden="true" className="mch-node__index-spacer" />

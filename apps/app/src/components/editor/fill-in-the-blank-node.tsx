@@ -1,6 +1,13 @@
 "use client";
 
-import { Fragment, type CSSProperties } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 import {
@@ -9,11 +16,15 @@ import {
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
 import { RoughExampleStrike } from '@/components/editor/custom-blocks/rough-example-strike';
+import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/instructions';
 
 export type FillInTheBlankAttrs = {
   text: string;
+  distractors: string[];
   widthFactor: number;
   hideBlankNumbers: boolean;
+  hideItemNumbers: boolean;
+  showLineNumbers: boolean;
   showWordBank: boolean;
   showFirstAsExample: boolean;
 };
@@ -101,6 +112,16 @@ function parseParagraphs(text: string, defaultWidthFactor: number) {
     });
 }
 
+function stableWordBankOrder(items: Array<{ id: string; text: string }>) {
+  const score = (value: string) => Array.from(value).reduce(
+    (hash, character) => ((hash * 31) + (character.codePointAt(0) ?? 0)) | 0,
+    17,
+  );
+  return [...items].sort((left, right) => (
+    score(`${left.id}:${left.text}`) - score(`${right.id}:${right.text}`)
+  ));
+}
+
 function FillInTheBlankParts({
   hideBlankNumbers,
   parts,
@@ -122,6 +143,7 @@ function FillInTheBlankParts({
           }`}
           data-answer={part.answer}
           data-example={showFirstAsExample && part.index === 1}
+          data-first-blank={part.index === 1}
           data-show-number={!hideBlankNumbers}
           style={{
             '--fill-blank-width-factor': part.widthFactor,
@@ -145,9 +167,17 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
     text,
     widthFactor,
     hideBlankNumbers,
+    hideItemNumbers,
+    showLineNumbers,
     showWordBank,
     showFirstAsExample,
+    distractors,
   } = node.attrs as FillInTheBlankAttrs;
+  const itemsRef = useRef<HTMLDivElement>(null);
+  const [lineNumberMarkers, setLineNumberMarkers] = useState<Array<{
+    number: number;
+    top: number;
+  }>>([]);
   const paragraphs = parseParagraphs(text, widthFactor);
   const hasMultipleParagraphs = paragraphs.length > 1;
   const wordBankItems = paragraphs.flatMap((parts) => (
@@ -157,13 +187,99 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
         : []
     ))
   ));
+  const distractorItems = distractors
+    .map((text, index) => ({ id: `distractor-${index}`, text: text.trim() }))
+    .filter((item) => item.text);
+  const orderedWordBankItems = stableWordBankOrder([
+    ...wordBankItems,
+    ...distractorItems,
+  ]);
+  const measureLineNumbers = useCallback(() => {
+    const items = itemsRef.current;
+    if (!items || !hideItemNumbers || !showLineNumbers) {
+      setLineNumberMarkers([]);
+      return;
+    }
+    const itemsRect = items.getBoundingClientRect();
+    let lineNumber = 0;
+    const next: Array<{ number: number; top: number }> = [];
+
+    items.querySelectorAll<HTMLElement>(
+      '.fill-in-the-blank-node__text',
+    ).forEach((paragraph) => {
+      const paragraphStyles = getComputedStyle(paragraph);
+      const lineHeight = Number.parseFloat(paragraphStyles.lineHeight);
+      const paragraphRect = paragraph.getBoundingClientRect();
+      if (!Number.isFinite(lineHeight) || lineHeight <= 0) return;
+      const range = document.createRange();
+      range.selectNodeContents(paragraph);
+      const lineIndexes = Array.from(range.getClientRects()).reduce<number[]>(
+        (indexes, rect) => {
+          if (!rect.width && !rect.height) return indexes;
+          const index = Math.max(
+            0,
+            Math.round((rect.top - paragraphRect.top) / lineHeight),
+          );
+          if (!indexes.includes(index)) indexes.push(index);
+          return indexes;
+        },
+        [],
+      ).sort((left, right) => left - right);
+
+      lineIndexes.forEach((lineIndex) => {
+        lineNumber += 1;
+        if (lineNumber !== 1 && lineNumber % 5 !== 0) return;
+        next.push({
+          number: lineNumber,
+          top:
+            paragraphRect.top
+            - itemsRect.top
+            + (lineIndex * lineHeight)
+            + (lineHeight / 2),
+        });
+      });
+    });
+
+    setLineNumberMarkers((current) => (
+      current.length === next.length
+      && current.every((marker, index) => (
+        marker.number === next[index].number
+        && Math.abs(marker.top - next[index].top) < 0.5
+      ))
+        ? current
+        : next
+    ));
+  }, [hideItemNumbers, showLineNumbers, text, widthFactor]);
+
+  useLayoutEffect(() => {
+    const items = itemsRef.current;
+    if (!items || !hideItemNumbers || !showLineNumbers) {
+      setLineNumberMarkers([]);
+      return;
+    }
+    let frame = requestAnimationFrame(measureLineNumbers);
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measureLineNumbers);
+    };
+    const observer = new ResizeObserver(scheduleMeasure);
+    observer.observe(items);
+    window.addEventListener('resize', scheduleMeasure);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('resize', scheduleMeasure);
+    };
+  }, [hideItemNumbers, measureLineNumbers, showLineNumbers]);
 
   return (
     <CustomBlockRoot selected={selected} className="fill-in-the-blank-node">
-      <BlockInstruction>Fill in the blanks with the correct words.</BlockInstruction>
-      {showWordBank && wordBankItems.length > 0 && (
+      <BlockInstruction>
+        {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.fillInTheBlank}
+      </BlockInstruction>
+      {showWordBank && (wordBankItems.length > 0 || distractorItems.length > 0) && (
         <div className="custom-block__word-bank fill-in-the-blank-node__word-bank">
-          {wordBankItems.map((item) => (
+          {orderedWordBankItems.map((item) => (
             <span className="custom-block__word-bank-item" key={item.id}>
               {item.text}
               {showFirstAsExample && item.id === 'blank-1' && (
@@ -174,12 +290,35 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
         </div>
       )}
       {hasMultipleParagraphs ? (
-        <div className="fill-in-the-blank-node__items">
+        <div
+          ref={itemsRef}
+          className={`fill-in-the-blank-node__items${
+            hideItemNumbers
+              ? ' fill-in-the-blank-node__items--unnumbered'
+              : ''
+          }${
+            hideItemNumbers && showLineNumbers
+              ? ' fill-in-the-blank-node__items--line-numbered'
+              : ''
+          }`}
+        >
+          {lineNumberMarkers.map((marker) => (
+            <span
+              aria-hidden="true"
+              className="fill-in-the-blank-node__line-number"
+              key={marker.number}
+              style={{ top: marker.top }}
+            >
+              {String(marker.number).padStart(2, '0')}
+            </span>
+          ))}
           {paragraphs.map((parts, paragraphIndex) => (
             <div className="fill-in-the-blank-node__item" key={paragraphIndex}>
-              <span className="custom-block__row-index">
-                {String(paragraphIndex + 1).padStart(2, '0')}
-              </span>
+              {!hideItemNumbers && (
+                <span className="custom-block__row-index">
+                  {String(paragraphIndex + 1).padStart(2, '0')}
+                </span>
+              )}
               <p className="fill-in-the-blank-node__text">
                 <FillInTheBlankParts
                   hideBlankNumbers={hideBlankNumbers}
@@ -228,6 +367,24 @@ export const FillInTheBlank = Node.create({
           'data-fill-blank-text': attributes.text,
         }),
       },
+      distractors: {
+        default: [],
+        parseHTML: (element) => {
+          try {
+            const value = JSON.parse(
+              element.getAttribute('data-fill-blank-distractors') ?? '[]',
+            );
+            return Array.isArray(value)
+              ? value.filter((item): item is string => typeof item === 'string')
+              : [];
+          } catch {
+            return [];
+          }
+        },
+        renderHTML: (attributes) => ({
+          'data-fill-blank-distractors': JSON.stringify(attributes.distractors),
+        }),
+      },
       widthFactor: {
         default: 1,
         parseHTML: (element) => {
@@ -243,6 +400,28 @@ export const FillInTheBlank = Node.create({
         parseHTML: (element) => element.getAttribute('data-fill-blank-hide-numbers') === 'true',
         renderHTML: (attributes) => ({
           'data-fill-blank-hide-numbers': String(attributes.hideBlankNumbers),
+        }),
+      },
+      hideItemNumbers: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-fill-blank-hide-item-numbers') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-fill-blank-hide-item-numbers': String(
+            attributes.hideItemNumbers,
+          ),
+        }),
+      },
+      showLineNumbers: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-fill-blank-show-line-numbers') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-fill-blank-show-line-numbers': String(
+            attributes.showLineNumbers,
+          ),
         }),
       },
       showWordBank: {
@@ -292,8 +471,11 @@ export const FillInTheBlank = Node.create({
             type: this.name,
             attrs: {
               text: attrs.text ?? 'The {{blank:answer}} is the correct word.',
+              distractors: attrs.distractors ?? [],
               widthFactor: attrs.widthFactor ?? 1,
               hideBlankNumbers: attrs.hideBlankNumbers ?? false,
+              hideItemNumbers: attrs.hideItemNumbers ?? false,
+              showLineNumbers: attrs.showLineNumbers ?? false,
               showWordBank: attrs.showWordBank ?? false,
               showFirstAsExample: attrs.showFirstAsExample ?? false,
             },

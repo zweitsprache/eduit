@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/core';
+import { NodeSelection } from '@tiptap/pm/state';
 import { SearchLg, XClose } from '@untitledui/icons';
 import {
   CUSTOM_BLOCK_REGISTRY,
@@ -22,10 +23,12 @@ function readRecentBlocks() {
 
 export function InsertBlockPalette({
   editor,
+  insertAt,
   open,
   onClose,
 }: {
   editor: Editor;
+  insertAt?: number | null;
   open: boolean;
   onClose: () => void;
 }) {
@@ -73,7 +76,24 @@ export function InsertBlockPalette({
   if (!open) return null;
 
   const insert = (block: CustomBlockDefinition) => {
-    if (!block.insert(editor)) return;
+    if (insertAt !== null && insertAt !== undefined) {
+      const nodeType = editor.state.schema.nodes[block.type];
+      const node = nodeType?.createAndFill();
+      if (!node) return;
+      const safePosition = Math.min(
+        editor.state.doc.content.size,
+        Math.max(0, insertAt),
+      );
+      const transaction = editor.state.tr.insert(safePosition, node);
+      transaction.setSelection(NodeSelection.create(
+        transaction.doc,
+        safePosition,
+      ));
+      editor.view.dispatch(transaction.scrollIntoView());
+      editor.commands.focus();
+    } else if (!block.insert(editor)) {
+      return;
+    }
     const nextRecent = [
       block.type,
       ...recentTypes.filter((type) => type !== block.type),

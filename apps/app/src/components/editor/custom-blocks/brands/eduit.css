@@ -9,8 +9,10 @@
     var(--brand-example-font-family, "Linotype Feltpen", cursive);
   --custom-block-example-font-size: var(--brand-example-font-size, 24.5px);
   --custom-block-example-solution-color: #009fe3;
-  --custom-block-solution-font-family: "Linotype Feltpen", cursive;
-  --custom-block-solution-font-size: 24.5px;
+  --custom-block-solution-font-family:
+    var(--brand-solution-font-family, "Linotype Feltpen", cursive);
+  --custom-block-solution-font-size:
+    var(--brand-solution-font-size, 24.5px);
   --custom-block-solution-color: #079455;
 
   --custom-block-row-border-width: 1px;

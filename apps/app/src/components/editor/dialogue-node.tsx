@@ -9,6 +9,7 @@ import {
   CustomBlockRoot,
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
+import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/instructions';
 import { RoughExampleStrike } from '@/components/editor/custom-blocks/rough-example-strike';
 import {
   parseFillInTheBlankText,
@@ -141,7 +142,9 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
       selected={selected}
       className={showOriginal ? 'dialogue-node dialogue-node--with-original' : 'dialogue-node'}
     >
-      <BlockInstruction>Complete the dialogue.</BlockInstruction>
+      <BlockInstruction>
+        {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.dialogue}
+      </BlockInstruction>
       {showWordBank && wordBankItems.length > 0 && (
         <div className="custom-block__word-bank dialogue-node__word-bank">
           {wordBankItems.map((item) => (

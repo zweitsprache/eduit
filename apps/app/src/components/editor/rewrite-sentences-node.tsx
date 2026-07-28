@@ -7,6 +7,7 @@ import {
   CustomBlockRoot,
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
+import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/instructions';
 import { RoughExampleStrike } from '@/components/editor/custom-blocks/rough-example-strike';
 
 export type RewriteSentenceItem = {
@@ -114,7 +115,9 @@ function RewriteSentencesNodeView({ node, selected }: NodeViewProps) {
 
   return (
     <CustomBlockRoot selected={selected} className="rewrite-sentences-node">
-      <BlockInstruction>Rewrite the sentences correctly.</BlockInstruction>
+      <BlockInstruction>
+        {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.rewriteSentences}
+      </BlockInstruction>
       <div className="rewrite-sentences-node__items">
         {items.map((item, index) => {
           const wordBankMode = rewriteWordBankMode(item.input);

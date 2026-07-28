@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
+import { del } from '@vercel/blob';
 import {
   createWorksheet,
   deleteWorksheet,
   getWorksheet,
+  getWorksheetPreviewLocation,
   listWorksheets,
   updateWorksheet,
   validateWorksheetPatch,
@@ -77,7 +79,15 @@ export async function DELETE(request: Request) {
     if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     const id = new URL(request.url).searchParams.get('id');
     if (!id) throw new Error('Worksheet ID is required.');
+    const preview = await getWorksheetPreviewLocation(
+      id,
+      user.id,
+      user.isAdmin,
+    );
     await deleteWorksheet(id, user.id, user.isAdmin);
+    if (preview?.blobPath) {
+      await del(preview.blobPath).catch(() => undefined);
+    }
     return new Response(null, { status: 204 });
   } catch (error) {
     return errorResponse(error);

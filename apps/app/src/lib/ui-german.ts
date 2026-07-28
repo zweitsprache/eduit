@@ -18,6 +18,7 @@ export const uiGerman: Record<string, string> = {
   '. Add a width factor with': '. Ergänze einen Breitenfaktor mit',
   'Accent color': 'Akzentfarbe',
   Academic: 'Akademisch',
+  'Semi-Academic': 'Halbakademisch',
   'Accent text': 'Akzenttext',
   Actions: 'Aktionen',
   Active: 'Aktiv',
@@ -76,6 +77,7 @@ export const uiGerman: Record<string, string> = {
   'Default brand (Eduit)': 'Standardmarke (Eduit)',
   'Default font stack': 'Standard-Schriftfamilie',
   'Default profile': 'Standardprofil',
+  'No parent profile': 'Kein übergeordnetes Profil',
   'Default ·': 'Standard ·',
   'Default text': 'Standardtext',
   Definition: 'Definition',
@@ -91,9 +93,13 @@ export const uiGerman: Record<string, string> = {
   'DIN A4 Portrait': 'DIN A4 Hochformat',
   'Draft · autosaved locally': 'Entwurf · lokal automatisch gespeichert',
   'Edit brand profile': 'Markenprofil bearbeiten',
+  'Parent profile': 'Übergeordnetes Profil',
+  'Reset settings to parent': 'Einstellungen auf übergeordnetes Profil zurücksetzen',
+  'All settings are inherited from the parent.':
+    'Alle Einstellungen werden vom übergeordneten Profil übernommen.',
   Educational: 'Pädagogisch',
-  'Educational is spacious. Academic uses a denser layout and the default document font for examples.':
-    '„Educational“ ist großzügig. „Academic“ nutzt ein kompakteres Layout und die Standardschrift für Beispiele.',
+  'Educational is spacious. Semi-Academic keeps the academic layout with slightly larger body text. Academic is the most compact.':
+    '„Educational“ ist großzügig. „Semi-Academic“ behält das akademische Layout mit etwas grösserem Fliesstext bei. „Academic“ ist am kompaktesten.',
   'Enter a prompt and one expected value for every field.':
     'Gib für jedes Feld eine Aufforderung und einen erwarteten Wert ein.',
   'Enter dialogue text': 'Dialogtext eingeben',

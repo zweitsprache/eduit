@@ -32,6 +32,7 @@ type CognitiveLevel =
   | 'combining'
   | 'inference'
   | 'global';
+type SourceMode = 'worksheet' | 'paste';
 
 const COGNITIVE_LEVELS: Array<{
   value: CognitiveLevel;
@@ -82,7 +83,9 @@ export function TrueFalseAIModal({
 }) {
   const [statementCount, setStatementCount] = useState(6);
   const [autoStatementCount, setAutoStatementCount] = useState(false);
+  const [sourceMode, setSourceMode] = useState<SourceMode>('worksheet');
   const [sourcePos, setSourcePos] = useState('');
+  const [pastedSourceText, setPastedSourceText] = useState('');
   const [cognitiveLevel, setCognitiveLevel] =
     useState<CognitiveLevel>('paraphrase');
   const [plausibleDistractors, setPlausibleDistractors] = useState(true);
@@ -100,7 +103,9 @@ export function TrueFalseAIModal({
     if (!open) return;
     setStatementCount(Math.min(15, Math.max(2, initialStatementCount)));
     setAutoStatementCount(false);
+    setSourceMode('worksheet');
     setSourcePos('');
+    setPastedSourceText('');
     setCognitiveLevel('paraphrase');
     setPlausibleDistractors(true);
     setDifferentWording(true);
@@ -117,8 +122,15 @@ export function TrueFalseAIModal({
 
   async function generate() {
     const source = sources.find(({ pos }) => String(pos) === sourcePos);
-    if (!source) {
+    const sourceText = sourceMode === 'paste'
+      ? pastedSourceText.trim()
+      : source?.text.trim() ?? '';
+    if (sourceMode === 'worksheet' && !source) {
       setError('Select a Rich Text source from this worksheet.');
+      return;
+    }
+    if (!sourceText) {
+      setError('Paste a source text for this activity.');
       return;
     }
     if (!autoStatementCount && includeNotGiven && statementCount < 3) {
@@ -134,7 +146,7 @@ export function TrueFalseAIModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           statementCount: autoStatementCount ? null : statementCount,
-          sourceText: source.text,
+          sourceText,
           cognitiveLevel,
           difficultyFactors: {
             plausibleDistractors,
@@ -192,22 +204,57 @@ export function TrueFalseAIModal({
       </h3>
       <section className="rounded-xl border border-secondary bg-secondary p-5">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
-          <label className="block text-sm font-semibold text-primary">
-            Source text
-            <select
-              autoFocus
-              value={sourcePos}
-              onChange={(event) => setSourcePos(event.target.value)}
-              className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-            >
-              <option value="">Select a Rich Text block…</option>
-              {sources.map((source) => (
-                <option key={source.pos} value={source.pos}>
-                  {source.label}
-                </option>
+          <div className="block text-sm font-semibold text-primary">
+            <p>Source text</p>
+            <span className="mt-2 grid grid-cols-2 gap-2">
+              {([
+                ['worksheet', 'From worksheet'],
+                ['paste', 'Paste text'],
+              ] as const).map(([value, label]) => (
+                <button
+                  type="button"
+                  key={value}
+                  autoFocus={value === 'worksheet'}
+                  aria-pressed={sourceMode === value}
+                  onClick={() => setSourceMode(value)}
+                  className={`h-9 rounded-md border px-3 text-sm font-semibold transition ${
+                    sourceMode === value
+                      ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                      : 'border-primary bg-primary text-secondary hover:bg-primary_hover'
+                  }`}
+                >
+                  {label}
+                </button>
               ))}
-            </select>
-          </label>
+            </span>
+            {sourceMode === 'worksheet' ? (
+              <select
+                value={sourcePos}
+                onChange={(event) => setSourcePos(event.target.value)}
+                className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              >
+                <option value="">Select a Rich Text block…</option>
+                {sources.map((source) => (
+                  <option key={source.pos} value={source.pos}>
+                    {source.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="mt-2 block">
+                <textarea
+                  value={pastedSourceText}
+                  maxLength={20_000}
+                  onChange={(event) => setPastedSourceText(event.target.value)}
+                  placeholder="Paste the source text used to generate the statements…"
+                  className="min-h-36 w-full resize-y rounded-md border border-primary bg-primary px-3 py-2.5 text-sm font-normal leading-6 text-secondary outline-none placeholder:text-placeholder focus:border-brand focus:ring-2 focus:ring-brand"
+                />
+                <span className="mt-1 block text-right text-xs font-normal tabular-nums text-quaternary">
+                  {pastedSourceText.length.toLocaleString()} / 20,000
+                </span>
+              </span>
+            )}
+          </div>
           <div>
             <p className="text-sm font-semibold text-primary">
               Number of statements
@@ -254,14 +301,14 @@ export function TrueFalseAIModal({
           {COGNITIVE_LEVELS.find(({ value }) => value === cognitiveLevel)
             ?.description}
         </p>
-        {selectedSource && (
+        {sourceMode === 'worksheet' && selectedSource && (
           <div className="mt-3 max-h-28 overflow-y-auto rounded-md border border-secondary bg-primary px-3 py-2 text-xs leading-5 text-tertiary">
             {selectedSource.text}
           </div>
         )}
-        {!sources.length && (
+        {sourceMode === 'worksheet' && !sources.length && (
           <p className="mt-2 text-xs text-quaternary">
-            Add a Rich Text block to the worksheet to use it as a source.
+            Add a Rich Text block or switch to Paste text.
           </p>
         )}
       </section>

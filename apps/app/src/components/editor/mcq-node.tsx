@@ -34,6 +34,8 @@ export type MCQAttrs = {
   columns: MCQColumns;
   answerMode: MCQAnswerMode;
   shuffleAnswers: boolean;
+  questionNumber: number | null;
+  showInstruction: boolean;
 };
 
 export const DEFAULT_MCQ_INSTRUCTION = 'Choose the correct answer.';
@@ -93,6 +95,8 @@ function MCQNodeView({ node, selected }: NodeViewProps) {
     options,
     columns,
     shuffleAnswers,
+    questionNumber,
+    showInstruction,
   } = node.attrs as MCQAttrs;
   const layoutRef = useRef<HTMLDivElement>(null);
   const solutionsRef = useRoughSolutionXs(layoutRef);
@@ -107,9 +111,16 @@ function MCQNodeView({ node, selected }: NodeViewProps) {
           preserveAspectRatio="none"
           ref={solutionsRef}
         />
-        <BlockInstruction>
-          {instruction || DEFAULT_MCQ_INSTRUCTION}
-        </BlockInstruction>
+        {showInstruction && (
+          <BlockInstruction>
+            {instruction || DEFAULT_MCQ_INSTRUCTION}
+          </BlockInstruction>
+        )}
+        {questionNumber !== null && (
+          <p className="mcq-node__question-number">
+            <strong>Frage {questionNumber}</strong>
+          </p>
+        )}
         <BlockQuestion>
           <InlineFormattedText text={question} />
         </BlockQuestion>
@@ -203,6 +214,27 @@ export const MCQ = Node.create({
           'data-mcq-shuffle-answers': String(attributes.shuffleAnswers),
         }),
       },
+      questionNumber: {
+        default: null,
+        parseHTML: (element) => {
+          const value = Number(element.getAttribute('data-mcq-question-number'));
+          return Number.isInteger(value) && value > 0 ? value : null;
+        },
+        renderHTML: (attributes) => (
+          attributes.questionNumber === null
+            ? {}
+            : { 'data-mcq-question-number': attributes.questionNumber }
+        ),
+      },
+      showInstruction: {
+        default: true,
+        parseHTML: (element) => (
+          element.getAttribute('data-mcq-show-instruction') !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-mcq-show-instruction': String(attributes.showInstruction),
+        }),
+      },
     };
   },
 
@@ -232,6 +264,8 @@ export const MCQ = Node.create({
               columns: attrs.columns ?? 1,
               answerMode: attrs.answerMode ?? 'single',
               shuffleAnswers: attrs.shuffleAnswers ?? false,
+              questionNumber: attrs.questionNumber ?? null,
+              showInstruction: attrs.showInstruction ?? true,
             },
           }),
     };

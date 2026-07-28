@@ -69,7 +69,11 @@ Speakers:
 ${speakerPrompt}
 
 Worksheet context:
-${worksheetContextPrompt(context)}
+${worksheetContextPrompt(context, [
+  input.topic,
+  input.blankFocus,
+  speakerPrompt,
+].join(' '))}
 
 Mandatory language proficiency:
 ${languageProficiencyInstruction(context?.languageLevel ?? '')}

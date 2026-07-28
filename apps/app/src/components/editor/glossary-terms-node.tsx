@@ -7,6 +7,7 @@ import {
   CustomBlockRoot,
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
+import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/instructions';
 
 export type GlossaryTermWidth = 25 | 33 | 50 | 66;
 
@@ -64,7 +65,9 @@ function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
 
   return (
     <CustomBlockRoot selected={selected} className="glossary-terms-node">
-      <BlockInstruction>Review the following glossary terms.</BlockInstruction>
+      <BlockInstruction>
+        {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.glossaryTerms}
+      </BlockInstruction>
       <div
         className="glossary-terms-node__table"
         data-term-width={termWidth}

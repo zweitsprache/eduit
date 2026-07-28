@@ -14,6 +14,7 @@ import {
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
 import { useMatrixOptionWidth } from '@/components/editor/custom-blocks/use-matrix-option-width';
 import { useRoughSolutionXs } from '@/components/editor/custom-blocks/use-rough-solution-xs';
+import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/instructions';
 import {
   InlineFormattedText,
   stripInlineFormatting,
@@ -89,7 +90,9 @@ function MCHNodeView({ node, selected }: NodeViewProps) {
           preserveAspectRatio="none"
           ref={solutionsRef}
         />
-        <BlockInstruction>Choose the correct answer for each row.</BlockInstruction>
+        <BlockInstruction>
+          {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.mch}
+        </BlockInstruction>
         <BlockQuestion>
           {question.trim()
             ? <InlineFormattedText text={question} />

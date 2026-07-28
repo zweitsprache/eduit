@@ -55,7 +55,7 @@ Word count: ${requestedCount}
 Maximum characters per word: ${input.maxWordLength}
 
 Worksheet context:
-${worksheetContextPrompt(context)}
+${worksheetContextPrompt(context, input.topic)}
 
 Mandatory language proficiency:
 ${languageProficiencyInstruction(context?.languageLevel ?? '')}
