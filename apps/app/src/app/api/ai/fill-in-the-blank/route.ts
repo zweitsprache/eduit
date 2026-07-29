@@ -1,7 +1,10 @@
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { getCurrentAppUser } from '@/lib/auth/authorization';
-import { educationalContentModel } from '@/lib/ai';
+import {
+  educationalContentModel,
+  miniFormContentModel,
+} from '@/lib/ai';
 import {
   languageProficiencyInstruction,
   localeSpellingInstruction,
@@ -41,6 +44,13 @@ const resultSchema = z.object({
   })).min(1).max(40),
   distractors: z.array(z.string().trim().min(1).max(100)).max(20),
 });
+
+const NO_OUTPUT_GENERATED_PATTERN = /no output generated/i;
+
+function isNoOutputGeneratedError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return NO_OUTPUT_GENERATED_PATTERN.test(message);
+}
 
 function placeholderNumbers(text: string) {
   return [...text.matchAll(/\[\[BLANK_(\d+)\]\]/g)]
@@ -122,8 +132,7 @@ content exactly except for the words or short phrases replaced by placeholders.
 Do not correct, simplify, paraphrase, expand, or otherwise edit the source.`
       : `Topic: ${input.topic}`;
 
-    const { output } = await generateText({
-      model: educationalContentModel,
+    const generationConfig = {
       output: Output.object({ schema: resultSchema }),
       maxOutputTokens: input.sourceText ? 8_000 : 3_000,
       abortSignal: AbortSignal.timeout(110_000),
@@ -183,7 +192,28 @@ Placeholder contract:
 
 Use the requested content language.
 ${localeSpellingInstruction(contentLanguage)}`,
-    });
+    } as const;
+    let output: z.infer<typeof resultSchema>;
+    try {
+      ({ output } = await generateText({
+        model: educationalContentModel,
+        ...generationConfig,
+      }));
+    } catch (error) {
+      if (!isNoOutputGeneratedError(error)) throw error;
+      try {
+        ({ output } = await generateText({
+          model: educationalContentModel,
+          ...generationConfig,
+        }));
+      } catch (retryError) {
+        if (!isNoOutputGeneratedError(retryError)) throw retryError;
+        ({ output } = await generateText({
+          model: miniFormContentModel,
+          ...generationConfig,
+        }));
+      }
+    }
 
     if (
       input.sourceText
@@ -264,6 +294,8 @@ ${localeSpellingInstruction(contentLanguage)}`,
   } catch (error) {
     const message = error instanceof z.ZodError
       ? 'Check the topic and blank settings.'
+      : isNoOutputGeneratedError(error)
+        ? 'No content was returned by the AI model. Please try again with a shorter source text or fewer constraints.'
       : error instanceof Error
         ? error.message
         : 'Fill-in-the-blank generation failed.';

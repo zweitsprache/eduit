@@ -91,8 +91,15 @@ export function InsertBlockPalette({
       ));
       editor.view.dispatch(transaction.scrollIntoView());
       editor.commands.focus();
-    } else if (!block.insert(editor)) {
-      return;
+    } else {
+      // Never replace an existing block: when an atom block is currently
+      // node-selected, collapse the selection to just after it so the new
+      // block is appended instead of overwriting the selection.
+      const { selection } = editor.state;
+      if (selection instanceof NodeSelection) {
+        editor.chain().focus().setTextSelection(selection.to).run();
+      }
+      if (!block.insert(editor)) return;
     }
     const nextRecent = [
       block.type,

@@ -303,6 +303,15 @@ function richTextToPlainText(html: string) {
     .trim();
 }
 
+function fillInTheBlankToSolvedText(text: string) {
+  return parseFillInTheBlankText(text)
+    .map((part) => (part.type === 'blank' ? part.answer : part.value))
+    .join('')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function serializeStyleSheet(
   styleSheet: CSSStyleSheet,
   visited: Set<CSSStyleSheet>,
@@ -972,7 +981,7 @@ export default function EditorPage() {
     extensions: [
       ConvertKit.configure({
         table: false,
-        gapcursor: false,
+        gapcursor: true,
       }),
       TableKit,
       CustomBlockNumbering,
@@ -1124,6 +1133,75 @@ export default function EditorPage() {
         'data-style-preset': ACTIVE_CUSTOM_BLOCK_BRAND.stylePreset,
         style: `--custom-block-font-family: ${ACTIVE_CUSTOM_BLOCK_BRAND.fontFamily}`,
       },
+      // Native drop handler for block reordering.
+      //
+      // The pagination extension keeps the document flat and stacks pages
+      // vertically with large gaps (page footers + next-page headers). The
+      // browser maps that entire empty band to the *last* block of the
+      // previous page, so ProseMirror's default drop (which resolves a single
+      // caret position from the pointer coordinates) can never place a block
+      // at the visual top of a follow-up page — it always lands at the end of
+      // the previous page.
+      //
+      // We only take over for single-block drags: resolve the top-level node
+      // under the pointer, then decide before/after it by comparing the
+      // pointer against that node's vertical midpoint. This yields the correct
+      // document position, which pagination then flows to the top of the page.
+      handleDrop(view, event, slice, moved) {
+        // Only correct single top-level block drags (our custom blocks and
+        // headings). Let ProseMirror handle inline/text and multi-node drops.
+        const isSingleBlock =
+          slice.openStart === 0 &&
+          slice.openEnd === 0 &&
+          slice.content.childCount === 1 &&
+          !!slice.content.firstChild &&
+          slice.content.firstChild.isBlock;
+        if (!isSingleBlock) return false;
+
+        const dragEvent = event as DragEvent;
+        const at = view.posAtCoords({
+          left: dragEvent.clientX,
+          top: dragEvent.clientY,
+        });
+        if (!at) return false;
+
+        const { doc } = view.state;
+        let target: { pos: number; size: number } | null = null;
+        doc.forEach((node, pos) => {
+          if (
+            target === null &&
+            at.pos >= pos &&
+            at.pos < pos + node.nodeSize
+          ) {
+            target = { pos, size: node.nodeSize };
+          }
+        });
+        if (target === null) return false;
+        const resolved: { pos: number; size: number } = target;
+
+        const dom = view.nodeDOM(resolved.pos);
+        if (!(dom instanceof HTMLElement)) return false;
+        const rect = dom.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+        const insertPos =
+          dragEvent.clientY > midpoint ? resolved.pos + resolved.size : resolved.pos;
+
+        const droppedNode = slice.content.firstChild;
+        if (!droppedNode) return false;
+
+        event.preventDefault();
+        const tr = view.state.tr;
+        if (moved) {
+          const dragging = view.dragging;
+          if (dragging?.node) dragging.node.replace(tr);
+          else tr.deleteSelection();
+        }
+        const mapped = tr.mapping.map(insertPos);
+        tr.insert(mapped, droppedNode);
+        tr.setSelection(NodeSelection.create(tr.doc, mapped));
+        view.dispatch(tr.scrollIntoView());
+        return true;
+      },
     },
   });
 
@@ -1202,6 +1280,43 @@ export default function EditorPage() {
             text.length > 72 ? '…' : ''
           }`,
         });
+      });
+      return sources;
+    },
+  });
+
+  const mcqSources = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      const sources: RichTextSource[] = [];
+      let richTextCount = 0;
+      let fillInTheBlankCount = 0;
+      currentEditor?.state.doc.descendants((node, pos) => {
+        if (node.type.name === 'richText') {
+          const text = richTextToPlainText(String(node.attrs.html ?? ''));
+          if (!text) return;
+          richTextCount += 1;
+          const preview = text.replace(/\s+/g, ' ').slice(0, 72);
+          sources.push({
+            pos,
+            text,
+            label: `Rich Text ${richTextCount} — ${preview}${
+              text.length > 72 ? '…' : ''
+            }`,
+          });
+        } else if (node.type.name === 'fillInTheBlank') {
+          const text = fillInTheBlankToSolvedText(String(node.attrs.text ?? ''));
+          if (!text) return;
+          fillInTheBlankCount += 1;
+          const preview = text.replace(/\s+/g, ' ').slice(0, 72);
+          sources.push({
+            pos,
+            text,
+            label: `Fill in the Blank ${fillInTheBlankCount} — ${preview}${
+              text.length > 72 ? '…' : ''
+            }`,
+          });
+        }
       });
       return sources;
     },
@@ -6618,7 +6733,7 @@ export default function EditorPage() {
         context={documentContext}
         initialOptionCount={selectedMCQAttrs?.options.length ?? 4}
         open={mcqAIBlock?.type === 'mcq'}
-        sources={richTextSources ?? []}
+        sources={mcqSources ?? []}
         onClose={() => setMCQAIBlock(null)}
         onGenerated={({
           questions,

@@ -83,6 +83,7 @@ const EN_TO_DE: Record<string, string> = {
   'Generate from topic': 'Aus Thema generieren',
   'Paste original text': 'Originaltext einfügen',
   'Rich Text source': 'Rich-Text-Quelle',
+  'Worksheet source': 'Quelle aus dem Arbeitsblatt',
   'Add word-bank distractors': 'Ablenker zur Wortbank hinzufügen',
   'Number of word-bank distractors': 'Anzahl Ablenker in der Wortbank',
   'Allow duplicates': 'Duplikate erlauben',
@@ -192,12 +193,15 @@ const EN_TO_DE: Record<string, string> = {
     'Fügen Sie einen Rich-Text-Block hinzu oder wählen Sie eine andere Quellenoption.',
   'Add a Rich Text block or switch to Paste text.':
     'Fügen Sie einen Rich-Text-Block hinzu oder wechseln Sie zu «Text einfügen».',
+  'Add a Rich Text or Fill in the Blank block, or choose another source option.':
+    'Fügen Sie einen Rich-Text- oder Lückentext-Block hinzu oder wählen Sie eine andere Quellenoption.',
   'Search subjects': 'Fächer suchen',
   'Enter the subject': 'Fach eingeben',
   'Relevant needs, prior knowledge, or learning situation':
     'Relevante Bedürfnisse, Vorkenntnisse oder Lernsituation',
   'Name or curriculum code': 'Name oder Lehrplancode',
   'Select a Rich Text block…': 'Rich-Text-Block auswählen…',
+  'Select a source block…': 'Quellenblock auswählen…',
   'Textsorte wählen…': 'Textsorte wählen…',
   'What should the dialogue be about?': 'Worum soll es im Dialog gehen?',
   'What should the text be about?': 'Worum soll es im Text gehen?',
@@ -234,6 +238,8 @@ const EN_TO_DE: Record<string, string> = {
     'Der Fehlertext konnte nicht generiert werden.',
   'Could not generate the fill-in-the-blank activity.':
     'Die Lückentextaufgabe konnte nicht generiert werden.',
+  'No content was returned by the AI model. Please try again with a shorter source text or fewer constraints.':
+    'Vom KI-Modell wurde kein Inhalt zurückgegeben. Bitte versuchen Sie es erneut mit einem kürzeren Quelltext oder weniger strengen Vorgaben.',
   'Could not generate the mini-forms.':
     'Die Miniformulare konnten nicht generiert werden.',
   'Could not generate the text.': 'Der Text konnte nicht generiert werden.',
@@ -262,6 +268,8 @@ const EN_TO_DE: Record<string, string> = {
     'Geben Sie für jedes Feld eine Bezeichnung ein.',
   'Select a Rich Text source from this worksheet.':
     'Wählen Sie eine Rich-Text-Quelle aus diesem Arbeitsblatt.',
+  'Select a source from this worksheet.':
+    'Wählen Sie eine Quelle aus diesem Arbeitsblatt.',
   'Paste the correct source text.': 'Fügen Sie den korrekten Quelltext ein.',
   'Paste the original text to enhance with blanks.':
     'Fügen Sie den Originaltext ein, der mit Lücken ergänzt werden soll.',

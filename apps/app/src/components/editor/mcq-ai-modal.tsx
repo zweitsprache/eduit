@@ -119,7 +119,7 @@ export function MCQAIModal({
       return;
     }
     if (sourceMode === 'worksheet' && !selectedSource) {
-      setError('Select a Rich Text source from this worksheet.');
+      setError('Select a source from this worksheet.');
       return;
     }
     if (sourceMode === 'paste' && !pastedSourceText.trim()) {
@@ -219,14 +219,14 @@ export function MCQAIModal({
         {sourceMode === 'worksheet' ? (
           <div className="mt-4">
             <label className="block text-sm font-semibold text-primary">
-              Rich Text source
+              Worksheet source
               <select
                 autoFocus
                 value={sourcePos}
                 onChange={(event) => setSourcePos(event.target.value)}
                 className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
               >
-                <option value="">Select a Rich Text block…</option>
+                <option value="">Select a source block…</option>
                 {sources.map((source) => (
                   <option key={source.pos} value={source.pos}>
                     {source.label}
@@ -241,7 +241,7 @@ export function MCQAIModal({
             )}
             {!sources.length && (
               <p className="mt-2 text-xs text-quaternary">
-                Add a Rich Text block or choose another source option.
+                Add a Rich Text or Fill in the Blank block, or choose another source option.
               </p>
             )}
           </div>

@@ -16,6 +16,13 @@ type TextStructure =
   | 'independent-sentences';
 type SourceMode = 'topic' | 'worksheet' | 'paste';
 
+function normalizeGenerationErrorMessage(message: string) {
+  if (/no output generated/i.test(message)) {
+    return 'No content was returned by the AI model. Please try again with a shorter source text or fewer constraints.';
+  }
+  return message;
+}
+
 const TEXT_STRUCTURE_OPTIONS: Array<{
   value: TextStructure;
   label: string;
@@ -152,7 +159,7 @@ export function FillInTheBlankAIModal({
           && generationError.name === 'AbortError'
           ? 'Generation took too long. Please try again with a shorter source text.'
           : generationError instanceof Error
-            ? generationError.message
+            ? normalizeGenerationErrorMessage(generationError.message)
             : 'Could not generate the fill-in-the-blank activity.',
       );
     } finally {
