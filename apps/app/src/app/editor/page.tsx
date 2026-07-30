@@ -95,6 +95,11 @@ import {
   GermanVerbTable,
 } from '@/components/editor/german-verb-table-node';
 import {
+  OccupationPortrait,
+  DEFAULT_OCCUPATION_PORTRAIT_ATTRS,
+  type OccupationPortraitAttrs,
+} from '@/components/editor/occupation-portrait-node';
+import {
   TrueFalse,
   type TrueFalseAttrs,
   type TrueFalseRow,
@@ -208,6 +213,9 @@ import { CrosswordAIModal } from '@/components/editor/crossword-ai-modal';
 import {
   VocabularyOneAIModal,
 } from '@/components/editor/vocabulary-one-ai-modal';
+import {
+  OccupationPortraitAIModal,
+} from '@/components/editor/occupation-portrait-ai-modal';
 import { WordGridCSVImportModal } from '@/components/editor/word-grid-csv-import-modal';
 import { DialogueAIModal } from '@/components/editor/dialogue-ai-modal';
 import { MiniFormAIModal } from '@/components/editor/mini-form-ai-modal';
@@ -1026,6 +1034,8 @@ export default function EditorPage() {
     useState<ContentEditorBlock | null>(null);
   const [vocabularyOneInsertAt, setVocabularyOneInsertAt] =
     useState<number | null>(null);
+  const [occupationPortraitInsertAt, setOccupationPortraitInsertAt] =
+    useState<number | null>(null);
   const [mcqAIBlock, setMCQAIBlock] =
     useState<ContentEditorBlock | null>(null);
   const [wordGridCSVBlock, setWordGridCSVBlock] =
@@ -1090,6 +1100,7 @@ export default function EditorPage() {
       Weather,
       ColorFurniture,
       GermanVerbTable,
+      OccupationPortrait,
       TrueFalse,
       FillInTheBlank,
       GlossaryTerms,
@@ -7055,6 +7066,11 @@ export default function EditorPage() {
         editor={editor}
         insertAt={insertBlockAt}
         open={insertPaletteOpen}
+        onStartOccupationPortrait={(insertAt) => {
+          setInsertPaletteOpen(false);
+          setInsertBlockAt(null);
+          setOccupationPortraitInsertAt(insertAt);
+        }}
         onStartVocabularyOne={(insertAt) => {
           setInsertPaletteOpen(false);
           setInsertBlockAt(null);
@@ -7132,6 +7148,32 @@ export default function EditorPage() {
           }).run();
           if (!applied) return false;
           setVocabularyOneInsertAt(null);
+          return true;
+        }}
+      />
+      <OccupationPortraitAIModal
+        context={documentContext}
+        open={occupationPortraitInsertAt !== null}
+        onClose={() => setOccupationPortraitInsertAt(null)}
+        onGenerated={(result: OccupationPortraitAttrs) => {
+          if (occupationPortraitInsertAt === null) return false;
+          const applied = editor.chain().command(({ tr }) => {
+            const schema = tr.doc.type.schema;
+            const nodeType = schema.nodes.occupationPortrait;
+            if (!nodeType) return false;
+            const safePosition = Math.min(
+              tr.doc.content.size,
+              Math.max(0, occupationPortraitInsertAt),
+            );
+            tr.insert(safePosition, nodeType.create({
+              ...DEFAULT_OCCUPATION_PORTRAIT_ATTRS,
+              ...result,
+            }));
+            tr.setSelection(NodeSelection.create(tr.doc, safePosition));
+            return true;
+          }).run();
+          if (!applied) return false;
+          setOccupationPortraitInsertAt(null);
           return true;
         }}
       />
