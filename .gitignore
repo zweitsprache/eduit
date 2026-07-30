@@ -11,8 +11,9 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 
-# Tiptap Pro registry auth (never commit the token)
-.npmrc
+# Tiptap Pro registry auth
+# .npmrc is committed but must only reference the token via ${TIPTAP_PRO_TOKEN}.
+# Never hardcode the actual token here.
 
 # Local build and visual QA artifacts
 tsconfig.tsbuildinfo
