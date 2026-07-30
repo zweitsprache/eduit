@@ -56,6 +56,11 @@ import type {
   TrueFalseValue,
 } from '@/components/editor/true-false-node';
 import type {
+  FamilyKinshipAttrs,
+  KinshipAnswerMode,
+  KinshipRiddle,
+} from '@/components/editor/family-kinship-node';
+import type {
   OrderingAttrs,
   OrderingItem,
 } from '@/components/editor/ordering-node';
@@ -171,6 +176,7 @@ export type ContentEditorBlock = {
     | 'mcm'
     | 'mch'
     | 'trueFalse'
+    | 'familyKinship'
     | 'fillInTheBlank'
     | 'glossaryTerms'
     | 'frayerModel'
@@ -197,6 +203,7 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   mcm: 'Multiple-choice matrix content',
   mch: 'Header matrix content',
   trueFalse: 'True / false content',
+  familyKinship: 'Familie | Verwandtschaftsgrade',
   fillInTheBlank: 'Fill in the blank content',
   glossaryTerms: 'Glossary terms content',
   frayerModel: 'Frayer model content',
@@ -841,6 +848,22 @@ function Preview({
           <ContentManualItem icon="×" title="Examples and solutions">
             Example mode reveals the first statement; worksheet solutions
             reveal all remaining answers.
+          </ContentManualItem>
+        </ContentManual>
+      )}
+      {block.type === 'familyKinship' && (
+        <ContentManual>
+          <ContentManualItem icon="→" title="Formulate relationship chains">
+            Write each clue from the learner’s point of view, for example
+            “Der Bruder meines Vaters ist …”.
+          </ContentManualItem>
+          <ContentManualItem icon="3" title="Mix response formats">
+            Choose multiple choice, open answer, or richtig/falsch separately
+            for every riddle.
+          </ContentManualItem>
+          <ContentManualItem icon="×" title="Store the solution">
+            Set the correct relationship or truth value so the completed
+            worksheet can display solutions.
           </ContentManualItem>
         </ContentManual>
       )}
@@ -1820,6 +1843,305 @@ function TrueFalseEditor({
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover"
       >
         <PlusSquare className="size-4" /> Add statement
+      </button>
+    </>
+  );
+}
+
+function FamilyKinshipEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: FamilyKinshipAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const setRiddles = (riddles: KinshipRiddle[]) => updateAttrs(
+    editor,
+    block,
+    { riddles },
+  );
+  const updateRiddle = (id: string, patch: Partial<KinshipRiddle>) => {
+    setRiddles(attrs.riddles.map((riddle) => (
+      riddle.id === id ? { ...riddle, ...patch } : riddle
+    )));
+  };
+  const kinshipTerms = [
+    'Urgrosseltern',
+    'Urgrossvater',
+    'Urgrossmutter',
+    'Grosseltern',
+    'Grossvater',
+    'Grossmutter',
+    'Eltern',
+    'Vater',
+    'Mutter',
+    'Onkel',
+    'Tante',
+    'Geschwister',
+    'Bruder',
+    'Schwester',
+    'Cousin',
+    'Cousine',
+    'Kinder',
+    'Sohn',
+    'Tochter',
+    'Neffe',
+    'Nichte',
+    'Enkelkinder',
+    'Enkel',
+    'Enkelin',
+    'Schwiegervater',
+    'Schwiegermutter',
+    'Stiefvater',
+    'Stiefmutter',
+    'Ehemann',
+    'Ehefrau',
+    'Schwager',
+    'Schwägerin',
+    'Stiefbruder',
+    'Stiefschwester',
+    'Halbbruder',
+    'Halbschwester',
+    'Schwiegersohn',
+    'Schwiegertochter',
+    'Stiefsohn',
+    'Stieftochter',
+  ] as const;
+
+  const selectKinshipTerm = (riddle: KinshipRiddle, term: string) => {
+    const answer = term;
+    if (riddle.answerMode !== 'mcq') {
+      updateRiddle(riddle.id, { answer });
+      return;
+    }
+    const hasOption = riddle.options.some((option) => option.text === term);
+    updateRiddle(riddle.id, {
+      answer,
+      options: hasOption
+        ? riddle.options
+        : [...riddle.options, {
+            id: `${riddle.id}-term-${Date.now()}`,
+            text: term,
+          }],
+    });
+  };
+
+  return (
+    <>
+      <ContentSectionHeader>Lernunterstützung</ContentSectionHeader>
+      <ContentSwitchGrid>
+        <ContentSwitch
+          label="Erstes Rätsel als Beispiel"
+          isSelected={attrs.showFirstAsExample}
+          onChange={(showFirstAsExample) => updateAttrs(editor, block, {
+            showFirstAsExample,
+          })}
+        />
+      </ContentSwitchGrid>
+
+      <ContentSectionHeader count={`${attrs.riddles.length} Rätsel`}>
+        Verwandtschaftsrätsel
+      </ContentSectionHeader>
+      <div className="mt-3 space-y-4">
+        {attrs.riddles.map((riddle, riddleIndex) => (
+          <ContentCard key={riddle.id}>
+            <div className="flex items-center gap-3">
+              <ContentItemNumber>{riddleIndex + 1}</ContentItemNumber>
+              <div className="ml-auto">
+                <ContentItemActions
+                  label={`Rätsel ${riddleIndex + 1}`}
+                  canDelete={attrs.riddles.length > 1}
+                  canMoveUp={riddleIndex > 0}
+                  canMoveDown={riddleIndex < attrs.riddles.length - 1}
+                  onDelete={() => setRiddles(
+                    attrs.riddles.filter(({ id }) => id !== riddle.id),
+                  )}
+                  onMoveUp={() => setRiddles(
+                    moveItem(attrs.riddles, riddleIndex, -1),
+                  )}
+                  onMoveDown={() => setRiddles(
+                    moveItem(attrs.riddles, riddleIndex, 1),
+                  )}
+                />
+              </div>
+            </div>
+
+            <ContentFieldLabel>Logikrätsel</ContentFieldLabel>
+            <textarea
+              rows={2}
+              value={riddle.prompt}
+              onChange={(event) => updateRiddle(riddle.id, {
+                prompt: event.target.value,
+              })}
+              placeholder="Der Bruder meines Vaters ist …"
+              className="mt-2 w-full resize-y rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            />
+
+            <ContentFieldLabel>Antwortformat</ContentFieldLabel>
+            <ContentOptionButtonGroup
+              ariaLabel={`Antwortformat für Rätsel ${riddleIndex + 1}`}
+              value={riddle.answerMode}
+              onChange={(value) => {
+                const answerMode = value as KinshipAnswerMode;
+                updateRiddle(riddle.id, {
+                  answerMode,
+                  options: answerMode === 'mcq' && riddle.options.length < 2
+                    ? [
+                        { id: `${riddle.id}-a`, text: riddle.answer || 'mein Onkel' },
+                        { id: `${riddle.id}-b`, text: 'mein Cousin' },
+                        { id: `${riddle.id}-c`, text: 'mein Grossvater' },
+                      ]
+                    : riddle.options,
+                });
+              }}
+              options={[
+                { label: 'Auswahl', value: 'mcq' },
+                { label: 'Offen', value: 'open' },
+                { label: 'Richtig/Falsch', value: 'trueFalse' },
+              ]}
+            />
+
+            {riddle.answerMode !== 'trueFalse' && (
+              <>
+                <ContentFieldLabel>Lösung auswählen</ContentFieldLabel>
+                <div
+                  aria-label={`Verwandtschaftsgrad für Rätsel ${riddleIndex + 1}`}
+                  className="mt-2 flex flex-wrap gap-1.5"
+                  role="group"
+                >
+                  {kinshipTerms.map((term) => (
+                    <button
+                      type="button"
+                      aria-pressed={riddle.answer === term}
+                      key={term}
+                      onClick={() => selectKinshipTerm(riddle, term)}
+                      className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
+                        riddle.answer === term
+                          ? 'border-brand bg-brand-solid text-white'
+                          : 'border-primary bg-primary text-secondary hover:bg-primary_hover'
+                      }`}
+                    >
+                      {term}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {riddle.answerMode === 'mcq' && (
+              <>
+                <ContentFieldLabel>Antworten</ContentFieldLabel>
+                <div className="mt-2 space-y-2">
+                  {riddle.options.map((option, optionIndex) => (
+                    <div
+                      className="flex items-center gap-2 rounded-lg border border-secondary bg-primary p-2"
+                      key={option.id}
+                    >
+                      <CorrectState
+                        checked={riddle.answer === option.text}
+                        label={`Antwort ${optionIndex + 1} als richtig markieren`}
+                        onChange={(checked) => updateRiddle(riddle.id, {
+                          answer: checked ? option.text : '',
+                        })}
+                      />
+                      <input
+                        value={option.text}
+                        onChange={(event) => {
+                          const text = event.target.value;
+                          updateRiddle(riddle.id, {
+                            answer: riddle.answer === option.text
+                              ? text
+                              : riddle.answer,
+                            options: riddle.options.map((current) => (
+                              current.id === option.id
+                                ? { ...current, text }
+                                : current
+                            )),
+                          });
+                        }}
+                        className="min-w-0 flex-1 rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Antwort ${optionIndex + 1} löschen`}
+                        disabled={riddle.options.length <= 2}
+                        onClick={() => updateRiddle(riddle.id, {
+                          answer: riddle.answer === option.text ? '' : riddle.answer,
+                          options: riddle.options.filter(({ id }) => id !== option.id),
+                        })}
+                        className="flex size-8 items-center justify-center rounded-md text-quaternary hover:bg-primary_hover hover:text-secondary disabled:opacity-30"
+                      >
+                        <Trash01 className="size-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateRiddle(riddle.id, {
+                    options: [...riddle.options, {
+                      id: `${riddle.id}-option-${Date.now()}`,
+                      text: `Antwort ${riddle.options.length + 1}`,
+                    }],
+                  })}
+                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover"
+                >
+                  <PlusSquare className="size-4" /> Antwort hinzufügen
+                </button>
+              </>
+            )}
+
+            {riddle.answerMode === 'open' && (
+              <>
+                <ContentFieldLabel>Lösung</ContentFieldLabel>
+                <input
+                  value={riddle.answer}
+                  onChange={(event) => updateRiddle(riddle.id, {
+                    answer: event.target.value,
+                  })}
+                  placeholder="meine Grossmutter"
+                  className="mt-2 w-full rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                />
+              </>
+            )}
+
+            {riddle.answerMode === 'trueFalse' && (
+              <>
+                <ContentFieldLabel>Richtige Lösung</ContentFieldLabel>
+                <ContentOptionButtonGroup
+                  ariaLabel={`Richtige Lösung für Rätsel ${riddleIndex + 1}`}
+                  value={riddle.trueFalseValue ? 'true' : 'false'}
+                  onChange={(value) => updateRiddle(riddle.id, {
+                    trueFalseValue: value === 'true',
+                  })}
+                  options={[
+                    { label: 'Richtig', value: 'true' },
+                    { label: 'Falsch', value: 'false' },
+                  ]}
+                />
+              </>
+            )}
+          </ContentCard>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          const id = `kinship-${Date.now()}`;
+          setRiddles([...attrs.riddles, {
+            id,
+            prompt: '',
+            answerMode: 'open',
+            answer: '',
+            options: [],
+            trueFalseValue: true,
+          }]);
+        }}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover"
+      >
+        <PlusSquare className="size-4" /> Rätsel hinzufügen
       </button>
     </>
   );
@@ -4445,6 +4767,7 @@ export function BlockContentEditorModal({
             {block.type === 'mcm' && <MCMEditor attrs={attrs as unknown as MCMAttrs} block={block} editor={editor} />}
             {block.type === 'mch' && <MCHEditor attrs={attrs as unknown as MCHAttrs} block={block} editor={editor} />}
             {block.type === 'trueFalse' && <TrueFalseEditor attrs={attrs as unknown as TrueFalseAttrs} block={block} editor={editor} />}
+            {block.type === 'familyKinship' && <FamilyKinshipEditor attrs={attrs as unknown as FamilyKinshipAttrs} block={block} editor={editor} />}
             {block.type === 'fillInTheBlank' && <FillInTheBlankEditor attrs={attrs as unknown as FillInTheBlankAttrs} block={block} editor={editor} />}
             {block.type === 'glossaryTerms' && <GlossaryTermsEditor attrs={attrs as unknown as GlossaryTermsAttrs} block={block} editor={editor} />}
             {block.type === 'frayerModel' && <FrayerModelEditor attrs={attrs as unknown as FrayerModelAttrs} block={block} editor={editor} />}

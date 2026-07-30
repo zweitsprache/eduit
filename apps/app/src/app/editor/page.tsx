@@ -92,6 +92,9 @@ import {
   type ColorFurnitureAttrs,
 } from '@/components/editor/color-furniture-node';
 import {
+  FamilyKinship,
+} from '@/components/editor/family-kinship-node';
+import {
   GermanVerbTable,
 } from '@/components/editor/german-verb-table-node';
 import {
@@ -333,6 +336,7 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'letterNode',
   'crossword',
   'errorCorrection',
+  'familyKinship',
 ]);
 
 function richTextToPlainText(html: string) {
@@ -1099,6 +1103,7 @@ export default function EditorPage() {
       TwoWayPrepositions,
       Weather,
       ColorFurniture,
+      FamilyKinship,
       GermanVerbTable,
       OccupationPortrait,
       TrueFalse,

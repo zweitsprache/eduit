@@ -187,6 +187,15 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
     insert: (editor) => editor.chain().focus().insertColorFurniture().run(),
   },
   {
+    type: 'familyKinship',
+    label: 'Familie | Verwandtschaftsgrade',
+    description: 'Logikrätsel zu Familienbeziehungen mit Auswahl-, offenen oder Richtig/Falsch-Antworten.',
+    category: 'Assessment',
+    keywords: ['familie', 'verwandtschaft', 'verwandtschaftsgrade', 'onkel', 'tante', 'logikrätsel', 'mcq', 'richtig falsch'],
+    Icon: BookOpen01,
+    insert: (editor) => editor.chain().focus().insertFamilyKinship().run(),
+  },
+  {
     type: 'germanVerbTable',
     label: 'Verbtabelle Deutsch',
     description: 'Deutsche Verbformen nach Person, Numerus und Register darstellen.',

@@ -87,6 +87,10 @@ const DEFAULT_INSTRUCTION_TRANSLATIONS: Record<
     formal: 'Schreiben Sie die Sätze richtig um.',
     informal: 'Schreibe die Sätze richtig um.',
   },
+  'Solve the family relationship riddles.': {
+    formal: 'Lösen Sie die Rätsel zu den Verwandtschaftsgraden.',
+    informal: 'Löse die Rätsel zu den Verwandtschaftsgraden.',
+  },
   'Sort the items into the correct categories.':
     {
       formal: 'Ordnen Sie die Elemente den richtigen Kategorien zu.',

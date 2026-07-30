@@ -3306,6 +3306,102 @@
   display: block;
 }
 
+.family-kinship-node__riddles {
+  display: grid;
+  gap: var(--custom-block-space-question-to-rows);
+}
+
+.custom-block__instruction + .family-kinship-node__riddles {
+  margin-block-start: var(
+    --custom-block-space-instruction-to-divider
+  ) !important;
+}
+
+.family-kinship-node__riddle {
+  display: grid;
+  grid-template-columns: var(--custom-block-index-size) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--custom-block-inline-gap);
+  padding-block: var(--custom-block-row-padding-block);
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  break-inside: avoid;
+}
+
+.family-kinship-node__riddle:last-child {
+  border-bottom: 0;
+}
+
+.family-kinship-node__index {
+  margin-top: 0.1rem;
+}
+
+.family-kinship-node__content {
+  min-width: 0;
+}
+
+.family-kinship-node__prompt {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--custom-block-body-font-size);
+  font-weight: 600;
+  line-height: var(--custom-block-label-line-height);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.family-kinship-node__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem var(--custom-block-inline-gap);
+  margin-block-start: 0.55rem;
+}
+
+.family-kinship-node__choices--boolean {
+  flex-wrap: nowrap;
+}
+
+.family-kinship-node__choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text-primary);
+  font-size: var(--custom-block-body-font-size);
+  line-height: var(--custom-block-label-line-height);
+}
+
+.family-kinship-node__choice > span:last-child {
+  overflow-wrap: anywhere;
+}
+
+.family-kinship-node__answer-line {
+  position: relative;
+  display: block;
+  min-height: calc(var(--custom-block-control-size) + 0.45rem);
+  margin-block-start: 0.55rem;
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+}
+
+.family-kinship-node__open-solution {
+  position: absolute;
+  right: 0;
+  bottom: 0.1rem;
+  left: 0;
+  display: none;
+  color: var(--custom-block-solution-color);
+  font-family: var(--custom-block-solution-font-family);
+  font-size: var(--custom-block-solution-font-size);
+  line-height: var(--custom-block-fill-blank-line-height);
+}
+
+.family-kinship-node__answer-line[data-example="true"]
+  .family-kinship-node__open-solution,
+.tiptap[data-show-solutions="true"]
+  .family-kinship-node__open-solution {
+  display: block;
+}
+
 .custom-block__instruction + .worksheet-table-node__frame {
   margin-block-start: var(
     --custom-block-space-instruction-to-divider

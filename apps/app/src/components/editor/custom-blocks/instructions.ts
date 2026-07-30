@@ -2,6 +2,7 @@ import { Extension } from '@tiptap/core';
 
 export const DEFAULT_BLOCK_INSTRUCTIONS = {
   dialogue: 'Complete the dialogue.',
+  familyKinship: 'Solve the family relationship riddles.',
   fillInTheBlank: 'Fill in the blanks with the correct words.',
   glossaryTerms: 'Review the following glossary terms.',
   mch: 'Choose the correct answer for each row.',
@@ -35,4 +36,3 @@ export const CustomBlockInstructions = Extension.create({
     }];
   },
 });
-
