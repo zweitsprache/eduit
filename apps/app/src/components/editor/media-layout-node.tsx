@@ -118,17 +118,17 @@ export function MediaLayoutContent({ attrs }: { attrs: MediaLayoutAttrs }) {
     <div className="media-layout-node__media" data-columns={attrs.columns}>
       {attrs.items.map((item) => {
         const href = safeLink(item.href);
-        const image = (
+        const image = item.src.trim() ? (
           <img
             alt={item.alt}
             className="media-layout-node__image"
             src={item.src}
             style={{ objectPosition: `${item.focalX}% ${item.focalY}%` }}
           />
-        );
+        ) : null;
         return (
           <figure className="media-layout-node__item" key={item.id}>
-            {href ? (
+            {href && image ? (
               <a href={href} rel="noreferrer" target="_blank">
                 {image}
               </a>

@@ -10,7 +10,12 @@ export default async function DocumentsPage() {
   if (!user) redirect('/auth/sign-in');
 
   return (
-    <AppShell active="documents" title="Documents" isAdmin={user.isAdmin}>
+    <AppShell
+      active="documents"
+      title="Documents"
+      isAdmin={user.isAdmin}
+      userRole={user.role}
+    >
       <WorksheetManager />
     </AppShell>
   );

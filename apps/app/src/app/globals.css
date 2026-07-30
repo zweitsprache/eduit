@@ -37,6 +37,10 @@
   display: flow-root;
 }
 
+.editor-workspace {
+  scrollbar-gutter: stable;
+}
+
 .tiptap p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   color: var(--color-text-placeholder);

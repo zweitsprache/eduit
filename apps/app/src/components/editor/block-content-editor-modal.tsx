@@ -27,9 +27,12 @@ import {
   User,
 } from 'lucide-react';
 import {
+  createMCQQuestion,
   DEFAULT_MCQ_INSTRUCTION,
+  getMCQQuestions,
   type MCQAttrs,
   type MCQOption,
+  type MCQQuestion,
 } from '@/components/editor/mcq-node';
 import {
   DEFAULT_MATCHING_INSTRUCTION,
@@ -1119,21 +1122,31 @@ function MCQEditor({
   block: ContentEditorBlock;
   editor: Editor;
 }) {
-  const setOptions = (options: MCQOption[]) => updateAttrs(
+  const questions = getMCQQuestions(attrs);
+  const setQuestions = (questions: MCQQuestion[]) => updateAttrs(
     editor,
     block,
-    { options },
+    { questions },
   );
-  const updateOption = (id: string, patch: Partial<MCQOption>) => {
-    const options = attrs.options.map((option) => (
-      option.id === id ? { ...option, ...patch } : option
+  const updateQuestion = (id: string, patch: Partial<MCQQuestion>) => {
+    setQuestions(questions.map((question) => (
+      question.id === id ? { ...question, ...patch } : question
+    )));
+  };
+  const updateOption = (
+    question: MCQQuestion,
+    optionId: string,
+    patch: Partial<MCQOption>,
+  ) => {
+    const options = question.options.map((option) => (
+      option.id === optionId ? { ...option, ...patch } : option
     ));
-    if (patch.correct && attrs.answerMode === 'single') {
+    if (patch.correct && question.answerMode === 'single') {
       options.forEach((option) => {
-        option.correct = option.id === id;
+        option.correct = option.id === optionId;
       });
     }
-    setOptions(options);
+    updateQuestion(question.id, { options });
   };
 
   return (
@@ -1169,15 +1182,6 @@ function MCQEditor({
         </>
       )}
 
-      <label className={`${attrs.showInstruction ? 'mt-6' : ''} block text-sm font-semibold text-secondary`}>Question</label>
-      <InlineFormattedInput
-        ariaLabel="Multiple-choice question"
-        multiline
-        value={attrs.question}
-        onChange={(question) => updateAttrs(editor, block, { question })}
-        placeholder="Enter the question"
-        className="mt-2 min-h-20 whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
-      />
       <ContentSectionHeader>Learner support</ContentSectionHeader>
       <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3">
         <div className="flex items-center gap-2 text-left text-sm font-semibold text-secondary">
@@ -1192,60 +1196,104 @@ function MCQEditor({
           <span>Shuffle answers</span>
         </div>
       </div>
-      <div className="mt-6 flex items-center justify-between">
-        <p className="text-sm font-semibold text-secondary">Answers</p>
-        <span className="text-xs text-quaternary">{attrs.options.length} items</span>
-      </div>
-      <div className="mt-3 space-y-2">
-        {attrs.options.map((option, index) => (
-          <div className="rounded-lg border border-secondary bg-secondary p-2.5" key={option.id}>
+      <ContentSectionHeader count={`${questions.length} items`}>Questions</ContentSectionHeader>
+      <div className="mt-3 space-y-4">
+        {questions.map((question, questionIndex) => (
+          <section className="rounded-xl border border-secondary bg-secondary p-3" key={question.id}>
             <div className="flex items-center gap-3">
               <span className="rounded bg-primary px-2 py-1 text-[10px] font-bold tabular-nums text-secondary">
-                {String(index + 1).padStart(2, '0')}
+                Question {questionIndex + 1}
               </span>
-              <button
-                type="button"
-                role="checkbox"
-                aria-checked={option.correct}
-                aria-label={`Mark answer ${index + 1} correct`}
-                onClick={() => updateOption(option.id, {
-                  correct: !option.correct,
-                })}
-                className={`size-4 shrink-0 rounded-[3px] border transition ${
-                  option.correct
-                    ? 'border-fg-success-primary bg-fg-success-primary'
-                    : 'border-primary bg-primary hover:border-secondary'
-                }`}
-              />
               <div className="ml-auto">
                 <ItemActions
-                  label={`answer ${index + 1}`}
-                  canDelete={attrs.options.length > 2}
-                  canMoveUp={index > 0}
-                  canMoveDown={index < attrs.options.length - 1}
-                  onDelete={() => setOptions(attrs.options.filter(({ id }) => id !== option.id))}
-                  onMoveUp={() => setOptions(moveItem(attrs.options, index, -1))}
-                  onMoveDown={() => setOptions(moveItem(attrs.options, index, 1))}
+                  label={`question ${questionIndex + 1}`}
+                  canDelete={questions.length > 1}
+                  canMoveUp={questionIndex > 0}
+                  canMoveDown={questionIndex < questions.length - 1}
+                  onDelete={() => setQuestions(questions.filter(({ id }) => id !== question.id))}
+                  onMoveUp={() => setQuestions(moveItem(questions, questionIndex, -1))}
+                  onMoveDown={() => setQuestions(moveItem(questions, questionIndex, 1))}
                 />
               </div>
             </div>
             <InlineFormattedInput
-              ariaLabel={`Answer ${index + 1}`}
+              ariaLabel={`Question ${questionIndex + 1}`}
               multiline
-              value={option.text}
-              onChange={(text) => updateOption(option.id, { text })}
-              placeholder="Enter answer text"
-              className="mt-1.5 min-h-12 whitespace-pre-wrap rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+              value={question.question}
+              onChange={(questionText) => updateQuestion(question.id, { question: questionText })}
+              placeholder="Enter the question"
+              className="mt-2 min-h-20 whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
             />
-          </div>
+            <select
+              aria-label={`Correct answers for question ${questionIndex + 1}`}
+              value={question.answerMode}
+              onChange={(event) => {
+                const answerMode = event.target.value as MCQQuestion['answerMode'];
+                const options = answerMode === 'single'
+                  ? question.options.map((option, index, all) => ({
+                      ...option,
+                      correct: option.correct && all.findIndex((item) => item.correct) === index,
+                    }))
+                  : question.options;
+                updateQuestion(question.id, { answerMode, options });
+              }}
+              className="mt-3 w-full rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary"
+            >
+              <option value="single">Single correct answer</option>
+              <option value="multiple">Multiple correct answers</option>
+            </select>
+            <div className="mt-3 space-y-2">
+              {question.options.map((option, optionIndex) => (
+                <div className="rounded-lg border border-secondary bg-primary p-2.5" key={option.id}>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={option.correct}
+                      aria-label={`Mark answer ${optionIndex + 1} correct`}
+                      onClick={() => updateOption(question, option.id, { correct: !option.correct })}
+                      className={`size-4 shrink-0 rounded-[3px] border transition ${option.correct ? 'border-fg-success-primary bg-fg-success-primary' : 'border-primary bg-primary hover:border-secondary'}`}
+                    />
+                    <div className="ml-auto">
+                      <ItemActions
+                        label={`answer ${optionIndex + 1}`}
+                        canDelete={question.options.length > 2}
+                        canMoveUp={optionIndex > 0}
+                        canMoveDown={optionIndex < question.options.length - 1}
+                        onDelete={() => updateQuestion(question.id, { options: question.options.filter(({ id }) => id !== option.id) })}
+                        onMoveUp={() => updateQuestion(question.id, { options: moveItem(question.options, optionIndex, -1) })}
+                        onMoveDown={() => updateQuestion(question.id, { options: moveItem(question.options, optionIndex, 1) })}
+                      />
+                    </div>
+                  </div>
+                  <InlineFormattedInput
+                    ariaLabel={`Answer ${optionIndex + 1}`}
+                    multiline
+                    value={option.text}
+                    onChange={(text) => updateOption(question, option.id, { text })}
+                    placeholder="Enter answer text"
+                    className="mt-1.5 min-h-12 whitespace-pre-wrap rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                  />
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={() => updateQuestion(question.id, {
+              options: [...question.options, {
+                id: `option-${Date.now()}`,
+                text: `Option ${String.fromCharCode(65 + question.options.length)}`,
+                correct: false,
+              }],
+            })} className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover">
+              <PlusSquare className="size-4" /> Add answer
+            </button>
+          </section>
         ))}
       </div>
-      <button type="button" onClick={() => setOptions([...attrs.options, {
-        id: `option-${Date.now()}`,
-        text: `Option ${String.fromCharCode(65 + attrs.options.length)}`,
-        correct: false,
-      }])} className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover">
-        <PlusSquare className="size-4" /> Add answer
+      <button type="button" onClick={() => setQuestions([
+        ...questions,
+        createMCQQuestion(),
+      ])} className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover">
+        <PlusSquare className="size-4" /> Add question
       </button>
     </>
   );
@@ -1788,7 +1836,19 @@ function FillInTheBlankEditor({
 }) {
   return (
     <>
+      <ContentFieldLabel>Title</ContentFieldLabel>
+      <input
+        aria-label="Fill in the blank title"
+        value={attrs.title}
+        onChange={(event) => updateAttrs(editor, block, {
+          title: event.target.value,
+        })}
+        placeholder="Optional title"
+        className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+      <div className="mt-6">
       <ContentFieldLabel>Question / Text</ContentFieldLabel>
+      </div>
       <textarea
         aria-label="Fill in the blank text"
         rows={7}
@@ -3463,7 +3523,19 @@ function CrosswordEditor({
 
       <ContentSectionHeader>Layout</ContentSectionHeader>
       <ContentOptionButtonGroup
+        ariaLabel="Crossword cell aspect ratio"
+        value={attrs.cellAspectRatio}
+        onChange={(cellAspectRatio) => updateAttrs(editor, block, {
+          cellAspectRatio: cellAspectRatio as CrosswordAttrs['cellAspectRatio'],
+        })}
+        options={[
+          { label: '1 : 1', value: '1:1' },
+          { label: '1.25 : 1', value: '1.25:1' },
+        ]}
+      />
+      <ContentOptionButtonGroup
         ariaLabel="Crossword cell size"
+        className="mt-3"
         value={String(attrs.cellSize)}
         onChange={(cellSize) => updateAttrs(editor, block, {
           cellSize: Number(cellSize),

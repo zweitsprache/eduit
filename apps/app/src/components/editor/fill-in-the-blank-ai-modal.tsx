@@ -55,8 +55,8 @@ export function FillInTheBlankAIModal({
   const [autoSentenceCount, setAutoSentenceCount] = useState(false);
   const [blanksPerSentence, setBlanksPerSentence] = useState(1);
   const [autoBlankCount, setAutoBlankCount] = useState(false);
-  const [includeDistractors, setIncludeDistractors] = useState(false);
-  const [distractorCount, setDistractorCount] = useState(3);
+  const [includeDistractors, setIncludeDistractors] = useState(true);
+  const [distractorCount, setDistractorCount] = useState(2);
   const [allowDuplicates, setAllowDuplicates] = useState(false);
   const [textStructure, setTextStructure] =
     useState<TextStructure>('connected-sentences');
@@ -77,8 +77,8 @@ export function FillInTheBlankAIModal({
     setAutoSentenceCount(false);
     setBlanksPerSentence(1);
     setAutoBlankCount(false);
-    setIncludeDistractors(false);
-    setDistractorCount(3);
+    setIncludeDistractors(true);
+    setDistractorCount(2);
     setAllowDuplicates(false);
     setTextStructure('connected-sentences');
     setBlankFocus('');

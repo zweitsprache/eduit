@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/core';
 import { NodeSelection } from '@tiptap/pm/state';
-import { SearchLg, XClose } from '@untitledui/icons';
+import { BookOpen01, SearchLg, XClose } from '@untitledui/icons';
 import {
   CUSTOM_BLOCK_REGISTRY,
   type CustomBlockDefinition,
@@ -11,6 +11,15 @@ import {
 import { cx } from '@/utils/cx';
 
 const RECENT_BLOCKS_KEY = 'eduit-recent-custom-blocks';
+const VOCABULARY_ONE_WORKFLOW: CustomBlockDefinition = {
+  type: 'vocabularyOne',
+  label: 'Vocabulary 1',
+  description: 'Generate a heading, crossword, fill-in text, and three MCQs as one flow.',
+  category: 'Multi-node',
+  keywords: ['vocabulary', 'workflow', 'crossword', 'fill blank', 'mcq'],
+  Icon: BookOpen01,
+  insert: () => false,
+};
 
 function readRecentBlocks() {
   try {
@@ -24,11 +33,15 @@ function readRecentBlocks() {
 export function InsertBlockPalette({
   editor,
   insertAt,
+  onStartOccupationPortrait,
+  onStartVocabularyOne,
   open,
   onClose,
 }: {
   editor: Editor;
   insertAt?: number | null;
+  onStartOccupationPortrait: (insertAt: number) => void;
+  onStartVocabularyOne: (insertAt: number) => void;
   open: boolean;
   onClose: () => void;
 }) {
@@ -48,14 +61,14 @@ export function InsertBlockPalette({
   const results = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     const matching = normalizedQuery
-      ? CUSTOM_BLOCK_REGISTRY.filter((block) => (
+      ? [...CUSTOM_BLOCK_REGISTRY, VOCABULARY_ONE_WORKFLOW].filter((block) => (
           block.label.toLowerCase().includes(normalizedQuery)
           || block.description.toLowerCase().includes(normalizedQuery)
           || block.type.includes(normalizedQuery)
           || block.category.toLowerCase().includes(normalizedQuery)
           || block.keywords.some((keyword) => keyword.includes(normalizedQuery))
         ))
-      : CUSTOM_BLOCK_REGISTRY;
+      : [...CUSTOM_BLOCK_REGISTRY, VOCABULARY_ONE_WORKFLOW];
 
     return [...matching].sort((left, right) => {
       const leftRecent = recentTypes.indexOf(left.type);
@@ -76,15 +89,46 @@ export function InsertBlockPalette({
   if (!open) return null;
 
   const insert = (block: CustomBlockDefinition) => {
+    if (block.type === 'occupationPortrait') {
+      const { selection } = editor.state;
+      const workflowInsertAt = insertAt ?? (
+        selection instanceof NodeSelection ? selection.to : selection.from
+      );
+      onClose();
+      onStartOccupationPortrait(workflowInsertAt);
+      return;
+    }
+    if (block.type === VOCABULARY_ONE_WORKFLOW.type) {
+      const { selection } = editor.state;
+      const workflowInsertAt = insertAt ?? (
+        selection instanceof NodeSelection ? selection.to : selection.from
+      );
+      onClose();
+      onStartVocabularyOne(workflowInsertAt);
+      return;
+    }
     if (insertAt !== null && insertAt !== undefined) {
       const nodeType = editor.state.schema.nodes[block.type];
       const node = nodeType?.createAndFill();
       if (!node) return;
-      const safePosition = Math.min(
+      let safePosition = Math.min(
         editor.state.doc.content.size,
         Math.max(0, insertAt),
       );
-      const transaction = editor.state.tr.insert(safePosition, node);
+      const transaction = editor.state.tr;
+      if (
+        transaction.doc.childCount === 1
+        && transaction.doc.firstChild?.isTextblock
+        && transaction.doc.firstChild.content.size === 0
+      ) {
+        transaction.delete(0, transaction.doc.firstChild.nodeSize);
+        safePosition = 0;
+      } else {
+        const resolved = transaction.doc.resolve(safePosition);
+        if (resolved.depth > 0) safePosition = resolved.after(1);
+      }
+      transaction.insert(safePosition, node);
+      if (!transaction.doc.nodeAt(safePosition)) return;
       transaction.setSelection(NodeSelection.create(
         transaction.doc,
         safePosition,

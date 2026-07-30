@@ -19,6 +19,7 @@ export type CrosswordAttrs = {
   entries: CrosswordEntry[];
   layoutSeed: number;
   cellSize: number;
+  cellAspectRatio: '1:1' | '1.25:1';
   showWordBank: boolean;
 };
 
@@ -43,6 +44,11 @@ export type CrosswordLayout = {
   cells: LayoutCell[];
   entries: PlacedEntry[];
   unplaced: CrosswordEntry[];
+};
+
+export type BestCrosswordLayout = {
+  layout: CrosswordLayout;
+  seed: number;
 };
 
 export const DEFAULT_CROSSWORD_INSTRUCTION =
@@ -98,11 +104,16 @@ export function generateCrosswordLayout(
   sourceEntries: CrosswordEntry[],
   seed = 1,
 ): CrosswordLayout {
-  const targetGridWidth = 26;
+  // Fewer logical columns keep the cells square while allowing each cell to
+  // render roughly 25% larger within the same available document width.
+  const targetGridWidth = 20;
+  const targetGridHeight = 12;
   const normalizedSeed = Math.max(0, Math.floor(seed));
   const candidates = sourceEntries
     .map((entry) => ({ ...entry, word: crosswordWord(entry.answer) }))
-    .filter(({ word }) => word.length >= 2)
+    .filter(({ word }) => (
+      word.length >= 2 && word.length <= targetGridWidth
+    ))
     .sort((left, right) => (
       right.word.length - left.word.length
       || stableHash(`${normalizedSeed}:${left.id}`)
@@ -174,7 +185,7 @@ export function generateCrosswordLayout(
     candidates[0],
     0,
     0,
-    normalizedSeed % 2 === 0 ? 'down' : 'across',
+    'across',
   );
   for (const entry of candidates.slice(1)) {
     const placements: Array<{
@@ -185,6 +196,8 @@ export function generateCrosswordLayout(
       width: number;
       height: number;
       widthOverflow: number;
+      unusedWidth: number;
+      directionPenalty: number;
       area: number;
       tie: number;
     }> = [];
@@ -216,6 +229,7 @@ export function generateCrosswordLayout(
           ];
           const width = Math.max(...xs) - Math.min(...xs) + 1;
           const height = Math.max(...ys) - Math.min(...ys) + 1;
+          if (width > targetGridWidth || height > targetGridHeight) return;
           placements.push({
             x,
             y,
@@ -224,6 +238,8 @@ export function generateCrosswordLayout(
             width,
             height,
             widthOverflow: Math.max(0, width - targetGridWidth),
+            unusedWidth: Math.max(0, targetGridWidth - width),
+            directionPenalty: direction === 'across' ? 0 : 1,
             area: width * height,
             tie: stableHash(
               `${normalizedSeed}:${entry.id}:${x}:${y}:${direction}`,
@@ -233,10 +249,11 @@ export function generateCrosswordLayout(
       });
     }
     placements.sort((left, right) => (
-      right.intersections - left.intersections
-      || left.widthOverflow - right.widthOverflow
+      left.widthOverflow - right.widthOverflow
       || left.height - right.height
-      || right.width - left.width
+      || left.unusedWidth - right.unusedWidth
+      || left.directionPenalty - right.directionPenalty
+      || right.intersections - left.intersections
       || left.area - right.area
       || left.tie - right.tie
     ));
@@ -247,19 +264,27 @@ export function generateCrosswordLayout(
 
   const connectedIds = new Set(placed.map(({ id }) => id));
   const disconnected = candidates.filter(({ id }) => !connectedIds.has(id));
+  const occupiedXs = Array.from(grid.keys()).map((cellKey) => (
+    Number(cellKey.split(',')[0])
+  ));
   const occupiedYs = Array.from(grid.keys()).map((cellKey) => (
     Number(cellKey.split(',')[1])
   ));
-  let disconnectedY = Math.max(...occupiedYs, 0) + 2;
-  let disconnectedX = 0;
+  const gridMinX = Math.min(...occupiedXs);
+  const gridMinY = Math.min(...occupiedYs);
+  const gridMaxY = Math.max(...occupiedYs);
+  let disconnectedX = gridMinX;
+  let disconnectedY = gridMaxY + 2;
   for (const entry of disconnected) {
     if (
-      disconnectedX > 0
-      && disconnectedX + entry.word.length > targetGridWidth
+      disconnectedX > gridMinX
+      && disconnectedX + entry.word.length > gridMinX + targetGridWidth
     ) {
-      disconnectedX = 0;
+      disconnectedX = gridMinX;
       disconnectedY += 2;
     }
+    const resultingHeight = disconnectedY - gridMinY + 1;
+    if (resultingHeight > targetGridHeight) continue;
     commit(entry, disconnectedX, disconnectedY, 'across');
     disconnectedX += entry.word.length + 2;
   }
@@ -307,17 +332,47 @@ export function generateCrosswordLayout(
   };
 }
 
+export function generateBestCrosswordLayout(
+  sourceEntries: CrosswordEntry[],
+  initialSeed = 1,
+  attempts = 32,
+): BestCrosswordLayout {
+  const layouts = Array.from(
+    { length: Math.max(1, attempts) },
+    (_, index) => {
+      const seed = Math.max(0, Math.floor(initialSeed)) + index;
+      return {
+        layout: generateCrosswordLayout(sourceEntries, seed),
+        seed,
+      };
+    },
+  );
+  layouts.sort((left, right) => (
+    right.layout.entries.length - left.layout.entries.length
+    || left.layout.height - right.layout.height
+    || right.layout.width - left.layout.width
+    || left.layout.unplaced.length - right.layout.unplaced.length
+    || left.seed - right.seed
+  ));
+  return layouts[0];
+}
+
 function CrosswordNodeView({ node, selected }: NodeViewProps) {
   const attrs = node.attrs as CrosswordAttrs;
   const layout = generateCrosswordLayout(attrs.entries, attrs.layoutSeed);
+  const cellWidthRatio = 1.25;
+  const cellHeightRatio = attrs.cellAspectRatio === '1:1' ? 1.25 : 1;
   const effectiveCellSize = Math.max(6, Math.min(
     attrs.cellSize,
-    Math.floor(620 / Math.max(1, layout.width)),
-    Math.floor(560 / Math.max(1, layout.height)),
+    Math.floor(620 / (Math.max(1, layout.width) * cellWidthRatio)),
+    Math.floor(560 / (Math.max(1, layout.height) * cellHeightRatio)),
   ));
   const hasTwoDigitClueNumber = layout.entries.some(
     ({ number }) => number > 9,
   );
+  const clueDirectionCount = new Set(
+    layout.entries.map(({ direction }) => direction),
+  ).size;
   const wordBank = attrs.entries
     .map(({ answer }) => crosswordWord(answer))
     .filter(Boolean)
@@ -343,8 +398,10 @@ function CrosswordNodeView({ node, selected }: NodeViewProps) {
             className="crossword-node__grid"
             style={{
               '--crossword-base-cell-size': `${effectiveCellSize}px`,
-              gridTemplateColumns: `repeat(${layout.width}, var(--crossword-cell-size))`,
-              gridTemplateRows: `repeat(${layout.height}, var(--crossword-cell-size))`,
+              '--crossword-cell-width-ratio': cellWidthRatio,
+              '--crossword-cell-height-ratio': cellHeightRatio,
+              gridTemplateColumns: `repeat(${layout.width}, var(--crossword-cell-width))`,
+              gridTemplateRows: `repeat(${layout.height}, var(--crossword-cell-height))`,
             } as React.CSSProperties}
           >
             {layout.cells.map((cell) => (
@@ -368,6 +425,9 @@ function CrosswordNodeView({ node, selected }: NodeViewProps) {
               'crossword-node__clues',
               hasTwoDigitClueNumber
                 ? 'crossword-node__clues--two-digit-numbers'
+                : '',
+              clueDirectionCount === 1
+                ? 'crossword-node__clues--single-direction'
                 : '',
             ].filter(Boolean).join(' ')}
           >
@@ -465,6 +525,17 @@ export const Crossword = Node.create({
           'data-crossword-cell-size': attributes.cellSize,
         }),
       },
+      cellAspectRatio: {
+        default: '1.25:1',
+        parseHTML: (element) => (
+          element.getAttribute('data-crossword-cell-aspect-ratio') === '1:1'
+            ? '1:1'
+            : '1.25:1'
+        ),
+        renderHTML: (attributes) => ({
+          'data-crossword-cell-aspect-ratio': attributes.cellAspectRatio,
+        }),
+      },
       showWordBank: {
         default: false,
         parseHTML: (element) => (
@@ -501,6 +572,7 @@ export const Crossword = Node.create({
               ?? DEFAULT_CROSSWORD_ENTRIES.map((entry) => ({ ...entry })),
             layoutSeed: attrs.layoutSeed ?? 1,
             cellSize: attrs.cellSize ?? 30,
+            cellAspectRatio: attrs.cellAspectRatio ?? '1.25:1',
             showWordBank: attrs.showWordBank ?? false,
           },
         }),
