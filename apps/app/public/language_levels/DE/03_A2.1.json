@@ -1,0 +1,139 @@
+{
+  "schema_version": "1.0",
+  "zweck": "Niveaugerechte Erstellung von AI-Texten (DaF/DaZ)",
+  "id": "A2.1",
+  "gsr": "A2",
+  "reihenfolge": 3,
+  "vorgaenger": "A1.2",
+  "vorausgesetzt": [
+    "Präsens aller Verbtypen, trennbare Verben, Satzklammer",
+    "Perfekt mit haben und sein bei einfachen Verben",
+    "Präteritum von sein und haben",
+    "Modalverben können, wollen, müssen, dürfen, sollen, möchte-",
+    "Imperativ",
+    "Nominativ, Akkusativ und Dativ bei Artikelwörtern und Pronomen",
+    "Possessivartikel",
+    "lokale und temporale Grundpräpositionen, Wo? und Wohin?",
+    "Demonstrativ- und Frageartikel dieser, welcher",
+    "Verben mit Dativ",
+    "Komparation von gut, gern, viel",
+    "Konjunktion denn",
+    "Ordinalzahlen und Datum"
+  ],
+  "neu_gesamt": [
+    "Nebensatzstruktur mit Verbendstellung",
+    "Konjunktionen weil, wenn, dass",
+    "Perfekt bei trennbaren, nicht-trennbaren und -ieren-Verben",
+    "Wechselpräpositionen mit Dativ und Akkusativ",
+    "Positions- und Richtungsverben",
+    "Direktionaladverbien",
+    "Indefinitpronomen",
+    "reflexive Verben",
+    "Verben mit festen Präpositionen und Präpositionaladverbien",
+    "Präteritum der Modalverben",
+    "Konjunktiv II sollte für Ratschläge",
+    "Dativ als Objekt und Stellung der Objekte im Satz"
+  ],
+  "textmerkmale": {
+    "satzlaenge_woerter": [6, 12],
+    "nebensaetze_pro_satz_max": 1,
+    "mehrfacheinbettung": false,
+    "nominalstil": false,
+    "partizipialattribute": false,
+    "ausgeschlossen": [
+      "Genitiv ausser Namen mit -s",
+      "Präteritum ausser sein, haben und Modalverben",
+      "Plusquamperfekt",
+      "Passiv",
+      "Adjektivdeklination vor dem Nomen",
+      "Relativsätze",
+      "Infinitiv mit zu",
+      "Konjunktiv II ausser sollte, könnte, würde als feste Wendung",
+      "Konjunktionen obwohl, um … zu, damit"
+    ]
+  },
+  "phasen": [
+    {
+      "id": "A2.1-1",
+      "position": "1/3",
+      "bezeichnung": "zu Beginn des Niveaus",
+      "neu": [
+        "Konjunktion weil mit Verbendstellung",
+        "Perfekt der trennbaren Verben: hat kennengelernt, hat eingekauft",
+        "Perfekt der nicht-trennbaren Verben ohne ge-: hat erlebt, hat verstanden",
+        "Perfekt der Verben auf -ieren: ist passiert, hat telefoniert",
+        "Namen im Genitiv: Annas Mutter",
+        "Präposition von + Dativ als Ersatzform: die Mutter von Anna",
+        "Wechselpräpositionen: auf dem Tisch – auf den Tisch",
+        "Verben mit Wechselpräpositionen: liegen/legen, stehen/stellen, stecken, hängen",
+        "Direktionaladverbien: hierhin, dahin, dorthin, herein, hinauf"
+      ],
+      "noch_vermeiden": [
+        "weitere Nebensatzkonjunktionen",
+        "reflexive Verben",
+        "Verben mit festen Präpositionen",
+        "Präteritum der Modalverben"
+      ],
+      "beispielsaetze": [
+        "Ich bin traurig, weil ich hier niemand kenne.",
+        "Ich habe schon zwei Nachbarn kennengelernt.",
+        "Was ist passiert?",
+        "Er legt die Sachen auf den Tisch.",
+        "Steigen Sie doch bitte hinauf."
+      ]
+    },
+    {
+      "id": "A2.1-2",
+      "position": "2/3",
+      "bezeichnung": "in der Mitte des Niveaus",
+      "neu": [
+        "Indefinitpronomen im Nominativ und Akkusativ: einer, eins, eine, welche, keiner",
+        "Konjunktion wenn, Nebensatz vor und nach dem Hauptsatz, mit dann",
+        "Konjunktiv II sollte für Ratschläge: Du solltest Detektiv werden.",
+        "reflexive Verben: sich bewegen, sich ausruhen, sich beeilen, sich ärgern",
+        "Verben mit festen Präpositionen im Akkusativ und Dativ: warten auf, sich freuen auf, zufrieden sein mit, träumen von",
+        "Präpositionaladverbien und Fragewörter: darauf – Worauf?, damit – Womit?"
+      ],
+      "noch_vermeiden": [
+        "Konjunktion dass",
+        "Präteritum der Modalverben",
+        "Dativ und Akkusativ als Doppelobjekt"
+      ],
+      "beispielsaetze": [
+        "Hier ist einer. Ich möchte einen.",
+        "Wenn Sie keine Bestätigung haben, kann ich Ihnen kein Zimmer geben.",
+        "Sie sollten sich gesund ernähren.",
+        "Ich interessiere mich für Tanzsport.",
+        "Worauf hast du denn Lust?"
+      ]
+    },
+    {
+      "id": "A2.1-3",
+      "position": "3/3",
+      "bezeichnung": "gegen Ende des Niveaus",
+      "neu": [
+        "Präteritum der Modalverben: musste, konnte, wollte, durfte, sollte",
+        "Konjunktion dass nach Meinungs- und Bewertungsausdrücken",
+        "Dativ als Objekt mit Possessivartikel und unbestimmtem Artikel",
+        "Stellung von Dativ- und Akkusativobjekt, auch mit Pronomen",
+        "Präposition von + Dativ bei Personen"
+      ],
+      "noch_vermeiden": [],
+      "beispielsaetze": [
+        "Früher musste ich jeden Tag um sechs Uhr aufstehen.",
+        "Es ist wichtig, dass man einen guten Schulabschluss hat.",
+        "Ich habe meinem Mann Gartenstühle gekauft.",
+        "Dimi empfiehlt es ihm.",
+        "Das ist ein Geschenk von meiner Arbeitskollegin."
+      ],
+      "textsorten": [
+        "kurzer Erlebnisbericht in der Vergangenheit",
+        "Mitteilung an Nachbarn",
+        "Bitte um Hilfe",
+        "Ratschläge zu Gesundheit und Alltag",
+        "Kurznachricht zu einem Fest",
+        "einfacher biografischer Text zu Schule und Beruf"
+      ]
+    }
+  ]
+}

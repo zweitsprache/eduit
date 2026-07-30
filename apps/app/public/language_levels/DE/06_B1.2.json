@@ -1,0 +1,130 @@
+{
+  "schema_version": "1.0",
+  "zweck": "Niveaugerechte Erstellung von AI-Texten (DaF/DaZ)",
+  "id": "B1.2",
+  "gsr": "B1",
+  "reihenfolge": 6,
+  "vorgaenger": "B1.1",
+  "vorausgesetzt": [
+    "Präteritum aller Verben, Plusquamperfekt",
+    "Passiv Präsens, auch mit Modalverben",
+    "Genitiv bei Nomen und Präpositionen",
+    "Konjunktiv II Gegenwart und Vergangenheit",
+    "Relativsätze in Nominativ, Akkusativ, Dativ",
+    "Infinitivsätze mit zu, um … zu, statt … zu, ohne … zu",
+    "Konjunktionen als, obwohl, damit",
+    "zweiteilige Konjunktionen nicht nur … sondern auch, zwar … aber, entweder … oder",
+    "Verben mit Präpositionen und Präpositionaladverbien",
+    "Adjektivdeklination in allen drei Varianten"
+  ],
+  "neu_gesamt": [
+    "n-Deklination und Adjektive als Nomen",
+    "Partizip Präsens als Attribut",
+    "Adjektivdeklination mit Komparativ und Superlativ",
+    "Futur I und Präsens mit Zeitangabe für Zukünftiges",
+    "Passiv Präteritum und Passiv Perfekt",
+    "Relativsätze mit Präpositionen sowie mit wo und was",
+    "erweitertes Nebensatzinventar: falls, während, bevor, nachdem, da, seit/seitdem, bis, indem, ohne dass, als ob",
+    "weitere zweiteilige Konjunktionen: je … desto/umso, sowohl … als auch, weder … noch",
+    "Präposition ausser + Dativ"
+  ],
+  "textmerkmale": {
+    "satzlaenge_woerter": [12, 22],
+    "nebensaetze_pro_satz_max": 2,
+    "mehrfacheinbettung": false,
+    "nominalstil": false,
+    "partizipialattribute": "nur Partizip Präsens, einfach",
+    "ausgeschlossen": [
+      "Konjunktiv I und indirekte Rede",
+      "erweiterte Partizipialattribute mit Partizip II",
+      "Futur II",
+      "Passiv mit Modalverben in der Vergangenheit",
+      "Genitivobjekte",
+      "Funktionsverbgefüge",
+      "durchgehender Nominalstil"
+    ]
+  },
+  "phasen": [
+    {
+      "id": "B1.2-1",
+      "position": "1/3",
+      "bezeichnung": "zu Beginn des Niveaus",
+      "neu": [
+        "n-Deklination: der Kollege, den Kollegen, dem Kollegen",
+        "Adjektive als Nomen: die/der Bekannte, ein Bekannter, die Jugendlichen",
+        "Konjunktion falls",
+        "zweiteilige Konjunktion je … desto/umso",
+        "Relativsätze mit Präposition: der Kollege, über den …; die Bekannte, von der …",
+        "Konjunktionen während, bevor, nachdem mit korrekter Zeitenfolge",
+        "Konjunktion als ob und wie wenn mit Konjunktiv II"
+      ],
+      "noch_vermeiden": [
+        "Futur I",
+        "Passiv in der Vergangenheit",
+        "Relativsätze mit wo und was",
+        "Partizip Präsens als Attribut"
+      ],
+      "beispielsaetze": [
+        "Wir sind jetzt per Du, falls dich das interessiert.",
+        "Je länger man wartet, desto schlechter wird die Laune.",
+        "Ist das die Bekannte, von der du erzählt hast?",
+        "Nachdem ich auf Senden geklickt hatte, bemerkte ich meinen Fehler.",
+        "Du tust ja so, als ob ich keine Ahnung hätte."
+      ]
+    },
+    {
+      "id": "B1.2-2",
+      "position": "2/3",
+      "bezeichnung": "in der Mitte des Niveaus",
+      "neu": [
+        "zweiteilige Konjunktionen sowohl … als auch und weder … noch",
+        "Relativsätze mit wo und was, auch nach das, nichts, etwas, alles",
+        "Partizip Präsens als Adjektiv: der wohltuende Tee, leuchtende Schuhe",
+        "Futur I für Aufforderung, Vermutung, Versprechen, Vorsatz",
+        "Präsens mit Zeitangabe für sicher Zukünftiges",
+        "Konjunktion da als schriftsprachliche Begründung",
+        "Konjunktionen seit/seitdem, bis, indem",
+        "Konjunktionen ohne dass und ohne … zu",
+        "Präposition ausser + Dativ"
+      ],
+      "noch_vermeiden": [
+        "Passiv Präteritum und Passiv Perfekt",
+        "Adjektivdeklination mit Komparativ und Superlativ"
+      ],
+      "beispielsaetze": [
+        "Der Tee soll sowohl gut schmecken als auch gute Laune machen.",
+        "Das, was du suchst, findest du meistens zuletzt.",
+        "Ich werde versuchen, dort eine Wohnung zu finden.",
+        "Ich wollte schnell abfahren, da ich schon spät dran bin.",
+        "Auch Sie können helfen, indem Sie selbst mitmachen."
+      ]
+    },
+    {
+      "id": "B1.2-3",
+      "position": "3/3",
+      "bezeichnung": "gegen Ende des Niveaus",
+      "neu": [
+        "Passiv Präteritum: Sie wurde zur Stadtpräsidentin gewählt.",
+        "Passiv Perfekt: 1975 ist ein Verein gegründet worden.",
+        "Adjektivdeklination mit Komparativ und Superlativ: der grössere Teil, das grösste Problem",
+        "Festigung der Wortbildung bei Nomen und Komposita",
+        "Festigung der Verben mit Präpositionen und der Präpositionaladverbien"
+      ],
+      "noch_vermeiden": [],
+      "beispielsaetze": [
+        "Das Frauenstimmrecht wurde erst 1971 eingeführt.",
+        "Der Verein ist von Freiwilligen gegründet worden.",
+        "Der grössere Teil der Bevölkerung hat zugestimmt.",
+        "Woran erinnerst du dich am liebsten?"
+      ],
+      "textsorten": [
+        "Forumsbeitrag und Diskussionsbeitrag",
+        "Beschwerde und Reklamation",
+        "Produktbeschreibung und Bedienungsanleitung",
+        "biografischer und historischer Bericht",
+        "Zeitungsmeldung",
+        "Bewertung mit Verbesserungsvorschlägen"
+      ]
+    }
+  ]
+}

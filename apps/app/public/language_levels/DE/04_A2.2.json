@@ -1,0 +1,134 @@
+{
+  "schema_version": "1.0",
+  "zweck": "Niveaugerechte Erstellung von AI-Texten (DaF/DaZ)",
+  "id": "A2.2",
+  "gsr": "A2",
+  "reihenfolge": 4,
+  "vorgaenger": "A2.1",
+  "vorausgesetzt": [
+    "Perfekt aller Verbtypen",
+    "Präteritum von sein, haben und Modalverben",
+    "Nebensätze mit weil, wenn, dass",
+    "Wechselpräpositionen, Positions- und Richtungsverben",
+    "reflexive Verben",
+    "Verben mit festen Präpositionen und Präpositionaladverbien",
+    "Dativ als Objekt, Stellung der Objekte",
+    "Indefinitpronomen",
+    "Konjunktiv II sollte für Ratschläge",
+    "Komparation von gut, gern, viel"
+  ],
+  "neu_gesamt": [
+    "Adjektivdeklination in allen drei Varianten",
+    "regelmässige Komparation und Vergleiche mit als und wie",
+    "Konjunktiv II wäre, hätte, würde, könnte für Wunsch und Vorschlag",
+    "Passiv Präsens",
+    "Verb lassen",
+    "indirekte Fragen mit Fragewort und mit ob",
+    "Hauptsatzkonnektoren trotzdem und deshalb",
+    "erweitertes Präpositionsinventar lokal, temporal und modal",
+    "Frageartikel Was für ein …?",
+    "Wortbildung: Adjektive und Nomen"
+  ],
+  "textmerkmale": {
+    "satzlaenge_woerter": [7, 14],
+    "nebensaetze_pro_satz_max": 1,
+    "mehrfacheinbettung": false,
+    "nominalstil": false,
+    "partizipialattribute": false,
+    "ausgeschlossen": [
+      "Genitiv",
+      "Präteritum ausser sein, haben und Modalverben",
+      "Plusquamperfekt",
+      "Passiv ausser Präsens",
+      "Relativsätze",
+      "Infinitiv mit zu",
+      "Konjunktiv II Vergangenheit",
+      "Konjunktionen obwohl, als, um … zu, damit"
+    ]
+  },
+  "phasen": [
+    {
+      "id": "A2.2-1",
+      "position": "1/3",
+      "bezeichnung": "zu Beginn des Niveaus",
+      "neu": [
+        "Konjunktiv II von sein, haben, werden, können",
+        "Wunsch mit Ich wäre gern …, Ich hätte gern …, Ich würde gern …",
+        "Vorschlag mit Wir könnten …",
+        "Konjunktion trotzdem im Hauptsatz",
+        "Adjektivdeklination nach indefinitem Artikel, Possessiv- und Negativartikel, Nominativ, Akkusativ, Dativ",
+        "regelmässige Komparation: schöner, am schönsten; Sonderformen grösser, länger, höher",
+        "Vergleiche mit als und genauso … wie",
+        "Wortbildung: Nomen zu Adjektiv (arbeitslos, stürmisch, eisig)"
+      ],
+      "noch_vermeiden": [
+        "Adjektivdeklination nach definitem Artikel und ohne Artikel",
+        "Passiv",
+        "indirekte Fragen"
+      ],
+      "beispielsaetze": [
+        "Ich wäre gern am Meer.",
+        "Wir könnten ins Kino gehen.",
+        "Eva hat keine Zeit. Trotzdem soll sie hereinkommen.",
+        "Das ist ein neuer Laden mit schönem Licht.",
+        "Irina hört lieber Rockmusik als Jazz."
+      ]
+    },
+    {
+      "id": "A2.2-2",
+      "position": "2/3",
+      "bezeichnung": "in der Mitte des Niveaus",
+      "neu": [
+        "Adjektivdeklination nach definitem Artikel",
+        "Adjektivdeklination ohne Artikel",
+        "Passiv Präsens: Das wird verschickt.",
+        "Frageartikel Was für ein …?",
+        "Konjunktion deshalb im Hauptsatz",
+        "lokale Präpositionen auf die Frage Woher?: aus und von + Dativ",
+        "lokale Präpositionen durch, über, entlang, um … herum + Akkusativ; an … vorbei, bis zu, gegenüber + Dativ",
+        "lokale Präpositionen an, auf, in bei geografischen Angaben, Wo? und Wohin?",
+        "temporale Präpositionen von … an + Dativ und über + Akkusativ",
+        "modale Präposition ohne + Akkusativ"
+      ],
+      "noch_vermeiden": [
+        "indirekte Fragen",
+        "Verb lassen"
+      ],
+      "beispielsaetze": [
+        "Der grüne Schal gefällt mir.",
+        "Das Paket wird verpackt und gewogen.",
+        "Was für einen Zettel brauchen Sie?",
+        "Tobi liebt Tiger. Deshalb möchte er in den Zoo gehen.",
+        "Wir fahren ans Meer und wohnen in einem Hotel mit schöner Lage."
+      ]
+    },
+    {
+      "id": "A2.2-3",
+      "position": "3/3",
+      "bezeichnung": "gegen Ende des Niveaus",
+      "neu": [
+        "indirekte Fragen mit Fragewort: Können Sie mir sagen, wo …?",
+        "indirekte Fragen mit ob: Darf ich fragen, ob …?",
+        "Verb lassen: Sie lässt ihr Konto prüfen.",
+        "Festigung und Kombination von Perfekt, Präteritum und Konjunktiv II",
+        "Festigung der Satzverbindungen wenn, weil, dass",
+        "Wortbildung: Adjektive mit -bar, -ig, -los, un-; Nomen mit -ung, -in, Verkleinerungsformen, Komposita"
+      ],
+      "noch_vermeiden": [],
+      "beispielsaetze": [
+        "Wissen Sie, wo man Geld abheben kann?",
+        "Darf ich fragen, ob Sie Ihren Ausweis dabeihaben?",
+        "Sie sollten vor dem Winter die Pneus wechseln lassen.",
+        "Ich fühle mich unwohl, wenn ich mein Handy nicht dabeihabe."
+      ],
+      "textsorten": [
+        "Beschreibung von Gegenständen und Personen",
+        "Wegbeschreibung",
+        "Reise- und Unterkunftsbeschreibung",
+        "höfliche Anfrage bei Bank oder Amt",
+        "Vergleich zweier Angebote",
+        "kurzer Bericht mit Vorschlägen und Wünschen"
+      ]
+    }
+  ]
+}

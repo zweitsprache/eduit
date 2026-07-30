@@ -14,6 +14,7 @@ import { readAIProgressStream } from '@/lib/ai-progress';
 type SourceMode = 'generated' | 'worksheet' | 'paste';
 type CognitiveLevel = 'remember' | 'understand' | 'apply' | 'analyze';
 type Difficulty = 'easy' | 'moderate' | 'challenging';
+type LanguageDifficulty = 'default' | 'slightly-easier';
 
 export type GeneratedMCQ = {
   questions: Array<{
@@ -54,14 +55,12 @@ const COGNITIVE_LEVELS: Array<{
 
 export function MCQAIModal({
   context,
-  initialOptionCount,
   onClose,
   onGenerated,
   open,
   sources,
 }: {
   context: WorksheetContext;
-  initialOptionCount: number;
   onClose: () => void;
   onGenerated: (result: GeneratedMCQ) => boolean | void;
   open: boolean;
@@ -73,10 +72,14 @@ export function MCQAIModal({
   const [topic, setTopic] = useState('');
   const [textType, setTextType] = useState('');
   const [questionCount, setQuestionCount] = useState(1);
-  const [optionCount, setOptionCount] = useState(4);
+  const [optionCount, setOptionCount] = useState(3);
   const [cognitiveLevel, setCognitiveLevel] =
     useState<CognitiveLevel>('understand');
   const [difficulty, setDifficulty] = useState<Difficulty>('moderate');
+  const [questionLanguageDifficulty, setQuestionLanguageDifficulty] =
+    useState<LanguageDifficulty>('default');
+  const [optionLanguageDifficulty, setOptionLanguageDifficulty] =
+    useState<LanguageDifficulty>('default');
   const [generationContext, setGenerationContext] = useState<WorksheetContext>({
     ...EMPTY_WORKSHEET_CONTEXT,
   });
@@ -92,9 +95,11 @@ export function MCQAIModal({
     setTopic('');
     setTextType('');
     setQuestionCount(1);
-    setOptionCount(Math.min(5, Math.max(3, initialOptionCount || 4)));
+    setOptionCount(3);
     setCognitiveLevel('understand');
     setDifficulty('moderate');
+    setQuestionLanguageDifficulty('default');
+    setOptionLanguageDifficulty('default');
     setGenerationContext({
       ...EMPTY_WORKSHEET_CONTEXT,
       ...context,
@@ -102,7 +107,7 @@ export function MCQAIModal({
     setPending(false);
     setProgressLabel('');
     setError('');
-  }, [context, initialOptionCount, open, sources]);
+  }, [context, open, sources]);
 
   const selectedSource = sources.find(({ pos }) => String(pos) === sourcePos);
   const cognitiveDescription = COGNITIVE_LEVELS.find(
@@ -151,6 +156,8 @@ export function MCQAIModal({
           optionCount,
           cognitiveLevel,
           difficulty,
+          questionLanguageDifficulty,
+          optionLanguageDifficulty,
           context: generationContext,
         }),
       });
@@ -241,7 +248,8 @@ export function MCQAIModal({
             )}
             {!sources.length && (
               <p className="mt-2 text-xs text-quaternary">
-                Add a Rich Text or Fill in the Blank block, or choose another source option.
+                Add a Rich Text, Fill in the Blank, or Berufsporträt block,
+                or choose another source option.
               </p>
             )}
           </div>
@@ -279,7 +287,7 @@ export function MCQAIModal({
           </div>
         )}
 
-        <div className="mt-4 grid grid-cols-4 gap-4 border-t border-secondary pt-4">
+        <div className="mt-4 grid grid-cols-3 gap-4 border-t border-secondary pt-4">
           <label className="block text-xs font-semibold text-tertiary">
             Number of questions
             <input
@@ -308,7 +316,7 @@ export function MCQAIModal({
             </select>
           </label>
           <label className="block text-xs font-semibold text-tertiary">
-            Difficulty
+            Logic difficulty
             <select
               value={difficulty}
               onChange={(event) => setDifficulty(
@@ -319,6 +327,32 @@ export function MCQAIModal({
               <option value="easy">Easy</option>
               <option value="moderate">Moderate</option>
               <option value="challenging">Challenging</option>
+            </select>
+          </label>
+          <label className="block text-xs font-semibold text-tertiary">
+            Question language
+            <select
+              value={questionLanguageDifficulty}
+              onChange={(event) => setQuestionLanguageDifficulty(
+                event.target.value as LanguageDifficulty,
+              )}
+              className="mt-1.5 h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            >
+              <option value="default">Default (text level)</option>
+              <option value="slightly-easier">Slightly easier than text</option>
+            </select>
+          </label>
+          <label className="block text-xs font-semibold text-tertiary">
+            Option language
+            <select
+              value={optionLanguageDifficulty}
+              onChange={(event) => setOptionLanguageDifficulty(
+                event.target.value as LanguageDifficulty,
+              )}
+              className="mt-1.5 h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            >
+              <option value="default">Default (text level)</option>
+              <option value="slightly-easier">Slightly easier than text</option>
             </select>
           </label>
           <label className="block text-xs font-semibold text-tertiary">
@@ -333,7 +367,7 @@ export function MCQAIModal({
               ))}
             </select>
           </label>
-          <p className="col-span-4 -mt-1 text-xs leading-5 text-quaternary">
+          <p className="col-span-3 -mt-1 text-xs leading-5 text-quaternary">
             {cognitiveDescription}
           </p>
         </div>

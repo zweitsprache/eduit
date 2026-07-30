@@ -1,0 +1,146 @@
+{
+  "schema_version": "1.0",
+  "zweck": "Niveaugerechte Erstellung von AI-Texten (DaF/DaZ)",
+  "id": "A1.2",
+  "gsr": "A1",
+  "reihenfolge": 2,
+  "vorgaenger": "A1.1",
+  "vorausgesetzt": [
+    "Verbkonjugation Präsens, auch mit Vokalwechsel",
+    "sein und haben im Präsens",
+    "Personalpronomen Nominativ",
+    "Possessivartikel mein/dein/Ihr im Nominativ",
+    "definiter, indefiniter und Negativartikel, Nullartikel",
+    "Plural der Nomen",
+    "Akkusativ",
+    "Negation mit nicht und kein",
+    "trennbare Verben und Satzklammer",
+    "Modalverben können, wollen, möchte-",
+    "Perfekt mit haben und sein",
+    "Aussagesatz, W-Frage, Ja-/Nein-Frage, Antwort mit doch"
+  ],
+  "neu_gesamt": [
+    "Präteritum von sein und haben",
+    "Dativ bei Artikelwörtern, Pronomen und Präpositionen",
+    "Possessivartikel vollständig, Nominativ und Akkusativ",
+    "Personalpronomen im Dativ und Akkusativ",
+    "Modalverben müssen, dürfen, sollen",
+    "Imperativ",
+    "Höflichkeitsformen mit könnte- und würde-",
+    "lokale Präpositionen Wo? und Wohin?",
+    "temporale Präpositionen mit Dativ und Akkusativ",
+    "Demonstrativ- und Frageartikel",
+    "Verben mit Dativ",
+    "Konjunktion denn",
+    "Ordinalzahlen und Datum"
+  ],
+  "textmerkmale": {
+    "satzlaenge_woerter": [4, 10],
+    "nebensaetze_pro_satz_max": 0,
+    "mehrfacheinbettung": false,
+    "nominalstil": false,
+    "partizipialattribute": false,
+    "ausgeschlossen": [
+      "Genitiv",
+      "Präteritum ausser war und hatte",
+      "Nebensätze mit weil, dass, wenn",
+      "Adjektivdeklination vor dem Nomen",
+      "Passiv",
+      "Konjunktiv II ausser könnte- und würde- als Bitte",
+      "Relativsätze",
+      "Infinitiv mit zu",
+      "Plusquamperfekt"
+    ]
+  },
+  "phasen": [
+    {
+      "id": "A1.2-1",
+      "position": "1/3",
+      "bezeichnung": "zu Beginn des Niveaus",
+      "neu": [
+        "Präteritum von sein und haben",
+        "temporale Präposition für + Akkusativ",
+        "temporale Präpositionen vor und seit + Dativ",
+        "lokale Präposition bei und modale Präposition als bei Beruf und Arbeitsort",
+        "Wortbildung: Berufsbezeichnungen mit -in",
+        "Modalverben müssen und dürfen",
+        "Imperativ für du, ihr und Sie",
+        "Pronomen man",
+        "Konjugation helfen"
+      ],
+      "noch_vermeiden": [
+        "Dativ ausser in den eingeführten festen Präpositionen",
+        "Personalpronomen im Dativ und Akkusativ",
+        "Demonstrativpronomen",
+        "Komparation"
+      ],
+      "beispielsaetze": [
+        "Ich war zwei Jahre in Bern.",
+        "Vor einem Monat habe ich die Ausbildung gemacht.",
+        "Ich arbeite als Hauswart.",
+        "Zuerst muss man die Zonen wählen.",
+        "Warten Sie bitte!"
+      ]
+    },
+    {
+      "id": "A1.2-2",
+      "position": "2/3",
+      "bezeichnung": "in der Mitte des Niveaus",
+      "neu": [
+        "Modalverb sollen",
+        "Possessivartikel vollständig: sein, ihr, unser, euer, Ihr; Akkusativ maskulin",
+        "modale Präposition mit + Dativ",
+        "lokale Präpositionen auf die Frage Wo? + Dativ: an, auf, bei, hinter, in, neben, über, unter, vor, zwischen",
+        "lokale Präpositionen auf die Frage Wohin?: zu, nach, in + Akkusativ",
+        "Verschmelzungen am, beim, im, zum, zur",
+        "temporale Präpositionen bis und ab",
+        "temporale Präpositionen vor, nach, bei, in + Dativ",
+        "höfliche Aufforderung mit Könnten Sie …? und Würden Sie …?"
+      ],
+      "noch_vermeiden": [
+        "Personalpronomen im Dativ",
+        "Verben mit Dativ",
+        "Komparation",
+        "Konjunktion denn"
+      ],
+      "beispielsaetze": [
+        "Sie sollen zu Hause bleiben.",
+        "Ich fahre mit dem Zug.",
+        "Der Kiosk ist neben der Post.",
+        "Paulo ist zum Zahnarzt gefahren.",
+        "Könnten Sie mir bitte helfen?"
+      ]
+    },
+    {
+      "id": "A1.2-3",
+      "position": "3/3",
+      "bezeichnung": "gegen Ende des Niveaus",
+      "neu": [
+        "Personalpronomen im Dativ und Akkusativ: mir, dir, ihm, ihr, uns, euch, ihnen; mich, dich, ihn",
+        "Demonstrativpronomen der, das, die",
+        "Frageartikel welcher und Demonstrativartikel dieser",
+        "Verben mit Dativ: gefallen, stehen, gehören, passen, schmecken",
+        "Komparation von gut, gern, viel: besser, lieber, mehr; am besten, am liebsten, am meisten",
+        "Konjugation mögen und werden",
+        "Ordinalzahlen und Datumsangaben: am zweiten Mai",
+        "Konjunktion denn"
+      ],
+      "noch_vermeiden": [],
+      "beispielsaetze": [
+        "Der Mantel gefällt mir.",
+        "Welchen Mantel nimmst du? – Diesen.",
+        "Ich trinke lieber Tee.",
+        "Am zweiten Mai habe ich Geburtstag.",
+        "Sie feiern Abschied, denn Lara reist nach Hause."
+      ],
+      "textsorten": [
+        "kurze Wegbeschreibung",
+        "Terminabsprache",
+        "einfache Bitte oder Reklamation",
+        "Einkaufsgespräch zu Kleidung",
+        "Einladung mit Datum",
+        "kurzer Bericht über den beruflichen Werdegang"
+      ]
+    }
+  ]
+}

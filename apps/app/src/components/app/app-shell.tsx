@@ -18,6 +18,7 @@ type AppShellProps = {
   active: 'documents' | 'brands';
   title: string;
   isAdmin?: boolean;
+  userRole?: string;
   children: React.ReactNode;
 };
 
@@ -29,8 +30,19 @@ const WORKSPACE_ITEMS = [
   { id: 'settings', labelKey: 'navigation.settings', Icon: Settings01, href: '/account' },
 ] as const;
 
-export function AppShell({ active, title, isAdmin = false, children }: AppShellProps) {
+export function AppShell({
+  active,
+  title,
+  isAdmin = false,
+  userRole = '',
+  children,
+}: AppShellProps) {
   const { t } = useI18n();
+  const visibleWorkspaceItems = userRole.trim() === 'user'
+    ? WORKSPACE_ITEMS.filter(({ id }) => (
+        id !== 'lessons' && id !== 'media' && id !== 'settings'
+      ))
+    : WORKSPACE_ITEMS;
   const translatedTitle = active === 'documents'
     ? t('navigation.documents')
     : active === 'brands'
@@ -62,7 +74,7 @@ export function AppShell({ active, title, isAdmin = false, children }: AppShellP
         <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-secondary bg-primary p-4 md:flex">
           <p className="px-3 pb-2 text-xs font-semibold text-quaternary">{t('common.workspace')}</p>
           <nav className="flex flex-col gap-1">
-            {WORKSPACE_ITEMS.map(({ id, labelKey, Icon, href }) => (
+            {visibleWorkspaceItems.map(({ id, labelKey, Icon, href }) => (
               <a
                 key={id}
                 href={href}

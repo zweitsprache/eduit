@@ -1,0 +1,136 @@
+{
+  "schema_version": "1.0",
+  "zweck": "Niveaugerechte Erstellung von AI-Texten (DaF/DaZ)",
+  "id": "A1.1",
+  "gsr": "A1",
+  "reihenfolge": 1,
+  "vorgaenger": null,
+  "vorausgesetzt": [],
+  "neu_gesamt": [
+    "Verbkonjugation Präsens, regelmässig und mit Vokalwechsel",
+    "sein und haben",
+    "Personalpronomen Nominativ",
+    "Possessivartikel mein/dein/Ihr",
+    "definiter, indefiniter und Negativartikel, Nullartikel",
+    "Pluralformen der Nomen",
+    "Akkusativ",
+    "Negation mit nicht und kein",
+    "trennbare Verben und Satzklammer",
+    "Modalverben können, wollen, möchte-",
+    "Perfekt mit haben und sein",
+    "Aussagesatz, W-Frage, Ja-/Nein-Frage, Antwort mit doch",
+    "temporale und lokale Grundpräpositionen"
+  ],
+  "textmerkmale": {
+    "satzlaenge_woerter": [3, 8],
+    "nebensaetze_pro_satz_max": 0,
+    "mehrfacheinbettung": false,
+    "nominalstil": false,
+    "partizipialattribute": false,
+    "ausgeschlossen": [
+      "Dativ",
+      "Genitiv",
+      "Präteritum",
+      "Nebensätze jeder Art",
+      "Konnektoren ausser und, oder, aber",
+      "Adjektivdeklination vor dem Nomen",
+      "Passiv",
+      "Konjunktiv",
+      "Komparativ, Superlativ",
+      "Relativsätze",
+      "Infinitiv mit zu"
+    ]
+  },
+  "phasen": [
+    {
+      "id": "A1.1-1",
+      "position": "1/3",
+      "bezeichnung": "zu Beginn des Niveaus",
+      "neu": [
+        "Aussagesatz mit Verb auf Position 2",
+        "W-Frage: Wie heissen Sie? Woher kommen Sie?",
+        "Personalpronomen ich, du, Sie, er/es/sie, wir, ihr, sie",
+        "Verbkonjugation: heissen, kommen, wohnen, leben, lernen, sprechen",
+        "sein und haben",
+        "Possessivartikel mein/meine, dein/deine, Ihr/Ihre",
+        "Präpositionen aus und in bei Herkunft und Wohnort"
+      ],
+      "noch_vermeiden": [
+        "Artikelwörter im Akkusativ",
+        "Negation",
+        "trennbare Verben",
+        "Modalverben",
+        "Perfekt"
+      ],
+      "beispielsaetze": [
+        "Mein Name ist Walter Baumann.",
+        "Ich komme aus der Schweiz.",
+        "Wie heissen Sie?",
+        "Das ist mein Bruder. Er lebt in Bern."
+      ]
+    },
+    {
+      "id": "A1.1-2",
+      "position": "2/3",
+      "bezeichnung": "in der Mitte des Niveaus",
+      "neu": [
+        "Ja-/Nein-Frage mit Verb auf Position 1",
+        "indefiniter Artikel ein/eine, Negativartikel kein/keine, Nullartikel",
+        "Pluralformen: Tomaten, Eier, Bananen",
+        "definiter Artikel der, das, die im Nominativ",
+        "Personalpronomen er/es/sie für Sachen",
+        "möchte- als Ausdruck des Wunsches",
+        "lokale Adverbien hier, dort",
+        "prädikatives Adjektiv: Das Zimmer ist teuer.",
+        "Negation mit nicht",
+        "trennbare Verben und Satzklammer: Lara steht früh auf.",
+        "Verbkonjugation mit Vokalwechsel: schlafen, essen, anfangen, arbeiten, fernsehen",
+        "temporale Präpositionen am, um, von … bis",
+        "Verbposition bei vorangestellter Angabe: Am Nachmittag macht Robert Sport.",
+        "Wortbildung: Komposita (der Kühlschrank)"
+      ],
+      "noch_vermeiden": [
+        "Akkusativformen den/einen/keinen",
+        "Modalverben können, wollen",
+        "Perfekt",
+        "Antwort mit doch"
+      ],
+      "beispielsaetze": [
+        "Haben wir Zucker?",
+        "Das ist doch kein Ei.",
+        "Der Stuhl ist nicht schön.",
+        "Ich räume mein Zimmer auf.",
+        "Wann fängt der Deutschkurs an?"
+      ]
+    },
+    {
+      "id": "A1.1-3",
+      "position": "3/3",
+      "bezeichnung": "gegen Ende des Niveaus",
+      "neu": [
+        "Akkusativ: den Salat, einen Tee, keinen Saft",
+        "Antwort mit ja, nein, doch",
+        "Verbkonjugation: nehmen, lesen, treffen, fahren",
+        "Modalverben können und wollen mit Satzklammer",
+        "Perfekt mit haben: Lara hat Tee gekocht.",
+        "Perfekt mit sein: Ich bin spazieren gegangen.",
+        "Perfekt im Satz, auch in der Frage: Bist du pünktlich gekommen?"
+      ],
+      "noch_vermeiden": [],
+      "beispielsaetze": [
+        "Hast du keinen Hunger mehr? – Doch.",
+        "Ich kann nicht in die Schule gehen.",
+        "Sie will die Prüfung machen.",
+        "Wir haben Freunde getroffen."
+      ],
+      "textsorten": [
+        "kurze Selbstvorstellung",
+        "Einkaufszettel und Einkaufsgespräch",
+        "Wohnungsinserat",
+        "Tagesablauf",
+        "kurze Nachricht über Erlebtes",
+        "einfaches Formular"
+      ]
+    }
+  ]
+}

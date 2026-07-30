@@ -11,6 +11,9 @@ import {
 } from '@/lib/ai-generation';
 import { RICH_TEXT_TYPES } from '@/lib/rich-text-types';
 import { validateWorksheetPatch } from '@/lib/worksheets';
+import {
+  germanProgressionInstruction,
+} from '@/lib/german-language-progression';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,6 +27,12 @@ const requestSchema = z.object({
   optionCount: z.number().int().min(3).max(5),
   cognitiveLevel: z.enum(['remember', 'understand', 'apply', 'analyze']),
   difficulty: z.enum(['easy', 'moderate', 'challenging']),
+  questionLanguageDifficulty: z.enum(['default', 'slightly-easier']),
+  optionLanguageDifficulty: z.enum(['default', 'slightly-easier']),
+  progression: z.object({
+    level: z.enum(['A1.1', 'A1.2', 'A2.1', 'A2.2', 'B1.1', 'B1.2']),
+    phase: z.enum(['beginning', 'middle', 'towards-end', 'completed']),
+  }).optional(),
   context: z.unknown(),
 });
 
@@ -50,7 +59,7 @@ const reviewedItemSchema = z.object({
     distractorsPlausible: z.boolean(),
     optionsHomogeneous: z.boolean(),
     optionsMutuallyExclusive: z.boolean(),
-    stemSelfContained: z.boolean(),
+    stemAvoidsSourceReference: z.boolean(),
     noSurfaceCueing: z.boolean(),
     noOutsideKnowledgeRequired: z.boolean(),
   }),
@@ -155,6 +164,20 @@ function validateItemBank(items: z.infer<typeof itemSchema>[]) {
   }
 }
 
+function languageDifficultyInstruction(
+  target: 'question stem' | 'answer options',
+  difficulty: 'default' | 'slightly-easier',
+) {
+  return difficulty === 'slightly-easier'
+    ? `Write the ${target} in language that is slightly easier than the source
+text. Simplify sentence structure and non-essential vocabulary by approximately
+one proficiency step, while preserving necessary subject terminology and the
+requested logical difficulty.`
+    : `Match the ${target}'s language difficulty to the source text. Preserve
+its expected vocabulary and sentence complexity without making the assessment
+linguistically harder than the source.`;
+}
+
 export async function POST(request: Request) {
   try {
     const user = await getCurrentAppUser();
@@ -172,6 +195,18 @@ export async function POST(request: Request) {
         };
         try {
           const contentLanguage = context?.contentLanguage ?? '';
+          const stemProgressionInstruction = germanProgressionInstruction({
+            artifact: 'mcq-stem',
+            contentLanguage,
+            languageDifficulty: input.questionLanguageDifficulty,
+            selection: input.progression,
+          });
+          const optionProgressionInstruction = germanProgressionInstruction({
+            artifact: 'mcq-option',
+            contentLanguage,
+            languageDifficulty: input.optionLanguageDifficulty,
+            selection: input.progression,
+          });
           let sourceText = input.sourceText.trim();
 
           if (input.sourceMode === 'generated') {
@@ -246,6 +281,20 @@ ${worksheetContextPrompt(context, [
 Mandatory language proficiency:
 ${languageProficiencyInstruction(context?.languageLevel ?? '')}
 
+Question-stem language:
+${languageDifficultyInstruction(
+  'question stem',
+  input.questionLanguageDifficulty,
+)}
+${stemProgressionInstruction}
+
+Answer-option language:
+${languageDifficultyInstruction(
+  'answer options',
+  input.optionLanguageDifficulty,
+)}
+${optionProgressionInstruction}
+
 SOURCE TEXT:
 ${sourceText}
 
@@ -255,6 +304,16 @@ Quality requirements:
 - Exactly one answer may be defensible.
 - The complete question belongs in the stem and should pass the
   cover-the-options test.
+- Never meta-reference the source as a text, passage, article, excerpt, or
+  material. Avoid phrases such as "according to the text", "as described in
+  the text", "gemäss Text", "laut Text", "wie im Text beschrieben", and
+  equivalent wording in the requested content language.
+- Preserve natural discourse references established by the source. If the
+  source introduces a specific couple, teacher, family, event, object, or
+  similar referent, use the appropriate definite form such as "the couple" or
+  "das Paar" rather than changing it to an indefinite form such as "a couple"
+  or "ein Paar". Do not invent names or details merely to make the stem
+  standalone.
 - Use positive phrasing. Avoid NOT/EXCEPT questions.
 - Every distractor must encode a realistic misconception or comprehension
   error, not a random falsehood.
@@ -302,11 +361,30 @@ Mandatory checks:
 - Try to argue for every distractor. If an expert could defend one, revise it.
 - Check for longest-answer, detail, hedge, absolute-term, grammatical,
   odd-one-out, and word-repetition cues.
+- Ensure every stem contains no meta-reference to the source text, passage,
+  article, excerpt, or preceding material. Remove wording equivalent to
+  "according to the text", "as described in the text", "gemäss Text", "laut
+  Text", or "wie im Text beschrieben".
+- Do not overcorrect valid discourse references. Preserve definite noun phrases
+  for entities already established by the source, for example "the couple" or
+  "das Paar"; do not rewrite them as "a couple" or "ein Paar".
 - Return exactly ${input.questionCount} reviewed items.
 - For every item, keep exactly ${input.optionCount - 1} distractors and matching
   misconception entries.
 - Preserve bloomLevel "${input.cognitiveLevel}" and difficulty
   "${input.difficulty}" for every item.
+- Preserve the requested question-stem language level:
+  ${languageDifficultyInstruction(
+    'question stem',
+    input.questionLanguageDifficulty,
+  )}
+${stemProgressionInstruction}
+- Preserve the requested answer-option language level:
+  ${languageDifficultyInstruction(
+    'answer options',
+    input.optionLanguageDifficulty,
+  )}
+${optionProgressionInstruction}
 - Remove duplicate and near-duplicate questions across the complete bank.
 - Mark every check true only after its returned item passes it.
 

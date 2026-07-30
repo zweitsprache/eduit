@@ -9,6 +9,7 @@ import { useAIModalLocalization } from '@/components/editor/ai-modal-localizatio
 export function AIGenerationModal({
   children,
   error,
+  generateLabel = 'Generate',
   onClose,
   onGenerate,
   open,
@@ -18,6 +19,7 @@ export function AIGenerationModal({
 }: {
   children: ReactNode;
   error?: string;
+  generateLabel?: string;
   onClose: () => void;
   onGenerate: () => void;
   open: boolean;
@@ -102,10 +104,10 @@ export function AIGenerationModal({
               <WandSparkles className="size-4" />
             )}
             <span
-              key={pending ? (progressLabel || 'Generating…') : 'Generate'}
+              key={pending ? (progressLabel || 'Generating…') : generateLabel}
               className={pending ? 'ai-generation-progress-label' : undefined}
             >
-              {pending ? (progressLabel || 'Generating…') : 'Generate'}
+              {pending ? (progressLabel || 'Generating…') : generateLabel}
             </span>
           </button>
         </footer>

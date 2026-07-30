@@ -1,0 +1,120 @@
+{
+  "schema_version": "1.0",
+  "zweck": "Niveaugerechte Erstellung von AI-Texten (DaF/DaZ)",
+  "id": "B1.1",
+  "gsr": "B1",
+  "reihenfolge": 5,
+  "vorgaenger": "A2.2",
+  "vorausgesetzt": [
+    "Präsens, Perfekt",
+    "Präteritum von sein/haben und Modalverben",
+    "Imperativ",
+    "Nominativ, Akkusativ, Dativ",
+    "Adjektivdeklination",
+    "Komparativ, Superlativ",
+    "Wechselpräpositionen",
+    "Nebensätze mit weil, dass, wenn, ob",
+    "Konnektoren deshalb, trotzdem",
+    "reflexive Verben",
+    "würde-Höflichkeitsformen"
+  ],
+  "neu_gesamt": [
+    "Präteritum aller Verben",
+    "Plusquamperfekt",
+    "Passiv Präsens, auch mit Modalverben",
+    "Genitiv bei Nomen und Präpositionen",
+    "Konjunktiv II Gegenwart und Vergangenheit",
+    "Relativsätze",
+    "Infinitivsätze mit zu",
+    "erweitertes Konnektorenrepertoire"
+  ],
+  "textmerkmale": {
+    "satzlaenge_woerter": [10, 18],
+    "nebensaetze_pro_satz_max": 2,
+    "mehrfacheinbettung": false,
+    "nominalstil": false,
+    "partizipialattribute": false,
+    "ausgeschlossen": ["Konjunktiv I", "Futur II", "Passiv Vergangenheit"]
+  },
+  "phasen": [
+    {
+      "id": "B1.1-1",
+      "position": "1/3",
+      "bezeichnung": "zu Beginn des Niveaus",
+      "neu": [
+        "Präteritum aller Verben (tankte, fuhr, brachte)",
+        "Plusquamperfekt für Vorzeitigkeit",
+        "Konjunktion als, Abgrenzung zu wenn",
+        "Konjunktion obwohl",
+        "Gradpartikeln: total, völlig, ziemlich, besonders, nicht so, gar nicht",
+        "Relativsätze Nominativ, Akkusativ, Dativ, auch mit Präposition"
+      ],
+      "noch_vermeiden": [
+        "Genitiv",
+        "Passiv",
+        "Konjunktiv II ausser festen Wendungen (ich hätte gern, könnten Sie)"
+      ],
+      "beispielsaetze": [
+        "Es ist vor einem Jahr passiert, als ich noch Lotto gespielt habe.",
+        "Er hatte sich den Fuss gebrochen.",
+        "Sie schaut die Serie an, obwohl sie sie schon dreimal gesehen hat.",
+        "eine Köchin, die unglaublich gut kochen kann"
+      ]
+    },
+    {
+      "id": "B1.1-2",
+      "position": "2/3",
+      "bezeichnung": "in der Mitte des Niveaus",
+      "neu": [
+        "Passiv Präsens mit Modalverben",
+        "Genitiv mit definitem und indefinitem Artikel sowie Possessiva",
+        "Konjunktiv II, irreale Bedingungen mit wenn (wäre, hätte, könnte, müsste, würde + Infinitiv)",
+        "Genitivpräpositionen: wegen, während, innerhalb, ausserhalb",
+        "Infinitiv mit zu nach Verben, nach Es ist + Adjektiv, nach Nomen",
+        "Kausalkonnektoren: deshalb, deswegen, darum, daher, aus diesem Grund"
+      ],
+      "noch_vermeiden": [
+        "Konjunktiv II Vergangenheit",
+        "zweiteilige Konjunktionen",
+        "statt/ohne … zu"
+      ],
+      "beispielsaetze": [
+        "Auf Bewegung sollte besonders geachtet werden.",
+        "der Rat eines Fachmanns",
+        "Wenn ich du wäre, würde ich sofort anrufen.",
+        "Ich muss mich beeilen wegen meiner Arbeit.",
+        "Es ist toll, Kunden zu beraten."
+      ]
+    },
+    {
+      "id": "B1.1-3",
+      "position": "3/3",
+      "bezeichnung": "gegen Ende des Niveaus",
+      "neu": [
+        "Verben und Ausdrücke mit es: es gibt, es lohnt sich, es ist nicht leicht",
+        "Finalsätze mit um … zu und damit",
+        "statt … zu und ohne … zu + Infinitiv",
+        "Konjunktiv II Vergangenheit, irreale Wünsche",
+        "Zweiteilige Konjunktionen: nicht nur …, sondern auch / zwar …, aber / entweder … oder",
+        "Verben mit Präpositionen, Präpositionaladverbien (daran, darauf), Fragewörter (Woran? An wen?)",
+        "Präposition trotz + Genitiv"
+      ],
+      "noch_vermeiden": [],
+      "beispielsaetze": [
+        "Es ist nicht leicht, aber es lohnt sich.",
+        "Er geht früher hin, um dort zu warten.",
+        "Man sollte etwas tun, statt nur zu träumen.",
+        "Hätte ich nur nichts gesagt!",
+        "Das macht nicht nur Lärm, sondern auch Schmutz."
+      ],
+      "textsorten": [
+        "einfache Argumentationstexte",
+        "höfliche Kritik und Bitten",
+        "Reklamation",
+        "Bewerbung",
+        "Hausordnung",
+        "Forumsbeitrag"
+      ]
+    }
+  ]
+}

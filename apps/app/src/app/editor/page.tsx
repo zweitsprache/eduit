@@ -14,15 +14,6 @@ import { TableKit } from '@tiptap-pro/extension-pages-tablekit';
 import { Pages, PAGE_FORMATS, type PageFormat } from '@tiptap-pro/extension-pages';
 import { PageBreak } from '@tiptap-pro/extension-pagebreak';
 import {
-  Bold01,
-  Italic01,
-  Strikethrough01,
-  Heading01,
-  List,
-  Code01,
-  MessageChatSquare,
-  ReverseLeft,
-  ReverseRight,
   Trash01,
   Copy01,
   Home03,
@@ -55,11 +46,13 @@ import { useI18n } from '@/components/i18n/locale-provider';
 import { EduitLogo } from '@eduit/ui';
 import { CustomBlockInstructions } from '@/components/editor/custom-blocks/instructions';
 import {
+  getMCQQuestions,
   MCQ,
   type MCQAnswerMode,
   type MCQAttrs,
   type MCQColumns,
   type MCQOption,
+  type MCQQuestion,
 } from '@/components/editor/mcq-node';
 import {
   MCM,
@@ -78,6 +71,29 @@ import {
   type MatchingPair,
   type MatchingPairsAttrs,
 } from '@/components/editor/matching-pairs-node';
+import {
+  TimeMatching,
+  type TimeMatchingAttrs,
+} from '@/components/editor/time-matching-node';
+import {
+  DateMatching,
+  type DateMatchingAttrs,
+} from '@/components/editor/date-matching-node';
+import {
+  TwoWayPrepositions,
+  type TwoWayPrepositionsAttrs,
+} from '@/components/editor/two-way-prepositions-node';
+import {
+  Weather,
+  type WeatherAttrs,
+} from '@/components/editor/weather-node';
+import {
+  ColorFurniture,
+  type ColorFurnitureAttrs,
+} from '@/components/editor/color-furniture-node';
+import {
+  GermanVerbTable,
+} from '@/components/editor/german-verb-table-node';
 import {
   TrueFalse,
   type TrueFalseAttrs,
@@ -189,6 +205,9 @@ import {
 } from '@/components/editor/block-content-editor-modal';
 import { WordGridAIModal } from '@/components/editor/word-grid-ai-modal';
 import { CrosswordAIModal } from '@/components/editor/crossword-ai-modal';
+import {
+  VocabularyOneAIModal,
+} from '@/components/editor/vocabulary-one-ai-modal';
 import { WordGridCSVImportModal } from '@/components/editor/word-grid-csv-import-modal';
 import { DialogueAIModal } from '@/components/editor/dialogue-ai-modal';
 import { MiniFormAIModal } from '@/components/editor/mini-form-ai-modal';
@@ -201,7 +220,10 @@ import { MediaLayout } from '@/components/editor/media-layout-node';
 import { MediaLayoutEditorModal } from '@/components/editor/media-layout-editor-modal';
 import { BlockHoverToolbar } from '@/components/editor/block-hover-toolbar';
 import { LetterNode } from '@/components/editor/letter-node';
-import { Crossword } from '@/components/editor/crossword-node';
+import {
+  Crossword,
+  type CrosswordAttrs,
+} from '@/components/editor/crossword-node';
 import {
   createErrorCorrectionMarkup,
   ErrorCorrection,
@@ -215,6 +237,24 @@ import {
 } from '@/components/editor/true-false-ai-modal';
 import { RichTextAIModal } from '@/components/editor/rich-text-ai-modal';
 import { MCQAIModal } from '@/components/editor/mcq-ai-modal';
+import { TimeMatchingAIModal } from '@/components/editor/time-matching-ai-modal';
+import { DateMatchingAIModal } from '@/components/editor/date-matching-ai-modal';
+import {
+  TwoWayPrepositionsAIModal,
+} from '@/components/editor/two-way-prepositions-ai-modal';
+import {
+  TwoWayPrepositionsEditorModal,
+} from '@/components/editor/two-way-prepositions-editor-modal';
+import { WeatherAIModal } from '@/components/editor/weather-ai-modal';
+import {
+  ColorFurnitureAIModal,
+} from '@/components/editor/color-furniture-ai-modal';
+import {
+  GermanVerbTableEditorModal,
+} from '@/components/editor/german-verb-table-editor-modal';
+import {
+  GermanVerbTableAIModal,
+} from '@/components/editor/german-verb-table-ai-modal';
 
 const STORAGE_KEY = 'eduit-editor-content';
 const BRAND_PROFILES_UPDATED_KEY = 'eduit-brand-profiles-updated';
@@ -350,6 +390,27 @@ function serializedDocumentHead() {
   }).join('\n');
 }
 
+async function inlinePrivateMediaImages(root: HTMLElement) {
+  const images = Array.from(root.querySelectorAll<HTMLImageElement>('img'))
+    .filter((image) => {
+      const src = image.getAttribute('src') ?? '';
+      return src.startsWith('/api/media/')
+        || src.startsWith(`${window.location.origin}/api/media/`);
+    });
+  await Promise.all(images.map(async (image) => {
+    const response = await fetch(image.src);
+    if (!response.ok) throw new Error('A media-library image could not be loaded.');
+    const blob = await response.blob();
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => resolve(String(reader.result)));
+      reader.addEventListener('error', () => reject(reader.error));
+      reader.readAsDataURL(blob);
+    });
+    image.setAttribute('src', dataUrl);
+  }));
+}
+
 async function generateWorksheetPreview(editor: Editor, worksheetId: string) {
   if (editor.isDestroyed) return;
   const editorElement = editor.view.dom;
@@ -373,6 +434,7 @@ async function generateWorksheetPreview(editor: Editor, worksheetId: string) {
   clone.querySelectorAll('.rich-text-node__selection-fragment').forEach(
     (element) => element.remove(),
   );
+  await inlinePrivateMediaImages(clone);
   await fetch('/api/worksheets/preview', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -433,6 +495,45 @@ function setNodeAttr(editor: Editor, pos: number, key: keyof MCQAttrs, value: MC
       return true;
     })
     .run();
+}
+
+function getCrosswordWordList(editor: Editor, pos: number) {
+  const node = editor.state.doc.nodeAt(pos);
+  if (node?.type.name !== 'crossword') return '';
+  return (node.attrs as CrosswordAttrs).entries
+    .map(({ answer }) => answer.trim())
+    .filter(Boolean)
+    .join('\n');
+}
+
+function getTimeMatchingItemCount(editor: Editor, pos: number) {
+  const node = editor.state.doc.nodeAt(pos);
+  if (node?.type.name !== 'timeMatching') return 6;
+  return (node.attrs as TimeMatchingAttrs).times.length || 6;
+}
+
+function getDateMatchingItemCount(editor: Editor, pos: number) {
+  const node = editor.state.doc.nodeAt(pos);
+  if (node?.type.name !== 'dateMatching') return 6;
+  return (node.attrs as DateMatchingAttrs).dates.length || 6;
+}
+
+function getTwoWayPrepositionsItemCount(editor: Editor, pos: number) {
+  const node = editor.state.doc.nodeAt(pos);
+  if (node?.type.name !== 'twoWayPrepositions') return 6;
+  return (node.attrs as TwoWayPrepositionsAttrs).items.length || 6;
+}
+
+function getWeatherItemCount(editor: Editor, pos: number) {
+  const node = editor.state.doc.nodeAt(pos);
+  if (node?.type.name !== 'weather') return 4;
+  return (node.attrs as WeatherAttrs).items.length || 4;
+}
+
+function getColorFurnitureItemCount(editor: Editor, pos: number) {
+  const node = editor.state.doc.nodeAt(pos);
+  if (node?.type.name !== 'colorFurniture') return 4;
+  return (node.attrs as ColorFurnitureAttrs).items.length || 4;
 }
 
 function setMCMAttr(editor: Editor, pos: number, key: keyof MCMAttrs, value: MCMAttrs[keyof MCMAttrs]) {
@@ -783,34 +884,6 @@ function normalizedTableColumns(columns: WorksheetTableColumn[]) {
   }));
 }
 
-function ToolbarButton({
-  onClick,
-  active,
-  children,
-  title,
-}: {
-  onClick: () => void;
-  active?: boolean;
-  children: React.ReactNode;
-  title: string;
-}) {
-  return (
-    <button
-      type="button"
-      title={title}
-      onMouseDown={(e) => { e.preventDefault(); onClick(); }}
-      className={cx(
-        'flex size-9 items-center justify-center rounded-md text-sm font-semibold transition',
-        active
-          ? 'bg-brand-primary text-brand-secondary'
-          : 'text-fg-quaternary hover:bg-primary_hover hover:text-fg-secondary',
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
 const NAV_ITEMS = [
   { label: 'Dashboard', Icon: Grid01, href: '#' },
   { label: 'Documents', Icon: File02, href: '/documents', active: true },
@@ -894,6 +967,7 @@ const WORD_GRID_DIRECTION_OPTIONS: {
 
 export default function EditorPage() {
   const { t } = useI18n();
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [saved, setSaved] = useState(true);
   const [docSize, setDocSize] = useState('a4-portrait');
   const [brandProfiles, setBrandProfiles] = useState<BrandProfile[]>([]);
@@ -914,6 +988,8 @@ export default function EditorPage() {
       : null,
   );
   const worksheetSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const worksheetTitleSaveTimerRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
   const worksheetPreviewTimerRef =
     useRef<ReturnType<typeof setTimeout> | null>(null);
   const contextSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -948,6 +1024,8 @@ export default function EditorPage() {
     useState<ContentEditorBlock | null>(null);
   const [crosswordAIBlock, setCrosswordAIBlock] =
     useState<ContentEditorBlock | null>(null);
+  const [vocabularyOneInsertAt, setVocabularyOneInsertAt] =
+    useState<number | null>(null);
   const [mcqAIBlock, setMCQAIBlock] =
     useState<ContentEditorBlock | null>(null);
   const [wordGridCSVBlock, setWordGridCSVBlock] =
@@ -960,6 +1038,22 @@ export default function EditorPage() {
     useState<ContentEditorBlock | null>(null);
   const [trueFalseAIBlock, setTrueFalseAIBlock] =
     useState<ContentEditorBlock | null>(null);
+  const [timeMatchingAIBlock, setTimeMatchingAIBlock] =
+    useState<{ pos: number; type: 'timeMatching' } | null>(null);
+  const [dateMatchingAIBlock, setDateMatchingAIBlock] =
+    useState<{ pos: number; type: 'dateMatching' } | null>(null);
+  const [twoWayPrepositionsAIBlock, setTwoWayPrepositionsAIBlock] =
+    useState<{ pos: number; type: 'twoWayPrepositions' } | null>(null);
+  const [twoWayPrepositionsEditorBlock, setTwoWayPrepositionsEditorBlock] =
+    useState<{ pos: number; type: 'twoWayPrepositions' } | null>(null);
+  const [weatherAIBlock, setWeatherAIBlock] =
+    useState<{ pos: number; type: 'weather' } | null>(null);
+  const [colorFurnitureAIBlock, setColorFurnitureAIBlock] =
+    useState<{ pos: number; type: 'colorFurniture' } | null>(null);
+  const [germanVerbTableEditorBlock, setGermanVerbTableEditorBlock] =
+    useState<{ pos: number; type: 'germanVerbTable' } | null>(null);
+  const [germanVerbTableAIBlock, setGermanVerbTableAIBlock] =
+    useState<{ pos: number; type: 'germanVerbTable' } | null>(null);
   const [richTextAIBlock, setRichTextAIBlock] =
     useState<ContentEditorBlock | null>(null);
   const [errorCorrectionAIBlock, setErrorCorrectionAIBlock] =
@@ -981,7 +1075,7 @@ export default function EditorPage() {
     extensions: [
       ConvertKit.configure({
         table: false,
-        gapcursor: true,
+        gapcursor: {},
       }),
       TableKit,
       CustomBlockNumbering,
@@ -990,6 +1084,12 @@ export default function EditorPage() {
       MCM,
       MCH,
       MatchingPairs,
+      TimeMatching,
+      DateMatching,
+      TwoWayPrepositions,
+      Weather,
+      ColorFurniture,
+      GermanVerbTable,
       TrueFalse,
       FillInTheBlank,
       GlossaryTerms,
@@ -1133,6 +1233,66 @@ export default function EditorPage() {
         'data-style-preset': ACTIVE_CUSTOM_BLOCK_BRAND.stylePreset,
         style: `--custom-block-font-family: ${ACTIVE_CUSTOM_BLOCK_BRAND.fontFamily}`,
       },
+      // Keep ProseMirror's selection scrolling inside the editor scrollport.
+      //
+      // The browser's default scrollIntoView implementation can scroll more
+      // than one ancestor. With Pages, that creates a feedback loop:
+      // scroll -> pagination layout -> selection scroll -> pagination layout.
+      // It is especially visible for node selections and clicks in page
+      // margins, where the scrollbar appears to jump between two positions.
+      handleScrollToSelection(view) {
+        const workspace = view.dom.closest<HTMLElement>('.editor-workspace');
+        if (!workspace) return false;
+
+        const selection = view.state.selection;
+        const selectedDom = selection instanceof NodeSelection
+          ? view.nodeDOM(selection.from)
+          : null;
+        const selectedElement = selectedDom instanceof HTMLElement
+          ? selectedDom
+          : selectedDom?.parentElement ?? null;
+        const selectionRect = selectedElement?.isConnected
+          ? selectedElement.getBoundingClientRect()
+          : view.coordsAtPos(selection.head);
+        const workspaceRect = workspace.getBoundingClientRect();
+        const verticalPadding = 24;
+        const horizontalPadding = 16;
+
+        let topDelta = 0;
+        if (selectionRect.top < workspaceRect.top + verticalPadding) {
+          topDelta = selectionRect.top - workspaceRect.top - verticalPadding;
+        } else if (
+          selectionRect.bottom
+          > workspaceRect.bottom - verticalPadding
+        ) {
+          topDelta =
+            selectionRect.bottom - workspaceRect.bottom + verticalPadding;
+        }
+
+        let leftDelta = 0;
+        if (selectionRect.left < workspaceRect.left + horizontalPadding) {
+          leftDelta =
+            selectionRect.left - workspaceRect.left - horizontalPadding;
+        } else if (
+          selectionRect.right
+          > workspaceRect.right - horizontalPadding
+        ) {
+          leftDelta =
+            selectionRect.right - workspaceRect.right + horizontalPadding;
+        }
+
+        if (topDelta !== 0 || leftDelta !== 0) {
+          workspace.scrollBy({
+            top: topDelta,
+            left: leftDelta,
+            behavior: 'auto',
+          });
+        }
+
+        // We handled the request even when no movement was necessary. This is
+        // what prevents the browser from scrolling an outer ancestor.
+        return true;
+      },
       // Native drop handler for block reordering.
       //
       // The pagination extension keeps the document flat and stacks pages
@@ -1192,9 +1352,7 @@ export default function EditorPage() {
         event.preventDefault();
         const tr = view.state.tr;
         if (moved) {
-          const dragging = view.dragging;
-          if (dragging?.node) dragging.node.replace(tr);
-          else tr.deleteSelection();
+          tr.deleteSelection();
         }
         const mapped = tr.mapping.map(insertPos);
         tr.insert(mapped, droppedNode);
@@ -1205,6 +1363,24 @@ export default function EditorPage() {
     },
   });
 
+  useEffect(() => {
+    let active = true;
+    void fetch('/api/current-user')
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return response.json() as Promise<{ role?: string }>;
+      })
+      .then((result) => {
+        if (active) setCurrentUserRole(result?.role ?? 'user');
+      })
+      .catch(() => {
+        if (active) setCurrentUserRole('user');
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const selectedMCQAttrs = useEditorState({
     editor,
     selector: ({ editor: currentEditor }) => {
@@ -1213,6 +1389,10 @@ export default function EditorPage() {
       return node?.type.name === 'mcq' ? node.attrs as MCQAttrs : null;
     },
   });
+  const selectedMCQQuestions = selectedMCQAttrs
+    ? getMCQQuestions(selectedMCQAttrs)
+    : [];
+  const selectedMCQQuestion = selectedMCQQuestions[0] ?? null;
 
   const selectedPageBreakRestartPagination = useEditorState({
     editor,
@@ -1291,6 +1471,7 @@ export default function EditorPage() {
       const sources: RichTextSource[] = [];
       let richTextCount = 0;
       let fillInTheBlankCount = 0;
+      let occupationPortraitCount = 0;
       currentEditor?.state.doc.descendants((node, pos) => {
         if (node.type.name === 'richText') {
           const text = richTextToPlainText(String(node.attrs.html ?? ''));
@@ -1315,6 +1496,27 @@ export default function EditorPage() {
             label: `Fill in the Blank ${fillInTheBlankCount} — ${preview}${
               text.length > 72 ? '…' : ''
             }`,
+          });
+        } else if (node.type.name === 'occupationPortrait') {
+          const paragraphs = Array.isArray(node.attrs.paragraphs)
+            ? node.attrs.paragraphs.filter(
+              (paragraph): paragraph is string => typeof paragraph === 'string',
+            )
+            : [];
+          const text = [
+            String(node.attrs.title ?? '').trim(),
+            ...paragraphs,
+          ].filter(Boolean).join('\n\n');
+          if (!text) return;
+          occupationPortraitCount += 1;
+          const profession = String(node.attrs.profession ?? '').trim();
+          const preview = text.replace(/\s+/g, ' ').slice(0, 72);
+          sources.push({
+            pos,
+            text,
+            label: `Berufsporträt ${occupationPortraitCount}${
+              profession ? ` — ${profession}` : ''
+            } — ${preview}${text.length > 72 ? '…' : ''}`,
           });
         }
       });
@@ -1887,6 +2089,9 @@ export default function EditorPage() {
     void initializeWorksheet();
     return () => {
       if (worksheetSaveTimerRef.current) clearTimeout(worksheetSaveTimerRef.current);
+      if (worksheetTitleSaveTimerRef.current) {
+        clearTimeout(worksheetTitleSaveTimerRef.current);
+      }
       if (worksheetPreviewTimerRef.current) {
         clearTimeout(worksheetPreviewTimerRef.current);
       }
@@ -2373,51 +2578,54 @@ export default function EditorPage() {
   };
 
   const updateMCQOption = (id: string, patch: Partial<MCQOption>) => {
-    if (selectedMCQPos === null || !selectedMCQAttrs) return;
-    const options = patch.correct && selectedMCQAttrs.answerMode === 'single'
-      ? selectedMCQAttrs.options.map((option) => ({
+    if (selectedMCQPos === null || !selectedMCQQuestion) return;
+    const options = patch.correct && selectedMCQQuestion.answerMode === 'single'
+      ? selectedMCQQuestion.options.map((option) => ({
           ...option,
           correct: option.id === id,
           ...(option.id === id ? patch : {}),
         }))
-      : selectedMCQAttrs.options.map((option) => option.id === id ? { ...option, ...patch } : option);
+      : selectedMCQQuestion.options.map((option) => option.id === id ? { ...option, ...patch } : option);
     setNodeAttr(
       editor,
       selectedMCQPos,
-      'options',
-      options,
+      'questions',
+      selectedMCQQuestions.map((question, index) => (
+        index === 0 ? { ...question, options } : question
+      )),
     );
   };
 
   const updateMCQAnswerMode = (answerMode: MCQAnswerMode) => {
-    if (selectedMCQPos === null || !selectedMCQAttrs) return;
-    setNodeAttr(editor, selectedMCQPos, 'answerMode', answerMode);
-    if (answerMode === 'single') {
-      let foundCorrect = false;
-      setNodeAttr(
-        editor,
-        selectedMCQPos,
-        'options',
-        selectedMCQAttrs.options.map((option) => {
+    if (selectedMCQPos === null || !selectedMCQQuestion) return;
+    let foundCorrect = false;
+    const options = answerMode === 'single'
+      ? selectedMCQQuestion.options.map((option) => {
           if (!option.correct || foundCorrect) return { ...option, correct: false };
           foundCorrect = true;
           return option;
-        }),
-      );
-    }
+        })
+      : selectedMCQQuestion.options;
+    setNodeAttr(editor, selectedMCQPos, 'questions', selectedMCQQuestions.map(
+      (question, index) => index === 0
+        ? { ...question, answerMode, options }
+        : question,
+    ));
   };
 
   const addMCQOption = () => {
-    if (selectedMCQPos === null || !selectedMCQAttrs) return;
-    const index = selectedMCQAttrs.options.length;
-    setNodeAttr(editor, selectedMCQPos, 'options', [
-      ...selectedMCQAttrs.options,
-      {
-        id: `option-${Date.now()}`,
-        text: `Option ${String.fromCharCode(65 + index)}`,
-        correct: false,
-      },
-    ]);
+    if (selectedMCQPos === null || !selectedMCQQuestion) return;
+    const index = selectedMCQQuestion.options.length;
+    setNodeAttr(editor, selectedMCQPos, 'questions', selectedMCQQuestions.map(
+      (question, questionIndex) => questionIndex === 0 ? {
+        ...question,
+        options: [...question.options, {
+          id: `option-${Date.now()}`,
+          text: `Option ${String.fromCharCode(65 + index)}`,
+          correct: false,
+        }],
+      } : question,
+    ));
   };
 
   const updateMCMRows = (rows: MCMRow[]) => {
@@ -2644,6 +2852,35 @@ export default function EditorPage() {
         }),
       });
     }
+  };
+
+  const handleWorksheetTitleChange = (value: string) => {
+    setWorksheetTitle(value);
+    const worksheetId = worksheetIdRef.current;
+    if (!worksheetId) return;
+
+    setSaved(false);
+    if (worksheetTitleSaveTimerRef.current) {
+      clearTimeout(worksheetTitleSaveTimerRef.current);
+    }
+    const title = value.trim();
+    if (!title) return;
+
+    worksheetTitleSaveTimerRef.current = setTimeout(async () => {
+      try {
+        const response = await fetch('/api/worksheets', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: worksheetId,
+            worksheet: { title },
+          }),
+        });
+        setSaved(response.ok);
+      } catch {
+        setSaved(false);
+      }
+    }, 500);
   };
 
   const updateDocumentContext = (patch: Partial<WorksheetContext>) => {
@@ -2924,6 +3161,7 @@ export default function EditorPage() {
       exportContent.querySelectorAll(
         '.rich-text-node__selection-fragment',
       ).forEach((element) => element.remove());
+      await inlinePrivateMediaImages(exportContent);
       const response = await fetch('/api/export/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2977,6 +3215,7 @@ export default function EditorPage() {
       const editorShell = editor.view.dom.cloneNode(false) as HTMLElement;
       editorShell.removeAttribute('contenteditable');
       editorShell.appendChild(clone);
+      await inlinePrivateMediaImages(editorShell);
 
       const visitedStyleSheets = new Set<CSSStyleSheet>();
       const head = Array.from(document.styleSheets).map((styleSheet) => {
@@ -3038,7 +3277,23 @@ export default function EditorPage() {
           <EduitLogo className="h-6 w-auto" />
         </div>
         <div className="pointer-events-none absolute inset-y-0 right-0 left-0 flex items-center justify-center md:left-64 lg:right-72">
-          <span className="text-sm font-semibold text-secondary">{worksheetTitle}</span>
+          <input
+            aria-label="Worksheet title"
+            maxLength={200}
+            value={worksheetTitle}
+            onChange={(event) => handleWorksheetTitleChange(event.target.value)}
+            onBlur={() => {
+              if (!worksheetTitle.trim()) {
+                handleWorksheetTitleChange('Untitled Worksheet');
+              } else if (worksheetTitle !== worksheetTitle.trim()) {
+                handleWorksheetTitleChange(worksheetTitle.trim());
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.currentTarget.blur();
+            }}
+            className="pointer-events-auto w-full max-w-80 rounded-md border border-transparent bg-transparent px-2 py-1 text-center text-sm font-semibold text-secondary outline-none transition hover:border-primary focus:border-brand focus:bg-primary focus:ring-2 focus:ring-brand/20"
+          />
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-quaternary">
@@ -3070,7 +3325,13 @@ export default function EditorPage() {
         <aside className="editor-left-sidebar hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-secondary bg-primary p-4 md:flex">
           <p className="px-3 pb-2 text-xs font-semibold text-quaternary">{t('common.workspace')}</p>
           <nav className="flex flex-col gap-1">
-            {NAV_ITEMS.map(({ label, Icon, href, active }) => (
+            {NAV_ITEMS.filter(({ label }) => (
+              !['Lessons', 'Media', 'Settings'].includes(label)
+              || (
+                currentUserRole !== null
+                && currentUserRole !== 'user'
+              )
+            )).map(({ label, Icon, href, active }) => (
               <a
                 key={label}
                 href={href}
@@ -3094,49 +3355,41 @@ export default function EditorPage() {
               </a>
             ))}
           </nav>
-          <div className="mt-5 border-t border-secondary pt-4">
-            <p className="px-3 pb-2 text-xs font-semibold text-quaternary">Admin</p>
-            <nav>
-              <a
-                href="/brands"
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold text-secondary transition hover:bg-primary_hover"
-              >
-                <Settings01 className="size-5 text-fg-quaternary" />
-                {t('navigation.brandProfiles')}
-              </a>
-            </nav>
-          </div>
+          {currentUserRole
+            ?.split(',')
+            .map((role) => role.trim())
+            .includes('admin') && (
+            <div className="mt-5 border-t border-secondary pt-4">
+              <p className="px-3 pb-2 text-xs font-semibold text-quaternary">Admin</p>
+              <nav>
+                <a
+                  href="/brands"
+                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold text-secondary transition hover:bg-primary_hover"
+                >
+                  <Settings01 className="size-5 text-fg-quaternary" />
+                  {t('navigation.brandProfiles')}
+                </a>
+              </nav>
+            </div>
+          )}
           <SidebarAccountCard />
         </aside>
 
         {/* Editor column */}
         <main className="editor-column flex min-h-0 flex-1 flex-col overflow-hidden">
           {/* Toolbar */}
-          <div className="editor-toolbar sticky top-0 z-10 flex flex-wrap items-center gap-1 border-b border-secondary bg-primary/90 px-4 py-2 backdrop-blur">
-            <ToolbarButton title="Bold" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}><Bold01 className="size-4.5" /></ToolbarButton>
-            <ToolbarButton title="Italic" active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic01 className="size-4.5" /></ToolbarButton>
-            <ToolbarButton title="Strikethrough" active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()}><Strikethrough01 className="size-4.5" /></ToolbarButton>
-            <div className="mx-1 h-5 w-px bg-secondary" />
-            <ToolbarButton title="Heading 1" active={editor.isActive('heading', { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}><span className="flex items-center"><Heading01 className="size-4.5" /><span className="text-xs">1</span></span></ToolbarButton>
-            <ToolbarButton title="Heading 2" active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><span className="flex items-center"><Heading01 className="size-4.5" /><span className="text-xs">2</span></span></ToolbarButton>
-            <div className="mx-1 h-5 w-px bg-secondary" />
-            <ToolbarButton title="Bullet list" active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}><List className="size-4.5" /></ToolbarButton>
-            <ToolbarButton title="Code block" active={editor.isActive('codeBlock')} onClick={() => editor.chain().focus().toggleCodeBlock().run()}><Code01 className="size-4.5" /></ToolbarButton>
-            <ToolbarButton title="Blockquote" active={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()}><MessageChatSquare className="size-4.5" /></ToolbarButton>
-            <div className="mx-1 h-5 w-px bg-secondary" />
-            <ToolbarButton
-              title="Insert custom block"
+          <div className="editor-toolbar sticky top-0 z-10 flex items-center border-b border-secondary bg-primary/90 px-4 py-2 backdrop-blur">
+            <button
+              type="button"
               onClick={() => {
                 setInsertBlockAt(null);
                 setInsertPaletteOpen(true);
               }}
+              className="flex h-9 items-center gap-2 rounded-md bg-brand-solid px-3 text-sm font-semibold text-white transition hover:bg-brand-solid_hover"
             >
               <PlusSquare className="size-4.5" />
-            </ToolbarButton>
-            <div className="ml-auto flex gap-1">
-              <ToolbarButton title="Undo" onClick={() => editor.chain().focus().undo().run()}><ReverseLeft className="size-4.5" /></ToolbarButton>
-              <ToolbarButton title="Redo" onClick={() => editor.chain().focus().redo().run()}><ReverseRight className="size-4.5" /></ToolbarButton>
-            </div>
+              Block einfügen
+            </button>
           </div>
 
           {/* Editable area — Pages renders A4 pages on this backdrop */}
@@ -3162,28 +3415,64 @@ export default function EditorPage() {
           )}
 
           {selectedCustomBlock
-            && CONTENT_EDITOR_BLOCK_TYPES.has(selectedCustomBlock.type) && (
+            && (
+              CONTENT_EDITOR_BLOCK_TYPES.has(selectedCustomBlock.type)
+              || selectedCustomBlock.type === 'timeMatching'
+              || selectedCustomBlock.type === 'dateMatching'
+              || selectedCustomBlock.type === 'twoWayPrepositions'
+              || selectedCustomBlock.type === 'weather'
+              || selectedCustomBlock.type === 'colorFurniture'
+              || selectedCustomBlock.type === 'germanVerbTable'
+            ) && (
             <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedCustomBlock.type === 'mediaLayout') {
-                    setMediaLayoutEditorBlock({
+              {CONTENT_EDITOR_BLOCK_TYPES.has(selectedCustomBlock.type) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedCustomBlock.type === 'mediaLayout') {
+                      setMediaLayoutEditorBlock({
+                        pos: selectedCustomBlock.pos,
+                        type: 'mediaLayout',
+                      });
+                      return;
+                    }
+                    setContentEditorBlock({
                       pos: selectedCustomBlock.pos,
-                      type: 'mediaLayout',
+                      type: selectedCustomBlock.type as ContentEditorBlock['type'],
                     });
-                    return;
-                  }
-                  setContentEditorBlock({
+                  }}
+                  className="flex w-full items-center justify-start gap-2 rounded-lg bg-brand-solid px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-solid_hover"
+                >
+                  <Edit05 className="size-4" />
+                  Edit content
+                </button>
+              )}
+              {selectedCustomBlock.type === 'twoWayPrepositions' && (
+                <button
+                  type="button"
+                  onClick={() => setTwoWayPrepositionsEditorBlock({
                     pos: selectedCustomBlock.pos,
-                    type: selectedCustomBlock.type as ContentEditorBlock['type'],
-                  });
-                }}
-                className="flex w-full items-center justify-start gap-2 rounded-lg bg-brand-solid px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-solid_hover"
-              >
-                <Edit05 className="size-4" />
-                Edit content
-              </button>
+                    type: 'twoWayPrepositions',
+                  })}
+                  className="flex w-full items-center justify-start gap-2 rounded-lg bg-brand-solid px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-solid_hover"
+                >
+                  <Edit05 className="size-4" />
+                  Edit content
+                </button>
+              )}
+              {selectedCustomBlock.type === 'germanVerbTable' && (
+                <button
+                  type="button"
+                  onClick={() => setGermanVerbTableEditorBlock({
+                    pos: selectedCustomBlock.pos,
+                    type: 'germanVerbTable',
+                  })}
+                  className="flex w-full items-center justify-start gap-2 rounded-lg bg-brand-solid px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-solid_hover"
+                >
+                  <Edit05 className="size-4" />
+                  Edit content
+                </button>
+              )}
               {(selectedCustomBlock.type === 'mcq'
                 || selectedCustomBlock.type === 'wordGrid'
                 || selectedCustomBlock.type === 'dialogue'
@@ -3192,7 +3481,13 @@ export default function EditorPage() {
                 || selectedCustomBlock.type === 'trueFalse'
                 || selectedCustomBlock.type === 'richText'
                 || selectedCustomBlock.type === 'errorCorrection'
-                || selectedCustomBlock.type === 'crossword') && (
+                || selectedCustomBlock.type === 'crossword'
+                || selectedCustomBlock.type === 'timeMatching'
+                || selectedCustomBlock.type === 'dateMatching'
+                || selectedCustomBlock.type === 'twoWayPrepositions'
+                || selectedCustomBlock.type === 'weather'
+                || selectedCustomBlock.type === 'colorFurniture'
+                || selectedCustomBlock.type === 'germanVerbTable') && (
                 <button
                   type="button"
                   onClick={() => {
@@ -3236,6 +3531,36 @@ export default function EditorPage() {
                         pos: selectedCustomBlock.pos,
                         type: 'errorCorrection',
                       });
+                    } else if (selectedCustomBlock.type === 'timeMatching') {
+                      setTimeMatchingAIBlock({
+                        pos: selectedCustomBlock.pos,
+                        type: 'timeMatching',
+                      });
+                    } else if (selectedCustomBlock.type === 'dateMatching') {
+                      setDateMatchingAIBlock({
+                        pos: selectedCustomBlock.pos,
+                        type: 'dateMatching',
+                      });
+                    } else if (selectedCustomBlock.type === 'twoWayPrepositions') {
+                      setTwoWayPrepositionsAIBlock({
+                        pos: selectedCustomBlock.pos,
+                        type: 'twoWayPrepositions',
+                      });
+                    } else if (selectedCustomBlock.type === 'weather') {
+                      setWeatherAIBlock({
+                        pos: selectedCustomBlock.pos,
+                        type: 'weather',
+                      });
+                    } else if (selectedCustomBlock.type === 'colorFurniture') {
+                      setColorFurnitureAIBlock({
+                        pos: selectedCustomBlock.pos,
+                        type: 'colorFurniture',
+                      });
+                    } else if (selectedCustomBlock.type === 'germanVerbTable') {
+                      setGermanVerbTableAIBlock({
+                        pos: selectedCustomBlock.pos,
+                        type: 'germanVerbTable',
+                      });
                     } else {
                       setRichTextAIBlock({
                         pos: selectedCustomBlock.pos,
@@ -3268,7 +3593,7 @@ export default function EditorPage() {
           )}
 
           {!selectedCustomBlock
-            && selectedMCQAttrs && selectedMCQPos !== null && (
+            && selectedMCQAttrs && selectedMCQQuestion && selectedMCQPos !== null && (
             <div>
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-quaternary">Multiple choice</p>
@@ -3279,8 +3604,15 @@ export default function EditorPage() {
               <textarea
                 id="mcq-question"
                 rows={3}
-                value={selectedMCQAttrs.question}
-                onChange={(event) => setNodeAttr(editor, selectedMCQPos, 'question', event.target.value)}
+                value={selectedMCQQuestion.question}
+                onChange={(event) => setNodeAttr(
+                  editor,
+                  selectedMCQPos,
+                  'questions',
+                  selectedMCQQuestions.map((question, index) => (
+                    index === 0 ? { ...question, question: event.target.value } : question
+                  )),
+                )}
                 className="mt-2 w-full resize-none rounded-lg border border-primary bg-primary px-3 py-2 text-sm text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
               />
 
@@ -3304,7 +3636,7 @@ export default function EditorPage() {
               <label htmlFor="mcq-answer-mode" className="mt-4 block text-xs font-semibold text-tertiary">Correct answers</label>
               <select
                 id="mcq-answer-mode"
-                value={selectedMCQAttrs.answerMode}
+                value={selectedMCQQuestion.answerMode}
                 onChange={(event) => updateMCQAnswerMode(event.target.value as MCQAnswerMode)}
                 className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-medium text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
               >
@@ -3317,7 +3649,7 @@ export default function EditorPage() {
                 <span className="text-[10px] text-quaternary">Mark correct</span>
               </div>
               <div className="mt-2 space-y-2">
-                {selectedMCQAttrs.options.map((option, index) => (
+                {selectedMCQQuestion.options.map((option, index) => (
                   <div className="flex items-center gap-2" key={option.id}>
                     <span className="w-5 text-xs tabular-nums text-quaternary">{String(index + 1).padStart(2, '0')}</span>
                     <input
@@ -3336,12 +3668,16 @@ export default function EditorPage() {
                     <button
                       type="button"
                       aria-label={`Delete answer ${index + 1}`}
-                      disabled={selectedMCQAttrs.options.length <= 2}
+                      disabled={selectedMCQQuestion.options.length <= 2}
                       onClick={() => setNodeAttr(
                         editor,
                         selectedMCQPos,
-                        'options',
-                        selectedMCQAttrs.options.filter(({ id }) => id !== option.id),
+                        'questions',
+                        selectedMCQQuestions.map((question, questionIndex) => (
+                          questionIndex === 0
+                            ? { ...question, options: question.options.filter(({ id }) => id !== option.id) }
+                            : question
+                        )),
                       )}
                       className="text-quaternary transition hover:text-error-primary disabled:cursor-not-allowed disabled:opacity-30"
                     >
@@ -6281,7 +6617,7 @@ export default function EditorPage() {
             </div>
           )}
 
-          {selectedCustomBlock && (
+          {selectedCustomBlock && currentUserRole !== null && currentUserRole !== 'user' && (
             <div className="border-t border-secondary pt-5">
               <button
                 type="button"
@@ -6719,9 +7055,84 @@ export default function EditorPage() {
         editor={editor}
         insertAt={insertBlockAt}
         open={insertPaletteOpen}
+        onStartVocabularyOne={(insertAt) => {
+          setInsertPaletteOpen(false);
+          setInsertBlockAt(null);
+          setVocabularyOneInsertAt(insertAt);
+        }}
         onClose={() => {
           setInsertPaletteOpen(false);
           setInsertBlockAt(null);
+        }}
+      />
+      <VocabularyOneAIModal
+        context={documentContext}
+        open={vocabularyOneInsertAt !== null}
+        onClose={() => setVocabularyOneInsertAt(null)}
+        onGenerated={(result) => {
+          if (vocabularyOneInsertAt === null) return false;
+          const generatedAt = Date.now();
+          const applied = editor.chain().command(({ tr }) => {
+            const schema = tr.doc.type.schema;
+            const headingType = schema.nodes.customHeading;
+            const crosswordType = schema.nodes.crossword;
+            const pageBreakType = schema.nodes.pageBreak;
+            const fillType = schema.nodes.fillInTheBlank;
+            const mcqType = schema.nodes.mcq;
+            if (
+              !headingType
+              || !crosswordType
+              || !pageBreakType
+              || !fillType
+              || !mcqType
+            ) return false;
+
+            const questions: MCQQuestion[] = result.mcq.map(
+              (question, questionIndex) => ({
+                id: `vocabulary-one-mcq-${generatedAt}-${questionIndex}`,
+                question: question.question,
+                answerMode: 'single',
+                options: question.options.map((option, optionIndex) => ({
+                  id: `vocabulary-one-option-${generatedAt}-${questionIndex}-${optionIndex}`,
+                  text: option.text,
+                  correct: option.correct,
+                })),
+              }),
+            );
+            const nodes = [
+              headingType.create({
+                text: result.heading,
+                level: 1,
+                numbered: false,
+              }),
+              crosswordType.create({
+                entries: result.crosswordEntries,
+                layoutSeed: result.crosswordLayoutSeed,
+              }),
+              pageBreakType.create({ restartPagination: false }),
+              fillType.create({
+                title: result.fillTitle,
+                text: result.fillText,
+                distractors: result.fillDistractors,
+                showWordBank: true,
+              }),
+              mcqType.create({
+                questions,
+                showInstruction: true,
+              }),
+              pageBreakType.create({ restartPagination: false }),
+            ];
+            const safePosition = Math.min(
+              tr.doc.content.size,
+              Math.max(0, vocabularyOneInsertAt),
+            );
+            tr.insert(safePosition, nodes);
+            tr.setSelection(NodeSelection.create(tr.doc, safePosition));
+            return true;
+          }).run();
+          if (!applied) return false;
+          setVocabularyOneInsertAt(null);
+          return true;
         }}
       />
       <BlockContentEditorModal
@@ -6729,9 +7140,140 @@ export default function EditorPage() {
         editor={editor}
         onClose={() => setContentEditorBlock(null)}
       />
+      <GermanVerbTableEditorModal
+        block={germanVerbTableEditorBlock}
+        editor={editor}
+        onClose={() => setGermanVerbTableEditorBlock(null)}
+      />
+      <GermanVerbTableAIModal
+        initialVerb={germanVerbTableAIBlock
+          ? String(
+              editor.state.doc.nodeAt(germanVerbTableAIBlock.pos)
+                ?.attrs.leftVerb ?? '',
+            )
+          : ''}
+        open={germanVerbTableAIBlock !== null}
+        onClose={() => setGermanVerbTableAIBlock(null)}
+        onGenerated={(result) => {
+          if (!germanVerbTableAIBlock) return;
+          const { pos } = germanVerbTableAIBlock;
+          editor.chain().command(({ tr }) => {
+            if (tr.doc.nodeAt(pos)?.type.name !== 'germanVerbTable') {
+              return false;
+            }
+            Object.entries(result).forEach(([key, value]) => {
+              tr.setNodeAttribute(pos, key, value);
+            });
+            return true;
+          }).run();
+          setGermanVerbTableAIBlock(null);
+        }}
+      />
+      <TimeMatchingAIModal
+        initialCount={timeMatchingAIBlock
+          ? getTimeMatchingItemCount(editor, timeMatchingAIBlock.pos)
+          : 6}
+        open={timeMatchingAIBlock !== null}
+        onClose={() => setTimeMatchingAIBlock(null)}
+        onGenerated={(result) => {
+          if (!timeMatchingAIBlock) return;
+          const { pos } = timeMatchingAIBlock;
+          editor.chain().command(({ tr }) => {
+            if (tr.doc.nodeAt(pos)?.type.name !== 'timeMatching') return false;
+            tr.setNodeAttribute(pos, 'leftRepresentation', result.leftRepresentation);
+            tr.setNodeAttribute(pos, 'rightRepresentation', result.rightRepresentation);
+            tr.setNodeAttribute(pos, 'times', result.times);
+            tr.setNodeAttribute(pos, 'rightOrder', result.rightOrder);
+            return true;
+          }).run();
+          setTimeMatchingAIBlock(null);
+        }}
+      />
+      <DateMatchingAIModal
+        initialCount={dateMatchingAIBlock
+          ? getDateMatchingItemCount(editor, dateMatchingAIBlock.pos)
+          : 6}
+        open={dateMatchingAIBlock !== null}
+        onClose={() => setDateMatchingAIBlock(null)}
+        onGenerated={(result) => {
+          if (!dateMatchingAIBlock) return;
+          const { pos } = dateMatchingAIBlock;
+          editor.chain().command(({ tr }) => {
+            if (tr.doc.nodeAt(pos)?.type.name !== 'dateMatching') return false;
+            tr.setNodeAttribute(pos, 'leftRepresentation', result.leftRepresentation);
+            tr.setNodeAttribute(pos, 'rightRepresentation', result.rightRepresentation);
+            tr.setNodeAttribute(pos, 'dates', result.dates);
+            tr.setNodeAttribute(pos, 'rightOrder', result.rightOrder);
+            return true;
+          }).run();
+          setDateMatchingAIBlock(null);
+        }}
+      />
+      <TwoWayPrepositionsAIModal
+        initialCount={twoWayPrepositionsAIBlock
+          ? getTwoWayPrepositionsItemCount(
+              editor,
+              twoWayPrepositionsAIBlock.pos,
+            )
+          : 6}
+        open={twoWayPrepositionsAIBlock !== null}
+        onClose={() => setTwoWayPrepositionsAIBlock(null)}
+        onGenerated={(result) => {
+          if (!twoWayPrepositionsAIBlock) return;
+          const { pos } = twoWayPrepositionsAIBlock;
+          editor.chain().command(({ tr }) => {
+            if (tr.doc.nodeAt(pos)?.type.name !== 'twoWayPrepositions') {
+              return false;
+            }
+            tr.setNodeAttribute(pos, 'instruction', result.instruction);
+            tr.setNodeAttribute(pos, 'mode', result.mode);
+            tr.setNodeAttribute(pos, 'items', result.items);
+            return true;
+          }).run();
+          setTwoWayPrepositionsAIBlock(null);
+        }}
+      />
+      <WeatherAIModal
+        initialCount={weatherAIBlock
+          ? getWeatherItemCount(editor, weatherAIBlock.pos)
+          : 4}
+        open={weatherAIBlock !== null}
+        onClose={() => setWeatherAIBlock(null)}
+        onGenerated={(result) => {
+          if (!weatherAIBlock) return;
+          const { pos } = weatherAIBlock;
+          editor.chain().command(({ tr }) => {
+            if (tr.doc.nodeAt(pos)?.type.name !== 'weather') return false;
+            tr.setNodeAttribute(pos, 'instruction', result.instruction);
+            tr.setNodeAttribute(pos, 'mode', result.mode);
+            tr.setNodeAttribute(pos, 'items', result.items);
+            tr.setNodeAttribute(pos, 'questionOrder', result.questionOrder);
+            return true;
+          }).run();
+          setWeatherAIBlock(null);
+        }}
+      />
+      <ColorFurnitureAIModal
+        initialCount={colorFurnitureAIBlock
+          ? getColorFurnitureItemCount(editor, colorFurnitureAIBlock.pos)
+          : 4}
+        open={colorFurnitureAIBlock !== null}
+        onClose={() => setColorFurnitureAIBlock(null)}
+        onGenerated={(result) => {
+          if (!colorFurnitureAIBlock) return;
+          const { pos } = colorFurnitureAIBlock;
+          editor.chain().command(({ tr }) => {
+            if (tr.doc.nodeAt(pos)?.type.name !== 'colorFurniture') return false;
+            tr.setNodeAttribute(pos, 'instruction', result.instruction);
+            tr.setNodeAttribute(pos, 'mode', result.mode);
+            tr.setNodeAttribute(pos, 'items', result.items);
+            return true;
+          }).run();
+          setColorFurnitureAIBlock(null);
+        }}
+      />
       <MCQAIModal
         context={documentContext}
-        initialOptionCount={selectedMCQAttrs?.options.length ?? 4}
         open={mcqAIBlock?.type === 'mcq'}
         sources={mcqSources ?? []}
         onClose={() => setMCQAIBlock(null)}
@@ -6770,22 +7312,25 @@ export default function EditorPage() {
                 html: plainTextToRichTextHtml(sourceText),
               }));
             }
-            const multipleQuestions = questions.length > 1;
-            questions.forEach((generatedQuestion, questionIndex) => {
-              replacementNodes.push(originalNode.type.create({
-                ...originalNode.attrs,
+            const generatedQuestions: MCQQuestion[] = questions.map(
+              (generatedQuestion, questionIndex) => ({
+                id: `mcq-ai-question-${generatedAt}-${questionIndex}`,
                 question: generatedQuestion.question,
                 answerMode: 'single',
-                shuffleAnswers: false,
-                questionNumber: multipleQuestions ? questionIndex + 1 : null,
-                showInstruction: !multipleQuestions || questionIndex === 0,
                 options: generatedQuestion.options.map((option, optionIndex) => ({
                   id: `mcq-ai-${generatedAt}-${questionIndex}-${optionIndex}`,
                   text: option.text,
                   correct: option.correct,
                 })),
-              }));
-            });
+              }),
+            );
+            replacementNodes.push(originalNode.type.create({
+              ...originalNode.attrs,
+              questions: generatedQuestions,
+              shuffleAnswers: false,
+              questionNumber: null,
+              showInstruction: true,
+            }));
             tr.replaceWith(
               resolvedPos,
               resolvedPos + originalNode.nodeSize,
@@ -6848,9 +7393,12 @@ export default function EditorPage() {
       />
       <CrosswordAIModal
         context={documentContext}
+        initialWordList={crosswordAIBlock
+          ? getCrosswordWordList(editor, crosswordAIBlock.pos)
+          : ''}
         open={crosswordAIBlock?.type === 'crossword'}
         onClose={() => setCrosswordAIBlock(null)}
-        onGenerated={(entries) => {
+        onGenerated={(entries, layoutSeed) => {
           if (!crosswordAIBlock) return;
           const block = crosswordAIBlock;
           const generatedAt = Date.now();
@@ -6861,7 +7409,7 @@ export default function EditorPage() {
               block.pos,
               'entries',
               entries.map((entry, index) => ({
-                id: `crossword-ai-${generatedAt}-${index}`,
+                id: entry.id || `crossword-ai-${generatedAt}-${index}`,
                 answer: entry.answer,
                 clue: entry.clue,
               })),
@@ -6869,7 +7417,7 @@ export default function EditorPage() {
             tr.setNodeAttribute(
               block.pos,
               'layoutSeed',
-              Math.max(0, Number(node.attrs.layoutSeed) || 0) + 1,
+              layoutSeed,
             );
             tr.setSelection(NodeSelection.create(tr.doc, block.pos));
             return true;
@@ -7137,6 +7685,11 @@ export default function EditorPage() {
         block={mediaLayoutEditorBlock}
         editor={editor}
         onClose={() => setMediaLayoutEditorBlock(null)}
+      />
+      <TwoWayPrepositionsEditorModal
+        block={twoWayPrepositionsEditorBlock}
+        editor={editor}
+        onClose={() => setTwoWayPrepositionsEditorBlock(null)}
       />
       <BlockHoverToolbar
         editor={editor}

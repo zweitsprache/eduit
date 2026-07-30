@@ -12,6 +12,9 @@ import {
   worksheetContextPrompt,
 } from '@/lib/ai-generation';
 import { validateWorksheetPatch } from '@/lib/worksheets';
+import {
+  germanProgressionInstruction,
+} from '@/lib/german-language-progression';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,17 +35,41 @@ const requestSchema = z.object({
     'independent-sentences',
   ]),
   blankFocus: z.string().trim().max(300),
+  generateTitle: z.boolean().optional().default(false),
+  targetVocabulary: z.array(z.string().trim().min(1).max(80))
+    .max(20)
+    .optional()
+    .default([]),
+  progression: z.object({
+    level: z.enum(['A1.1', 'A1.2', 'A2.1', 'A2.2', 'B1.1', 'B1.2']),
+    phase: z.enum(['beginning', 'middle', 'towards-end', 'completed']),
+  }).optional(),
   context: z.unknown(),
 }).refine((input) => Boolean(input.sourceText || input.topic), {
   message: 'A topic or original source text is required.',
 });
 
 const resultSchema = z.object({
+  title: z.string().trim().max(160),
   sentences: z.array(z.object({
     text: z.string().trim().min(1).max(800),
     answers: z.array(z.string().trim().min(1).max(100)).min(1).max(3),
   })).min(1).max(40),
   distractors: z.array(z.string().trim().min(1).max(100)).max(20),
+});
+
+const vocabularyPlanSchema = z.object({
+  scenario: z.string().trim().min(1).max(500),
+  includedVocabulary: z.array(z.string().trim().min(1).max(80)).max(20),
+  excludedVocabulary: z.array(z.object({
+    term: z.string().trim().min(1).max(80),
+    reason: z.enum([
+      'topic-mismatch',
+      'cannot-integrate-naturally',
+      'ambiguous-or-invalid-term',
+    ]),
+    explanation: z.string().trim().min(1).max(240),
+  })).max(20),
 });
 
 const NO_OUTPUT_GENERATED_PATTERN = /no output generated/i;
@@ -86,6 +113,11 @@ export async function POST(request: Request) {
     const input = requestSchema.parse(await request.json());
     const context = validateWorksheetPatch({ context: input.context }).context;
     const contentLanguage = context?.contentLanguage ?? '';
+    const progressionInstruction = germanProgressionInstruction({
+      artifact: 'continuous-text',
+      contentLanguage,
+      selection: input.progression,
+    });
     const sentenceCountInstruction = input.sentenceCount === null
       ? input.sourceText
         ? `Preserve every sentence from the original source. Return one object
@@ -131,6 +163,85 @@ This is a text-enhancement task, not a rewriting task. Preserve all original
 content exactly except for the words or short phrases replaced by placeholders.
 Do not correct, simplify, paraphrase, expand, or otherwise edit the source.`
       : `Topic: ${input.topic}`;
+    const titleInstruction = input.generateTitle
+      ? `Return a concise, engaging title for the activity in the requested
+content language. Derive it from the concrete generated scenario and text—not
+from an external section heading, worksheet title, or a mechanical repetition
+of the topic field. It must not say "Fill in the Blank", reveal answers, or end
+with punctuation.`
+      : 'Return an empty string in the title field.';
+    let vocabularyPlan: z.infer<typeof vocabularyPlanSchema> | null = null;
+    if (input.targetVocabulary.length) {
+      const { output } = await generateText({
+        model: educationalContentModel,
+        output: Output.object({ schema: vocabularyPlanSchema }),
+        temperature: 0.55,
+        system: `You plan coherent educational texts around target vocabulary.
+The supplied terms are the core learning content and are always permitted,
+even when their lexical difficulty exceeds the configured proficiency.
+Proficiency limits apply only to surrounding grammar and supporting language.`,
+        prompt: `Plan one coherent continuous text within this broad thematic
+or learning-focus boundary:
+${input.topic}
+
+Target vocabulary:
+${input.targetVocabulary.map((term) => `- ${term}`).join('\n')}
+
+Worksheet context:
+${worksheetContextPrompt(context, [
+  input.topic,
+  ...input.targetVocabulary,
+].join(' '))}
+
+Mandatory language proficiency for surrounding language:
+${languageProficiencyInstruction(context?.languageLevel ?? '')}
+
+${progressionInstruction}
+
+Requirements:
+- Consider several plausible scenarios internally and return the one that
+  integrates the most target terms naturally.
+- Choose the concrete context freely. You may invent an appropriate setting,
+  situation, people, perspective, and communicative purpose.
+- Do not derive the scenario or eventual text title from an external worksheet
+  or section heading. The topic is a thematic boundary, not a prescribed title,
+  story, setting, or wording.
+- Include every term that can fit a coherent scenario without contrivance.
+- Never exclude a term because it exceeds the CEFR level or grammar progression.
+  Target terms are explicit lexical exceptions.
+- Exclude a term only for topic mismatch, genuinely unnatural integration, or
+  because the supplied term is ambiguous or invalid.
+- Do not invent unrelated events or examples solely to force coverage.
+- Copy every included or excluded term exactly as supplied.
+- Partition every supplied term exactly once between includedVocabulary and
+  excludedVocabulary.`,
+      });
+      const requestedTerms = new Set(input.targetVocabulary);
+      const plannedTerms = [
+        ...output.includedVocabulary,
+        ...output.excludedVocabulary.map(({ term }) => term),
+      ];
+      if (
+        plannedTerms.length !== requestedTerms.size
+        || new Set(plannedTerms).size !== plannedTerms.length
+        || plannedTerms.some((term) => !requestedTerms.has(term))
+      ) {
+        throw new Error('The AI could not produce a valid vocabulary integration plan.');
+      }
+      vocabularyPlan = output;
+    }
+    const vocabularyInstruction = vocabularyPlan
+      ? `Coherence plan:
+${vocabularyPlan.scenario}
+
+Target terms to integrate naturally:
+${vocabularyPlan.includedVocabulary.map((term) => `- ${term}`).join('\n')}
+
+These target terms are permitted lexical exceptions at every proficiency level.
+Use the exact lexical items where grammar permits; inflect verbs and other terms
+naturally when the content language requires it. Do not create unrelated
+sentences merely to mention them.`
+      : '';
 
     const generationConfig = {
       output: Output.object({ schema: resultSchema }),
@@ -144,6 +255,9 @@ Follow the numbered placeholder contract exactly.`,
       prompt: `Create a fill-in-the-blank activity.
 
 ${sourceInstruction}
+${vocabularyInstruction}
+Title:
+${titleInstruction}
 ${sentenceCountInstruction}
 ${blankCountInstruction}
 ${distractorInstruction}
@@ -161,6 +275,8 @@ ${worksheetContextPrompt(context, [
 
 Mandatory language proficiency:
 ${languageProficiencyInstruction(context?.languageLevel ?? '')}
+
+${progressionInstruction}
 
 Didactic purpose:
 This activity trains contextual language comprehension, active recall, and the accurate use of vocabulary or language structures in meaningful sentences.
@@ -276,20 +392,28 @@ ${localeSpellingInstruction(contentLanguage)}`,
         (sentence) => sentence.answers,
       );
       return Response.json({
+        title: input.generateTitle
+          ? normalizeLocaleSpelling(output.title, contentLanguage)
+          : '',
         text: insertSourceBlanks(input.sourceText, sourceAnswers),
         distractors: output.distractors.map((distractor) => (
           normalizeLocaleSpelling(distractor, contentLanguage)
         )),
+        excludedVocabulary: vocabularyPlan?.excludedVocabulary ?? [],
       });
     }
 
     return Response.json({
+      title: input.generateTitle
+        ? normalizeLocaleSpelling(output.title, contentLanguage)
+        : '',
       text: normalizedSentences.join(
         input.textStructure === 'continuous-text' ? ' ' : '\n',
       ),
       distractors: output.distractors.map((distractor) => (
         normalizeLocaleSpelling(distractor, contentLanguage)
       )),
+      excludedVocabulary: vocabularyPlan?.excludedVocabulary ?? [],
     });
   } catch (error) {
     const message = error instanceof z.ZodError

@@ -19,6 +19,7 @@ import { RoughExampleStrike } from '@/components/editor/custom-blocks/rough-exam
 import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/instructions';
 
 export type FillInTheBlankAttrs = {
+  title: string;
   text: string;
   distractors: string[];
   widthFactor: number;
@@ -164,6 +165,7 @@ function FillInTheBlankParts({
 
 function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
   const {
+    title,
     text,
     widthFactor,
     hideBlankNumbers,
@@ -289,6 +291,11 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
           ))}
         </div>
       )}
+      {title.trim() && (
+        <p className="fill-in-the-blank-node__title">
+          <strong>{title}</strong>
+        </p>
+      )}
       {hasMultipleParagraphs ? (
         <div
           ref={itemsRef}
@@ -359,6 +366,15 @@ export const FillInTheBlank = Node.create({
 
   addAttributes() {
     return {
+      title: {
+        default: '',
+        parseHTML: (element) => (
+          element.getAttribute('data-fill-blank-title') ?? ''
+        ),
+        renderHTML: (attributes) => ({
+          'data-fill-blank-title': attributes.title,
+        }),
+      },
       text: {
         default: 'The {{blank:answer}} is the correct word.',
         parseHTML: (element) => element.getAttribute('data-fill-blank-text')
@@ -470,6 +486,7 @@ export const FillInTheBlank = Node.create({
           commands.insertContent({
             type: this.name,
             attrs: {
+              title: attrs.title ?? '',
               text: attrs.text ?? 'The {{blank:answer}} is the correct word.',
               distractors: attrs.distractors ?? [],
               widthFactor: attrs.widthFactor ?? 1,

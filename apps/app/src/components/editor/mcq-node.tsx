@@ -27,8 +27,17 @@ export type MCQOption = {
 export type MCQColumns = 1 | 2 | 3;
 export type MCQAnswerMode = 'single' | 'multiple';
 
+export type MCQQuestion = {
+  id: string;
+  question: string;
+  options: MCQOption[];
+  answerMode: MCQAnswerMode;
+};
+
 export type MCQAttrs = {
   instruction: string;
+  questions: MCQQuestion[];
+  /** Legacy single-question fields, retained for saved-document compatibility. */
   question: string;
   options: MCQOption[];
   columns: MCQColumns;
@@ -47,6 +56,29 @@ export const DEFAULT_MCQ_OPTIONS: MCQOption[] = [
   { id: 'option-d', text: 'Option D', correct: false },
 ];
 
+export function createMCQQuestion(
+  question: Partial<MCQQuestion> = {},
+): MCQQuestion {
+  return {
+    id: question.id ?? `mcq-question-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    question: question.question ?? '',
+    options: question.options ?? DEFAULT_MCQ_OPTIONS.map((option) => ({ ...option })),
+    answerMode: question.answerMode ?? 'single',
+  };
+}
+
+export function getMCQQuestions(attrs: MCQAttrs): MCQQuestion[] {
+  if (Array.isArray(attrs.questions) && attrs.questions.length > 0) {
+    return attrs.questions;
+  }
+  return [createMCQQuestion({
+    id: 'legacy-mcq-question',
+    question: attrs.question,
+    options: attrs.options,
+    answerMode: attrs.answerMode,
+  })];
+}
+
 function parseOptions(value: string | null): MCQOption[] {
   if (!value) return DEFAULT_MCQ_OPTIONS.map((option) => ({ ...option }));
 
@@ -55,6 +87,16 @@ function parseOptions(value: string | null): MCQOption[] {
     return Array.isArray(options) ? options : DEFAULT_MCQ_OPTIONS.map((option) => ({ ...option }));
   } catch {
     return DEFAULT_MCQ_OPTIONS.map((option) => ({ ...option }));
+  }
+}
+
+function parseQuestions(value: string | null): MCQQuestion[] {
+  if (!value) return [];
+  try {
+    const questions = JSON.parse(decodeURIComponent(value));
+    return Array.isArray(questions) ? questions : [];
+  } catch {
+    return [];
   }
 }
 
@@ -91,16 +133,13 @@ function shuffledOptions(options: MCQOption[]) {
 function MCQNodeView({ node, selected }: NodeViewProps) {
   const {
     instruction,
-    question,
-    options,
     columns,
     shuffleAnswers,
-    questionNumber,
     showInstruction,
   } = node.attrs as MCQAttrs;
+  const questions = getMCQQuestions(node.attrs as MCQAttrs);
   const layoutRef = useRef<HTMLDivElement>(null);
   const solutionsRef = useRoughSolutionXs(layoutRef);
-  const displayedOptions = shuffleAnswers ? shuffledOptions(options) : options;
 
   return (
     <CustomBlockRoot selected={selected} className="mcq-node">
@@ -116,30 +155,39 @@ function MCQNodeView({ node, selected }: NodeViewProps) {
             {instruction || DEFAULT_MCQ_INSTRUCTION}
           </BlockInstruction>
         )}
-        {questionNumber !== null && (
-          <p className="mcq-node__question-number">
-            <strong>Frage {questionNumber}</strong>
-          </p>
-        )}
-        <BlockQuestion>
-          <InlineFormattedText text={question} />
-        </BlockQuestion>
-        <BlockRows columns={columns}>
-          {displayedOptions.map((option, index) => (
-            <BlockRow index={index} key={option.id}>
-              <BlockChoiceIndicator
-                checked={false}
-                solutionKey={option.correct ? option.id : undefined}
-              />
-              <BlockRowLabel>
-                <InlineFormattedText
-                  fallback={`Option ${String.fromCharCode(65 + index)}`}
-                  text={option.text}
-                />
-              </BlockRowLabel>
-            </BlockRow>
-          ))}
-        </BlockRows>
+        {questions.map((mcqQuestion, questionIndex) => {
+          const displayedOptions = shuffleAnswers
+            ? shuffledOptions(mcqQuestion.options)
+            : mcqQuestion.options;
+          return (
+            <div className="mcq-node__question" key={mcqQuestion.id}>
+              {questions.length > 1 && (
+                <p className="mcq-node__question-number">
+                  <strong>Frage {questionIndex + 1}</strong>
+                </p>
+              )}
+              <BlockQuestion>
+                <InlineFormattedText text={mcqQuestion.question} />
+              </BlockQuestion>
+              <BlockRows columns={columns}>
+                {displayedOptions.map((option, index) => (
+                  <BlockRow index={index} key={option.id}>
+                    <BlockChoiceIndicator
+                      checked={false}
+                      solutionKey={option.correct ? option.id : undefined}
+                    />
+                    <BlockRowLabel>
+                      <InlineFormattedText
+                        fallback={`Option ${String.fromCharCode(65 + index)}`}
+                        text={option.text}
+                      />
+                    </BlockRowLabel>
+                  </BlockRow>
+                ))}
+              </BlockRows>
+            </div>
+          );
+        })}
       </div>
     </CustomBlockRoot>
   );
@@ -170,6 +218,13 @@ export const MCQ = Node.create({
         ),
         renderHTML: (attributes) => ({
           'data-mcq-instruction': attributes.instruction,
+        }),
+      },
+      questions: {
+        default: [],
+        parseHTML: (element) => parseQuestions(element.getAttribute('data-mcq-questions')),
+        renderHTML: (attributes) => ({
+          'data-mcq-questions': encodeURIComponent(JSON.stringify(attributes.questions)),
         }),
       },
       question: {
@@ -259,6 +314,13 @@ export const MCQ = Node.create({
             type: this.name,
             attrs: {
               instruction: attrs.instruction ?? DEFAULT_MCQ_INSTRUCTION,
+              questions: attrs.questions ?? (attrs.question !== undefined || attrs.options !== undefined
+                ? [createMCQQuestion({
+                    question: attrs.question,
+                    options: attrs.options,
+                    answerMode: attrs.answerMode,
+                  })]
+                : [createMCQQuestion()]),
               question: attrs.question ?? '',
               options: attrs.options ?? DEFAULT_MCQ_OPTIONS.map((option) => ({ ...option })),
               columns: attrs.columns ?? 1,
