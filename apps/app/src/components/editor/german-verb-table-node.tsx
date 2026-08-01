@@ -7,8 +7,9 @@ import { CustomBlockRoot } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
 import {
   buildGermanVerbReferenceForms,
-  differingActualCharacters,
   firstPersonAuxiliary,
+  germanVerbExceptionRuns,
+  splitGermanSeparableForm,
   type GermanVerbAuxiliary,
 } from '@/lib/german-verb-forms';
 
@@ -24,10 +25,22 @@ export type GermanVerbTableForms = {
   preteriteIch: string;
 };
 
-export type GermanVerbTableStyle = 'extended' | 'compact';
+export type GermanVerbTableStyle = 'extended' | 'compact' | 'multiple';
+export type GermanVerbTableMultipleCount = 4 | 5;
+export type GermanVerbTableMultipleBadgeStyle = 'light' | 'dark';
+
+export type GermanVerbTableMultipleVerb = {
+  verb: string;
+  forms: GermanVerbTableForms;
+  separablePrefix: string;
+};
 
 export type GermanVerbTableAttrs = {
   tableStyle: GermanVerbTableStyle;
+  tense: 'present' | 'preterite';
+  groupId: string;
+  groupIndex: number;
+  groupSize: number;
   leftVerb: string;
   leftForms: GermanVerbTableForms;
   leftAuxiliary: string;
@@ -38,10 +51,17 @@ export type GermanVerbTableAttrs = {
   forms: GermanVerbTableForms;
   rightAuxiliary: string;
   rightParticiple: string;
+  multipleVerbCount: GermanVerbTableMultipleCount;
+  multipleBadgeStyle: GermanVerbTableMultipleBadgeStyle;
+  multipleVerbs: GermanVerbTableMultipleVerb[];
 };
 
 export const DEFAULT_GERMAN_VERB_TABLE_ATTRS: GermanVerbTableAttrs = {
   tableStyle: 'extended',
+  tense: 'present',
+  groupId: '',
+  groupIndex: 0,
+  groupSize: 1,
   leftVerb: 'sein',
   leftForms: {
     ich: 'bin',
@@ -72,6 +92,58 @@ export const DEFAULT_GERMAN_VERB_TABLE_ATTRS: GermanVerbTableAttrs = {
   },
   rightAuxiliary: 'haben',
   rightParticiple: 'gehabt',
+  multipleVerbCount: 5,
+  multipleBadgeStyle: 'light',
+  multipleVerbs: [
+    {
+      verb: 'sein',
+      forms: {
+        ich: 'bin', du: 'bist', formalSingular: 'sind',
+        thirdSingular: 'ist', wir: 'sind', ihr: 'seid',
+        formalPlural: 'sind', thirdPlural: 'sind', preteriteIch: 'war',
+      },
+      separablePrefix: '',
+    },
+    {
+      verb: 'haben',
+      forms: {
+        ich: 'habe', du: 'hast', formalSingular: 'haben',
+        thirdSingular: 'hat', wir: 'haben', ihr: 'habt',
+        formalPlural: 'haben', thirdPlural: 'haben', preteriteIch: 'hatte',
+      },
+      separablePrefix: '',
+    },
+    {
+      verb: 'abfahren',
+      forms: {
+        ich: 'fahre ab', du: 'fährst ab', formalSingular: 'fahren ab',
+        thirdSingular: 'fährt ab', wir: 'fahren ab', ihr: 'fahrt ab',
+        formalPlural: 'fahren ab', thirdPlural: 'fahren ab',
+        preteriteIch: 'fuhr ab',
+      },
+      separablePrefix: 'ab',
+    },
+    {
+      verb: 'einkaufen',
+      forms: {
+        ich: 'kaufe ein', du: 'kaufst ein', formalSingular: 'kaufen ein',
+        thirdSingular: 'kauft ein', wir: 'kaufen ein', ihr: 'kauft ein',
+        formalPlural: 'kaufen ein', thirdPlural: 'kaufen ein',
+        preteriteIch: 'kaufte ein',
+      },
+      separablePrefix: 'ein',
+    },
+    {
+      verb: 'gehen',
+      forms: {
+        ich: 'gehe', du: 'gehst', formalSingular: 'gehen',
+        thirdSingular: 'geht', wir: 'gehen', ihr: 'geht',
+        formalPlural: 'gehen', thirdPlural: 'gehen',
+        preteriteIch: 'ging',
+      },
+      separablePrefix: '',
+    },
+  ],
 };
 
 function VerbCell({
@@ -108,16 +180,7 @@ function ExceptionDiff({
   actual: string;
   reference: string;
 }) {
-  const { characters, differs } = differingActualCharacters(actual, reference);
-  const runs: Array<{ different: boolean; text: string }> = [];
-  characters.forEach((character, index) => {
-    const previous = runs.at(-1);
-    if (previous?.different === differs[index]) {
-      previous.text += character;
-    } else {
-      runs.push({ different: differs[index], text: character });
-    }
-  });
+  const runs = germanVerbExceptionRuns(actual, reference);
 
   return runs.map((run, index) => (
     run.different
@@ -146,23 +209,19 @@ function SeparableVerbForm({
   if (!normalizedPrefix) {
     return <ExceptionDiff actual={actual} reference={reference} />;
   }
-  const splitPrefix = (value: string) => {
-    const trimmed = value.trimEnd();
-    const hasPrefix = trimmed
-      .toLocaleLowerCase('de-DE')
-      .endsWith(normalizedPrefix.toLocaleLowerCase('de-DE'));
-    return {
-      base: hasPrefix
-        ? trimmed.slice(0, -normalizedPrefix.length).trimEnd()
-        : value,
-      hasPrefix,
-    };
-  };
-  const actualParts = splitPrefix(actual);
-  const referenceParts = splitPrefix(reference);
+  const prefixWidth = normalizedPrefix.toLocaleLowerCase('de-DE') === 'zurück'
+    ? 'long'
+    : normalizedPrefix.toLocaleLowerCase('de-DE') === 'nach'
+      ? 'medium'
+      : 'default';
+  const actualParts = splitGermanSeparableForm(actual, normalizedPrefix);
+  const referenceParts = splitGermanSeparableForm(reference, normalizedPrefix);
 
   return (
-    <span className="german-verb-table-node__separable-value">
+    <span
+      className="german-verb-table-node__separable-value"
+      data-prefix-width={prefixWidth}
+    >
       <span>
         <ExceptionDiff
           actual={actualParts.base}
@@ -188,10 +247,45 @@ function parseJson<T>(value: string | null, fallback: T): T {
   }
 }
 
+const MULTIPLE_FORM_ROWS: Array<{
+  key: keyof GermanVerbTableForms;
+  number?: 'SINGULAR' | 'PLURAL';
+  person?: string;
+  personRowSpan?: boolean;
+  register?: string;
+  pronoun: string;
+}> = [
+  { key: 'ich', number: 'SINGULAR', person: '1. Person', pronoun: 'ich' },
+  {
+    key: 'du',
+    person: '2. Person',
+    personRowSpan: true,
+    register: 'informell',
+    pronoun: 'du',
+  },
+  { key: 'formalSingular', register: 'formell', pronoun: 'Sie' },
+  { key: 'thirdSingular', person: '3. Person', pronoun: 'er / sie / es' },
+  { key: 'wir', number: 'PLURAL', person: '1. Person', pronoun: 'wir' },
+  {
+    key: 'ihr',
+    person: '2. Person',
+    personRowSpan: true,
+    register: 'informell',
+    pronoun: 'ihr',
+  },
+  { key: 'formalPlural', register: 'formell', pronoun: 'Sie' },
+  { key: 'thirdPlural', person: '3. Person', pronoun: 'sie' },
+];
+
 function GermanVerbTableNodeView({ node, selected }: NodeViewProps) {
   const attrs = node.attrs as GermanVerbTableAttrs;
-  const tableStyle = attrs.tableStyle === 'compact' ? 'compact' : 'extended';
+  const tableStyle = attrs.tableStyle === 'compact'
+    || attrs.tableStyle === 'multiple'
+    ? attrs.tableStyle
+    : 'extended';
   const extended = tableStyle === 'extended';
+  const tense = attrs.tense === 'preterite' ? 'preterite' : 'present';
+  const tenseLabel = tense === 'preterite' ? 'Präteritum' : 'Präsens';
   const leftForms = {
     ...DEFAULT_GERMAN_VERB_TABLE_ATTRS.leftForms,
     ...attrs.leftForms,
@@ -200,6 +294,7 @@ function GermanVerbTableNodeView({ node, selected }: NodeViewProps) {
   const referenceForms = buildGermanVerbReferenceForms(
     attrs.leftVerb,
     separablePrefix,
+    tense,
   );
   const comparisonAuxiliary = attrs.comparisonAuxiliary === 'sein'
     ? 'sein'
@@ -212,9 +307,151 @@ function GermanVerbTableNodeView({ node, selected }: NodeViewProps) {
         : attrs.leftAuxiliary;
   const referencePerfectAuxiliary =
     firstPersonAuxiliary(comparisonAuxiliary);
+  const multipleVerbCount = attrs.multipleVerbCount === 4 ? 4 : 5;
+  const multipleVerbs = DEFAULT_GERMAN_VERB_TABLE_ATTRS.multipleVerbs.map(
+    (fallback, index) => {
+      const value = attrs.multipleVerbs?.[index];
+      return {
+        ...fallback,
+        ...value,
+        forms: { ...fallback.forms, ...value?.forms },
+      };
+    },
+  ).slice(0, multipleVerbCount);
+  const lastUsedMultipleVerbIndex = multipleVerbs.findLastIndex(
+    ({ verb }) => Boolean(verb.trim()),
+  );
+  const keepWithNext = tableStyle === 'multiple'
+    && attrs.groupSize > 1
+    && attrs.groupIndex % 2 === 0
+    && attrs.groupIndex + 1 < attrs.groupSize;
 
   return (
-    <CustomBlockRoot selected={selected} className="german-verb-table-node">
+    <CustomBlockRoot
+      selected={selected}
+      className={`german-verb-table-node ${
+        keepWithNext ? 'german-verb-table-node--keep-with-next' : ''
+      }`}
+    >
+      {tableStyle === 'multiple' ? (
+        <div
+          aria-label={`Konjugation von ${multipleVerbCount} Verben`}
+          className="german-verb-table-node__multiple-grid"
+          data-badge-style={attrs.multipleBadgeStyle === 'dark'
+            ? 'dark'
+            : 'light'}
+          data-verb-count={multipleVerbCount}
+          role="table"
+        >
+          <div
+            className="german-verb-table-node__multiple-row german-verb-table-node__multiple-header"
+            role="row"
+          >
+            <VerbCell
+              className="german-verb-table-node__multiple-present"
+              header
+            />
+            {multipleVerbs.map((verb, index) => {
+              const unused = !verb.verb.trim();
+              const followedByUnused = !multipleVerbs[index + 1]?.verb.trim();
+              return (
+                <VerbCell
+                  className={`${unused
+                    ? 'german-verb-table-node__multiple-unused'
+                    : ''} ${followedByUnused
+                    ? 'german-verb-table-node__multiple-before-unused'
+                    : ''} ${index === lastUsedMultipleVerbIndex
+                    ? 'german-verb-table-node__multiple-last-used'
+                    : ''}`}
+                  header
+                  key={index}
+                >
+                  {!unused && (
+                    <strong className="custom-block__word-bank-item german-verb-table-node__infinitive-badge">
+                      {verb.verb}
+                    </strong>
+                  )}
+                </VerbCell>
+              );
+            })}
+          </div>
+          {MULTIPLE_FORM_ROWS.map((row) => (
+            <div
+              className="german-verb-table-node__multiple-row"
+              data-number-start={row.number ? 'true' : undefined}
+              key={row.key}
+              role="row"
+            >
+              {row.number && (
+                <VerbCell
+                  className="german-verb-table-node__multiple-number-label"
+                  header
+                >
+                  <span>{row.number}</span>
+                </VerbCell>
+              )}
+              {row.person && (
+                <VerbCell
+                  className={`german-verb-table-node__multiple-person ${
+                    row.personRowSpan
+                      ? 'german-verb-table-node__multiple-person--two-rows'
+                      : ''
+                  }`}
+                  header
+                >
+                  <span>{row.person}</span>
+                </VerbCell>
+              )}
+              {row.register && (
+                <VerbCell
+                  className="german-verb-table-node__multiple-register"
+                  header
+                >
+                  {row.register}
+                </VerbCell>
+              )}
+              <VerbCell
+                className="german-verb-table-node__multiple-pronoun"
+                header
+              >
+                {row.pronoun}
+              </VerbCell>
+              {multipleVerbs.map((verb, index) => {
+                const unused = !verb.verb.trim();
+                const followedByUnused = !multipleVerbs[index + 1]?.verb.trim();
+                const references = buildGermanVerbReferenceForms(
+                  verb.verb,
+                  verb.separablePrefix,
+                  tense,
+                );
+                return (
+                  <VerbCell
+                    className={`german-verb-table-node__form ${
+                      unused
+                        ? 'german-verb-table-node__multiple-unused'
+                        : ''
+                    } ${followedByUnused
+                      ? 'german-verb-table-node__multiple-before-unused'
+                      : ''} ${index === lastUsedMultipleVerbIndex
+                      ? 'german-verb-table-node__multiple-last-used'
+                      : ''}`}
+                    key={index}
+                  >
+                    {!unused && (
+                      <SeparableVerbForm
+                        actual={verb.forms[row.key]}
+                        reference={references[row.key]}
+                        separablePrefix={verb.separablePrefix}
+                      />
+                    )}
+                  </VerbCell>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
       <div className="german-verb-table-node__infinitive">
         <strong
           aria-label={`Infinitiv: ${attrs.leftVerb}`}
@@ -238,7 +475,7 @@ function GermanVerbTableNodeView({ node, selected }: NodeViewProps) {
               className="german-verb-table-node__compact-header-cell german-verb-table-node__compact-header-cell--present"
               header
             >
-              PRÄSENS
+              {tenseLabel.toLocaleUpperCase('de-CH')}
             </VerbCell>
             <VerbCell
               className="german-verb-table-node__compact-header-cell german-verb-table-node__compact-header-cell--singular"
@@ -262,7 +499,7 @@ function GermanVerbTableNodeView({ node, selected }: NodeViewProps) {
             {extended && (
               <>
                 <VerbCell className="german-verb-table-node__cell--first-continuous german-verb-table-node__cell--tense" header>
-                  Präsens
+                  {tenseLabel}
                 </VerbCell>
                 <VerbCell
                   className="german-verb-table-node__cell--first-continuous german-verb-table-node__cell--number"
@@ -488,40 +725,11 @@ function GermanVerbTableNodeView({ node, selected }: NodeViewProps) {
                 </span>
               </VerbCell>
             </VerbRow>
-            <div
-              className="german-verb-table-node__row german-verb-table-node__preterite"
-              role="row"
-            >
-              <VerbCell
-                className="german-verb-table-node__cell--meta-label"
-                header
-              >
-                Präteritum
-              </VerbCell>
-              <VerbCell
-                className="german-verb-table-node__cell--number"
-                header
-              >
-                Singular
-              </VerbCell>
-              <VerbCell
-                className="german-verb-table-node__cell--person-wide"
-                header
-              >
-                1. Person
-              </VerbCell>
-              <VerbCell>ich</VerbCell>
-              <VerbCell className="german-verb-table-node__form">
-                <SeparableVerbForm
-                  actual={leftForms.preteriteIch}
-                  reference={referenceForms.preteriteIch}
-                  separablePrefix={separablePrefix}
-                />
-              </VerbCell>
-            </div>
           </>
         )}
       </div>
+        </>
+      )}
     </CustomBlockRoot>
   );
 }
@@ -546,13 +754,47 @@ export const GermanVerbTable = Node.create({
     return {
       tableStyle: {
         default: DEFAULT_GERMAN_VERB_TABLE_ATTRS.tableStyle,
-        parseHTML: (element) => (
-          element.getAttribute('data-table-style') === 'compact'
-            ? 'compact'
-            : 'extended'
-        ),
+        parseHTML: (element) => {
+          const value = element.getAttribute('data-table-style');
+          return value === 'compact' || value === 'multiple'
+            ? value
+            : 'extended';
+        },
         renderHTML: ({ tableStyle }) => ({
           'data-table-style': tableStyle,
+        }),
+      },
+      tense: {
+        default: DEFAULT_GERMAN_VERB_TABLE_ATTRS.tense,
+        parseHTML: (element) => (
+          element.getAttribute('data-tense') === 'preterite'
+            ? 'preterite'
+            : 'present'
+        ),
+        renderHTML: ({ tense }) => ({
+          'data-tense': tense === 'preterite' ? 'preterite' : 'present',
+        }),
+      },
+      groupId: {
+        default: DEFAULT_GERMAN_VERB_TABLE_ATTRS.groupId,
+        parseHTML: (element) => element.getAttribute('data-group-id') ?? '',
+        renderHTML: ({ groupId }) => ({ 'data-group-id': groupId || '' }),
+      },
+      groupIndex: {
+        default: DEFAULT_GERMAN_VERB_TABLE_ATTRS.groupIndex,
+        parseHTML: (element) => Number(element.getAttribute('data-group-index')) || 0,
+        renderHTML: ({ groupIndex }) => ({
+          'data-group-index': String(groupIndex || 0),
+        }),
+      },
+      groupSize: {
+        default: DEFAULT_GERMAN_VERB_TABLE_ATTRS.groupSize,
+        parseHTML: (element) => Math.max(
+          1,
+          Number(element.getAttribute('data-group-size')) || 1,
+        ),
+        renderHTML: ({ groupSize }) => ({
+          'data-group-size': String(groupSize || 1),
         }),
       },
       leftVerb: {
@@ -624,6 +866,38 @@ export const GermanVerbTable = Node.create({
         default: DEFAULT_GERMAN_VERB_TABLE_ATTRS.rightParticiple,
         parseHTML: (element) => element.getAttribute('data-right-participle') ?? 'gehabt',
         renderHTML: ({ rightParticiple }) => ({ 'data-right-participle': rightParticiple }),
+      },
+      multipleVerbCount: {
+        default: DEFAULT_GERMAN_VERB_TABLE_ATTRS.multipleVerbCount,
+        parseHTML: (element) => (
+          element.getAttribute('data-multiple-verb-count') === '4' ? 4 : 5
+        ),
+        renderHTML: ({ multipleVerbCount }) => ({
+          'data-multiple-verb-count': multipleVerbCount,
+        }),
+      },
+      multipleBadgeStyle: {
+        default: DEFAULT_GERMAN_VERB_TABLE_ATTRS.multipleBadgeStyle,
+        parseHTML: (element) => (
+          element.getAttribute('data-multiple-badge-style') === 'dark'
+            ? 'dark'
+            : 'light'
+        ),
+        renderHTML: ({ multipleBadgeStyle }) => ({
+          'data-multiple-badge-style': multipleBadgeStyle,
+        }),
+      },
+      multipleVerbs: {
+        default: DEFAULT_GERMAN_VERB_TABLE_ATTRS.multipleVerbs,
+        parseHTML: (element) => parseJson(
+          element.getAttribute('data-multiple-verbs'),
+          DEFAULT_GERMAN_VERB_TABLE_ATTRS.multipleVerbs,
+        ),
+        renderHTML: ({ multipleVerbs }) => ({
+          'data-multiple-verbs': encodeURIComponent(
+            JSON.stringify(multipleVerbs),
+          ),
+        }),
       },
     };
   },

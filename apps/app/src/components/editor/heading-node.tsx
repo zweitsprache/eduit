@@ -6,11 +6,13 @@ import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from '@tip
 import { cx } from '@/utils/cx';
 
 export type CustomHeadingLevel = 1 | 2 | 3 | 4 | 5;
+export type CustomHeadingGapAfter = 1 | 2 | 3;
 
 export type CustomHeadingAttrs = {
   text: string;
   level: CustomHeadingLevel;
   numbered: boolean;
+  gapAfter: CustomHeadingGapAfter;
 };
 
 function parseLevel(value: string | null): CustomHeadingLevel {
@@ -18,8 +20,13 @@ function parseLevel(value: string | null): CustomHeadingLevel {
   return level >= 1 && level <= 5 ? level as CustomHeadingLevel : 2;
 }
 
+function parseGapAfter(value: string | null): CustomHeadingGapAfter {
+  const gapAfter = Number(value);
+  return gapAfter === 2 || gapAfter === 3 ? gapAfter : 1;
+}
+
 function CustomHeadingNodeView({ node, selected }: NodeViewProps) {
-  const { text, level, numbered } = node.attrs as CustomHeadingAttrs;
+  const { text, level, numbered, gapAfter } = node.attrs as CustomHeadingAttrs;
 
   return (
     <NodeViewWrapper
@@ -29,6 +36,7 @@ function CustomHeadingNodeView({ node, selected }: NodeViewProps) {
         numbered && 'heading-node--numbered',
         selected && 'heading-node--selected',
       )}
+      data-gap-after={gapAfter}
       data-drag-handle
     >
       {createElement(
@@ -74,6 +82,13 @@ export const CustomHeading = Node.create({
           'data-heading-numbered': String(attributes.numbered),
         }),
       },
+      gapAfter: {
+        default: 1,
+        parseHTML: (element) => parseGapAfter(element.getAttribute('data-heading-gap-after')),
+        renderHTML: (attributes) => ({
+          'data-heading-gap-after': attributes.gapAfter,
+        }),
+      },
     };
   },
 
@@ -103,6 +118,7 @@ export const CustomHeading = Node.create({
               text: attrs.text ?? 'Heading',
               level: attrs.level ?? 2,
               numbered: attrs.numbered ?? false,
+              gapAfter: attrs.gapAfter ?? 1,
             },
           }),
     };

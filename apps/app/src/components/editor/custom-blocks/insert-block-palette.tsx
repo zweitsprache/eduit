@@ -107,6 +107,17 @@ export function InsertBlockPalette({
       onStartVocabularyOne(workflowInsertAt);
       return;
     }
+    if (block.type === 'learningCards') {
+      if (!block.insert(editor)) return;
+      const nextRecent = [
+        block.type,
+        ...recentTypes.filter((type) => type !== block.type),
+      ].slice(0, 5);
+      localStorage.setItem(RECENT_BLOCKS_KEY, JSON.stringify(nextRecent));
+      setRecentTypes(nextRecent);
+      onClose();
+      return;
+    }
     if (insertAt !== null && insertAt !== undefined) {
       const nodeType = editor.state.schema.nodes[block.type];
       const node = nodeType?.createAndFill();

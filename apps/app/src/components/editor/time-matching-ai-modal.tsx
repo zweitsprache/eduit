@@ -6,6 +6,7 @@ import {
   availableUniqueTimes,
   TIME_MINUTES,
   TIME_REPRESENTATIONS,
+  type TimeMatchingGenerationSettings,
   type TimeRepresentation,
   type TimeValue,
 } from '@/lib/german-time';
@@ -21,18 +22,24 @@ function shuffled<T>(values: T[]) {
 }
 
 export function TimeMatchingAIModal({
-  initialCount,
+  initialSettings,
   onClose,
   onGenerated,
   open,
 }: {
-  initialCount: number;
+  initialSettings: TimeMatchingGenerationSettings;
   onClose: () => void;
   onGenerated: (result: {
     leftRepresentation: TimeRepresentation;
     rightRepresentation: TimeRepresentation;
     times: TimeValue[];
     rightOrder: string[];
+    allowedMinutes: number[];
+    rangeStart: string;
+    rangeEnd: string;
+    shuffleLeft: boolean;
+    shuffleRight: boolean;
+    showFirstAsExample: boolean;
   }) => void;
   open: boolean;
 }) {
@@ -44,18 +51,27 @@ export function TimeMatchingAIModal({
   const [start, setStart] = useState('00:00');
   const [end, setEnd] = useState('23:59');
   const [count, setCount] = useState(6);
+  const [shuffleLeft, setShuffleLeft] = useState(false);
+  const [shuffleRight, setShuffleRight] = useState(true);
+  const [showFirstAsExample, setShowFirstAsExample] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!open) return;
-    setLeft('analog');
-    setRight('digital');
-    setMinutes(TIME_MINUTES);
-    setStart('00:00');
-    setEnd('23:59');
-    setCount(Math.min(20, Math.max(1, initialCount || 6)));
+    setLeft(initialSettings.leftRepresentation);
+    setRight(initialSettings.rightRepresentation);
+    setMinutes(initialSettings.allowedMinutes);
+    setStart(initialSettings.rangeStart);
+    setEnd(initialSettings.rangeEnd);
+    setCount(Math.min(20, Math.max(1, initialSettings.count || 6)));
+    setShuffleLeft(initialSettings.shuffleLeft);
+    setShuffleRight(initialSettings.shuffleRight);
+    setShowFirstAsExample(initialSettings.showFirstAsExample);
     setError('');
-  }, [initialCount, open]);
+  // Rehydrate once when the modal opens. The parent derives this object from
+  // the selected node, so depending on its identity would reset in-progress
+  // edits whenever the editor rerenders.
+  }, [open]);
 
   const available = useMemo(() => availableUniqueTimes({
     start,
@@ -79,14 +95,23 @@ export function TimeMatchingAIModal({
         : 'No unique times are available in this range.');
       return;
     }
-    const times = shuffled(available).slice(0, actualCount).map((time, index) => ({
-      ...time,
-      id: `time-${Date.now()}-${index + 1}`,
-    }));
-    let rightOrder = shuffled(times).map(({ id }) => id);
+    const baseTimes = shuffled(available)
+      .slice(0, actualCount)
+      .map((time, index) => ({
+        ...time,
+        id: `time-${Date.now()}-${index + 1}`,
+      }))
+      .sort((first, second) => (
+        first.hour * 60 + first.minute - (second.hour * 60 + second.minute)
+      ));
+    const times = shuffleLeft ? shuffled(baseTimes) : baseTimes;
+    let rightOrder = (shuffleRight ? shuffled(baseTimes) : baseTimes)
+      .map(({ id }) => id);
     if (
+      shuffleRight
+      &&
       rightOrder.length > 1
-      && rightOrder.every((id, index) => id === times[index].id)
+      && rightOrder.every((id, index) => id === baseTimes[index].id)
     ) {
       rightOrder = [...rightOrder.slice(1), rightOrder[0]];
     }
@@ -95,6 +120,12 @@ export function TimeMatchingAIModal({
       rightRepresentation: right,
       times,
       rightOrder,
+      allowedMinutes: minutes,
+      rangeStart: start,
+      rangeEnd: end,
+      shuffleLeft,
+      shuffleRight,
+      showFirstAsExample,
     });
   };
 
@@ -186,6 +217,44 @@ export function TimeMatchingAIModal({
               value={end}
             />
           </label>
+        </div>
+
+        <button
+          aria-pressed={showFirstAsExample}
+          className={[
+            'mt-4 h-10 w-full rounded-md border px-3 text-sm font-semibold transition',
+            showFirstAsExample
+              ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+              : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+          ].join(' ')}
+          onClick={() => setShowFirstAsExample((current) => !current)}
+          type="button"
+        >
+          {de ? 'Erstes Paar als Beispiel' : 'Show first pair as example'}:
+          {' '}
+          {showFirstAsExample ? (de ? 'Ja' : 'Yes') : (de ? 'Nein' : 'No')}
+        </button>
+
+        <div className="mt-5 grid grid-cols-2 gap-4">
+          {([
+            [de ? 'Linke Seite mischen' : 'Shuffle left side', shuffleLeft, setShuffleLeft],
+            [de ? 'Rechte Seite mischen' : 'Shuffle right side', shuffleRight, setShuffleRight],
+          ] as const).map(([label, selected, setSelected]) => (
+            <button
+              aria-pressed={selected}
+              className={[
+                'h-10 rounded-md border px-3 text-sm font-semibold transition',
+                selected
+                  ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                  : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+              ].join(' ')}
+              key={label}
+              onClick={() => setSelected(!selected)}
+              type="button"
+            >
+              {label}: {selected ? (de ? 'Ja' : 'Yes') : (de ? 'Nein' : 'No')}
+            </button>
+          ))}
         </div>
 
         <label className="mt-5 block text-sm font-semibold text-primary">

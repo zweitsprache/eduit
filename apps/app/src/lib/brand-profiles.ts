@@ -44,6 +44,8 @@ type BrandProfileRow = {
   fixed_heading_number_width: boolean;
   content_indentation: boolean;
   date_format: BrandProfile['dateFormat'];
+  footer_1_html: string;
+  footer_2_html: string;
   is_default: boolean;
   is_system: boolean;
   is_active: boolean;
@@ -84,6 +86,8 @@ function mapRow(row: BrandProfileRow): BrandProfile {
     fixedHeadingNumberWidth: row.fixed_heading_number_width,
     contentIndentation: row.content_indentation,
     dateFormat: row.date_format,
+    footer1Html: row.footer_1_html,
+    footer2Html: row.footer_2_html,
     isDefault: row.is_default,
     isSystem: row.is_system,
     isActive: row.is_active,
@@ -158,6 +162,11 @@ export function validateBrandProfileInput(value: unknown): BrandProfileInput {
   ) as BrandHeadingStyles;
   if (!DATE_FORMATS.includes(input.dateFormat as never)) {
     throw new Error('Invalid date format.');
+  }
+  const footer1Html = text('footer1Html', false);
+  const footer2Html = text('footer2Html', false);
+  if (footer1Html.length > 5000 || footer2Html.length > 5000) {
+    throw new Error('Footer HTML must be 5,000 characters or fewer.');
   }
 
   return {
@@ -239,6 +248,8 @@ export function validateBrandProfileInput(value: unknown): BrandProfileInput {
     fixedHeadingNumberWidth: input.fixedHeadingNumberWidth === true,
     contentIndentation: input.contentIndentation === true,
     dateFormat: input.dateFormat as BrandProfileInput['dateFormat'],
+    footer1Html,
+    footer2Html,
     isDefault: input.isDefault === true,
     isActive: input.isActive !== false,
   };
@@ -294,7 +305,7 @@ export async function createBrandProfile(input: BrandProfileInput) {
       instruction_number_font_weight, instruction_badge_style,
       heading_number_formats, heading_styles, fixed_heading_number_width,
       content_indentation,
-      date_format,
+      date_format, footer_1_html, footer_2_html,
       is_default, is_system, is_active
       , parent_profile_id, settings_overrides
     ) values (
@@ -311,7 +322,8 @@ export async function createBrandProfile(input: BrandProfileInput) {
       ${JSON.stringify(input.headingStyles)}::jsonb,
       ${input.fixedHeadingNumberWidth},
       ${input.contentIndentation},
-      ${input.dateFormat}, ${input.isDefault}, false, ${input.isActive},
+      ${input.dateFormat}, ${input.footer1Html}, ${input.footer2Html},
+      ${input.isDefault}, false, ${input.isActive},
       ${input.parentProfileId}::uuid,
       ${JSON.stringify(input.overriddenFields)}::jsonb
     )
@@ -372,6 +384,8 @@ export async function updateBrandProfile(id: string, input: BrandProfileInput) {
         fixed_heading_number_width = ${input.fixedHeadingNumberWidth},
         content_indentation = ${input.contentIndentation},
         date_format = ${input.dateFormat},
+        footer_1_html = ${input.footer1Html},
+        footer_2_html = ${input.footer2Html},
         is_default = ${input.isDefault},
         is_active = ${input.isActive},
         parent_profile_id = ${input.parentProfileId}::uuid,

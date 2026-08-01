@@ -27,8 +27,8 @@ async function forbidNonAdmin() {
 
 export async function GET() {
   try {
-    const forbidden = await forbidNonAdmin();
-    if (forbidden) return forbidden;
+    const user = await getCurrentAppUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     return NextResponse.json({ profiles: await listBrandProfiles() });
   } catch (error) {
     return errorResponse(error);

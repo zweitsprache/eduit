@@ -51,6 +51,113 @@
   transition: border-color 150ms, box-shadow 150ms;
 }
 
+/* Each learning-card sheet is a separate ProseMirror node. The coordinates
+   below are relative to A4 portrait's content origin (25 mm from the left,
+   25 mm from the top), but target the physical page center (105 × 148.5 mm).
+   This keeps front and back cutting geometry registered despite the
+   asymmetric 25/15 mm horizontal document margins. */
+.learning-cards-node {
+  width: 170mm;
+  margin-block: 0 !important;
+  border: 0;
+  border-radius: 0;
+  break-inside: auto;
+  font-family: var(--custom-block-font-family, inherit);
+  page-break-inside: auto;
+}
+
+.learning-cards-node.custom-block--selected {
+  outline: 1px solid var(--color-border-brand, currentColor);
+  outline-offset: 1mm;
+}
+
+.learning-cards-node__sheet {
+  position: relative;
+  width: 170mm;
+  height: 222mm;
+  overflow: visible;
+}
+
+.learning-cards-node__title {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 calc(2 * var(--custom-block-space-section)) !important;
+  font-size: var(--brand-heading-1-font-size, 2rem);
+  font-weight: var(--brand-heading-1-font-weight, 700);
+  line-height: var(--brand-heading-1-line-height, 1.2);
+}
+
+.learning-cards-node__rotated-grid {
+  position: absolute;
+  /* Place the unrotated 222 × 156 mm box around the physical A4 center,
+     relative to the editor content origin, then rotate around that center. */
+  top: calc(148.5mm - 25mm - 78mm);
+  left: calc(105mm - 25mm - 111mm);
+  display: grid;
+  box-sizing: border-box;
+  width: 222mm;
+  height: 156mm;
+  grid-template-columns: repeat(3, 74mm);
+  grid-template-rows: repeat(3, 52mm);
+  transform: rotate(90deg);
+  transform-origin: center;
+}
+
+.learning-cards-node__card {
+  display: flex;
+  box-sizing: border-box;
+  width: 74mm;
+  height: 52mm;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 5mm;
+  text-align: center;
+}
+
+.learning-cards-node__content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 5mm;
+}
+
+.learning-cards-node__answer {
+  width: 100%;
+  padding: 0.6mm 2mm;
+  border: 0.2mm solid color-mix(in srgb, currentColor 45%, transparent);
+  border-radius: 1.5mm;
+  text-align: center;
+}
+
+.learning-cards-node__content .custom-block__verb-exception {
+  color: #f97316;
+}
+
+.learning-cards-node__rotated-grid[data-side="back"]
+  .learning-cards-node__card {
+  border: 0;
+  border-top: 0.1mm dashed color-mix(in srgb, currentColor 22%, transparent);
+  border-left: 0.1mm dashed color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.learning-cards-node__rotated-grid[data-side="back"]
+  .learning-cards-node__card:nth-child(3n) {
+  border-right: 0.1mm dashed color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.learning-cards-node__rotated-grid[data-side="back"]
+  .learning-cards-node__card:nth-child(n + 7) {
+  border-bottom: 0.1mm dashed color-mix(in srgb, currentColor 22%, transparent);
+}
+
+@media print {
+  .learning-cards-node__rotated-grid[data-side="front"]
+    .learning-cards-node__card {
+    border-color: transparent;
+  }
+}
+
 /* Media layout */
 .media-layout-node__layout {
   --media-layout-gap: 1rem;
@@ -730,6 +837,11 @@
   text-decoration: underline;
 }
 
+.german-verb-table-node--keep-with-next {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
 .german-verb-table-node__infinitive {
   display: flex;
   margin-block-end: var(--custom-block-space-section) !important;
@@ -781,6 +893,162 @@
     .german-verb-table-node__present-group--singular
   ) {
   grid-column: 5 / 7;
+}
+
+.german-verb-table-node__multiple-grid {
+  --german-verb-table-narrow-column-width: 4.95rem;
+  display: grid;
+  width: 100%;
+  grid-template-columns:
+    1.75rem
+    repeat(3, var(--german-verb-table-narrow-column-width))
+    repeat(5, minmax(0, 1fr));
+  border-top: 0;
+  border-left: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  font-size: var(--custom-block-body-font-size);
+  line-height: var(--custom-block-label-line-height);
+}
+
+.german-verb-table-node__multiple-grid[data-verb-count="4"] {
+  grid-template-columns:
+    1.75rem
+    repeat(3, var(--german-verb-table-narrow-column-width))
+    repeat(4, minmax(0, 1fr));
+}
+
+.german-verb-table-node__multiple-row {
+  display: contents;
+}
+
+.german-verb-table-node__multiple-row:not(
+  .german-verb-table-node__multiple-header
+) .german-verb-table-node__cell {
+  min-height: calc(var(--custom-block-row-height) - 0.175rem);
+}
+
+.german-verb-table-node__multiple-row:not(
+  .german-verb-table-node__multiple-header
+) > .german-verb-table-node__form:not(:last-child) {
+  border-right-color: var(--color-gray-500);
+}
+
+.german-verb-table-node__multiple-grid
+  .german-verb-table-node__multiple-unused {
+  border: 0;
+  background: transparent;
+}
+
+.german-verb-table-node__multiple-grid
+  .german-verb-table-node__multiple-before-unused {
+  border-right: 0;
+}
+
+.german-verb-table-node__multiple-grid
+  .german-verb-table-node__multiple-last-used {
+  border-right: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color) !important;
+}
+
+.german-verb-table-node__multiple-row:not(
+  .german-verb-table-node__multiple-header
+) > .german-verb-table-node__form.german-verb-table-node__multiple-last-used,
+.german-verb-table-node__multiple-header
+  > .german-verb-table-node__multiple-last-used {
+  border-right-color: var(--custom-block-row-border-color) !important;
+}
+
+.german-verb-table-node__multiple-header
+  .german-verb-table-node__cell {
+  min-height: calc(var(--custom-block-row-height) + 0.375rem);
+  justify-content: flex-start;
+  border-top: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  border-right: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+.german-verb-table-node__multiple-header
+  > .german-verb-table-node__cell:not(
+    .german-verb-table-node__multiple-present
+  ):not(:last-child) {
+  border-right-color: var(--color-gray-500);
+}
+
+.german-verb-table-node__multiple-header
+  .german-verb-table-node__multiple-unused {
+  border: 0;
+}
+
+.german-verb-table-node__multiple-header
+  .german-verb-table-node__multiple-before-unused {
+  border-right: 0;
+}
+
+.german-verb-table-node__multiple-header
+  > .german-verb-table-node__cell.german-verb-table-node__multiple-last-used:not(
+    .german-verb-table-node__multiple-present
+  ):not(:last-child) {
+  border-right: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color) !important;
+}
+
+.german-verb-table-node__multiple-header
+  .german-verb-table-node__infinitive-badge {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: center;
+}
+
+.german-verb-table-node__multiple-grid[data-badge-style="light"]
+  .german-verb-table-node__multiple-header
+  .german-verb-table-node__infinitive-badge {
+  background: color-mix(in srgb, #cc6600 10%, #fff);
+  color: var(--color-text-primary);
+}
+
+.german-verb-table-node__multiple-present {
+  grid-column: span 4;
+}
+
+.german-verb-table-node__multiple-number-label {
+  grid-row: span 4;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  color: var(--color-text-primary) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em;
+}
+
+.german-verb-table-node__multiple-number-label > span {
+  white-space: nowrap;
+  transform: rotate(-90deg);
+}
+
+.german-verb-table-node__multiple-person {
+  display: grid;
+  grid-column: span 2;
+  align-content: center;
+  gap: 0.125rem;
+}
+
+.german-verb-table-node__multiple-person--two-rows {
+  grid-column: span 1;
+  grid-row: span 2;
+}
+
+.german-verb-table-node__multiple-register {
+  color: var(--color-text-tertiary) !important;
+}
+
+.german-verb-table-node__multiple-pronoun {
+  color: var(--color-text-primary) !important;
 }
 
 .german-verb-table-node__compact-header {
@@ -890,6 +1158,16 @@
   align-self: stretch;
   grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
   margin-inline: calc(var(--custom-block-inline-gap) * -1);
+}
+
+.german-verb-table-node__multiple-grid
+  .german-verb-table-node__separable-value[data-prefix-width="medium"] {
+  grid-template-columns: minmax(0, 6.5fr) minmax(0, 3.5fr);
+}
+
+.german-verb-table-node__multiple-grid
+  .german-verb-table-node__separable-value[data-prefix-width="long"] {
+  grid-template-columns: minmax(0, 5.5fr) minmax(0, 4.5fr);
 }
 
 .german-verb-table-node__separable-value > span {
@@ -2000,11 +2278,18 @@
 }
 
 .fill-in-the-blank-node__items {
-  display: grid;
-  row-gap: 0;
+  display: block;
+  break-inside: auto;
+  page-break-inside: auto;
   margin-block-start: var(
     --custom-block-space-instruction-to-divider
   ) !important;
+}
+
+.custom-block.fill-in-the-blank-node {
+  display: block;
+  break-inside: auto;
+  page-break-inside: auto;
 }
 
 .custom-block__word-bank + .fill-in-the-blank-node__items {
@@ -2013,7 +2298,11 @@
 
 .fill-in-the-blank-node__item {
   display: grid;
-  grid-template-columns: var(--custom-block-index-size) minmax(0, 1fr);
+  width: 100%;
+  box-sizing: border-box;
+  grid-template-columns:
+    var(--custom-block-index-size)
+    calc(100% - var(--custom-block-index-size) - var(--custom-block-inline-gap));
   min-width: 0;
   min-height: var(--custom-block-row-height);
   align-items: center;
@@ -2021,6 +2310,8 @@
   padding-block: var(--custom-block-row-padding-block);
   border-bottom: var(--custom-block-row-border-width) solid
     var(--custom-block-row-border-color);
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .fill-in-the-blank-node__item:first-child {
@@ -2062,8 +2353,16 @@
 }
 
 .fill-in-the-blank-node__item .fill-in-the-blank-node__text {
+  width: 100%;
   min-width: 0;
   margin-block-start: 0 !important;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.fill-in-the-blank-node__text sup {
+  font-size: 0.55em;
+  vertical-align: super;
 }
 
 .fill-in-the-blank-node__blank {

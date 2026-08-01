@@ -25,6 +25,7 @@ type WorksheetRow = {
   preview_updated_at: Date | string | null;
   created_at: Date | string;
   updated_at: Date | string;
+  source_revision: number | string;
 };
 
 function mapRow(row: WorksheetRow): Worksheet {
@@ -61,6 +62,7 @@ function mapRow(row: WorksheetRow): Worksheet {
       : null,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
+    sourceRevision: Number(row.source_revision),
   };
 }
 
@@ -81,6 +83,7 @@ const SELECT_WORKSHEET = `
     w.preview_updated_at,
     w.created_at,
     w.updated_at
+    , w.source_revision
   from worksheets w
   left join brand_profiles b on b.id = w.brand_profile_id
 `;
@@ -248,21 +251,32 @@ export async function updateWorksheet(
   if (patch.folderId !== undefined) {
     await requireOwnedWorksheetFolder(patch.folderId, ownerUserId);
   }
+  const affectsPublication = patch.title !== undefined
+    || patch.contentHtml !== undefined
+    || patch.documentSize !== undefined
+    || patch.showSolutions !== undefined
+    || patch.context !== undefined
+    || patch.brandProfileId !== undefined;
 
   await sql`
     update worksheets
-    set title = ${patch.title ?? current.title},
-        content_html = ${patch.contentHtml ?? current.contentHtml},
-        document_size = ${patch.documentSize ?? current.documentSize},
-        show_solutions = ${patch.showSolutions ?? current.showSolutions},
-        context = ${JSON.stringify(patch.context ?? current.context)}::jsonb,
-        status = ${patch.status ?? current.status},
-        brand_profile_id = ${patch.brandProfileId === undefined
-          ? current.brandProfileId
-          : patch.brandProfileId},
-        folder_id = ${patch.folderId === undefined
-          ? current.folderId
-          : patch.folderId}::uuid,
+    set title = case when ${patch.title !== undefined}
+          then ${patch.title ?? ''} else title end,
+        content_html = case when ${patch.contentHtml !== undefined}
+          then ${patch.contentHtml ?? ''} else content_html end,
+        document_size = case when ${patch.documentSize !== undefined}
+          then ${patch.documentSize ?? 'a4-portrait'} else document_size end,
+        show_solutions = case when ${patch.showSolutions !== undefined}
+          then ${patch.showSolutions ?? false} else show_solutions end,
+        context = case when ${patch.context !== undefined}
+          then ${JSON.stringify(patch.context ?? EMPTY_WORKSHEET_CONTEXT)}::jsonb else context end,
+        status = case when ${patch.status !== undefined}
+          then ${patch.status ?? 'draft'} else status end,
+        brand_profile_id = case when ${patch.brandProfileId !== undefined}
+          then ${patch.brandProfileId ?? null}::uuid else brand_profile_id end,
+        folder_id = case when ${patch.folderId !== undefined}
+          then ${patch.folderId ?? null}::uuid else folder_id end,
+        source_revision = source_revision + ${affectsPublication ? 1 : 0},
         updated_at = now()
     where id = ${id}
       and (${includeAll} or owner_user_id = ${ownerUserId})

@@ -63,6 +63,7 @@ export type Worksheet = {
   previewUpdatedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  sourceRevision: number;
 };
 
 export type WorksheetPatch = Partial<Pick<

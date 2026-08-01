@@ -112,6 +112,8 @@ export const BRAND_PROFILE_SETTING_KEYS = [
   'fixedHeadingNumberWidth',
   'contentIndentation',
   'dateFormat',
+  'footer1Html',
+  'footer2Html',
 ] as const;
 
 export type BrandProfileSettingKey =
@@ -147,6 +149,8 @@ export type BrandProfile = {
   fixedHeadingNumberWidth: boolean;
   contentIndentation: boolean;
   dateFormat: BrandProfileDateFormat;
+  footer1Html: string;
+  footer2Html: string;
   isDefault: boolean;
   isSystem: boolean;
   isActive: boolean;

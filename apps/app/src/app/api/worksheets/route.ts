@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { del } from '@vercel/blob';
+import { del, list } from '@vercel/blob';
 import {
   createWorksheet,
   deleteWorksheet,
@@ -10,6 +10,7 @@ import {
   validateWorksheetPatch,
 } from '@/lib/worksheets';
 import { getCurrentAppUser } from '@/lib/auth/authorization';
+import { sql } from '@/lib/neon';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,7 +33,14 @@ export async function GET(request: Request) {
         { headers: { 'Cache-Control': 'no-store' } },
       );
     }
-    const worksheet = await getWorksheet(id, user.id, user.isAdmin);
+    const aliases = await sql`
+      select worksheet_id as id from worksheet_aliases where alias_id = ${id}
+    ` as Array<{ id: string }>;
+    const worksheet = await getWorksheet(
+      aliases[0]?.id ?? id,
+      user.id,
+      user.isAdmin,
+    );
     if (!worksheet) return NextResponse.json({ error: 'Worksheet not found.' }, { status: 404 });
     return NextResponse.json(
       { worksheet },
@@ -79,11 +87,28 @@ export async function DELETE(request: Request) {
     if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     const id = new URL(request.url).searchParams.get('id');
     if (!id) throw new Error('Worksheet ID is required.');
+    const deleteFromDazit = new URL(request.url).searchParams.get('deleteFromDazit') === 'true';
+    const worksheet = await getWorksheet(id, user.id, user.isAdmin);
+    if (!worksheet) throw new Error('Worksheet not found.');
     const preview = await getWorksheetPreviewLocation(
       id,
       user.id,
       user.isAdmin,
     );
+    if (deleteFromDazit) {
+      const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN;
+      if (!token) throw new Error('Dazit storage is not configured.');
+      const publicationBlobs = await list({
+        prefix: `worksheets/${id}/`,
+        limit: 1000,
+        token,
+      });
+      await del([
+        ...publicationBlobs.blobs.map(({ pathname }) => pathname),
+        `library/${id}.json`,
+      ], { token });
+      await sql`delete from dazit_publications where worksheet_id = ${id}`;
+    }
     await deleteWorksheet(id, user.id, user.isAdmin);
     if (preview?.blobPath) {
       await del(preview.blobPath).catch(() => undefined);

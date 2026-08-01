@@ -6,10 +6,11 @@ import { useI18n } from '@/components/i18n/locale-provider';
 import type {
   GermanVerbTableAttrs,
   GermanVerbTableForms,
+  GermanVerbTableMultipleVerb,
 } from '@/components/editor/german-verb-table-node';
 import type { GermanVerbAuxiliary } from '@/lib/german-verb-forms';
 
-export type GeneratedGermanVerbTable = Pick<
+export type GeneratedGermanVerbTable = (Pick<
   GermanVerbTableAttrs,
   | 'leftVerb'
   | 'leftForms'
@@ -17,15 +18,30 @@ export type GeneratedGermanVerbTable = Pick<
   | 'leftParticiple'
   | 'comparisonAuxiliary'
   | 'separablePrefix'
+  | 'tense'
+> | Pick<GermanVerbTableAttrs, 'multipleVerbs' | 'tense'>);
+
+type GermanVerbTableAIInitialSettings = Pick<
+  GermanVerbTableAttrs,
+  'tableStyle' | 'multipleVerbCount' | 'multipleVerbs' | 'leftVerb' | 'tense'
 >;
 
+type GermanVerbGenerationResult = {
+  infinitive: string;
+  forms: GermanVerbTableForms;
+  auxiliary: GermanVerbAuxiliary;
+  participle: string;
+  comparisonAuxiliary: GermanVerbAuxiliary;
+  separablePrefix: string;
+};
+
 export function GermanVerbTableAIModal({
-  initialVerb,
+  initialSettings,
   onClose,
   onGenerated,
   open,
 }: {
-  initialVerb: string;
+  initialSettings: GermanVerbTableAIInitialSettings;
   onClose: () => void;
   onGenerated: (result: GeneratedGermanVerbTable) => void;
   open: boolean;
@@ -33,61 +49,131 @@ export function GermanVerbTableAIModal({
   const { locale } = useI18n();
   const de = locale === 'de';
   const [infinitive, setInfinitive] = useState('');
+  const [multipleInfinitiveText, setMultipleInfinitiveText] = useState('');
+  const [tense, setTense] = useState<'present' | 'preterite'>('present');
+  const [sortAlphabetically, setSortAlphabetically] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!open) return;
-    setInfinitive(initialVerb);
+    setInfinitive(initialSettings.leftVerb);
+    setMultipleInfinitiveText(
+      initialSettings.multipleVerbs
+        .slice(0, initialSettings.multipleVerbCount)
+        .map(({ verb }) => verb)
+        .filter(Boolean)
+        .join('\n'),
+    );
+    setTense(initialSettings.tense);
+    setSortAlphabetically(false);
     setPending(false);
     setError('');
-  }, [initialVerb, open]);
+  }, [open]);
+
+  async function generateVerb(value: string): Promise<GermanVerbGenerationResult> {
+    const response = await fetch('/api/ai/german-verb-table', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ infinitive: value.trim(), tense }),
+    });
+    const result = await response.json() as Partial<GermanVerbGenerationResult> & {
+      error?: string;
+    };
+    if (
+      !response.ok
+      || !result.infinitive
+      || !result.forms
+      || !result.auxiliary
+      || !result.participle
+      || !result.comparisonAuxiliary
+    ) {
+      throw new Error(result.error ?? (de
+        ? 'Die Verbtabelle konnte nicht generiert werden.'
+        : 'The verb table could not be generated.'));
+    }
+    return {
+      infinitive: result.infinitive,
+      forms: result.forms,
+      auxiliary: result.auxiliary,
+      participle: result.participle,
+      comparisonAuxiliary: result.comparisonAuxiliary,
+      separablePrefix: result.separablePrefix ?? '',
+    };
+  }
 
   async function generate() {
-    if (!infinitive.trim()) {
+    const multiple = initialSettings.tableStyle === 'multiple';
+    const enteredInfinitives = multiple
+      ? multipleInfinitiveText
+        .split(/\r?\n/)
+        .map((value) => value.trim())
+        .filter(Boolean)
+      : [infinitive];
+    const requestedInfinitives = multiple && sortAlphabetically
+      ? [...enteredInfinitives].sort(
+        new Intl.Collator('de-CH', { sensitivity: 'base' }).compare,
+      )
+      : enteredInfinitives;
+    if (requestedInfinitives.length > 50) {
       setError(de
-        ? 'Gib einen deutschen Infinitiv ein.'
-        : 'Enter a German infinitive.');
+        ? 'Es können maximal 50 Verben auf einmal generiert werden.'
+        : 'You can generate up to 50 verbs at once.');
+      return;
+    }
+    const populatedInfinitives = requestedInfinitives
+      .map((value, index) => ({ index, value }))
+      .filter(({ value }) => value.trim());
+    if (!populatedInfinitives.length) {
+      setError(de
+        ? 'Gib mindestens einen deutschen Infinitiv ein.'
+        : 'Enter at least one German infinitive.');
       return;
     }
 
     setPending(true);
     setError('');
     try {
-      const response = await fetch('/api/ai/german-verb-table', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ infinitive: infinitive.trim() }),
-      });
-      const result = await response.json() as {
-        infinitive?: string;
-        forms?: GermanVerbTableForms;
-        auxiliary?: GermanVerbAuxiliary;
-        participle?: string;
-        comparisonAuxiliary?: GermanVerbAuxiliary;
-        separablePrefix?: string;
-        error?: string;
-      };
-      if (
-        !response.ok
-        || !result.infinitive
-        || !result.forms
-        || !result.auxiliary
-        || !result.participle
-        || !result.comparisonAuxiliary
-      ) {
-        throw new Error(result.error ?? (de
-          ? 'Die Verbtabelle konnte nicht generiert werden.'
-          : 'The verb table could not be generated.'));
+      const results: GermanVerbGenerationResult[] = [];
+      for (let index = 0; index < populatedInfinitives.length; index += 5) {
+        results.push(...await Promise.all(
+          populatedInfinitives
+            .slice(index, index + 5)
+            .map(({ value }) => generateVerb(value)),
+        ));
       }
-      onGenerated({
-        leftVerb: result.infinitive,
-        leftForms: result.forms,
-        leftAuxiliary: result.auxiliary,
-        leftParticiple: result.participle,
-        comparisonAuxiliary: result.comparisonAuxiliary,
-        separablePrefix: result.separablePrefix ?? '',
-      });
+      if (multiple) {
+        const multipleVerbs: GermanVerbTableMultipleVerb[] =
+          initialSettings.multipleVerbs.map((verb, index) => ({
+            ...verb,
+            verb: index < requestedInfinitives.length
+              ? requestedInfinitives[index].trim()
+              : '',
+          }));
+        populatedInfinitives.forEach(({ index }, resultIndex) => {
+          const result = results[resultIndex];
+          multipleVerbs[index] = {
+            verb: result.infinitive,
+            forms: result.forms,
+            separablePrefix: result.separablePrefix,
+          };
+        });
+        onGenerated({
+          multipleVerbs,
+          tense,
+        });
+      } else {
+        const [result] = results;
+        onGenerated({
+          leftVerb: result.infinitive,
+          leftForms: result.forms,
+          leftAuxiliary: result.auxiliary,
+          leftParticiple: result.participle,
+          comparisonAuxiliary: result.comparisonAuxiliary,
+          separablePrefix: result.separablePrefix,
+          tense,
+        });
+      }
     } catch (generationError) {
       setError(generationError instanceof Error
         ? generationError.message
@@ -112,9 +198,44 @@ export function GermanVerbTableAIModal({
         : 'Generate German verb table with Eduit AI'}
     >
       <h3 className="mb-3 text-sm font-semibold text-primary">
-        {de ? 'Verb' : 'Verb'}
+        {initialSettings.tableStyle === 'multiple'
+          ? (de ? 'Verben' : 'Verbs')
+          : (de ? 'Verb' : 'Verb')}
       </h3>
       <section className="rounded-xl border border-secondary bg-secondary p-5">
+        {initialSettings.tableStyle === 'multiple' ? (
+          <>
+              <label
+                className="block text-sm font-semibold text-primary"
+              >
+                {de ? 'Infinitive – ein Verb pro Zeile' : 'Infinitives – one verb per line'}
+                <textarea
+                  autoFocus
+                  className="mt-2 min-h-36 w-full resize-y rounded-md border border-primary bg-primary px-3 py-2 text-sm font-medium text-primary outline-none placeholder:text-placeholder focus:border-brand focus:ring-2 focus:ring-brand"
+                  maxLength={4050}
+                  onChange={(event) => setMultipleInfinitiveText(event.target.value)}
+                  placeholder={de
+                    ? 'abfahren\neinkaufen\ngehen'
+                    : 'abfahren\neinkaufen\ngehen'}
+                  value={multipleInfinitiveText}
+                />
+              </label>
+            <p className="mt-3 text-xs text-tertiary">
+              {de
+                ? `${initialSettings.multipleVerbCount} Verben pro Tabelle, maximal 50 insgesamt.`
+                : `${initialSettings.multipleVerbCount} verbs per table, up to 50 total.`}
+            </p>
+            <label className="mt-4 flex items-center gap-3 text-sm font-semibold text-primary">
+              <input
+                checked={sortAlphabetically}
+                className="size-4 accent-brand"
+                onChange={(event) => setSortAlphabetically(event.target.checked)}
+                type="checkbox"
+              />
+              {de ? 'Verben alphabetisch sortieren' : 'Sort verbs alphabetically'}
+            </label>
+          </>
+        ) : (
         <label className="block text-sm font-semibold text-primary">
           {de ? 'Infinitiv' : 'German infinitive'}
           <input
@@ -130,7 +251,22 @@ export function GermanVerbTableAIModal({
             value={infinitive}
           />
         </label>
+        )}
       </section>
+
+      <label className="mt-5 flex items-center gap-3 rounded-xl border border-secondary bg-primary p-4 text-sm font-semibold text-primary">
+          <input
+            checked={tense === 'preterite'}
+            className="size-4 accent-brand"
+            onChange={(event) => setTense(
+              event.target.checked ? 'preterite' : 'present',
+            )}
+            type="checkbox"
+          />
+          {de
+            ? 'Präteritum statt Präsens generieren'
+            : 'Generate preterite instead of present'}
+        </label>
 
       <section className="mt-5 rounded-xl border border-secondary bg-primary p-5">
         <h3 className="text-sm font-semibold text-primary">
@@ -143,13 +279,15 @@ export function GermanVerbTableAIModal({
         </p>
         <div className="mt-4 grid gap-2 text-xs text-tertiary sm:grid-cols-3">
           <span className="rounded-md border border-secondary bg-secondary px-3 py-2">
-            Präsens: Stamm + Endung
+            {tense === 'preterite'
+              ? 'Präteritum: Stamm + te + Endung'
+              : 'Präsens: Stamm + Endung'}
           </span>
           <span className="rounded-md border border-secondary bg-secondary px-3 py-2">
             Perfekt: haben / sein
           </span>
           <span className="rounded-md border border-secondary bg-secondary px-3 py-2">
-            Präteritum: Stamm + te
+            Trennbare und unregelmässige Verben
           </span>
         </div>
       </section>

@@ -1,13 +1,19 @@
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { getCurrentAppUser } from '@/lib/auth/authorization';
-import { educationalContentModel } from '@/lib/ai';
+import { verbGenerationModel } from '@/lib/ai';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const requestSchema = z.object({
   infinitive: z.string().trim().min(2).max(80),
+  tense: z.enum([
+    'present', 'preterite', 'perfect', 'pluperfect', 'future-one', 'future-two',
+  ]).default('present'),
+  mood: z.enum([
+    'indicative', 'subjunctive-one', 'subjunctive-two',
+  ]).default('indicative'),
 });
 
 const formsSchema = z.object({
@@ -62,8 +68,16 @@ export async function POST(request: Request) {
     const infinitive = swissSpelling(
       input.infinitive.toLocaleLowerCase('de-DE'),
     );
+    const tenseLabel = ({
+      present: 'Präsens',
+      preterite: 'Präteritum',
+      perfect: 'Perfekt',
+      pluperfect: 'Plusquamperfekt',
+      'future-one': 'Futur I',
+      'future-two': 'Futur II',
+    } as const)[input.tense];
     const { output } = await generateText({
-      model: educationalContentModel,
+      model: verbGenerationModel,
       output: Output.object({ schema: resultSchema }),
       temperature: 0,
       system: `You are a German morphology expert. Return correct standard
@@ -73,8 +87,13 @@ verbs accurately. Return verb forms only, without pronouns or explanations.`,
       prompt: `Conjugate this German infinitive: ${infinitive}
 
 Return:
-- Präsens for ich, du, formal singular Sie, er/sie/es, wir, ihr, formal plural
-  Sie, and third-person plural sie.
+- ${{
+    indicative: 'Indikativ',
+    'subjunctive-one': 'Konjunktiv I',
+    'subjunctive-two': 'Konjunktiv II',
+  }[input.mood]} ${tenseLabel} for ich, du,
+  formal singular Sie, er/sie/es, wir, ihr, formal plural Sie, and
+  third-person plural sie in the eight main form fields.
 - Präteritum for ich.
 - The correct Perfekt auxiliary as the infinitive "sein" or "haben".
 - Partizip II without an auxiliary.
@@ -85,9 +104,10 @@ Return:
   separable verb, otherwise null.
 
 Mandatory:
-- For separable verbs, place the prefix after the conjugated verb in every
-  finite Präsens and Präteritum form, for example "fahre ab", and return "ab"
-  as separablePrefix.
+- For separable verbs, use standard German word order for the requested tense.
+  In simple finite Präsens and Präteritum place the prefix last, for example
+  "fahre ab". In compound tenses use the correct Partizip II placement.
+  Always return "ab" as separablePrefix.
 - Never classify an inseparable prefix as separable.
 - For reflexive verbs, include the reflexive pronoun belonging to the person.
 - Use lowercase except formal "Sie" is represented only by the requested form,

@@ -9,6 +9,9 @@ import {
   DEFAULT_GERMAN_VERB_TABLE_ATTRS,
   type GermanVerbTableAttrs,
   type GermanVerbTableForms,
+  type GermanVerbTableMultipleBadgeStyle,
+  type GermanVerbTableMultipleCount,
+  type GermanVerbTableMultipleVerb,
 } from '@/components/editor/german-verb-table-node';
 
 type GermanVerbTableBlock = { pos: number; type: 'germanVerbTable' };
@@ -26,17 +29,18 @@ const fields: Array<{
   { key: 'ihr', label: 'Präsens informell', pronoun: 'ihr' },
   { key: 'formalPlural', label: 'Präsens formell', pronoun: 'Sie' },
   { key: 'thirdPlural', label: 'Präsens', pronoun: 'sie' },
-  { key: 'preteriteIch', label: 'Präteritum', pronoun: 'ich' },
 ];
 
 const inputClass = 'h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand';
 
 export function GermanVerbTableEditorModal({
   block,
+  documentSize,
   editor,
   onClose,
 }: {
   block: GermanVerbTableBlock | null;
+  documentSize: string;
   editor: Editor;
   onClose: () => void;
 }) {
@@ -51,6 +55,7 @@ export function GermanVerbTableEditorModal({
     },
   });
   const [draft, setDraft] = useState<GermanVerbTableAttrs | null>(null);
+  const landscape = documentSize.endsWith('-landscape');
 
   useEffect(() => {
     if (!attrs) return;
@@ -65,6 +70,16 @@ export function GermanVerbTableEditorModal({
         ...DEFAULT_GERMAN_VERB_TABLE_ATTRS.forms,
         ...attrs.forms,
       },
+      multipleVerbs: DEFAULT_GERMAN_VERB_TABLE_ATTRS.multipleVerbs.map(
+        (fallback, index) => {
+          const value = attrs.multipleVerbs?.[index];
+          return {
+            ...fallback,
+            ...value,
+            forms: { ...fallback.forms, ...value?.forms },
+          };
+        },
+      ),
     });
   }, [attrs]);
 
@@ -88,6 +103,29 @@ export function GermanVerbTableEditorModal({
   ) => setDraft((current) => current ? {
     ...current,
     [side]: { ...current[side], [key]: value },
+  } : current);
+
+  const setMultipleVerb = (
+    index: number,
+    patch: Partial<GermanVerbTableMultipleVerb>,
+  ) => setDraft((current) => current ? {
+    ...current,
+    multipleVerbs: current.multipleVerbs.map((verb, verbIndex) => (
+      verbIndex === index ? { ...verb, ...patch } : verb
+    )),
+  } : current);
+
+  const setMultipleForm = (
+    index: number,
+    key: keyof GermanVerbTableForms,
+    value: string,
+  ) => setDraft((current) => current ? {
+    ...current,
+    multipleVerbs: current.multipleVerbs.map((verb, verbIndex) => (
+      verbIndex === index
+        ? { ...verb, forms: { ...verb.forms, [key]: value } }
+        : verb
+    )),
   } : current);
 
   return createPortal(
@@ -117,7 +155,7 @@ export function GermanVerbTableEditorModal({
         <div className="overflow-y-auto p-6">
           <fieldset>
             <legend className="text-sm font-semibold text-primary">Stil</legend>
-            <div className="mt-1.5 grid grid-cols-2 gap-2">
+            <div className="mt-1.5 grid grid-cols-3 gap-2">
               {([
                 ['extended', 'Extended', 'Mit Zeitform und Numerus'],
                 [
@@ -125,17 +163,48 @@ export function GermanVerbTableEditorModal({
                   'Compact',
                   'Singular und Plural nebeneinander',
                 ],
+                [
+                  'multiple',
+                  'Multiple',
+                  'Fünf Verben, Singular und Plural untereinander',
+                ],
               ] as const).map(([value, label, description]) => (
                 <button
                   aria-pressed={draft.tableStyle === value}
+                  disabled={value === 'multiple' && !landscape}
                   className={`rounded-lg border p-3 text-left transition ${
                     draft.tableStyle === value
                       ? 'border-brand bg-brand-primary'
-                      : 'border-primary bg-primary hover:bg-primary_hover'
+                      : value === 'multiple' && !landscape
+                        ? 'cursor-not-allowed border-primary bg-secondary opacity-50'
+                        : 'border-primary bg-primary hover:bg-primary_hover'
                   }`}
                   key={value}
                   onClick={() => setDraft((current) => current
-                    ? { ...current, tableStyle: value }
+                    ? {
+                      ...current,
+                      tableStyle: value,
+                      multipleVerbs: value === 'multiple'
+                        && current.tableStyle !== 'multiple'
+                        ? current.multipleVerbs.map((verb, index) => {
+                          if (index === 0) {
+                            return {
+                              verb: current.leftVerb,
+                              forms: current.leftForms,
+                              separablePrefix: current.separablePrefix,
+                            };
+                          }
+                          if (index === 1) {
+                            return {
+                              verb: current.rightVerb,
+                              forms: current.forms,
+                              separablePrefix: '',
+                            };
+                          }
+                          return verb;
+                        })
+                        : current.multipleVerbs,
+                    }
                     : current)}
                   type="button"
                 >
@@ -148,8 +217,128 @@ export function GermanVerbTableEditorModal({
                 </button>
               ))}
             </div>
+            {!landscape && (
+              <p className="mt-2 text-xs text-tertiary">
+                Multiple ist nur für Arbeitsblätter im Querformat verfügbar.
+              </p>
+            )}
           </fieldset>
 
+          {draft.tableStyle === 'multiple' ? (
+            <div className="mt-5 space-y-5">
+              <fieldset>
+                <legend className="text-sm font-semibold text-primary">
+                  Anzahl Verben
+                </legend>
+                <div className="mt-1.5 flex gap-2">
+                  {([4, 5] as const).map((count) => (
+                    <button
+                      aria-pressed={draft.multipleVerbCount === count}
+                      className={`rounded-md border px-4 py-2 text-sm font-semibold transition ${
+                        draft.multipleVerbCount === count
+                          ? 'border-brand bg-brand-primary text-brand-secondary'
+                          : 'border-primary bg-primary text-secondary hover:bg-primary_hover'
+                      }`}
+                      key={count}
+                      onClick={() => setDraft((current) => current ? {
+                        ...current,
+                        multipleVerbCount:
+                          count as GermanVerbTableMultipleCount,
+                      } : current)}
+                      type="button"
+                    >
+                      {count} Verben
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend className="text-sm font-semibold text-primary">
+                  Infinitiv-Badges
+                </legend>
+                <div className="mt-1.5 flex gap-2">
+                  {([
+                    ['light', 'Light'],
+                    ['dark', 'Dark'],
+                  ] as const).map(([style, label]) => (
+                    <button
+                      aria-pressed={draft.multipleBadgeStyle === style}
+                      className={`rounded-md border px-4 py-2 text-sm font-semibold transition ${
+                        draft.multipleBadgeStyle === style
+                          ? 'border-brand bg-brand-primary text-brand-secondary'
+                          : 'border-primary bg-primary text-secondary hover:bg-primary_hover'
+                      }`}
+                      key={style}
+                      onClick={() => setDraft((current) => current ? {
+                        ...current,
+                        multipleBadgeStyle:
+                          style as GermanVerbTableMultipleBadgeStyle,
+                      } : current)}
+                      type="button"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              {draft.multipleVerbs
+                .slice(0, draft.multipleVerbCount)
+                .map((verb, index) => (
+                <section
+                  className="overflow-hidden rounded-xl border border-secondary"
+                  key={index}
+                >
+                  <div className="grid grid-cols-2 gap-3 border-b border-secondary bg-secondary p-4">
+                    <label className="text-sm font-semibold text-primary">
+                      Verb {index + 1}
+                      <input
+                        className={`mt-1.5 ${inputClass}`}
+                        onChange={(event) => setMultipleVerb(index, {
+                          verb: event.target.value,
+                        })}
+                        value={verb.verb}
+                      />
+                    </label>
+                    <label className="text-sm font-semibold text-primary">
+                      Trennbares Präfix
+                      <input
+                        className={`mt-1.5 ${inputClass}`}
+                        onChange={(event) => setMultipleVerb(index, {
+                          separablePrefix: event.target.value,
+                        })}
+                        placeholder="z. B. ab oder ein"
+                        value={verb.separablePrefix}
+                      />
+                    </label>
+                  </div>
+                  {fields.slice(0, 8).map((field) => (
+                    <div
+                      className="grid grid-cols-[10rem_minmax(0,1fr)] items-center gap-3 border-b border-secondary px-4 py-3 last:border-b-0"
+                      key={field.key}
+                    >
+                      <span className="text-sm font-semibold text-primary">
+                        {field.pronoun}
+                      </span>
+                      <input
+                        aria-label={`${verb.verb} ${field.pronoun}`}
+                        className={inputClass}
+                        onChange={(event) => setMultipleForm(
+                          index,
+                          field.key,
+                          event.target.value,
+                        )}
+                        placeholder={verb.separablePrefix
+                          ? `z. B. Wortstamm ${verb.separablePrefix}`
+                          : undefined}
+                        value={verb.forms[field.key]}
+                      />
+                    </div>
+                  ))}
+                </section>
+                ))}
+            </div>
+          ) : (
+            <>
           <label className="mt-5 block text-sm font-semibold text-primary">
             Verb
             <input
@@ -188,7 +377,10 @@ export function GermanVerbTableEditorModal({
                 <span className="text-sm font-semibold text-primary">
                   {field.pronoun}
                   <span className="block text-xs font-normal text-tertiary">
-                    {field.label}
+                    {field.label.replace(
+                      'Präsens',
+                      draft.tense === 'preterite' ? 'Präteritum' : 'Präsens',
+                    )}
                   </span>
                 </span>
                 <input
@@ -220,6 +412,8 @@ export function GermanVerbTableEditorModal({
               />
             </div>
           ))}
+            </>
+          )}
         </div>
         <footer className="flex shrink-0 justify-end gap-3 border-t border-secondary px-6 py-4">
           <button

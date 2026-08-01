@@ -271,8 +271,19 @@ export function WorksheetManager() {
     setBusyId(worksheet.id);
     setError(null);
     try {
+      const statusResponse = await fetch(
+        `/api/dazit/status?worksheetId=${encodeURIComponent(worksheet.id)}`,
+        { cache: 'no-store' },
+      );
+      const statusResult = statusResponse.ok
+        ? await statusResponse.json() as { status?: string }
+        : null;
+      const deleteFromDazit = statusResult?.status !== undefined
+        && statusResult.status !== 'unpublished'
+        ? window.confirm(t('documents.deleteDazitConfirm'))
+        : false;
       const response = await fetch(
-        `/api/worksheets?id=${encodeURIComponent(worksheet.id)}`,
+        `/api/worksheets?id=${encodeURIComponent(worksheet.id)}&deleteFromDazit=${deleteFromDazit}`,
         { method: 'DELETE' },
       );
       if (!response.ok) {

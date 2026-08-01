@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/core';
 import { useEditorState } from '@tiptap/react';
 import { createPortal } from 'react-dom';
@@ -78,6 +78,8 @@ import type {
   LearningObjectiveAttrs,
   SuccessCriterion,
 } from '@/components/editor/learning-objective-node';
+import type { LearningCardsAttrs } from '@/components/editor/learning-cards-node';
+import { LearningCardContent } from '@/components/editor/learning-cards-node';
 import type {
   DialogueAttrs,
   DialogueItem,
@@ -144,6 +146,10 @@ import {
 } from '@/components/editor/error-correction-node';
 import { errorTypeById } from '@/lib/error-correction-types';
 import { InlineFormattedInput } from '@/components/editor/custom-blocks/inline-formatted-input';
+import {
+  htmlToInlineFormatting,
+  InlineFormattedText,
+} from '@/components/editor/custom-blocks/inline-formatting';
 import { Toggle } from '@/components/base/toggle/toggle';
 import {
   ContentCard,
@@ -181,6 +187,7 @@ export type ContentEditorBlock = {
     | 'glossaryTerms'
     | 'frayerModel'
     | 'learningObjective'
+    | 'learningCards'
     | 'dialogue'
     | 'rewriteSentences'
     | 'sortingCategories'
@@ -208,6 +215,7 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   glossaryTerms: 'Glossary terms content',
   frayerModel: 'Frayer model content',
   learningObjective: 'Learning objective content',
+  learningCards: 'Learning cards',
   dialogue: 'Dialogue content',
   rewriteSentences: 'Rewrite sentences content',
   sortingCategories: 'Sorting categories content',
@@ -236,6 +244,290 @@ function updateAttrs(
     });
     return true;
   }).run();
+}
+
+function LearningCardsEditor({
+  attrs,
+  block,
+  editor,
+  groupIndex,
+  onGroupIndexChange,
+  selectedCardId,
+  onSelectedCardIdChange,
+}: {
+  attrs: LearningCardsAttrs;
+  block: ContentEditorBlock & { type: 'learningCards' };
+  editor: Editor;
+  groupIndex: number;
+  onGroupIndexChange: (index: number) => void;
+  selectedCardId: string | null;
+  onSelectedCardIdChange: (id: string | null) => void;
+}) {
+  const [activeTab, setActiveTab] = useState<'edit' | 'import'>('edit');
+  const [importJson, setImportJson] = useState('');
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const updateLearningCards = (patch: Partial<LearningCardsAttrs>) => {
+    editor.chain().command(({ tr }) => {
+      const next = { ...attrs, ...patch };
+      const cardType = tr.doc.type.schema.nodes.learningCards;
+      const pageBreakType = tr.doc.type.schema.nodes.pageBreak;
+      if (!cardType) return false;
+      const groupCount = Math.max(1, Math.ceil(next.items.length / 9));
+      const sheets = Array.from({ length: groupCount }, (_, groupIndex) => {
+        const groupSheets = [cardType.create({
+          ...next,
+          groupIndex,
+          sheetSide: 'front',
+        })];
+        if (next.sidedness === 'double') {
+          groupSheets.push(cardType.create({
+            ...next,
+            groupIndex,
+            sheetSide: 'back',
+          }));
+        }
+        return groupSheets;
+      }).flat();
+      const documentNodes = sheets.flatMap((sheet, index) => (
+        index < sheets.length - 1 && pageBreakType
+          ? [sheet, pageBreakType.create()]
+          : [sheet]
+      ));
+      tr.replaceWith(0, tr.doc.content.size, documentNodes);
+      return true;
+    }).run();
+  };
+
+  const groupCount = Math.max(1, Math.ceil(attrs.items.length / 9));
+  const groupStart = groupIndex * 9;
+  const groupItems = attrs.items.slice(groupStart, groupStart + 9);
+
+  const updateCard = (
+    id: string,
+    side: 'front' | 'back',
+    value: string,
+  ) => updateLearningCards({
+    items: attrs.items.map((item) => (
+      item.id === id ? { ...item, [side]: value } : item
+    )),
+  });
+
+  const importLearningCardsJson = () => {
+    try {
+      const parsed = JSON.parse(importJson) as unknown;
+      const source = Array.isArray(parsed)
+        ? { items: parsed }
+        : parsed;
+      if (!source || typeof source !== 'object' || !('items' in source)) {
+        throw new Error('JSON must contain an items array.');
+      }
+      const rawItems = (source as { items?: unknown }).items;
+      if (!Array.isArray(rawItems) || rawItems.length === 0) {
+        throw new Error('The items array must contain at least one card.');
+      }
+      const items = rawItems.map((item, index) => {
+        if (!item || typeof item !== 'object') {
+          throw new Error(`Card ${index + 1} must be an object.`);
+        }
+        const candidate = item as Record<string, unknown>;
+        if (typeof candidate.front !== 'string' || typeof candidate.back !== 'string') {
+          throw new Error(`Card ${index + 1} requires string front and back values.`);
+        }
+        return {
+          id: typeof candidate.id === 'string' && candidate.id.trim()
+            ? candidate.id
+            : `learning-card-import-${Date.now()}-${index}`,
+          front: htmlToInlineFormatting(candidate.front),
+          back: htmlToInlineFormatting(candidate.back),
+        };
+      });
+      const imported = source as Record<string, unknown>;
+      updateLearningCards({
+        title: typeof imported.title === 'string' ? imported.title : attrs.title,
+        format: 'a8-landscape',
+        sidedness: imported.sidedness === 'single' ? 'single' : 'double',
+        items,
+      });
+      onGroupIndexChange(0);
+      onSelectedCardIdChange(null);
+      setImportError(null);
+      setActiveTab('edit');
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Invalid JSON.');
+    }
+  };
+
+  return (
+    <>
+      <div className="mb-6 grid grid-cols-2 rounded-lg bg-secondary p-1">
+        {([
+          ['edit', 'Edit'],
+          ['import', 'Import JSON'],
+        ] as const).map(([value, label]) => (
+          <button
+            className={activeTab === value
+              ? 'rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary shadow-sm'
+              : 'rounded-md px-3 py-2 text-sm font-semibold text-quaternary hover:text-secondary'}
+            key={value}
+            onClick={() => {
+              setActiveTab(value);
+              setImportError(null);
+            }}
+            type="button"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'import' ? (
+        <div>
+          <ContentFieldLabel>Learning Cards JSON</ContentFieldLabel>
+          <textarea
+            aria-label="Learning Cards JSON"
+            className="mt-2 min-h-[28rem] w-full resize-y rounded-md border border-primary bg-primary p-3 font-mono text-xs leading-5 text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            onChange={(event) => {
+              setImportJson(event.target.value);
+              setImportError(null);
+            }}
+            placeholder={'{\n  "title": "Learning cards",\n  "sidedness": "double",\n  "items": [\n    { "id": "card-1", "front": "...", "back": "..." }\n  ]\n}'}
+            spellCheck={false}
+            value={importJson}
+          />
+          {importError && (
+            <p className="mt-2 text-xs text-error-primary" role="alert">
+              {importError}
+            </p>
+          )}
+          <button
+            className="mt-4 flex w-full items-center justify-center rounded-lg bg-brand-solid px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-solid_hover disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!importJson.trim()}
+            onClick={importLearningCardsJson}
+            type="button"
+          >
+            Import cards
+          </button>
+        </div>
+      ) : (
+      <>
+      <ContentFieldLabel>Title</ContentFieldLabel>
+      <input
+        aria-label="Learning cards title"
+        className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+        onChange={(event) => updateLearningCards({ title: event.target.value })}
+        type="text"
+        value={attrs.title}
+      />
+
+      <div className="mt-5">
+        <ContentFieldLabel>Format</ContentFieldLabel>
+        <select
+          aria-label="Learning card format"
+          className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          onChange={() => undefined}
+          value={attrs.format}
+        >
+          <option value="a8-landscape">DIN A8 Landscape — 74 × 52 mm</option>
+        </select>
+      </div>
+
+      <div className="mt-5">
+        <ContentFieldLabel>Printing</ContentFieldLabel>
+        <select
+          aria-label="Learning cards printing mode"
+          className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          onChange={(event) => updateLearningCards({
+            sidedness: event.target.value === 'single' ? 'single' : 'double',
+          })}
+          value={attrs.sidedness}
+        >
+          <option value="single">Single sided</option>
+          <option value="double">Double sided — short edge</option>
+        </select>
+      </div>
+
+      <div className="mt-6 rounded-lg border border-secondary bg-secondary p-4">
+        <ContentFieldLabel>Front page</ContentFieldLabel>
+        <select
+          aria-label="Learning cards page group"
+          className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          onChange={(event) => {
+            onGroupIndexChange(Number(event.target.value));
+            onSelectedCardIdChange(null);
+          }}
+          value={Math.min(groupIndex, groupCount - 1)}
+        >
+          {Array.from({ length: groupCount }, (_, index) => (
+            <option key={index} value={index}>
+              Page {index * 2 + 1} · cards {index * 9 + 1}–{Math.min((index + 1) * 9, attrs.items.length)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mt-6 space-y-4">
+        {groupItems.map((item, itemIndex) => (
+          <div
+            className={selectedCardId === item.id
+              ? 'rounded-xl outline-2 outline-offset-2 outline-brand'
+              : ''}
+            key={item.id}
+            onClick={() => onSelectedCardIdChange(item.id)}
+            onFocusCapture={() => onSelectedCardIdChange(item.id)}
+          >
+          <ContentCard>
+            <ContentSectionHeader>
+              Card {groupStart + itemIndex + 1}
+            </ContentSectionHeader>
+            <div className="mt-3">
+              <ContentFieldLabel>Front</ContentFieldLabel>
+              <InlineFormattedInput
+                ariaLabel={`Card ${groupStart + itemIndex + 1} front`}
+                className="mt-2 min-h-20 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                multiline
+                onChange={(value) => updateCard(item.id, 'front', value)}
+                placeholder="Front content"
+                value={item.front}
+              />
+            </div>
+            <div className="mt-3">
+              <ContentFieldLabel>Back</ContentFieldLabel>
+              <InlineFormattedInput
+                ariaLabel={`Card ${groupStart + itemIndex + 1} back`}
+                className="mt-2 min-h-20 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                multiline
+                onChange={(value) => updateCard(item.id, 'back', value)}
+                placeholder="Back content"
+                value={item.back}
+              />
+            </div>
+          </ContentCard>
+          </div>
+        ))}
+      </div>
+
+      <ContentAddButton
+        onClick={() => {
+          const nextIndex = attrs.items.length;
+          const id = `learning-card-${Date.now()}`;
+          updateLearningCards({
+            items: [...attrs.items, {
+              id,
+              front: '',
+              back: '',
+            }],
+          });
+          onGroupIndexChange(Math.floor(nextIndex / 9));
+          onSelectedCardIdChange(id);
+        }}
+      >
+        Add card
+      </ContentAddButton>
+      </>
+      )}
+    </>
+  );
 }
 
 function InstructionOverrideEditor({
@@ -450,14 +742,55 @@ function Preview({
   attrs,
   block,
   editor,
+  learningCardsGroupIndex = 0,
+  learningCardsSelectedCardId = null,
 }: {
   attrs: Record<string, unknown>;
   block: ContentEditorBlock;
   editor: Editor;
+  learningCardsGroupIndex?: number;
+  learningCardsSelectedCardId?: string | null;
 }) {
   const previewRef = useRef<HTMLDivElement>(null);
+  const learningCardsFrontRef = useRef<HTMLDivElement>(null);
+  const learningCardsBackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (block.type === 'learningCards') {
+      let frontPos: number | null = null;
+      let backPos: number | null = null;
+      editor.state.doc.forEach((node, pos) => {
+        if (
+          node.type.name !== 'learningCards'
+          || Number(node.attrs.groupIndex) !== learningCardsGroupIndex
+        ) return;
+        if (node.attrs.sheetSide === 'back') backPos = pos;
+        else frontPos = pos;
+      });
+      const renderSheet = (target: HTMLDivElement | null, pos: number | null) => {
+        if (!target) return;
+        target.replaceChildren();
+        if (pos === null) return;
+        const nodeDom = editor.view.nodeDOM(pos);
+        if (!(nodeDom instanceof HTMLElement)) return;
+        const clone = nodeDom.cloneNode(true) as HTMLElement;
+        clone.classList.remove('ProseMirror-selectednode', 'custom-block--selected');
+        clone.style.setProperty('margin', '0', 'important');
+        clone.style.setProperty(
+          'font-family',
+          window.getComputedStyle(nodeDom).fontFamily,
+          'important',
+        );
+        clone.style.setProperty('transform', 'scale(0.36)');
+        clone.style.setProperty('transform-origin', 'top left');
+        target.appendChild(clone);
+      };
+      const frame = requestAnimationFrame(() => {
+        renderSheet(learningCardsFrontRef.current, frontPos);
+        renderSheet(learningCardsBackRef.current, backPos);
+      });
+      return () => cancelAnimationFrame(frame);
+    }
     const preview = previewRef.current;
     if (!preview) return;
     let innerFrame = 0;
@@ -479,9 +812,10 @@ function Preview({
       cancelAnimationFrame(outerFrame);
       cancelAnimationFrame(innerFrame);
     };
-  }, [attrs, block.pos, editor]);
+  }, [attrs, block.pos, block.type, editor, learningCardsGroupIndex]);
 
   useEffect(() => {
+    if (block.type === 'learningCards') return;
     const preview = previewRef.current;
     if (!preview) return;
     const source = editor.view.dom;
@@ -520,7 +854,56 @@ function Preview({
     preview.style.setProperty('border', '0', 'important');
     preview.style.setProperty('outline', '0', 'important');
     preview.style.setProperty('box-shadow', 'none', 'important');
-  }, [block.pos, editor]);
+  }, [block.pos, block.type, editor]);
+
+  if (block.type === 'learningCards') {
+    const learningCardsAttrs = attrs as unknown as LearningCardsAttrs;
+    const selectedCard = learningCardsAttrs.items.find(
+      ({ id }) => id === learningCardsSelectedCardId,
+    );
+    if (selectedCard) {
+      const profileFont = editor.view.dom.style.getPropertyValue(
+        '--custom-block-font-family',
+      );
+      return (
+        <div
+          className="sticky top-0 mx-auto flex max-w-2xl flex-col gap-6"
+          style={{ fontFamily: profileFont || undefined }}
+        >
+          {([
+            ['Front', selectedCard.front],
+            ['Back', selectedCard.back],
+          ] as const).map(([label, content]) => (
+            <div key={label}>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-quaternary">
+                {label}
+              </p>
+              <div className="flex aspect-[74/52] w-full items-center justify-center overflow-hidden rounded-lg border border-secondary bg-white p-8 text-center text-secondary shadow-sm">
+                <LearningCardContent fallback={`${label} content`} text={content} />
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return (
+      <div className="sticky top-0 grid grid-cols-2 gap-4">
+        {([
+          ['Front', learningCardsFrontRef],
+          ['Back', learningCardsBackRef],
+        ] as const).map(([label, ref]) => (
+          <div key={label}>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-quaternary">
+              {label}
+            </p>
+            <div className="h-[360px] overflow-hidden rounded-lg border border-secondary bg-white p-3">
+              <div ref={ref} />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="sticky top-0">
@@ -4715,6 +5098,9 @@ export function BlockContentEditorModal({
   editor: Editor;
   onClose: () => void;
 }) {
+  const [learningCardsGroupIndex, setLearningCardsGroupIndex] = useState(0);
+  const [learningCardsSelectedCardId, setLearningCardsSelectedCardId] =
+    useState<string | null>(null);
   const attrs = useEditorState({
     editor,
     selector: ({ editor: currentEditor }) => {
@@ -4725,6 +5111,13 @@ export function BlockContentEditorModal({
         : null;
     },
   });
+
+  useEffect(() => {
+    if (!block || block.type !== 'learningCards') return;
+    const node = editor.state.doc.nodeAt(block.pos);
+    setLearningCardsGroupIndex(Number(node?.attrs.groupIndex) || 0);
+    setLearningCardsSelectedCardId(null);
+  }, [block, editor]);
 
   useEffect(() => {
     if (!block) return;
@@ -4772,6 +5165,7 @@ export function BlockContentEditorModal({
             {block.type === 'glossaryTerms' && <GlossaryTermsEditor attrs={attrs as unknown as GlossaryTermsAttrs} block={block} editor={editor} />}
             {block.type === 'frayerModel' && <FrayerModelEditor attrs={attrs as unknown as FrayerModelAttrs} block={block} editor={editor} />}
             {block.type === 'learningObjective' && <LearningObjectiveEditor attrs={attrs as unknown as LearningObjectiveAttrs} block={block} editor={editor} />}
+            {block.type === 'learningCards' && <LearningCardsEditor attrs={attrs as unknown as LearningCardsAttrs} block={block as ContentEditorBlock & { type: 'learningCards' }} editor={editor} groupIndex={learningCardsGroupIndex} onGroupIndexChange={setLearningCardsGroupIndex} selectedCardId={learningCardsSelectedCardId} onSelectedCardIdChange={setLearningCardsSelectedCardId} />}
             {block.type === 'dialogue' && <DialogueEditor attrs={attrs as unknown as DialogueAttrs} block={block} editor={editor} />}
             {block.type === 'rewriteSentences' && <RewriteSentencesEditor attrs={attrs as unknown as RewriteSentencesAttrs} block={block} editor={editor} />}
             {block.type === 'sortingCategories' && <SortingCategoriesEditor attrs={attrs as unknown as SortingCategoriesAttrs} block={block} editor={editor} />}
@@ -4787,7 +5181,7 @@ export function BlockContentEditorModal({
             {block.type === 'errorCorrection' && <ErrorCorrectionEditor attrs={attrs as unknown as ErrorCorrectionAttrs} block={block} editor={editor} />}
           </div>
           <div className="overflow-y-auto bg-primary p-6">
-            <Preview attrs={attrs} block={block} editor={editor} />
+            <Preview attrs={attrs} block={block} editor={editor} learningCardsGroupIndex={learningCardsGroupIndex} learningCardsSelectedCardId={learningCardsSelectedCardId} />
           </div>
         </div>
         <footer className="flex h-16 shrink-0 items-center justify-end border-t border-secondary px-6">

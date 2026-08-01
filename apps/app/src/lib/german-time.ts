@@ -6,6 +6,18 @@ export type TimeValue = {
   minute: number;
 };
 
+export type TimeMatchingGenerationSettings = {
+  leftRepresentation: TimeRepresentation;
+  rightRepresentation: TimeRepresentation;
+  allowedMinutes: number[];
+  rangeStart: string;
+  rangeEnd: string;
+  count: number;
+  shuffleLeft: boolean;
+  shuffleRight: boolean;
+  showFirstAsExample: boolean;
+};
+
 const NUMBERS = [
   'null', 'eins', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben',
   'acht', 'neun', 'zehn', 'elf', 'zwölf', 'dreizehn', 'vierzehn',

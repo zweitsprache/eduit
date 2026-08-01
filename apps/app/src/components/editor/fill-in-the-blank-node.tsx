@@ -125,18 +125,39 @@ function stableWordBankOrder(items: Array<{ id: string; text: string }>) {
 
 function FillInTheBlankParts({
   hideBlankNumbers,
+  itemNumber,
   parts,
   showFirstAsExample,
 }: {
   hideBlankNumbers: boolean;
+  itemNumber?: number;
   parts: FillInTheBlankPart[];
   showFirstAsExample: boolean;
 }) {
-  return parts.map((part, index) => (
+  const renderText = (value: string) => value
+    .split(/(<sup>(?:SINGULAR|PLURAL|FORMELL)<\/sup>)/g)
+    .filter(Boolean)
+    .map((segment, segmentIndex) => {
+      const label = segment.match(/^<sup>(SINGULAR|PLURAL|FORMELL)<\/sup>$/)?.[1];
+      return label
+        ? <sup key={segmentIndex}>{label}</sup>
+        : <Fragment key={segmentIndex}>{segment}</Fragment>;
+    });
+
+  const blankCount = parts.filter((part) => part.type === 'blank').length;
+  let blankOrdinal = 0;
+  return parts.map((part, index) => {
+    if (part.type === 'blank') blankOrdinal += 1;
+    const blankLabel = itemNumber === undefined
+      ? String(part.type === 'blank' ? part.index : 0).padStart(2, '0')
+      : `${String(itemNumber).padStart(2, '0')}${
+        blankCount > 1 ? String.fromCharCode(96 + blankOrdinal) : ''
+      }`;
+    return (
     <Fragment key={`${part.type}-${index}`}>
-      {part.type === 'text' ? part.value : (
+      {part.type === 'text' ? renderText(part.value) : (
         <span
-          aria-label={`Blank ${part.index}`}
+          aria-label={`Blank ${blankLabel}`}
           className={`fill-in-the-blank-node__blank${
             isSingleLetterBlankAnswer(part.answer)
               ? ' fill-in-the-blank-node__blank--single-letter'
@@ -155,12 +176,13 @@ function FillInTheBlankParts({
             className="custom-block__compact-label fill-in-the-blank-node__blank-number"
             style={{ visibility: hideBlankNumbers ? 'hidden' : 'visible' }}
           >
-            {String(part.index).padStart(2, '0')}
+            {blankLabel}
           </span>
         </span>
       )}
     </Fragment>
-  ));
+    );
+  });
 }
 
 function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
@@ -329,6 +351,7 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
               <p className="fill-in-the-blank-node__text">
                 <FillInTheBlankParts
                   hideBlankNumbers={hideBlankNumbers}
+                  itemNumber={paragraphIndex + 1}
                   parts={parts}
                   showFirstAsExample={showFirstAsExample}
                 />

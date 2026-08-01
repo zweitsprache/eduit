@@ -34,6 +34,7 @@ export const messages = {
     navigation: {
       dashboard: 'Dashboard',
       documents: 'Documents',
+      automations: 'Automations',
       lessons: 'Lessons',
       media: 'Media',
       settings: 'Settings',
@@ -57,6 +58,7 @@ export const messages = {
       selectTitle: 'Select a worksheet',
       selectDescription: 'Choose a document or create a new one.',
       deleteConfirm: 'Delete “{title}”? This cannot be undone.',
+      deleteDazitConfirm: 'This worksheet is published on Dazit. Delete it from Dazit as well?',
       loadError: 'Could not load worksheets.',
       brandLoadError: 'Could not load brands.',
       createError: 'Could not create worksheet.',
@@ -161,6 +163,7 @@ export const messages = {
     navigation: {
       dashboard: 'Übersicht',
       documents: 'Dokumente',
+      automations: 'Automationen',
       lessons: 'Lektionen',
       media: 'Medien',
       settings: 'Einstellungen',
@@ -184,6 +187,7 @@ export const messages = {
       selectTitle: 'Arbeitsblatt auswählen',
       selectDescription: 'Wähle ein Dokument aus oder erstelle ein neues.',
       deleteConfirm: '„{title}“ löschen? Dies kann nicht rückgängig gemacht werden.',
+      deleteDazitConfirm: 'Dieses Arbeitsblatt ist auf Dazit veröffentlicht. Soll es dort ebenfalls gelöscht werden?',
       loadError: 'Arbeitsblätter konnten nicht geladen werden.',
       brandLoadError: 'Marken konnten nicht geladen werden.',
       createError: 'Arbeitsblatt konnte nicht erstellt werden.',

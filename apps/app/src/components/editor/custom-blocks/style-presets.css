@@ -122,6 +122,23 @@
   line-height: 1.4;
 }
 
+.tiptap[data-brand="eduit"]:is([data-style-preset="academic"], [data-style-preset="semi-academic"])
+  .heading-node--h1[data-gap-after="2"] { padding-bottom: 0.4rem; }
+.tiptap[data-brand="eduit"]:is([data-style-preset="academic"], [data-style-preset="semi-academic"])
+  .heading-node--h1[data-gap-after="3"] { padding-bottom: 0.8rem; }
+.tiptap[data-brand="eduit"]:is([data-style-preset="academic"], [data-style-preset="semi-academic"])
+  .heading-node--h2[data-gap-after="2"] { padding-bottom: 0.3rem; }
+.tiptap[data-brand="eduit"]:is([data-style-preset="academic"], [data-style-preset="semi-academic"])
+  .heading-node--h2[data-gap-after="3"] { padding-bottom: 0.6rem; }
+.tiptap[data-brand="eduit"]:is([data-style-preset="academic"], [data-style-preset="semi-academic"])
+  .heading-node--h3[data-gap-after="2"] { padding-bottom: 0.25rem; }
+.tiptap[data-brand="eduit"]:is([data-style-preset="academic"], [data-style-preset="semi-academic"])
+  .heading-node--h3[data-gap-after="3"] { padding-bottom: 0.5rem; }
+.tiptap[data-brand="eduit"]:is([data-style-preset="academic"], [data-style-preset="semi-academic"])
+  :is(.heading-node--h4, .heading-node--h5)[data-gap-after="2"] { padding-bottom: 0.2rem; }
+.tiptap[data-brand="eduit"]:is([data-style-preset="academic"], [data-style-preset="semi-academic"])
+  :is(.heading-node--h4, .heading-node--h5)[data-gap-after="3"] { padding-bottom: 0.4rem; }
+
 .tiptap:is([data-style-preset="academic"], [data-style-preset="semi-academic"]) > p,
 .tiptap:is([data-style-preset="academic"], [data-style-preset="semi-academic"]) .rich-text-node__content {
   font-size: var(--custom-block-body-font-size);

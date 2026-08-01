@@ -32,6 +32,15 @@ export type CustomBlockDefinition = {
 
 export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
   {
+    type: 'learningCards',
+    label: 'Learning cards',
+    description: 'Print-ready DIN A8 cards in exclusive 3 × 3 duplex sheets.',
+    category: 'Layout',
+    keywords: ['learning', 'cards', 'flashcards', 'a8', 'duplex', 'print'],
+    Icon: Grid01,
+    insert: (editor) => editor.chain().focus().insertLearningCards().run(),
+  },
+  {
     type: 'pageBreak',
     label: 'Page break',
     description: 'Continue the following content on a new page.',

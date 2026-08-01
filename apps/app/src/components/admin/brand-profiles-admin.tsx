@@ -56,6 +56,8 @@ const EMPTY_PROFILE: BrandProfileInput = {
   fixedHeadingNumberWidth: false,
   contentIndentation: false,
   dateFormat: 'dd.MM.yyyy',
+  footer1Html: '',
+  footer2Html: '',
   isDefault: false,
   isActive: true,
 };
@@ -876,6 +878,32 @@ export function BrandProfilesAdmin() {
               <select id="date-format" className={FIELD_CLASS} value={draft.dateFormat} onChange={(event) => update('dateFormat', event.target.value as BrandProfileInput['dateFormat'])}>
                 {DATE_FORMATS.map((format) => <option key={format} value={format}>{format}</option>)}
               </select>
+            </div>
+            <div className="col-span-2 border-t border-secondary pt-5">
+              <h3 className="text-sm font-semibold">Footer</h3>
+              <p className="mt-1 text-xs text-quaternary">
+                HTML is supported. These fields replace the profile and creator lines.
+              </p>
+            </div>
+            <div>
+              <label className={LABEL_CLASS} htmlFor="footer-1-html">Footer 1</label>
+              <textarea
+                id="footer-1-html"
+                className={`${FIELD_CLASS} min-h-24 font-mono`}
+                value={draft.footer1Html}
+                onChange={(event) => update('footer1Html', event.target.value)}
+                placeholder="<strong>Organisation</strong>"
+              />
+            </div>
+            <div>
+              <label className={LABEL_CLASS} htmlFor="footer-2-html">Footer 2</label>
+              <textarea
+                id="footer-2-html"
+                className={`${FIELD_CLASS} min-h-24 font-mono`}
+                value={draft.footer2Html}
+                onChange={(event) => update('footer2Html', event.target.value)}
+                placeholder="Author or department"
+              />
             </div>
             <div className="col-span-2 flex flex-wrap gap-6 border-t border-secondary pt-5">
               <label className="flex items-center gap-2 text-sm font-medium">

@@ -10,9 +10,11 @@
     "dev": "npm run dev --workspace=@eduit/app",
     "dev:app": "npm run dev --workspace=@eduit/app",
     "dev:marketing": "npm run dev --workspace=@eduit/marketing",
+    "dev:dazit": "npm run dev --workspace=@eduit/dazit",
     "build": "npm run build --workspaces --if-present",
     "build:app": "npm run build --workspace=@eduit/app",
     "build:marketing": "npm run build --workspace=@eduit/marketing",
+    "build:dazit": "npm run build --workspace=@eduit/dazit",
     "lint": "npm run lint --workspaces --if-present"
   }
 }

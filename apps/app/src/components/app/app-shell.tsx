@@ -15,7 +15,7 @@ import { useI18n } from '@/components/i18n/locale-provider';
 import { EduitLogo } from '@eduit/ui';
 
 type AppShellProps = {
-  active: 'documents' | 'brands';
+  active: 'documents' | 'brands' | 'automations';
   title: string;
   isAdmin?: boolean;
   userRole?: string;
@@ -25,6 +25,7 @@ type AppShellProps = {
 const WORKSPACE_ITEMS = [
   { id: 'dashboard', labelKey: 'navigation.dashboard', Icon: Grid01, href: '/' },
   { id: 'documents', labelKey: 'navigation.documents', Icon: File02, href: '/documents' },
+  { id: 'automations', labelKey: 'navigation.automations', Icon: Grid01, href: '/automations' },
   { id: 'lessons', labelKey: 'navigation.lessons', Icon: GraduationHat01, href: '#' },
   { id: 'media', labelKey: 'navigation.media', Icon: Image01, href: '#' },
   { id: 'settings', labelKey: 'navigation.settings', Icon: Settings01, href: '/account' },
@@ -45,6 +46,8 @@ export function AppShell({
     : WORKSPACE_ITEMS;
   const translatedTitle = active === 'documents'
     ? t('navigation.documents')
+    : active === 'automations'
+      ? t('navigation.automations')
     : active === 'brands'
       ? t('navigation.brandProfiles')
       : title;

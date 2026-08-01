@@ -7,6 +7,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react';
+import { htmlToInlineFormatting } from './inline-formatting';
 
 function escapeHtml(value: string) {
   return value
@@ -17,8 +18,16 @@ function escapeHtml(value: string) {
 }
 
 function markupToHtml(value: string) {
-  return escapeHtml(value)
+  return escapeHtml(htmlToInlineFormatting(value))
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(
+      /\[\[card-answer\]\]([\s\S]*?)\[\[\/card-answer\]\]/g,
+      '<div data-card-answer>$1</div>',
+    )
+    .replace(
+      /\[\[verb-exception\]\]([\s\S]*?)\[\[\/verb-exception\]\]/g,
+      '<strong data-verb-exception>$1</strong>',
+    )
     .replaceAll('\n', '<br>');
 }
 
@@ -39,9 +48,13 @@ function serializeNodes(nodes: Node[]) {
     const isBlock = node.tagName === 'DIV' || node.tagName === 'P';
     if (isBlock && value && !value.endsWith('\n')) value += '\n';
     const content = serializeNodes(Array.from(node.childNodes));
-    value += node.tagName === 'STRONG' || node.tagName === 'B'
-      ? (content ? `**${content}**` : '')
-      : content;
+    value += node.hasAttribute('data-card-answer')
+      ? `[[card-answer]]${content}[[/card-answer]]`
+      : node.hasAttribute('data-verb-exception')
+        ? `[[verb-exception]]${content}[[/verb-exception]]`
+      : node.tagName === 'STRONG' || node.tagName === 'B'
+        ? (content ? `**${content}**` : '')
+        : content;
     if (
       isBlock
       && index < nodes.length - 1

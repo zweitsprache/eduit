@@ -51,6 +51,9 @@ export default function HomePage() {
           >
             {t('home.manageBrands')}
           </Button>
+          <Button color="secondary" size="xl" onPress={() => { window.location.href = '/automations'; }}>
+            Automationen
+          </Button>
           <Button
             color="secondary"
             size="xl"

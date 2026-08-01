@@ -37,7 +37,7 @@ import {
   WandSparkles,
 } from 'lucide-react';
 import { Button } from '@/components/base/buttons/button';
-import { SearchSelect } from '@/components/base/select/select';
+import { SearchSelect, Select } from '@/components/base/select/select';
 import { Toggle } from '@/components/base/toggle/toggle';
 import { cx } from '@/utils/cx';
 import { SidebarAccountCard } from '@/components/app/sidebar-account-card';
@@ -72,6 +72,7 @@ import {
   type MatchingPairsAttrs,
 } from '@/components/editor/matching-pairs-node';
 import {
+  DEFAULT_TIME_MATCHING_ATTRS,
   TimeMatching,
   type TimeMatchingAttrs,
 } from '@/components/editor/time-matching-node';
@@ -95,7 +96,10 @@ import {
   FamilyKinship,
 } from '@/components/editor/family-kinship-node';
 import {
+  DEFAULT_GERMAN_VERB_TABLE_ATTRS,
   GermanVerbTable,
+  type GermanVerbTableAttrs,
+  type GermanVerbTableForms,
 } from '@/components/editor/german-verb-table-node';
 import {
   OccupationPortrait,
@@ -130,8 +134,14 @@ import {
   type SuccessCriterion,
 } from '@/components/editor/learning-objective-node';
 import {
+  DEFAULT_LEARNING_CARDS_ATTRS,
+  LearningCards,
+} from '@/components/editor/learning-cards-node';
+import { LearningCardsAIModal } from '@/components/editor/learning-cards-ai-modal';
+import {
   CustomHeading,
   type CustomHeadingAttrs,
+  type CustomHeadingGapAfter,
   type CustomHeadingLevel,
 } from '@/components/editor/heading-node';
 import {
@@ -270,6 +280,12 @@ import {
 const STORAGE_KEY = 'eduit-editor-content';
 const BRAND_PROFILES_UPDATED_KEY = 'eduit-brand-profiles-updated';
 const BRAND_PROFILES_UPDATED_EVENT = 'eduit:brand-profiles-updated';
+const ADDITIONAL_WORKSHEET_LEVELS = [
+  'A1.1', 'A1.2', 'A2.1', 'A2.2', 'B1.1', 'B1.2',
+] as const;
+const ADDITIONAL_WORKSHEET_PHASES = [
+  'beginning', 'middle', 'towards-end', 'completed',
+] as const;
 
 function plainTextToRichTextHtml(value: string) {
   const escapeHtml = (text: string) => text
@@ -286,6 +302,54 @@ function plainTextToRichTextHtml(value: string) {
       `<p>${escapeHtml(paragraph.trim()).replaceAll('\n', '<br>')}</p>`
     ))
     .join('');
+}
+
+function escapeAttribute(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+function generatedHeadingHtml(title: string) {
+  return `<div data-heading-text="${escapeAttribute(title)}" data-heading-level="1" data-heading-numbered="false" data-heading-gap-after="2" data-type="custom-heading"></div>`;
+}
+
+function generatedWordGridHtml(
+  words: string[],
+  showWordList: boolean,
+  generation: number,
+) {
+  const longestWord = Math.max(...words.map((word) => Array.from(word).length));
+  const size = Math.min(20, Math.max(10, longestWord, Math.ceil(Math.sqrt(
+    words.reduce((total, word) => total + Array.from(word).length, 0) * 2,
+  ))));
+  const attrs: WordGridAttrs = {
+    instruction: 'Finden Sie die Verben im Wortgitter.',
+    columns: size,
+    rows: size,
+    rowHeight: 1,
+    showWordList,
+    showFirstAsExample: false,
+    directions: {
+      leftToRight: true,
+      rightToLeft: false,
+      topToBottom: true,
+      bottomToTop: false,
+      northWestToSouthEast: false,
+      southWestToNorthEast: false,
+      northEastToSouthWest: false,
+      southEastToNorthWest: false,
+    },
+    words,
+    generation,
+  };
+  return `<div data-type="word-grid" data-word-grid-attrs="${encodeURIComponent(JSON.stringify(attrs))}"></div>`;
+}
+
+function generatedFillInTheBlankHtml(sentences: string[]) {
+  return `<div data-block-instruction="Schreiben Sie die korrekte Verbform in die Lücke." data-fill-blank-title="" data-fill-blank-text="${escapeAttribute(sentences.join('\n'))}" data-fill-blank-distractors="[]" data-fill-blank-width-factor="1" data-fill-blank-hide-numbers="false" data-fill-blank-hide-item-numbers="false" data-fill-blank-show-line-numbers="false" data-fill-blank-show-word-bank="false" data-fill-blank-show-first-example="false" data-type="fill-in-the-blank"></div>`;
 }
 
 const SelectablePageBreak = PageBreak.extend({
@@ -308,6 +372,8 @@ const SelectablePageBreak = PageBreak.extend({
 const DOCUMENT_HEADER = '<p></p>';
 const DOCUMENT_CREATOR = 'Creator name';
 const DOCUMENT_ID = 'Document ID';
+const FOOTER_BLOCK_TAG_PATTERN =
+  /<\/?(?:address|article|aside|blockquote|div|footer|h[1-6]|header|li|main|nav|ol|p|section|table|tbody|td|tfoot|th|thead|tr|ul)(?:\s[^>]*)?>/gi;
 const CUSTOM_BLOCK_TYPES = new Set(
   CUSTOM_BLOCK_REGISTRY.map(({ type }) => type),
 );
@@ -322,6 +388,7 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'glossaryTerms',
   'frayerModel',
   'learningObjective',
+  'learningCards',
   'dialogue',
   'rewriteSentences',
   'sortingCategories',
@@ -423,11 +490,21 @@ async function inlinePrivateMediaImages(root: HTMLElement) {
   }));
 }
 
-async function generateWorksheetPreview(editor: Editor, worksheetId: string) {
-  if (editor.isDestroyed) return;
+async function generateWorksheetPreview(
+  editor: Editor,
+  worksheetId: string,
+  requireSuccess = false,
+) {
+  if (editor.isDestroyed) {
+    if (requireSuccess) throw new Error('Worksheet editor is unavailable.');
+    return;
+  }
   const editorElement = editor.view.dom;
   const sourceWidth = Math.ceil(editorElement.getBoundingClientRect().width);
-  if (sourceWidth < 300) return;
+  if (sourceWidth < 300) {
+    if (requireSuccess) throw new Error('Worksheet preview is not ready yet.');
+    return;
+  }
   const clone = editorElement.cloneNode(true) as HTMLElement;
   clone.removeAttribute('contenteditable');
   clone.classList.remove('ProseMirror-focused');
@@ -447,7 +524,7 @@ async function generateWorksheetPreview(editor: Editor, worksheetId: string) {
     (element) => element.remove(),
   );
   await inlinePrivateMediaImages(clone);
-  await fetch('/api/worksheets/preview', {
+  const response = await fetch('/api/worksheets/preview', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -457,6 +534,10 @@ async function generateWorksheetPreview(editor: Editor, worksheetId: string) {
       sourceWidth,
     }),
   });
+  if (requireSuccess && !response.ok) {
+    const result = await response.json().catch(() => null) as { error?: string } | null;
+    throw new Error(result?.error ?? 'Worksheet preview generation failed.');
+  }
 }
 
 const DEFAULT_DOCUMENT_BRAND = {
@@ -489,11 +570,30 @@ const DEFAULT_DOCUMENT_BRAND = {
   dateFormat: ACTIVE_CUSTOM_BLOCK_BRAND.dateFormat,
 };
 
-function documentFooter(brand: Pick<BrandProfile, 'dateFormat' | 'name'>) {
+function inlineFooterHtml(value: string) {
+  return value
+    .replace(/<(script|style|iframe|object|embed)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '')
+    .replace(FOOTER_BLOCK_TAG_PATTERN, (tag) => (
+      tag.startsWith('</') ? '<br>' : ''
+    ))
+    .replace(/(?:<br\s*\/?>\s*)+$/gi, '')
+    .replace(/^(?:\s*<br\s*\/?>)+/gi, '');
+}
+
+function documentFooter(
+  brand: Pick<BrandProfile, 'dateFormat' | 'name'> & Partial<
+    Pick<BrandProfile, 'footer1Html' | 'footer2Html'>
+  >,
+  worksheetId?: string | null,
+) {
+  const footer1 = inlineFooterHtml(brand.footer1Html ?? brand.name);
+  const footer2 = inlineFooterHtml(
+    brand.footer2Html ?? DOCUMENT_CREATOR,
+  );
   return [
-    `<p>${brand.name}<br>${DOCUMENT_CREATOR}</p>`,
+    `<p>${footer1}<br>${footer2}</p>`,
     '<p>{page}/{total}</p>',
-    `<p>${DOCUMENT_ID}<br>${formatBrandDate(new Date(), brand.dateFormat)}</p>`,
+    `<p>${worksheetId ?? DOCUMENT_ID}<br>${formatBrandDate(new Date(), brand.dateFormat)}</p>`,
   ].join('');
 }
 
@@ -518,10 +618,35 @@ function getCrosswordWordList(editor: Editor, pos: number) {
     .join('\n');
 }
 
-function getTimeMatchingItemCount(editor: Editor, pos: number) {
+function getTimeMatchingGenerationSettings(editor: Editor, pos: number) {
+  const defaults = {
+    leftRepresentation: DEFAULT_TIME_MATCHING_ATTRS.leftRepresentation,
+    rightRepresentation: DEFAULT_TIME_MATCHING_ATTRS.rightRepresentation,
+    allowedMinutes: DEFAULT_TIME_MATCHING_ATTRS.allowedMinutes,
+    rangeStart: DEFAULT_TIME_MATCHING_ATTRS.rangeStart,
+    rangeEnd: DEFAULT_TIME_MATCHING_ATTRS.rangeEnd,
+    count: DEFAULT_TIME_MATCHING_ATTRS.times.length,
+    shuffleLeft: DEFAULT_TIME_MATCHING_ATTRS.shuffleLeft,
+    shuffleRight: DEFAULT_TIME_MATCHING_ATTRS.shuffleRight,
+    showFirstAsExample: DEFAULT_TIME_MATCHING_ATTRS.showFirstAsExample,
+  };
+  if (pos < 0 || pos > editor.state.doc.content.size) return defaults;
   const node = editor.state.doc.nodeAt(pos);
-  if (node?.type.name !== 'timeMatching') return 6;
-  return (node.attrs as TimeMatchingAttrs).times.length || 6;
+  if (node?.type.name !== 'timeMatching') {
+    return defaults;
+  }
+  const attrs = node.attrs as TimeMatchingAttrs;
+  return {
+    leftRepresentation: attrs.leftRepresentation,
+    rightRepresentation: attrs.rightRepresentation,
+    allowedMinutes: attrs.allowedMinutes,
+    rangeStart: attrs.rangeStart,
+    rangeEnd: attrs.rangeEnd,
+    count: attrs.times.length || 6,
+    shuffleLeft: attrs.shuffleLeft,
+    shuffleRight: attrs.shuffleRight,
+    showFirstAsExample: attrs.showFirstAsExample,
+  };
 }
 
 function getDateMatchingItemCount(editor: Editor, pos: number) {
@@ -899,6 +1024,7 @@ function normalizedTableColumns(columns: WorksheetTableColumn[]) {
 const NAV_ITEMS = [
   { label: 'Dashboard', Icon: Grid01, href: '#' },
   { label: 'Documents', Icon: File02, href: '/documents', active: true },
+  { label: 'Automationen', Icon: WandSparkles, href: '/automations' },
   { label: 'Lessons', Icon: GraduationHat01, href: '#' },
   { label: 'Media', Icon: Image01, href: '#' },
   { label: 'Settings', Icon: Settings01, href: '#' },
@@ -915,8 +1041,15 @@ const documentFormat = (
   height: orientation === 'landscape' ? fmt.width : fmt.height,
   margins: {
     ...fmt.margins,
-    left: mmToPixels(25),
-    right: mmToPixels(20),
+    bottom: fmt.id === PAGE_FORMATS.A4.id && orientation === 'landscape'
+      ? mmToPixels(20)
+      : fmt.margins.bottom,
+    left: mmToPixels(
+      fmt.id === PAGE_FORMATS.A4.id && orientation === 'portrait' ? 25 : 20,
+    ),
+    right: mmToPixels(
+      fmt.id === PAGE_FORMATS.A4.id && orientation === 'portrait' ? 15 : 20,
+    ),
   },
 });
 
@@ -983,6 +1116,7 @@ export default function EditorPage() {
   const [saved, setSaved] = useState(true);
   const [docSize, setDocSize] = useState('a4-portrait');
   const [brandProfiles, setBrandProfiles] = useState<BrandProfile[]>([]);
+  const [brandProfilesLoaded, setBrandProfilesLoaded] = useState(false);
   const [brandProfileId, setBrandProfileId] = useState<string | null>(null);
   const [showSolutions, setShowSolutions] = useState(false);
   const [documentContext, setDocumentContext] = useState<WorksheetContext>({
@@ -994,11 +1128,22 @@ export default function EditorPage() {
   const [contextPdfDragActive, setContextPdfDragActive] = useState(false);
   const [contextProfiles, setContextProfiles] = useState<ContextProfile[]>([]);
   const [worksheetTitle, setWorksheetTitle] = useState('Untitled Document');
+  const [worksheetFolderId, setWorksheetFolderId] = useState<string | null>(null);
+  const [duplicatingWorksheet, setDuplicatingWorksheet] = useState(false);
+  const [additionalWorksheetDialogOpen, setAdditionalWorksheetDialogOpen] =
+    useState(false);
+  const [creatingAdditionalWorksheet, setCreatingAdditionalWorksheet] =
+    useState<'word-grid' | 'fill-in-the-blank' | null>(null);
+  const [additionalWorksheetLevel, setAdditionalWorksheetLevel] =
+    useState<typeof ADDITIONAL_WORKSHEET_LEVELS[number]>('A1.1');
+  const [additionalWorksheetPhase, setAdditionalWorksheetPhase] =
+    useState<typeof ADDITIONAL_WORKSHEET_PHASES[number]>('beginning');
   const worksheetIdRef = useRef<string | null>(
     typeof window !== 'undefined'
       ? new URLSearchParams(window.location.search).get('worksheet')
       : null,
   );
+  const [worksheetId, setWorksheetId] = useState<string | null>(null);
   const worksheetSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const worksheetTitleSaveTimerRef =
     useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1006,6 +1151,8 @@ export default function EditorPage() {
     useRef<ReturnType<typeof setTimeout> | null>(null);
   const contextSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const worksheetInitializationStartedRef = useRef(false);
+  const automationPublishStartedRef = useRef(false);
+  const automationPublishErrorRef = useRef<string | null>(null);
   const [selectedMCQPos, setSelectedMCQPos] = useState<number | null>(null);
   const [selectedMCMPos, setSelectedMCMPos] = useState<number | null>(null);
   const [selectedMCHPos, setSelectedMCHPos] = useState<number | null>(null);
@@ -1027,8 +1174,16 @@ export default function EditorPage() {
   const [selectedWorksheetTablePos, setSelectedWorksheetTablePos] = useState<number | null>(null);
   const [selectedPageBreakPos, setSelectedPageBreakPos] = useState<number | null>(null);
   const [exportingPDF, setExportingPDF] = useState(false);
+  const [publishingPDF, setPublishingPDF] = useState(false);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [dazitDocumentType, setDazitDocumentType] = useState('Arbeitsblatt');
+  const [publicationStatus, setPublicationStatus] = useState<
+    'unpublished' | 'current' | 'outdated'
+  >('unpublished');
+  const [republishScope, setRepublishScope] = useState<'pdf-only' | 'full'>('pdf-only');
   const [exportingBlockPNG, setExportingBlockPNG] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [publishSuccess, setPublishSuccess] = useState(false);
   const [blockExportError, setBlockExportError] = useState<string | null>(null);
   const [contentEditorBlock, setContentEditorBlock] =
     useState<ContentEditorBlock | null>(null);
@@ -1068,6 +1223,8 @@ export default function EditorPage() {
     useState<{ pos: number; type: 'germanVerbTable' } | null>(null);
   const [germanVerbTableAIBlock, setGermanVerbTableAIBlock] =
     useState<{ pos: number; type: 'germanVerbTable' } | null>(null);
+  const [learningCardsAIBlock, setLearningCardsAIBlock] =
+    useState<{ pos: number; type: 'learningCards' } | null>(null);
   const [richTextAIBlock, setRichTextAIBlock] =
     useState<ContentEditorBlock | null>(null);
   const [errorCorrectionAIBlock, setErrorCorrectionAIBlock] =
@@ -1111,6 +1268,7 @@ export default function EditorPage() {
       GlossaryTerms,
       FrayerModel,
       LearningObjective,
+      LearningCards,
       CustomHeading,
       Dialogue,
       RewriteSentences,
@@ -1146,6 +1304,7 @@ export default function EditorPage() {
       : '',
     onUpdate({ editor }) {
       localStorage.setItem(STORAGE_KEY, editor.getHTML());
+      setPublicationStatus((status) => status === 'current' ? 'outdated' : status);
       const worksheetId = worksheetIdRef.current;
       if (!worksheetId) {
         setSaved(true);
@@ -1419,6 +1578,56 @@ export default function EditorPage() {
         && node.attrs.restartPagination === true;
     },
   });
+
+  const containsLearningCards = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor) return false;
+      let found = false;
+      currentEditor.state.doc.forEach((node) => {
+        if (node.type.name === 'learningCards') found = true;
+      });
+      return found;
+    },
+  });
+
+  const verbTableVerbs = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      const verbs: Array<{
+        infinitive: string;
+        forms: GermanVerbTableForms;
+        separablePrefix: string;
+      }> = [];
+      currentEditor?.state.doc.descendants((node) => {
+        if (node.type.name !== 'germanVerbTable') return;
+        const attrs = node.attrs as GermanVerbTableAttrs;
+        if (attrs.tableStyle === 'multiple') {
+          attrs.multipleVerbs.forEach((verb) => {
+            if (verb.verb.trim()) verbs.push({
+              infinitive: verb.verb.trim(),
+              forms: verb.forms,
+              separablePrefix: verb.separablePrefix.trim(),
+            });
+          });
+        } else if (attrs.leftVerb.trim()) {
+          verbs.push({
+            infinitive: attrs.leftVerb.trim(),
+            forms: attrs.leftForms,
+            separablePrefix: attrs.separablePrefix.trim(),
+          });
+        }
+      });
+      return verbs.filter((verb, index) => (
+        verbs.findIndex((candidate) => (
+          candidate.infinitive.localeCompare(verb.infinitive, 'de', {
+            sensitivity: 'base',
+          }) === 0
+        )) === index
+      ));
+    },
+  });
+  const availableVerbTableVerbs = verbTableVerbs ?? [];
 
   const selectedMCMAttrs = useEditorState({
     editor,
@@ -1711,6 +1920,8 @@ export default function EditorPage() {
       );
     } catch {
       setBrandProfiles([]);
+    } finally {
+      setBrandProfilesLoaded(true);
     }
   }, []);
 
@@ -1750,6 +1961,28 @@ export default function EditorPage() {
 
   useEffect(() => {
     if (!editor) return;
+    editor.view.dom.toggleAttribute(
+      'data-learning-cards-print',
+      Boolean(containsLearningCards),
+    );
+  }, [containsLearningCards, editor]);
+
+  useEffect(() => {
+    if (!editor) return;
+    editor.view.dom.style.setProperty(
+      '--document-logo-top',
+      docSize.startsWith('a4-') ? '15mm' : '10mm',
+    );
+    if (docSize === 'a4-landscape') {
+      editor.commands.setFooterBottomMargin(mmToPixels(7.5));
+    } else {
+      editor.commands.resetFooterBottomMargin();
+    }
+  }, [docSize, editor]);
+
+  useEffect(() => {
+    if (!editor) return;
+    if (brandProfileId && !selectedBrandProfile) return;
     const editorElement = editor.view.dom;
     // Eduit supplies the structural defaults; profiles override brand tokens.
     editorElement.setAttribute('data-brand', 'eduit');
@@ -1920,11 +2153,11 @@ export default function EditorPage() {
       instructionNumberFormat: activeBrand.instructionNumberFormat,
       headingNumberFormats: activeBrand.headingNumberFormats,
     });
-    editor.commands.setFooter(documentFooter(activeBrand));
+    editor.commands.setFooter(documentFooter(activeBrand, worksheetId));
     return () => {
       measurementCancelled = true;
     };
-  }, [activeBrand, editor]);
+  }, [activeBrand, brandProfileId, editor, selectedBrandProfile, worksheetId]);
 
   useEffect(() => {
     if (!editor) return;
@@ -2064,6 +2297,7 @@ export default function EditorPage() {
             contentHtml: string;
             documentSize: string;
             brandProfileId: string | null;
+            folderId: string | null;
             showSolutions: boolean;
             context?: Partial<WorksheetContext>;
           };
@@ -2073,7 +2307,8 @@ export default function EditorPage() {
           throw new Error(result.error ?? 'Could not load worksheet.');
         }
 
-        if (!existingWorksheetId) {
+        setWorksheetId(result.worksheet.id);
+        if (!existingWorksheetId || existingWorksheetId !== result.worksheet.id) {
           worksheetIdRef.current = result.worksheet.id;
           const url = new URL(window.location.href);
           url.searchParams.set('worksheet', result.worksheet.id);
@@ -2083,6 +2318,7 @@ export default function EditorPage() {
         setWorksheetTitle(result.worksheet.title);
         setDocSize(result.worksheet.documentSize);
         setBrandProfileId(result.worksheet.brandProfileId);
+        setWorksheetFolderId(result.worksheet.folderId);
         setShowSolutions(result.worksheet.showSolutions);
         setDocumentContext({
           ...EMPTY_WORKSHEET_CONTEXT,
@@ -2094,6 +2330,17 @@ export default function EditorPage() {
         const size = DOC_SIZES.find(({ id }) => id === result.worksheet?.documentSize);
         if (size) editor.commands.setPageFormat(size.format());
         setSaved(true);
+        const publicationResponse = await fetch(
+          `/api/dazit/status?worksheetId=${encodeURIComponent(result.worksheet.id)}`,
+        );
+        if (publicationResponse.ok) {
+          const publicationResult = await publicationResponse.json() as {
+            status?: 'unpublished' | 'current' | 'outdated';
+          };
+          if (publicationResult.status) {
+            setPublicationStatus(publicationResult.status);
+          }
+        }
       } catch (loadError) {
         worksheetInitializationStartedRef.current = false;
         setExportError(loadError instanceof Error
@@ -2132,6 +2379,65 @@ export default function EditorPage() {
       }
     };
   }, [brandProfileId, docSize, editor, showSolutions]);
+
+  useEffect(() => {
+    const automationMode = typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('automation');
+    if (
+      (automationMode !== 'batch-publish' && automationMode !== 'batch-preview')
+      || automationPublishStartedRef.current
+      || !editor
+      || !worksheetId
+      || !saved
+      || !brandProfilesLoaded
+      || publishingPDF
+    ) return;
+    automationPublishStartedRef.current = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        await generateWorksheetPreview(editor, worksheetId, true);
+      } catch (error) {
+        const message = error instanceof Error
+          ? error.message
+          : 'Worksheet preview generation failed.';
+        setExportError(message);
+        if (window.parent !== window) {
+          window.parent.postMessage({ type: 'eduit-automation-item-complete', worksheetId, success: false, error: message }, window.location.origin);
+        }
+        automationPublishStartedRef.current = false;
+        return;
+      }
+      if (automationMode === 'batch-publish') {
+        const published = await publishPDF();
+        if (!published) {
+          if (window.parent !== window) {
+            window.parent.postMessage({
+              type: 'eduit-automation-item-complete',
+              worksheetId,
+              success: false,
+              error: automationPublishErrorRef.current || 'Dazit publishing failed.',
+            }, window.location.origin);
+          }
+          automationPublishStartedRef.current = false;
+          return;
+        }
+      }
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: 'eduit-automation-item-complete', worksheetId, success: true }, window.location.origin);
+        return;
+      }
+      const queue = JSON.parse(
+        sessionStorage.getItem('eduit-automation-publish-queue') || '[]',
+      ) as string[];
+      const remaining = queue.filter((id) => id !== worksheetId);
+      sessionStorage.setItem('eduit-automation-publish-queue', JSON.stringify(remaining));
+      window.location.href = remaining.length
+        ? `/editor?worksheet=${encodeURIComponent(remaining[0])}&automation=${automationMode}`
+        : '/automations?completed=1';
+    }, 1800);
+    return () => window.clearTimeout(timer);
+  }, [brandProfilesLoaded, editor, publishingPDF, saved, worksheetId]);
 
   if (!editor) return null;
 
@@ -2855,10 +3161,12 @@ export default function EditorPage() {
   };
 
   const handleDocSize = (id: string) => {
+    setPublicationStatus((status) => status === 'current' ? 'outdated' : status);
     setDocSize(id);
     const size = DOC_SIZES.find((s) => s.id === id);
     if (size) editor.commands.setPageFormat(size.format());
     if (worksheetIdRef.current) {
+      setSaved(false);
       void fetch('/api/worksheets', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -2866,11 +3174,12 @@ export default function EditorPage() {
           id: worksheetIdRef.current,
           worksheet: { documentSize: id },
         }),
-      });
+      }).then((response) => setSaved(response.ok)).catch(() => setSaved(false));
     }
   };
 
   const handleWorksheetTitleChange = (value: string) => {
+    setPublicationStatus((status) => status === 'current' ? 'outdated' : status);
     setWorksheetTitle(value);
     const worksheetId = worksheetIdRef.current;
     if (!worksheetId) return;
@@ -2900,6 +3209,7 @@ export default function EditorPage() {
   };
 
   const updateDocumentContext = (patch: Partial<WorksheetContext>) => {
+    setPublicationStatus((status) => status === 'current' ? 'outdated' : status);
     setDocumentContext((current) => {
       const next = { ...current, ...patch };
       const worksheetId = worksheetIdRef.current;
@@ -3059,6 +3369,7 @@ export default function EditorPage() {
   };
 
   const handleBrandProfile = async (id: string) => {
+    setPublicationStatus((status) => status === 'current' ? 'outdated' : status);
     const previousBrandProfileId = brandProfileId;
     const nextBrandProfileId = id || null;
     setBrandProfileId(nextBrandProfileId);
@@ -3075,15 +3386,20 @@ export default function EditorPage() {
           worksheet: { brandProfileId: nextBrandProfileId },
         }),
       });
-      if (!response.ok) throw new Error('Could not save brand profile.');
+      if (!response.ok) {
+        const result = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(result?.error ?? 'Could not save brand profile.');
+      }
       setSaved(true);
-    } catch {
+    } catch (error) {
       setBrandProfileId(previousBrandProfileId);
       setSaved(false);
+      setExportError(error instanceof Error ? error.message : 'Could not save brand profile.');
     }
   };
 
   const handleShowSolutions = async (value: boolean) => {
+    setPublicationStatus((status) => status === 'current' ? 'outdated' : status);
     const previousValue = showSolutions;
     setShowSolutions(value);
     const worksheetId = worksheetIdRef.current;
@@ -3141,13 +3457,10 @@ export default function EditorPage() {
       .run();
   };
 
-  const exportPDF = async () => {
+  const renderPDF = async () => {
     const editorElement = document.querySelector<HTMLElement>('.editor-content .tiptap');
     const appElement = document.querySelector<HTMLElement>('.editor-app');
-    if (!editorElement || !appElement) return;
-
-    setExportingPDF(true);
-    setExportError(null);
+    if (!editorElement || !appElement) throw new Error('The worksheet is not ready.');
     appElement.classList.add('pdf-exporting');
 
     try {
@@ -3178,21 +3491,37 @@ export default function EditorPage() {
         '.rich-text-node__selection-fragment',
       ).forEach((element) => element.remove());
       await inlinePrivateMediaImages(exportContent);
+      const pageCount = Math.max(
+        1,
+        exportContent.querySelectorAll('.tiptap-page-footer').length,
+      );
+      const exportPayload = {
+        content: exportContent.outerHTML,
+        head,
+        docSize,
+        pageCount,
+      };
       const response = await fetch('/api/export/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: exportContent.outerHTML,
-          head,
-          docSize,
-        }),
+        body: JSON.stringify(exportPayload),
       });
       if (!response.ok) {
         const result = await response.json().catch(() => null) as { error?: string } | null;
         throw new Error(result?.error ?? 'PDF export failed.');
       }
 
-      const blob = await response.blob();
+      return { pdf: await response.blob(), exportPayload };
+    } finally {
+      appElement.classList.remove('pdf-exporting');
+    }
+  };
+
+  const exportPDF = async () => {
+    setExportingPDF(true);
+    setExportError(null);
+    try {
+      const { pdf: blob } = await renderPDF();
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
@@ -3204,8 +3533,96 @@ export default function EditorPage() {
     } catch (error) {
       setExportError(error instanceof Error ? error.message : 'PDF export failed.');
     } finally {
-      appElement.classList.remove('pdf-exporting');
       setExportingPDF(false);
+    }
+  };
+
+  const publishPDF = async () => {
+    const id = worksheetIdRef.current;
+    if (!id || publishingPDF) return false;
+    setPublishingPDF(true);
+    automationPublishErrorRef.current = null;
+    setExportError(null);
+    setPublishSuccess(false);
+    try {
+      const { pdf, exportPayload } = await renderPDF();
+      const thumbnailResponse = await fetch('/api/export/thumbnails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(exportPayload),
+      });
+      const thumbnailResult = await thumbnailResponse.json().catch(() => null) as {
+        error?: string;
+        thumbnails?: string[];
+      } | null;
+      if (!thumbnailResponse.ok || !thumbnailResult?.thumbnails?.length) {
+        throw new Error(thumbnailResult?.error ?? 'Thumbnail generation failed.');
+      }
+      const slugBase = worksheetTitle.trim()
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/gi, '-')
+        .replace(/^-|-$/g, '')
+        .toLowerCase() || 'worksheet';
+      const rawLanguage = documentContext.contentLanguage
+        || documentContext.worksheetLanguage
+        || 'German';
+      const language = /fr/i.test(rawLanguage) ? 'French'
+        : /it/i.test(rawLanguage) ? 'Italian'
+          : /en/i.test(rawLanguage) ? 'English'
+            : 'German';
+      const level = documentContext.languageLevel || documentContext.localLevel || 'Basic';
+      const difficulty = /c1|c2|advanced/i.test(level) ? 'Advanced'
+        : /b1|b2|intermediate/i.test(level) ? 'Intermediate'
+          : 'Basic';
+      const subject = documentContext.customSubject || documentContext.subject || 'Language';
+      const metadata = {
+        worksheetId: id,
+        slug: `${slugBase}-${id.slice(0, 8)}`,
+        title: worksheetTitle.trim() || 'Untitled Worksheet',
+        description: documentContext.learnerContext
+          || 'Druckfertiges Arbeitsblatt für den Unterricht.',
+        subject,
+        grade: documentContext.learnerStage || level,
+        documentType: containsLearningCards ? 'Lernkarten' : dazitDocumentType,
+        pages: exportPayload.pageCount,
+        language,
+        difficulty,
+        hasAnswerKey: showSolutions,
+        tags: [subject, language, level].filter(Boolean),
+      };
+      const formData = new FormData();
+      formData.set('pdf', pdf, `${metadata.slug}.pdf`);
+      formData.set(
+        'mode',
+        publicationStatus === 'unpublished' ? 'full' : republishScope,
+      );
+      thumbnailResult.thumbnails.forEach((base64, index) => {
+        const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
+        formData.append(
+          'thumbnails',
+          new Blob([bytes], { type: 'image/webp' }),
+          `page-${index + 1}.webp`,
+        );
+      });
+      formData.set('metadata', JSON.stringify(metadata));
+      const response = await fetch('/api/dazit/publish', { method: 'POST', body: formData });
+      const result = await response.json().catch(() => null) as {
+        error?: string;
+        publicationStatus?: 'current' | 'outdated';
+      } | null;
+      if (!response.ok) throw new Error(result?.error ?? 'Publishing failed.');
+      setExportError('Published to Dazit.');
+      setPublishSuccess(true);
+      setPublicationStatus(result?.publicationStatus ?? 'current');
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Publishing failed.';
+      automationPublishErrorRef.current = message;
+      setExportError(message);
+      return false;
+    } finally {
+      setPublishingPDF(false);
     }
   };
 
@@ -3284,6 +3701,154 @@ export default function EditorPage() {
     }
   };
 
+  const duplicateCurrentWorksheet = async () => {
+    if (!worksheetIdRef.current || duplicatingWorksheet) return;
+    setDuplicatingWorksheet(true);
+    setExportError(null);
+    try {
+      const response = await fetch('/api/worksheets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: t('documents.copyTitle', { title: worksheetTitle }),
+          contentHtml: editor.getHTML(),
+          documentSize: docSize,
+          showSolutions,
+          context: documentContext,
+          status: 'draft',
+          brandProfileId,
+          folderId: worksheetFolderId,
+        }),
+      });
+      const result = await response.json() as {
+        worksheet?: { id: string };
+        error?: string;
+      };
+      if (!response.ok || !result.worksheet) {
+        throw new Error(result.error ?? t('documents.duplicateError'));
+      }
+      window.location.href =
+        `/editor?worksheet=${encodeURIComponent(result.worksheet.id)}`;
+    } catch (error) {
+      setExportError(error instanceof Error
+        ? error.message
+        : t('documents.duplicateError'));
+      setDuplicatingWorksheet(false);
+    }
+  };
+
+  const createAdditionalWorksheet = async (
+    kind: 'word-grid' | 'fill-in-the-blank',
+  ) => {
+    if (!availableVerbTableVerbs.length || creatingAdditionalWorksheet) return;
+    setCreatingAdditionalWorksheet(kind);
+    setExportError(null);
+    try {
+      let contentHtml: string;
+      if (kind === 'word-grid') {
+        const words = availableVerbTableVerbs.map(({ infinitive }) => infinitive);
+        const generation = Date.now();
+        contentHtml = [
+          generatedHeadingHtml(worksheetTitle),
+          generatedWordGridHtml(words, true, generation),
+          '<div data-restart-pagination="true" data-type="pageBreak"></div>',
+          generatedHeadingHtml(worksheetTitle),
+          generatedWordGridHtml(words, false, generation),
+        ].join('');
+      } else {
+        const generationResponse = await fetch(
+          '/api/ai/verb-conjugation-worksheet',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: worksheetTitle,
+              context: documentContext,
+              level: additionalWorksheetLevel,
+              phase: additionalWorksheetPhase,
+              verbs: availableVerbTableVerbs.map(({
+                infinitive,
+                forms,
+                separablePrefix,
+              }) => ({
+                infinitive,
+                separablePrefix,
+                forms: {
+                  ich: forms.ich,
+                  du: forms.du,
+                  formalSingular: forms.formalSingular,
+                  thirdSingular: forms.thirdSingular,
+                  wir: forms.wir,
+                  ihr: forms.ihr,
+                  formalPlural: forms.formalPlural,
+                  thirdPlural: forms.thirdPlural,
+                },
+              })),
+            }),
+          },
+        );
+        const generationResult = await generationResponse.json() as {
+          sentences?: string[];
+          error?: string;
+        };
+        if (!generationResponse.ok || !generationResult.sentences?.length) {
+          throw new Error(generationResult.error ?? 'Konjugationsübung konnte nicht erstellt werden.');
+        }
+        contentHtml = [
+          generatedHeadingHtml(worksheetTitle),
+          generatedFillInTheBlankHtml(generationResult.sentences),
+        ].join('');
+      }
+
+      const response = await fetch('/api/worksheets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: worksheetTitle,
+          contentHtml,
+          documentSize: 'a4-portrait',
+          showSolutions: false,
+          context: documentContext,
+          status: 'draft',
+          brandProfileId,
+          folderId: worksheetFolderId,
+        }),
+      });
+      const result = await response.json() as {
+        worksheet?: { id: string };
+        error?: string;
+      };
+      if (!response.ok || !result.worksheet) {
+        throw new Error(result.error ?? 'Zusätzliches Arbeitsblatt konnte nicht erstellt werden.');
+      }
+      const relationshipResponse = await fetch('/api/worksheet-relationships', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceWorksheetId: worksheetIdRef.current,
+          relatedWorksheetId: result.worksheet.id,
+          relationshipType: kind === 'word-grid'
+            ? 'word_grid_from_verb_table'
+            : 'conjugation_exercise_from_verb_table',
+        }),
+      });
+      const relationshipResult = await relationshipResponse.json().catch(() => null) as {
+        error?: string;
+      } | null;
+      if (!relationshipResponse.ok) {
+        throw new Error(
+          relationshipResult?.error ?? 'Die Arbeitsblatt-Verknüpfung konnte nicht gespeichert werden.',
+        );
+      }
+      window.location.href = `/editor?worksheet=${encodeURIComponent(result.worksheet.id)}`;
+    } catch (error) {
+      setExportError(error instanceof Error
+        ? error.message
+        : 'Zusätzliches Arbeitsblatt konnte nicht erstellt werden.');
+      setCreatingAdditionalWorksheet(null);
+    }
+  };
+
   return (
     <div className="editor-app flex h-screen flex-col overflow-hidden bg-secondary text-primary">
 
@@ -3322,6 +3887,19 @@ export default function EditorPage() {
           <Button
             color="secondary"
             size="md"
+            isDisabled={!worksheetId || duplicatingWorksheet}
+            iconLeading={duplicatingWorksheet
+              ? <Loading01 className="size-4.5 animate-spin" />
+              : <Copy01 className="size-4.5" />}
+            onPress={() => void duplicateCurrentWorksheet()}
+          >
+            {duplicatingWorksheet
+              ? `${t('documents.duplicate')}…`
+              : t('documents.duplicate')}
+          </Button>
+          <Button
+            color="secondary"
+            size="md"
             isDisabled={exportingPDF}
             iconLeading={exportingPDF
               ? <Loading01 className="size-4.5 animate-spin" />
@@ -3330,7 +3908,35 @@ export default function EditorPage() {
           >
             {exportingPDF ? t('editor.exporting') : t('editor.exportPdf')}
           </Button>
-          <Button color="primary" size="md">{t('editor.publish')}</Button>
+          <Button
+            color="primary"
+            size="md"
+            isDisabled={
+              publishingPDF
+              || exportingPDF
+              || !saved
+              || !worksheetId
+              || !currentUserRole?.split(',').map((role) => role.trim()).includes('admin')
+            }
+            iconLeading={publishingPDF ? <Loading01 className="size-4.5 animate-spin" /> : undefined}
+            onPress={() => {
+              let containsLearningCards = false;
+              editor?.state.doc.descendants((node) => {
+                if (node.type.name === 'learningCards') containsLearningCards = true;
+              });
+              if (containsLearningCards) setDazitDocumentType('Lernkarten');
+              setRepublishScope(
+                publicationStatus === 'unpublished' ? 'full' : 'pdf-only',
+              );
+              setPublishDialogOpen(true);
+            }}
+          >
+            {publishingPDF
+              ? 'Publishing…'
+              : publicationStatus === 'outdated'
+                ? 'Republish'
+                : t('editor.publish')}
+          </Button>
         </div>
       </header>
 
@@ -3425,8 +4031,26 @@ export default function EditorPage() {
         {/* Right sidebar (sticky) */}
         <aside className="editor-right-sidebar hidden w-72 shrink-0 flex-col gap-5 overflow-y-auto border-l border-secondary bg-primary p-5 lg:flex">
           {exportError && (
-            <div role="alert" className="rounded-lg border border-error-primary bg-error-primary p-3 text-xs text-error-primary">
+            <div
+              role={publishSuccess ? 'status' : 'alert'}
+              className={cx(
+                'rounded-lg border p-3 text-xs',
+                publishSuccess
+                  ? 'border-success-primary bg-success-primary text-success-primary'
+                  : 'border-error-primary bg-error-primary text-error-primary',
+              )}
+            >
               {exportError}
+            </div>
+          )}
+          {publicationStatus === 'outdated' && (
+            <div
+              role="status"
+              className="rounded-lg border border-warning-primary bg-warning-primary p-3 text-xs text-warning-primary"
+            >
+              Dieses Arbeitsblatt wurde seit der Veröffentlichung geändert.
+              Veröffentlichen Sie es erneut, um die PDF-Version in der
+              Dazit-Bibliothek zu aktualisieren.
             </div>
           )}
 
@@ -3503,6 +4127,7 @@ export default function EditorPage() {
                 || selectedCustomBlock.type === 'twoWayPrepositions'
                 || selectedCustomBlock.type === 'weather'
                 || selectedCustomBlock.type === 'colorFurniture'
+                || selectedCustomBlock.type === 'learningCards'
                 || selectedCustomBlock.type === 'germanVerbTable') && (
                 <button
                   type="button"
@@ -3576,6 +4201,11 @@ export default function EditorPage() {
                       setGermanVerbTableAIBlock({
                         pos: selectedCustomBlock.pos,
                         type: 'germanVerbTable',
+                      });
+                    } else if (selectedCustomBlock.type === 'learningCards') {
+                      setLearningCardsAIBlock({
+                        pos: selectedCustomBlock.pos,
+                        type: 'learningCards',
                       });
                     } else {
                       setRichTextAIBlock({
@@ -5940,6 +6570,25 @@ export default function EditorPage() {
                 ))}
               </select>
 
+              <label htmlFor="custom-heading-gap-after" className="mt-4 block text-xs font-semibold text-tertiary">
+                Gap after
+              </label>
+              <select
+                id="custom-heading-gap-after"
+                value={selectedCustomHeadingAttrs.gapAfter}
+                onChange={(event) => setCustomHeadingAttr(
+                  editor,
+                  selectedCustomHeadingPos,
+                  'gapAfter',
+                  Number(event.target.value) as CustomHeadingGapAfter,
+                )}
+                className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-medium text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
+              >
+                <option value={1}>1×</option>
+                <option value={2}>2×</option>
+                <option value={3}>3×</option>
+              </select>
+
               <div className="mt-4 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold text-tertiary">Numbered</p>
@@ -7001,13 +7650,18 @@ export default function EditorPage() {
             </label>
             <select
               id="doc-brand"
+              disabled={!brandProfilesLoaded}
               value={brandProfileId ?? ''}
               onChange={(event) => {
                 void handleBrandProfile(event.target.value);
               }}
               className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-medium text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
             >
-              <option value="">Default brand (Eduit)</option>
+              <option value="">{brandProfilesLoaded ? 'Default brand (Eduit)' : 'Loading brand…'}</option>
+              {brandProfilesLoaded && brandProfileId
+                && !brandProfiles.some(({ id }) => id === brandProfileId) && (
+                <option value={brandProfileId}>Saved brand unavailable</option>
+              )}
               {brandProfiles.map((brand) => (
                 <option key={brand.id} value={brand.id}>
                   {brand.name}{brand.isDefault ? ' · Default' : ''}
@@ -7042,6 +7696,40 @@ export default function EditorPage() {
           <div className="border-t border-secondary pt-5">
             <p className="text-xs font-semibold text-quaternary">Actions</p>
             <div className="mt-3 flex flex-col gap-2">
+              {availableVerbTableVerbs.length > 0 && (
+                <Button
+                  color="primary"
+                  size="md"
+                  iconLeading={<PlusSquare className="size-4.5" />}
+                  onPress={() => {
+                    if (ADDITIONAL_WORKSHEET_LEVELS.includes(
+                      documentContext.languageLevel as typeof ADDITIONAL_WORKSHEET_LEVELS[number],
+                    )) {
+                      setAdditionalWorksheetLevel(
+                        documentContext.languageLevel as typeof ADDITIONAL_WORKSHEET_LEVELS[number],
+                      );
+                    }
+                    const normalizedProgression = documentContext.languageLevel
+                      .toLocaleLowerCase();
+                    setAdditionalWorksheetPhase(
+                      normalizedProgression.includes('abgeschlossen')
+                        || normalizedProgression.includes('completed')
+                        ? 'completed'
+                        : normalizedProgression.includes('gegen ende')
+                          || normalizedProgression.includes('towards end')
+                          ? 'towards-end'
+                          : normalizedProgression.includes('mitte')
+                            || normalizedProgression.includes('middle')
+                            ? 'middle'
+                            : 'beginning',
+                    );
+                    setAdditionalWorksheetDialogOpen(true);
+                  }}
+                  className="justify-start"
+                >
+                  Zusätzliches Arbeitsblatt
+                </Button>
+              )}
               <Button
                 color="secondary"
                 size="md"
@@ -7066,6 +7754,201 @@ export default function EditorPage() {
           )}
         </aside>
       </div>
+
+      {publishDialogOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !publishingPDF) setPublishDialogOpen(false);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dazit-publish-title"
+            className="w-full max-w-md rounded-xl border border-secondary bg-primary p-6 shadow-xl"
+          >
+            <h2 id="dazit-publish-title" className="text-lg font-semibold text-primary">
+              {publicationStatus === 'outdated'
+                ? 'Auf Dazit erneut veröffentlichen'
+                : 'Auf Dazit veröffentlichen'}
+            </h2>
+            <p className="mt-1 text-sm text-tertiary">{worksheetTitle}</p>
+            {publicationStatus !== 'unpublished' && (
+              <fieldset className="mt-5">
+                <legend className="text-sm font-medium text-secondary">
+                  Umfang der erneuten Veröffentlichung
+                </legend>
+                <div className="mt-2 grid gap-2">
+                  {([
+                    [
+                      'pdf-only',
+                      'Nur PDF',
+                      'PDF und Vorschaubilder aktualisieren; bestehende Metadaten beibehalten.',
+                    ],
+                    [
+                      'full',
+                      'PDF und Metadaten',
+                      'Zusätzlich Beschreibung, Tags, Niveau und Kompetenzen neu generieren.',
+                    ],
+                  ] as const).map(([value, label, description]) => (
+                    <label
+                      className="flex cursor-pointer gap-3 rounded-lg border border-secondary p-3"
+                      key={value}
+                    >
+                      <input
+                        checked={republishScope === value}
+                        className="mt-0.5 size-4 accent-brand"
+                        name="republish-scope"
+                        onChange={() => setRepublishScope(value)}
+                        type="radio"
+                      />
+                      <span>
+                        <strong className="block text-sm text-primary">{label}</strong>
+                        <span className="mt-0.5 block text-xs leading-5 text-tertiary">
+                          {description}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+            {(publicationStatus === 'unpublished' || republishScope === 'full') && (
+              <div className="mt-5">
+                <label className="mb-1.5 block text-sm font-medium text-secondary">Typ</label>
+                <Select
+                  ariaLabel="Dokumenttyp"
+                  value={dazitDocumentType}
+                  onChange={setDazitDocumentType}
+                  options={[
+                    { value: 'Arbeitsblatt', label: 'Arbeitsblatt' },
+                    { value: 'Merkblatt', label: 'Merkblatt' },
+                    { value: 'Verbtabelle', label: 'Verbtabelle' },
+                    { value: 'Deklinationstabelle', label: 'Deklinationstabelle' },
+                    { value: 'Lernkarten', label: 'Lernkarten' },
+                  ]}
+                />
+              </div>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <Button
+                color="secondary"
+                size="md"
+                isDisabled={publishingPDF}
+                onPress={() => setPublishDialogOpen(false)}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                color="primary"
+                size="md"
+                isDisabled={publishingPDF}
+                iconLeading={publishingPDF ? <Loading01 className="size-4.5 animate-spin" /> : undefined}
+                onPress={async () => {
+                  if (await publishPDF()) setPublishDialogOpen(false);
+                }}
+              >
+                {publishingPDF ? 'Publishing…' : 'Veröffentlichen'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {additionalWorksheetDialogOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !creatingAdditionalWorksheet) {
+              setAdditionalWorksheetDialogOpen(false);
+            }
+          }}
+        >
+          <div
+            aria-labelledby="additional-worksheet-title"
+            aria-modal="true"
+            className="w-full max-w-md rounded-xl border border-secondary bg-primary p-6 shadow-xl"
+            role="dialog"
+          >
+            <h2 id="additional-worksheet-title" className="text-lg font-semibold text-primary">
+              Zusätzliches Arbeitsblatt erstellen
+            </h2>
+            <p className="mt-1 text-sm text-tertiary">
+              {availableVerbTableVerbs.length} {availableVerbTableVerbs.length === 1 ? 'Verb' : 'Verben'} aus der Verbtabelle
+            </p>
+            <div className="mt-5 grid gap-3">
+              <Button
+                className="justify-start"
+                color="secondary"
+                isDisabled={creatingAdditionalWorksheet !== null}
+                iconLeading={creatingAdditionalWorksheet === 'word-grid'
+                  ? <Loading01 className="size-4.5 animate-spin" />
+                  : <Grid01 className="size-4.5" />}
+                onPress={() => void createAdditionalWorksheet('word-grid')}
+                size="lg"
+              >
+                Wortgitter
+              </Button>
+              <div className="grid grid-cols-2 gap-4">
+                <label className="text-xs font-semibold text-tertiary">
+                  Sprachniveau
+                  <select
+                    className="mt-1.5 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                    disabled={creatingAdditionalWorksheet !== null}
+                    onChange={(event) => setAdditionalWorksheetLevel(
+                      event.target.value as typeof ADDITIONAL_WORKSHEET_LEVELS[number],
+                    )}
+                    value={additionalWorksheetLevel}
+                  >
+                    {ADDITIONAL_WORKSHEET_LEVELS.map((level) => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-xs font-semibold text-tertiary">
+                  Position im Teilniveau
+                  <select
+                    className="mt-1.5 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                    disabled={creatingAdditionalWorksheet !== null}
+                    onChange={(event) => setAdditionalWorksheetPhase(
+                      event.target.value as typeof ADDITIONAL_WORKSHEET_PHASES[number],
+                    )}
+                    value={additionalWorksheetPhase}
+                  >
+                    <option value="beginning">Anfang</option>
+                    <option value="middle">Mitte</option>
+                    <option value="towards-end">Gegen Ende</option>
+                    <option value="completed">Abgeschlossen</option>
+                  </select>
+                </label>
+              </div>
+              <Button
+                className="justify-start"
+                color="secondary"
+                isDisabled={creatingAdditionalWorksheet !== null}
+                iconLeading={creatingAdditionalWorksheet === 'fill-in-the-blank'
+                  ? <Loading01 className="size-4.5 animate-spin" />
+                  : <Edit05 className="size-4.5" />}
+                onPress={() => void createAdditionalWorksheet('fill-in-the-blank')}
+                size="lg"
+              >
+                Lückentext – Konjugation
+              </Button>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button
+                color="secondary"
+                isDisabled={creatingAdditionalWorksheet !== null}
+                onPress={() => setAdditionalWorksheetDialogOpen(false)}
+                size="md"
+              >
+                Abbrechen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <InsertBlockPalette
         editor={editor}
@@ -7187,26 +8070,112 @@ export default function EditorPage() {
         editor={editor}
         onClose={() => setContentEditorBlock(null)}
       />
+      <LearningCardsAIModal
+        onClose={() => setLearningCardsAIBlock(null)}
+        onGenerated={(result) => {
+          if (!learningCardsAIBlock) return;
+          editor.chain().command(({ tr }) => {
+            const selectedNode = tr.doc.nodeAt(learningCardsAIBlock.pos);
+            if (selectedNode?.type.name !== 'learningCards') return false;
+            const cardType = tr.doc.type.schema.nodes.learningCards;
+            const pageBreakType = tr.doc.type.schema.nodes.pageBreak;
+            if (!cardType) return false;
+            const baseAttrs = {
+              ...DEFAULT_LEARNING_CARDS_ATTRS,
+              ...selectedNode.attrs,
+              ...result,
+              groupIndex: 0,
+              sheetSide: 'front',
+            };
+            const nodes = [cardType.create(baseAttrs)];
+            if (baseAttrs.sidedness === 'double') {
+              if (pageBreakType) nodes.push(pageBreakType.create());
+              nodes.push(cardType.create({
+                ...baseAttrs,
+                sheetSide: 'back',
+              }));
+            }
+            tr.replaceWith(0, tr.doc.content.size, nodes);
+            tr.setSelection(NodeSelection.create(tr.doc, 0));
+            return true;
+          }).run();
+          setLearningCardsAIBlock(null);
+        }}
+        open={learningCardsAIBlock !== null}
+      />
       <GermanVerbTableEditorModal
         block={germanVerbTableEditorBlock}
+        documentSize={docSize}
         editor={editor}
         onClose={() => setGermanVerbTableEditorBlock(null)}
       />
       <GermanVerbTableAIModal
-        initialVerb={germanVerbTableAIBlock
-          ? String(
-              editor.state.doc.nodeAt(germanVerbTableAIBlock.pos)
-                ?.attrs.leftVerb ?? '',
-            )
-          : ''}
+        initialSettings={(() => {
+          if (!germanVerbTableAIBlock) {
+            return DEFAULT_GERMAN_VERB_TABLE_ATTRS;
+          }
+          const node = editor.state.doc.nodeAt(germanVerbTableAIBlock.pos);
+          if (node?.type.name !== 'germanVerbTable') {
+            return DEFAULT_GERMAN_VERB_TABLE_ATTRS;
+          }
+          const attrs = node.attrs as GermanVerbTableAttrs;
+          return {
+            ...DEFAULT_GERMAN_VERB_TABLE_ATTRS,
+            ...attrs,
+            multipleVerbs: DEFAULT_GERMAN_VERB_TABLE_ATTRS.multipleVerbs.map(
+              (fallback, index) => ({
+                ...fallback,
+                ...attrs.multipleVerbs?.[index],
+                forms: {
+                  ...fallback.forms,
+                  ...attrs.multipleVerbs?.[index]?.forms,
+                },
+              }),
+            ),
+          };
+        })()}
         open={germanVerbTableAIBlock !== null}
         onClose={() => setGermanVerbTableAIBlock(null)}
         onGenerated={(result) => {
           if (!germanVerbTableAIBlock) return;
           const { pos } = germanVerbTableAIBlock;
           editor.chain().command(({ tr }) => {
-            if (tr.doc.nodeAt(pos)?.type.name !== 'germanVerbTable') {
+            const currentNode = tr.doc.nodeAt(pos);
+            if (currentNode?.type.name !== 'germanVerbTable') {
               return false;
+            }
+            if ('multipleVerbs' in result) {
+              const currentAttrs = currentNode.attrs as GermanVerbTableAttrs;
+              const verbCount = currentAttrs.multipleVerbCount === 4 ? 4 : 5;
+              const chunks = Array.from(
+                { length: Math.ceil(result.multipleVerbs.length / verbCount) },
+                (_, index) => result.multipleVerbs.slice(
+                  index * verbCount,
+                  index * verbCount + verbCount,
+                ),
+              );
+              const groupId = currentAttrs.groupId
+                || globalThis.crypto?.randomUUID?.()
+                || `verb-group-${Date.now()}`;
+              const nodes = chunks.map((chunk, groupIndex) => (
+                currentNode.type.create({
+                  ...currentAttrs,
+                  ...result,
+                  groupId,
+                  groupIndex,
+                  groupSize: chunks.length,
+                  multipleVerbs: Array.from(
+                    { length: verbCount },
+                    (_, index) => chunk[index] ?? {
+                      ...DEFAULT_GERMAN_VERB_TABLE_ATTRS.multipleVerbs[index],
+                      verb: '',
+                    },
+                  ),
+                })
+              ));
+              tr.replaceWith(pos, pos + currentNode.nodeSize, nodes);
+              tr.setSelection(NodeSelection.create(tr.doc, pos));
+              return true;
             }
             Object.entries(result).forEach(([key, value]) => {
               tr.setNodeAttribute(pos, key, value);
@@ -7217,9 +8186,9 @@ export default function EditorPage() {
         }}
       />
       <TimeMatchingAIModal
-        initialCount={timeMatchingAIBlock
-          ? getTimeMatchingItemCount(editor, timeMatchingAIBlock.pos)
-          : 6}
+        initialSettings={timeMatchingAIBlock
+          ? getTimeMatchingGenerationSettings(editor, timeMatchingAIBlock.pos)
+          : getTimeMatchingGenerationSettings(editor, -1)}
         open={timeMatchingAIBlock !== null}
         onClose={() => setTimeMatchingAIBlock(null)}
         onGenerated={(result) => {
@@ -7231,6 +8200,16 @@ export default function EditorPage() {
             tr.setNodeAttribute(pos, 'rightRepresentation', result.rightRepresentation);
             tr.setNodeAttribute(pos, 'times', result.times);
             tr.setNodeAttribute(pos, 'rightOrder', result.rightOrder);
+            tr.setNodeAttribute(pos, 'allowedMinutes', result.allowedMinutes);
+            tr.setNodeAttribute(pos, 'rangeStart', result.rangeStart);
+            tr.setNodeAttribute(pos, 'rangeEnd', result.rangeEnd);
+            tr.setNodeAttribute(pos, 'shuffleLeft', result.shuffleLeft);
+            tr.setNodeAttribute(pos, 'shuffleRight', result.shuffleRight);
+            tr.setNodeAttribute(
+              pos,
+              'showFirstAsExample',
+              result.showFirstAsExample,
+            );
             return true;
           }).run();
           setTimeMatchingAIBlock(null);

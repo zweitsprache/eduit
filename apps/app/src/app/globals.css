@@ -69,7 +69,7 @@
 
 .tiptap-page-header::after {
   position: absolute;
-  top: 10mm;
+  top: var(--document-logo-top, 10mm);
   right: 15mm;
   width: 52px;
   height: 16px;
@@ -86,10 +86,29 @@
   pointer-events: none;
 }
 
+.tiptap[data-learning-cards-print] .tiptap-page-header::before {
+  position: absolute;
+  top: calc(var(--document-logo-top, 10mm) + 8px);
+  left: 25mm;
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, #b54708 35%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, #f79009 12%, white);
+  color: #93370d;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  content: "für doppelseitigen Druck an kurzer Seite spiegeln";
+  pointer-events: none;
+}
+
 .tiptap-page-footer {
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: end;
+  color: var(--color-text-primary) !important;
   font-size: 10px !important;
   line-height: 1.4;
 }
@@ -169,6 +188,28 @@
   font-weight: 600;
   line-height: 1.5rem;
   transform: translate(-50%, -50%);
+}
+
+/* Learning-card grids extend 12.5 mm below their pagination measurement box
+   to remain centered on the physical sheet. Move only the editor indicator
+   below that visual overflow; PDF pagination remains unchanged. */
+.editor-content .tiptap[data-learning-cards-print] .tiptap-page-break-node {
+  border-top-color: transparent;
+}
+
+.editor-content .tiptap[data-learning-cards-print] .tiptap-page-break-node::before {
+  top: 20mm;
+  z-index: 1;
+}
+
+.editor-content .tiptap[data-learning-cards-print] .tiptap-page-break-node::after {
+  position: absolute;
+  top: 20mm;
+  right: 0;
+  left: 0;
+  border-top: 1px dashed var(--color-border-primary);
+  content: "";
+  pointer-events: none;
 }
 
 .pdf-exporting .tiptap-page-break-node {

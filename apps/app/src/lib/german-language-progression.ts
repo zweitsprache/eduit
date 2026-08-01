@@ -37,6 +37,7 @@ export type GermanProgressionArtifact =
 
 type ProgressionProfile = {
   vorausgesetzt: string[];
+  neu_gesamt: string[];
   textmerkmale: {
     satzlaenge_woerter: number[];
     nebensaetze_pro_satz_max: number;
@@ -60,6 +61,14 @@ const PROFILES: Record<GermanProgressionLevel, ProgressionProfile> = {
   'B1.1': b11,
   'B1.2': b12,
 };
+
+export function germanProgressionDetectionReference() {
+  return GERMAN_PROGRESSION_LEVELS.map((level) => {
+    const profile = PROFILES[level];
+    return `${level}:
+${profile.neu_gesamt.map((descriptor) => `- ${descriptor}`).join('\n')}`;
+  }).join('\n\n');
+}
 
 function isGerman(contentLanguage: string) {
   return /\b(?:de(?:-[a-z]{2})?|german|deutsch)\b/i.test(contentLanguage);
