@@ -1,4 +1,6 @@
 import { get, list } from '@vercel/blob';
+import { unstable_cache } from 'next/cache';
+import { cache } from 'react';
 import { getPublicationMetadata } from '@/lib/db';
 import type { DazitPublicationRelationship } from '@/lib/db';
 
@@ -137,7 +139,7 @@ function publishedWorksheet(manifest: PublishedManifest): Worksheet | null {
   };
 }
 
-export async function getWorksheets() {
+async function loadWorksheets() {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
   if (!token) return [];
   try {
@@ -184,6 +186,14 @@ export async function getWorksheets() {
     return [];
   }
 }
+
+const getCachedWorksheets = unstable_cache(
+  loadWorksheets,
+  ['dazit-library'],
+  { revalidate: 300 },
+);
+
+export const getWorksheets = cache(getCachedWorksheets);
 
 export async function worksheetBySlug(slug: string) {
   return (await getWorksheets()).find((worksheet) => worksheet.slug === slug);
