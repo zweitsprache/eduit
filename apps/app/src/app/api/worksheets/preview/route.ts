@@ -1,7 +1,3 @@
-import { access } from 'node:fs/promises';
-import { chromium } from 'playwright-core';
-import serverlessChromium from '@sparticuz/chromium';
-import sharp from 'sharp';
 import { del, get, put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import { getCurrentAppUser } from '@/lib/auth/authorization';
@@ -25,6 +21,7 @@ const CHROME_PATHS = [
 ].filter((path): path is string => Boolean(path));
 
 async function findChrome() {
+  const { access } = await import('node:fs/promises');
   for (const path of CHROME_PATHS) {
     try {
       await access(path);
@@ -34,6 +31,7 @@ async function findChrome() {
     }
   }
   try {
+    const { default: serverlessChromium } = await import('@sparticuz/chromium');
     return {
       args: serverlessChromium.args,
       executablePath: await serverlessChromium.executablePath(),
@@ -218,6 +216,10 @@ export async function POST(request: Request) {
       </body>
     </html>`;
 
+  const [{ chromium }, { default: sharp }] = await Promise.all([
+    import('playwright-core'),
+    import('sharp'),
+  ]);
   const browser = await chromium.launch({
     args: chrome.args,
     executablePath: chrome.executablePath,
