@@ -1,6 +1,14 @@
+import path from 'node:path';
+
 const nextConfig = {
   reactStrictMode: true,
-  serverExternalPackages: ['playwright-core'],
+  outputFileTracingRoot: path.join(import.meta.dirname, '../..'),
+  outputFileTracingIncludes: {
+    '/api/worksheets/preview': [
+      '../../node_modules/@sparticuz/chromium/bin/**',
+    ],
+  },
+  serverExternalPackages: ['playwright-core', '@sparticuz/chromium'],
   transpilePackages: ['@eduit/ui'],
 };
 
