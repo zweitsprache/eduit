@@ -91,6 +91,16 @@ export function LibraryBrowser({
     activePage * pageSize,
   );
 
+  useEffect(() => {
+    if (initialQuery.trim().length < 2) return;
+    trackSearch(initialQuery, visibleWorksheets.length, {
+      levels: selectedLevels,
+      types: selectedTypes,
+    });
+  // Track the query once when arriving on the results page (including homepage searches).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery]);
+
   const updateSelection = (
     setter: React.Dispatch<React.SetStateAction<string[]>>,
     value: string,
