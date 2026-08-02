@@ -196,6 +196,19 @@ Verbindliche DaZ-Terminologie:
           text: `Titel: ${metadata.title}
 Dokumenttyp: ${metadata.documentType}
 
+${metadata.documentType === 'Lernkarten'
+  ? `Verbindliche Regel für diesen Dokumenttyp:
+- Beschreibe das Material ausdrücklich als Lernkarten beziehungsweise als
+  Lernkartenset. Das Wort «Lernkarten» muss im Kartenauszug und in der
+  ausführlichen Beschreibung vorkommen.
+- Interpretiere zusammengehörende Vorder- und Rückseiten als zwei Seiten
+  derselben Lernkarten. Beschreibe knapp, welche Information oder Aufgabe auf
+  der Vorderseite steht und wie die Rückseite ergänzt, auflöst oder kontrolliert.
+- Bezeichne die Karten nicht als Arbeitsblätter, Tabellen oder einzelne Seiten.
+- Erwähne weder doppelseitiges Drucken noch andere Druck-, Schnitt- oder
+  Produktionshinweise.`
+  : ''}
+
 Erstelle:
 1. Einen eigenständigen Kartenauszug mit 120 bis 280 Zeichen.
 2. Eine kompakte ausführliche Beschreibung mit einer Einleitung von mindestens 100
@@ -269,9 +282,18 @@ beziehungsweise Kursleiter:innen und Lernende.`
       sections: output.sections,
       contribution: output.actionCompetencyContribution,
     });
+    const missingLearningCardReference = metadata.documentType === 'Lernkarten'
+      && (
+        !/Lernkarten/i.test(output.excerpt)
+        || !/Lernkarten/i.test(JSON.stringify({
+          introduction: output.introduction,
+          sections: output.sections,
+        }))
+      );
     if (
       !forbiddenAdultDazTerminology.test(descriptiveText)
       && !irrelevantProductionLanguage.test(descriptiveText)
+      && !missingLearningCardReference
     ) break;
   }
   if (!output) throw new Error('Description generation failed.');
@@ -281,9 +303,18 @@ beziehungsweise Kursleiter:innen und Lernende.`
     sections: output.sections,
     contribution: output.actionCompetencyContribution,
   });
+  const missingLearningCardReference = metadata.documentType === 'Lernkarten'
+    && (
+      !/Lernkarten/i.test(output.excerpt)
+      || !/Lernkarten/i.test(JSON.stringify({
+        introduction: output.introduction,
+        sections: output.sections,
+      }))
+    );
   if (
     forbiddenAdultDazTerminology.test(generatedText)
     || irrelevantProductionLanguage.test(generatedText)
+    || missingLearningCardReference
   ) {
     throw new Error(
       'The generated description did not follow the adult DaZ terminology rules. Please publish again.',
