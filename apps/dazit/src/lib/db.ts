@@ -40,7 +40,7 @@ export type DazitPublicationCardRow = {
   level: string | null;
   downloads: number;
   showSolutions: boolean;
-  context: Record<string, unknown> | null;
+  context: null;
 };
 
 export type DazitHomepageStatsRow = {
@@ -168,7 +168,8 @@ export async function getPublishedWorksheetsFromDb() {
       p.title,
       p.document_type as "documentType",
       p.pdf_path as "pdfPath",
-      p.thumbnail_paths as "thumbnailPaths",
+      case when jsonb_typeof(p.thumbnail_paths) = 'array' and jsonb_array_length(p.thumbnail_paths) > 0
+        then jsonb_build_array(p.thumbnail_paths->0) else '[]'::jsonb end as "thumbnailPaths",
       p.page_count as "pageCount",
       p.size_bytes as "sizeBytes",
       p.published_at as "publishedAt",
@@ -202,7 +203,8 @@ export async function getPublishedWorksheetCardsFromDb() {
       p.title,
       p.document_type as "documentType",
       p.pdf_path as "pdfPath",
-      p.thumbnail_paths as "thumbnailPaths",
+      case when jsonb_typeof(p.thumbnail_paths) = 'array' and jsonb_array_length(p.thumbnail_paths) > 0
+        then jsonb_build_array(p.thumbnail_paths->0) else '[]'::jsonb end as "thumbnailPaths",
       p.page_count as "pageCount",
       p.size_bytes as "sizeBytes",
       p.published_at as "publishedAt",
@@ -211,7 +213,7 @@ export async function getPublishedWorksheetCardsFromDb() {
       p.level,
       p.download_count::int as downloads,
       w.show_solutions as "showSolutions",
-      w.context
+      null as context
     from dazit_publications p
     join worksheets w on w.id = p.worksheet_id
     order by p.published_at desc

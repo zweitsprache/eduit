@@ -96,6 +96,7 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
     description: row.excerpt || 'Druckfertiges Arbeitsblatt für den DaZ-Kurs.',
     subject,
     grade: row.level || '—',
+    level: row.level || undefined,
     documentType: documentTypes.includes(row.documentType as Worksheet['documentType'])
       ? row.documentType as Worksheet['documentType']
       : 'Worksheet',
