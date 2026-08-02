@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
+import { getCurrentDazitUser } from '@/lib/auth/authorization';
 
 export async function POST(request: Request) {
   if (!process.env.DATABASE_URL) return NextResponse.json({ ok: true });
   try {
+    const user = await getCurrentDazitUser();
+    if (user?.isAdmin) return NextResponse.json({ ok: true });
     const body = await request.json() as { query?: unknown; resultCount?: unknown; filters?: unknown; anonymousSessionId?: unknown };
     const query = typeof body.query === 'string' ? body.query.trim().replace(/\s+/g, ' ').slice(0, 120) : '';
     if (query.length < 2) return NextResponse.json({ ok: true });
