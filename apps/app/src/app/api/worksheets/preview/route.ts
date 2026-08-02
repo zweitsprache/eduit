@@ -216,16 +216,17 @@ export async function POST(request: Request) {
       </body>
     </html>`;
 
-  const [{ chromium }, { default: sharp }] = await Promise.all([
-    import('playwright-core'),
-    import('sharp'),
-  ]);
-  const browser = await chromium.launch({
-    args: chrome.args,
-    executablePath: chrome.executablePath,
-    headless: true,
-  });
+  let browser: import('playwright-core').Browser | null = null;
   try {
+    const [{ chromium }, { default: sharp }] = await Promise.all([
+      import('playwright-core'),
+      import('sharp'),
+    ]);
+    browser = await chromium.launch({
+      args: chrome.args,
+      executablePath: chrome.executablePath,
+      headless: true,
+    });
     const context = await browser.newContext({
       deviceScaleFactor: 1,
       viewport: { width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT },
@@ -310,6 +311,6 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   } finally {
-    await browser.close();
+    await browser?.close();
   }
 }
