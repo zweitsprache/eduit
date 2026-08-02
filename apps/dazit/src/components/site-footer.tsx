@@ -15,7 +15,11 @@ export function SiteFooter() {
             <Link href={`/documents?level=${encodeURIComponent(level)}`} key={level}>{level}</Link>
           ))}
         </nav>
-        <div aria-hidden="true" className="site-footer-empty" />
+        <nav aria-label="Rechtliches">
+          <Link href="/impressum">Impressum</Link>
+          <Link href="/datenschutzerklaerung">Datenschutzerklärung</Link>
+          <Link href="/lizenz-und-nutzungsrecht">Lizenz- und Nutzungsrecht</Link>
+        </nav>
         <address>
           <strong>DaZit | Marcel Allenspach</strong>
           <span>Albisstrasse 32a</span>
