@@ -184,10 +184,10 @@ button { color: inherit; }
 .card-actions span { display: flex; align-items: center; gap: 4px; color: #8c8e99; font-size: 11px; }
 .card-actions span svg { width: 13px; }
 .card-actions a { font-size: 13px; font-weight: 800; }
-.card-actions button, .card-actions a:last-child, .detail-actions button, .detail-actions a {
+.card-actions button, .card-actions .card-details, .card-actions a:last-child, .detail-actions button, .detail-actions a {
   border: 1px solid #b7b8c0; border-radius: 6px; background: #fff; padding: 8px 13px; font-weight: 800; cursor: pointer;
 }
-.card-actions button:hover, .card-actions a:last-child:hover, .detail-actions button:hover, .detail-actions a:hover { border-color: var(--orange); color: var(--orange); }
+.card-actions button:hover, .card-actions .card-details:hover, .card-actions a:last-child:hover, .detail-actions button:hover, .detail-actions a:hover { border-color: var(--orange); color: var(--orange); }
 .card-actions .card-delete { display: flex; width: 30px; height: 30px; padding: 0; align-items: center; justify-content: center; color: #8c8e99; }
 .card-actions .card-delete svg { width: 15px; height: 15px; }
 .card-actions .card-delete:disabled { cursor: wait; opacity: .55; }
@@ -291,7 +291,9 @@ button { color: inherit; }
 .document-canvas svg { width: 50px; height: 50px; }
 .document-canvas img {
   width: 100%; height: 100%; object-fit: cover; object-position: top; background: #fff;
+  animation: gallery-page-in .18s ease;
 }
+@keyframes gallery-page-in { from { opacity: .45; } to { opacity: 1; } }
 .page-buttons { display: flex; overflow-x: auto; gap: 10px; margin-top: 14px; padding-bottom: 4px; }
 .page-buttons button { flex: 0 0 auto; }
 .page-buttons button {
@@ -299,6 +301,7 @@ button { color: inherit; }
 }
 .page-buttons .active { border-color: #28293e; background: #28293e; color: #fff; }
 .detail-copy { padding-top: 2px; }
+.mobile-detail-title { display: none; }
 .detail-copy h1 { margin: 18px 0 12px; font-size: clamp(34px, 3vw, 48px); line-height: 1.08; letter-spacing: -.025em; }
 .lead { max-width: 760px; margin: 0; color: #696b79; font-size: 20px; line-height: 1.55; }
 .detail-actions { display: flex; gap: 12px; margin: 22px 0; }
@@ -462,11 +465,29 @@ button { color: inherit; }
   .results-toolbar select { min-width: 140px; margin-right: 0; }
   .results-toolbar button { display: none; }
   .worksheet-grid { grid-template-columns: 1fr; }
+  .card-body > p { font-size: 13px; }
   .pagination { gap: 10px; margin-top: 20px; font-size: 11px; }
   .pagination button { min-height: 32px; padding: 0 10px; font-size: 11px; }
-  .breadcrumbs { padding-inline: 18px; font-size: 13px; }
-  .detail-hero { gap: 28px; padding: 24px 18px 38px; }
-  .detail-copy h1 { font-size: 34px; }
+  .breadcrumbs { display: none; }
+  .detail-hero { display: flex; gap: 24px; padding: 24px 18px 38px; flex-direction: column; }
+  .mobile-detail-title { display: block; order: 1; }
+  .mobile-detail-title .subject { display: inline-block; margin-bottom: 9px; }
+  .mobile-detail-title h1 { margin: 0; font-size: 23px; line-height: 1.18; letter-spacing: -.015em; }
+  .detail-media-column, .detail-info-column { display: contents; }
+  .detail-media-column .document-viewer { order: 2; }
+  .detail-info-column .detail-copy { order: 3; }
+  .detail-media-column > .publication-description { order: 4; }
+  .detail-info-column > .publication-description { order: 5; }
+  .detail-copy h1 { display: none; }
+  .detail-copy .detail-flags .subject { display: none; }
+  .publication-description h2 { font-size: 19px; }
+  .document-canvas { touch-action: pan-y; }
+  .page-buttons { justify-content: center; gap: 8px; margin-top: 11px; }
+  .page-buttons button {
+    width: 8px; height: 8px; padding: 0; overflow: hidden; border: 0; border-radius: 50%;
+    background: #c8c9d0; color: transparent; font-size: 0;
+  }
+  .page-buttons .active { background: var(--navy); }
   .lead { font-size: 17px; }
   .detail-actions { align-items: stretch; flex-direction: column; }
   .detail-actions button, .detail-actions a { justify-content: center; }
@@ -474,6 +495,7 @@ button { color: inherit; }
   .metadata-grid div:nth-child(n) { margin: 0; }
   .metadata-editor-row { grid-template-columns: 1fr; }
   .related { padding: 30px 18px 42px; }
+  .related > h2 { font-size: 19px; }
   .related-grid { grid-template-columns: 1fr; }
   .home-hero { min-height: 0; }
   .home-hero-content { width: auto; margin: 0; padding: 58px 18px 48px; }

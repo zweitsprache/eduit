@@ -28,7 +28,6 @@ export function WorksheetCard({
               <span>16:9 Vorschau</span>
             </>
           )}
-        <strong>{worksheet.pages} S.</strong>
       </Link>
       <div className="card-body">
         <div className="card-flags">
@@ -43,7 +42,6 @@ export function WorksheetCard({
         <p className="card-meta">{worksheet.grade} · {worksheet.documentType} · {worksheet.pages} Seiten · {worksheet.language}</p>
         <div className="card-actions">
           <span><Download01 aria-hidden="true" /> {worksheet.downloads}</span>
-          <Link href={`/documents/${worksheet.slug}`}>Vorschau</Link>
           {onDelete && (
             <button
               aria-label={`${worksheet.title} löschen`}
@@ -56,6 +54,7 @@ export function WorksheetCard({
               {deleting ? <Loading01 aria-hidden="true" /> : <Trash01 aria-hidden="true" />}
             </button>
           )}
+          <Link className="card-details" href={`/documents/${worksheet.slug}`}>Details</Link>
           {worksheet.pdfUrl
             ? <a href={worksheet.pdfUrl} target="_blank" rel="noreferrer">Download</a>
             : <button type="button">Download</button>}

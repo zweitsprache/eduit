@@ -133,7 +133,11 @@ export default async function WorksheetDetailPage({ params }: Props) {
       </nav>
       <main>
         <section className="detail-hero">
-          <div className="detail-column">
+          <div className="mobile-detail-title">
+            <span className={`subject subject-${worksheet.color}`}>{worksheet.documentType}</span>
+            <h1>{worksheet.title}</h1>
+          </div>
+          <div className="detail-column detail-media-column">
             <DocumentGallery
               color={worksheet.color}
               pages={worksheet.pages}
@@ -146,7 +150,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
               worksheet={worksheet}
             />
           </div>
-          <div className="detail-column">
+          <div className="detail-column detail-info-column">
             <div className="detail-copy">
               <InlineMetadataEditor worksheet={worksheet} />
               <div className="detail-flags">

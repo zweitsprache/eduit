@@ -195,7 +195,7 @@ export function LibraryBrowser({
             >
               Zurück
             </button>
-            <span>Seite {activePage} von {pageCount}</span>
+            <span>{activePage} / {pageCount}</span>
             <button
               disabled={activePage === pageCount}
               onClick={() => setCurrentPage((page) => Math.min(pageCount, page + 1))}
