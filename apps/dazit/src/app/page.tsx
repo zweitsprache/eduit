@@ -5,9 +5,9 @@ import { SiteHeader } from '@/components/site-header';
 import { WorksheetCard } from '@/components/worksheet-card';
 import { CountUp } from '@/components/count-up';
 import { getCurrentDazitUser } from '@/lib/auth/authorization';
-import { getWorksheets } from '@/lib/worksheets';
+import { getHomepageStats, getWorksheetCards } from '@/lib/worksheets';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: 'Materialien für DaZ-Kurse',
@@ -25,17 +25,12 @@ const levels = [
 ] as const;
 
 export default async function HomePage() {
-  const worksheets = await getWorksheets();
-  const currentUser = await getCurrentDazitUser();
-  const levelCounts = worksheets.reduce<Record<string, number>>((counts, worksheet) => {
-    if (worksheet.level) counts[worksheet.level] = (counts[worksheet.level] || 0) + 1;
-    return counts;
-  }, {});
-  const typeCounts = worksheets.reduce<Record<string, number>>((counts, worksheet) => {
-    counts[worksheet.documentType] = (counts[worksheet.documentType] || 0) + 1;
-    return counts;
-  }, {});
-  const newest = worksheets.slice(0, 4);
+  const [homepageStats, newest, currentUser] = await Promise.all([
+    getHomepageStats(),
+    getWorksheetCards().then((worksheets) => worksheets.slice(0, 4)),
+    getCurrentDazitUser(),
+  ]);
+  const { total, levelCounts, typeCounts } = homepageStats;
   return (
     <>
       <SiteHeader active="home" canAdminister={Boolean(currentUser?.isAdmin)} />
@@ -45,7 +40,7 @@ export default async function HomePage() {
           <div className="home-hero-content">
             <span className="home-hero-badge">Deutsch als Zweitsprache noch einfacher machen</span>
             <h1>
-              <CountUp value={worksheets.length} /> Arbeits- und Merkblätter,<br />
+              <CountUp value={total} /> Arbeits- und Merkblätter,<br />
               Spiele und Kartensets für<br />
               <em>DaZ-Kurse</em> mit Erwachsenen
             </h1>

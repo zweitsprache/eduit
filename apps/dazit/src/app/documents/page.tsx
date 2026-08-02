@@ -1,7 +1,7 @@
 import { SearchLg } from '@untitledui/icons';
 import { LibraryBrowser } from '@/components/library-browser';
 import { SiteHeader } from '@/components/site-header';
-import { getWorksheets } from '@/lib/worksheets';
+import { getWorksheetCards } from '@/lib/worksheets';
 import { absoluteDazitUrl } from '@/lib/site-url';
 import { getCurrentDazitUser } from '@/lib/auth/authorization';
 
@@ -16,22 +16,24 @@ const topics = [
   'zweiteilige Konjunktionen',
 ];
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 export default async function LibraryPage({
   searchParams,
 }: {
   searchParams: Promise<{ level?: string; q?: string; type?: string }>;
 }) {
-  const worksheets = await getWorksheets();
-  const currentUser = await getCurrentDazitUser();
-  const query = await searchParams;
+  const [worksheets, currentUser, query] = await Promise.all([
+    getWorksheetCards(),
+    getCurrentDazitUser(),
+    searchParams,
+  ]);
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: 'dazit Bibliothek',
     numberOfItems: worksheets.length,
-    itemListElement: worksheets.map((worksheet, index) => ({
+    itemListElement: worksheets.slice(0, 24).map((worksheet, index) => ({
       '@type': 'ListItem',
       position: index + 1,
       url: absoluteDazitUrl(`/documents/${worksheet.slug}`),

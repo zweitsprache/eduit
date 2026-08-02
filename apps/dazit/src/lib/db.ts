@@ -1,5 +1,54 @@
 import { neon } from '@neondatabase/serverless';
 
+export type DazitPublicationRow = {
+  worksheetId: string;
+  slug: string;
+  title: string;
+  documentType: 'Arbeitsblatt' | 'Merkblatt' | 'Verbtabelle' | 'Deklinationstabelle' | 'Lernkarten';
+  pdfPath: string;
+  thumbnailPaths: string[];
+  pageCount: number;
+  sizeBytes: number;
+  publishedAt: string;
+  updatedAt: string;
+  excerpt: string | null;
+  searchSnippet: string | null;
+  descriptionHtml: string | null;
+  tags: string[];
+  level: string | null;
+  actionCompetencies: string[];
+  languageCompetencies: string[];
+  actionCompetencyContributionHtml: string | null;
+  actionField: string | null;
+  downloads: number;
+  showSolutions: boolean;
+  context: Record<string, unknown> | null;
+};
+
+export type DazitPublicationCardRow = {
+  worksheetId: string;
+  slug: string;
+  title: string;
+  documentType: 'Arbeitsblatt' | 'Merkblatt' | 'Verbtabelle' | 'Deklinationstabelle' | 'Lernkarten';
+  pdfPath: string;
+  thumbnailPaths: string[];
+  pageCount: number;
+  sizeBytes: number;
+  publishedAt: string;
+  excerpt: string | null;
+  tags: string[];
+  level: string | null;
+  downloads: number;
+  showSolutions: boolean;
+  context: Record<string, unknown> | null;
+};
+
+export type DazitHomepageStatsRow = {
+  total: number;
+  levelCounts: Record<string, number>;
+  typeCounts: Record<string, number>;
+};
+
 export type DazitPublicationMetadata = {
   worksheetId: string;
   title: string;
@@ -107,6 +156,110 @@ export async function getPublicationMetadata() {
     });
   });
   return metadata;
+}
+
+export async function getPublishedWorksheetsFromDb() {
+  if (!process.env.DATABASE_URL) return [] as DazitPublicationRow[];
+  const sql = neon(process.env.DATABASE_URL);
+  const rows = await sql`
+    select
+      p.worksheet_id as "worksheetId",
+      p.slug,
+      p.title,
+      p.document_type as "documentType",
+      p.pdf_path as "pdfPath",
+      p.thumbnail_paths as "thumbnailPaths",
+      p.page_count as "pageCount",
+      p.size_bytes as "sizeBytes",
+      p.published_at as "publishedAt",
+      p.updated_at as "updatedAt",
+      p.excerpt,
+      p.search_snippet as "searchSnippet",
+      p.description_html as "descriptionHtml",
+      p.tags,
+      p.level,
+      p.action_competencies as "actionCompetencies",
+      p.language_competencies as "languageCompetencies",
+      p.action_competency_contribution_html as "actionCompetencyContributionHtml",
+      p.action_field as "actionField",
+      p.download_count::int as downloads,
+      w.show_solutions as "showSolutions",
+      w.context
+    from dazit_publications p
+    join worksheets w on w.id = p.worksheet_id
+    order by p.published_at desc
+  ` as DazitPublicationRow[];
+  return rows;
+}
+
+export async function getPublishedWorksheetCardsFromDb() {
+  if (!process.env.DATABASE_URL) return [] as DazitPublicationCardRow[];
+  const sql = neon(process.env.DATABASE_URL);
+  const rows = await sql`
+    select
+      p.worksheet_id as "worksheetId",
+      p.slug,
+      p.title,
+      p.document_type as "documentType",
+      p.pdf_path as "pdfPath",
+      p.thumbnail_paths as "thumbnailPaths",
+      p.page_count as "pageCount",
+      p.size_bytes as "sizeBytes",
+      p.published_at as "publishedAt",
+      p.excerpt,
+      p.tags,
+      p.level,
+      p.download_count::int as downloads,
+      w.show_solutions as "showSolutions",
+      w.context
+    from dazit_publications p
+    join worksheets w on w.id = p.worksheet_id
+    order by p.published_at desc
+  ` as DazitPublicationCardRow[];
+  return rows;
+}
+
+export async function getDazitHomepageStatsFromDb() {
+  if (!process.env.DATABASE_URL) {
+    return {
+      total: 0,
+      levelCounts: {},
+      typeCounts: {},
+    } satisfies DazitHomepageStatsRow;
+  }
+  const sql = neon(process.env.DATABASE_URL);
+  const [counts] = await sql`
+    with publication_base as (
+      select
+        level,
+        document_type as "documentType"
+      from dazit_publications
+    )
+    select
+      (select count(*)::int from publication_base) as total,
+      coalesce((
+        select jsonb_object_agg(level, count)
+        from (
+          select level, count(*)::int as count
+          from publication_base
+          where level is not null
+          group by level
+        ) level_counts
+      ), '{}'::jsonb) as "levelCounts",
+      coalesce((
+        select jsonb_object_agg("documentType", count)
+        from (
+          select "documentType", count(*)::int as count
+          from publication_base
+          group by "documentType"
+        ) type_counts
+      ), '{}'::jsonb) as "typeCounts"
+  ` as Array<DazitHomepageStatsRow>;
+  return counts ?? {
+    total: 0,
+    levelCounts: {},
+    typeCounts: {},
+  };
 }
 
 export async function incrementPublicationDownload(worksheetId: string) {

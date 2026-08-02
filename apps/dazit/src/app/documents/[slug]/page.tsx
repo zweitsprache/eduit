@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
 import { WorksheetCard } from '@/components/worksheet-card';
 import { DocumentGallery } from '@/components/document-gallery';
-import { getWorksheets, worksheetBySlug } from '@/lib/worksheets';
+import { getWorksheetCards, worksheetBySlug } from '@/lib/worksheets';
 import { absoluteDazitUrl } from '@/lib/site-url';
 import { InlineMetadataEditor } from '@/components/inline-metadata-editor';
 import { InlineHtmlEditor } from '@/components/inline-html-editor';
@@ -54,7 +54,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
   const searchSnippet = worksheet.searchSnippet || worksheet.description;
   const currentUser = await getCurrentDazitUser();
   const canAdminister = Boolean(currentUser?.isAdmin);
-  const allWorksheets = await getWorksheets();
+  const allWorksheets = await getWorksheetCards();
   const related = allWorksheets
     .filter(({ slug, subject }) => slug !== worksheet.slug && subject === worksheet.subject)
     .slice(0, 4);
