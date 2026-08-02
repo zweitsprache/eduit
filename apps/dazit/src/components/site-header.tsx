@@ -7,9 +7,11 @@ import { User } from 'lucide-react';
 
 export function SiteHeader({
   active = 'library',
+  canAdminister = false,
   search = false,
 }: {
   active?: 'home' | 'library';
+  canAdminister?: boolean;
   search?: boolean;
 }) {
   return (
@@ -19,8 +21,8 @@ export function SiteHeader({
       </Link>
       <nav aria-label="Hauptnavigation">
         <Link className={active === 'library' ? 'active' : undefined} href="/documents">Bibliothek</Link>
-        <a href="#sammlungen">Sammlungen</a>
-        <a href="#my-dazit">My dazit</a>
+        {canAdminister && <a href="#sammlungen">Sammlungen</a>}
+        {canAdminister && <a href="#my-dazit">My dazit</a>}
       </nav>
       {search && (
         <label className="header-search">

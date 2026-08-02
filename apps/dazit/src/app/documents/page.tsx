@@ -46,7 +46,7 @@ export default async function LibraryPage({
         }}
         type="application/ld+json"
       />
-      <SiteHeader active="library" search />
+      <SiteHeader active="library" canAdminister={Boolean(currentUser?.isAdmin)} search />
       <div className="mobile-search">
         <SearchLg aria-hidden="true" />
         <input placeholder="Titel oder Stichwort suchen …" aria-label="Bibliothek durchsuchen" />

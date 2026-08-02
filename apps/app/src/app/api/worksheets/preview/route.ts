@@ -182,7 +182,9 @@ export async function POST(request: Request) {
     const [{ default: sharp }] = await Promise.all([
       import('sharp'),
     ]);
-    browser = await launchRenderingBrowser();
+    browser = await launchRenderingBrowser({
+      preferLocal: ['localhost', '127.0.0.1'].includes(new URL(origin).hostname),
+    });
     const context = await browser.newContext({
       deviceScaleFactor: 1,
       viewport: { width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT },

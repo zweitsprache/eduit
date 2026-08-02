@@ -128,7 +128,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
         }}
         type="application/ld+json"
       />
-      <SiteHeader active="library" />
+      <SiteHeader active="library" canAdminister={canAdminister} />
       <nav className="breadcrumbs" aria-label="Breadcrumb">
         <Link href="/">Bibliothek</Link><span>›</span>
         <Link href="/">{worksheet.subject}</Link><span>›</span>
@@ -171,7 +171,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
                     </a>
                   )
                   : <button className="download-primary"><Download01 /> PDF herunterladen</button>}
-                <button><Plus /> Zur Sammlung</button>
+                {canAdminister && <button><Plus /> Zur Sammlung</button>}
               </div>
               <dl className="metadata-grid">
                 <div><dt>Dokumenttyp</dt><dd>{worksheet.documentType}</dd></div>

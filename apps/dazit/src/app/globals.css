@@ -208,6 +208,12 @@ button { color: inherit; }
   position: relative; min-height: 720px; overflow: hidden;
   background: #4f6899; color: #fff;
 }
+.hero-beta-ribbon {
+  position: absolute; z-index: 5; top: 170px; right: -158px; width: 700px; padding: 12px 0;
+  transform: rotate(45deg); background: var(--orange); color: #fff; text-align: center;
+  font-size: 20px; font-weight: 800; letter-spacing: 0; text-transform: uppercase;
+  box-shadow: 0 5px 18px rgb(21 23 44 / 22%);
+}
 .home-hero-content {
   position: relative; z-index: 2; width: min(58%, 940px); max-width: 1540px;
   margin: 0 max(46px, calc((100vw - 1540px) / 2)); padding: 76px 0 190px;
@@ -538,6 +544,7 @@ button { color: inherit; }
   .related > h2 { font-size: 19px; }
   .related-grid { grid-template-columns: 1fr; }
   .home-hero { min-height: 0; }
+  .hero-beta-ribbon { top: 140px; right: -104px; width: 520px; padding-block: 9px; font-size: 15px; }
   .home-hero-content { width: auto; margin: 0; padding: 58px 18px 48px; }
   .home-hero-badge { margin-bottom: 24px; }
   .home-hero h1 { font-size: 34px; }

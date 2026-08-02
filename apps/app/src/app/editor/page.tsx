@@ -2370,7 +2370,11 @@ export default function EditorPage() {
     const automationMode = typeof window === 'undefined'
       ? null
       : new URLSearchParams(window.location.search).get('automation');
-    if (automationMode === 'batch-full-publish') return;
+    if (
+      automationMode === 'batch-publish'
+      || automationMode === 'batch-full-publish'
+      || automationMode === 'batch-preview'
+    ) return;
     if (worksheetPreviewTimerRef.current) {
       clearTimeout(worksheetPreviewTimerRef.current);
     }

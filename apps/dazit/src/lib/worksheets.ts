@@ -190,8 +190,9 @@ async function loadWorksheets() {
           : [];
         worksheet.actionCompetencyContributionHtml =
           record.actionCompetencyContributionHtml || undefined;
-        worksheet.actionField = record.actionField || undefined;
-        worksheet.relationships = record.relationships;
+      worksheet.actionField = record.actionField || undefined;
+      worksheet.downloads = String(record.downloads);
+      worksheet.relationships = record.relationships;
       });
     } catch (error) {
       console.error('Could not load Dazit publication metadata.', error);
@@ -206,7 +207,7 @@ async function loadWorksheets() {
 const getCachedWorksheets = unstable_cache(
   loadWorksheets,
   ['dazit-library'],
-  { revalidate: 30 },
+  { revalidate: 30, tags: ['dazit-library'] },
 );
 
 export const getWorksheets = cache(getCachedWorksheets);

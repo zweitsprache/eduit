@@ -4,6 +4,7 @@ import { Copy01, File02, Grid01 } from '@untitledui/icons';
 import { SiteHeader } from '@/components/site-header';
 import { WorksheetCard } from '@/components/worksheet-card';
 import { CountUp } from '@/components/count-up';
+import { getCurrentDazitUser } from '@/lib/auth/authorization';
 import { getWorksheets } from '@/lib/worksheets';
 
 export const dynamic = 'force-dynamic';
@@ -25,6 +26,7 @@ const levels = [
 
 export default async function HomePage() {
   const worksheets = await getWorksheets();
+  const currentUser = await getCurrentDazitUser();
   const levelCounts = worksheets.reduce<Record<string, number>>((counts, worksheet) => {
     if (worksheet.level) counts[worksheet.level] = (counts[worksheet.level] || 0) + 1;
     return counts;
@@ -36,9 +38,10 @@ export default async function HomePage() {
   const newest = worksheets.slice(0, 4);
   return (
     <>
-      <SiteHeader active="home" />
+      <SiteHeader active="home" canAdminister={Boolean(currentUser?.isAdmin)} />
       <main className="home-page">
         <section className="home-hero">
+          <span className="hero-beta-ribbon">Public Beta</span>
           <div className="home-hero-content">
             <span className="home-hero-badge">Deutsch als Zweitsprache noch einfacher machen</span>
             <h1>
@@ -57,7 +60,7 @@ export default async function HomePage() {
               <img alt="" src="/eduit-document%20(75).svg" />
             </span>
             <span className="home-preview-sheet home-preview-sheet--middle">
-              <img alt="" src="/eduit-document%20-%202026-08-02T074736.440.svg" />
+              <img alt="" src="/eduit-document%20-%202026-08-02T090904.120.svg" />
             </span>
             <span className="home-preview-sheet home-preview-sheet--front">
               <img alt="" src="/eduit-document%20-%202026-08-01T071645.177.svg" />

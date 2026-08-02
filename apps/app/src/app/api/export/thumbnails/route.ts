@@ -52,7 +52,9 @@ export async function POST(request: Request) {
 
   let browser: import('playwright-core').Browser;
   try {
-    browser = await launchRenderingBrowser();
+    browser = await launchRenderingBrowser({
+      preferLocal: ['localhost', '127.0.0.1'].includes(new URL(origin).hostname),
+    });
   } catch (error) {
     return NextResponse.json(
       {

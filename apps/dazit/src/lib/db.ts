@@ -12,6 +12,7 @@ export type DazitPublicationMetadata = {
   languageCompetencies: string[];
   actionCompetencyContributionHtml: string | null;
   actionField: string | null;
+  downloads: number;
   relationships: DazitPublicationRelationship[];
 };
 
@@ -40,6 +41,7 @@ export async function getPublicationMetadata() {
       language_competencies as "languageCompetencies",
       action_competency_contribution_html as "actionCompetencyContributionHtml"
       , action_field as "actionField"
+      , download_count::int as downloads
     from dazit_publications
   ` as DazitPublicationMetadata[];
   const metadata = new Map<string, DazitPublicationMetadata>(rows.map((row) => [row.worksheetId, {
@@ -103,4 +105,14 @@ export async function getPublicationMetadata() {
     });
   });
   return metadata;
+}
+
+export async function incrementPublicationDownload(worksheetId: string) {
+  if (!process.env.DATABASE_URL) return;
+  const sql = neon(process.env.DATABASE_URL);
+  await sql`
+    update dazit_publications
+    set download_count = download_count + 1
+    where worksheet_id = ${worksheetId}
+  `;
 }

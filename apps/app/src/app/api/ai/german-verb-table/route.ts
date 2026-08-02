@@ -75,7 +75,11 @@ function parenthesizeOptionalReflexivePronoun(
 export async function POST(request: Request) {
   try {
     const user = await getCurrentAppUser();
-    if (!user) {
+    const workflowAuthorized = Boolean(
+      process.env.QSTASH_TOKEN
+      && request.headers.get('x-eduit-workflow-token') === process.env.QSTASH_TOKEN,
+    );
+    if (!user && !workflowAuthorized) {
       return Response.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 

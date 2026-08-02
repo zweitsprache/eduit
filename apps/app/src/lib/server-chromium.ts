@@ -74,17 +74,24 @@ export function getBrowserlessEndpoint() {
   }
 }
 
-export async function launchRenderingBrowser(): Promise<Browser> {
+export async function launchRenderingBrowser({
+  preferLocal = false,
+}: { preferLocal?: boolean } = {}): Promise<Browser> {
   const [{ chromium }, browserlessEndpoint] = await Promise.all([
     import('playwright-core'),
     Promise.resolve(getBrowserlessEndpoint()),
   ]);
 
-  if (browserlessEndpoint) {
-    try {
-      return await chromium.connectOverCDP(browserlessEndpoint);
-    } catch (error) {
-      console.error('Could not connect to Browserless.', error);
+  if (browserlessEndpoint && !preferLocal) {
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        return await chromium.connectOverCDP(browserlessEndpoint);
+      } catch (error) {
+        console.error(`Could not connect to Browserless (attempt ${attempt}/3).`, error);
+        if (attempt < 3) {
+          await new Promise((resolve) => setTimeout(resolve, attempt * 1_500));
+        }
+      }
     }
   }
 

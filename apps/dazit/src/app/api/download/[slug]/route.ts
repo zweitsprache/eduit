@@ -1,12 +1,14 @@
 import { get } from '@vercel/blob';
+import { revalidateTag } from 'next/cache';
 import { worksheetBySlug } from '@/lib/worksheets';
 import { absoluteDazitUrl } from '@/lib/site-url';
+import { incrementPublicationDownload } from '@/lib/db';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
@@ -21,6 +23,12 @@ export async function GET(
   if (!result) return new Response('PDF not found.', { status: 404 });
   if (result.statusCode === 304) {
     return new Response(null, { status: 304 });
+  }
+  if (!request.headers.has('range') && worksheet.worksheetId) {
+    await incrementPublicationDownload(worksheet.worksheetId).catch((error) => {
+      console.error('Could not increment Dazit download count.', error);
+    });
+    revalidateTag('dazit-library', { expire: 0 });
   }
   return new Response(result.stream, {
     headers: {
