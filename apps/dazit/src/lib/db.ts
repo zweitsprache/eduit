@@ -168,8 +168,7 @@ export async function getPublishedWorksheetsFromDb() {
       p.title,
       p.document_type as "documentType",
       p.pdf_path as "pdfPath",
-      case when jsonb_typeof(p.thumbnail_paths) = 'array' and jsonb_array_length(p.thumbnail_paths) > 0
-        then jsonb_build_array(p.thumbnail_paths->0) else '[]'::jsonb end as "thumbnailPaths",
+      p.thumbnail_paths as "thumbnailPaths",
       p.page_count as "pageCount",
       p.size_bytes as "sizeBytes",
       p.published_at as "publishedAt",
