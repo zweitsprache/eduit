@@ -39,6 +39,8 @@ type MoveDialog = {
   destinationId: string | null;
 } | null;
 
+const PAGE_SIZE = 12;
+
 function formatUpdatedAt(value: string, locale: string) {
   return new Intl.DateTimeFormat(locale === 'de' ? 'de-CH' : 'en-GB', {
     dateStyle: 'medium',
@@ -70,6 +72,9 @@ export function WorksheetManager() {
   const [folderName, setFolderName] = useState('');
   const [savingFolder, setSavingFolder] = useState(false);
   const [moveDialog, setMoveDialog] = useState<MoveDialog>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -162,6 +167,22 @@ export function WorksheetManager() {
     statusFilter,
     worksheets,
   ]);
+  const pageCount = Math.max(1, Math.ceil(visibleWorksheets.length / PAGE_SIZE));
+  const paginatedWorksheets = visibleWorksheets.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+  const selectedWorksheets = worksheets.filter(({ id }) => selectedIds.has(id));
+  const pageSelected = paginatedWorksheets.length > 0
+    && paginatedWorksheets.every(({ id }) => selectedIds.has(id));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [currentFolderId, query, sortMode, statusFilter]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, pageCount));
+  }, [pageCount]);
 
   const childFolders = useMemo(() => (
     folders.filter(({ parentId }) => parentId === currentFolderId)
@@ -301,6 +322,75 @@ export function WorksheetManager() {
         : t('documents.deleteError'));
     } finally {
       setBusyId(null);
+    }
+  }
+
+  function toggleWorksheetSelection(id: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function togglePageSelection() {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      paginatedWorksheets.forEach(({ id }) => {
+        if (pageSelected) next.delete(id);
+        else next.add(id);
+      });
+      return next;
+    });
+  }
+
+  async function bulkDeleteWorksheets() {
+    if (!selectedWorksheets.length || bulkDeleting) return;
+    if (!window.confirm(t('documents.bulkDeleteConfirm', {
+      count: selectedWorksheets.length,
+    }))) return;
+    setBulkDeleting(true);
+    setError(null);
+    const deletedIds = new Set<string>();
+    try {
+      const publicationStatuses = await Promise.all(selectedWorksheets.map(async ({ id }) => {
+        const response = await fetch(
+          `/api/dazit/status?worksheetId=${encodeURIComponent(id)}`,
+          { cache: 'no-store' },
+        );
+        if (!response.ok) return false;
+        const result = await response.json() as { status?: string };
+        return result.status !== undefined && result.status !== 'unpublished';
+      }));
+      const deleteFromDazit = publicationStatuses.some(Boolean)
+        ? window.confirm(t('documents.bulkDeleteDazitConfirm'))
+        : false;
+      for (const worksheet of selectedWorksheets) {
+        const response = await fetch(
+          `/api/worksheets?id=${encodeURIComponent(worksheet.id)}&deleteFromDazit=${deleteFromDazit}`,
+          { method: 'DELETE' },
+        );
+        if (!response.ok) {
+          const result = await response.json().catch(() => null) as { error?: string } | null;
+          throw new Error(result?.error ?? t('documents.deleteError'));
+        }
+        deletedIds.add(worksheet.id);
+      }
+    } catch (deleteError) {
+      setError(deleteError instanceof Error
+        ? deleteError.message
+        : t('documents.deleteError'));
+    } finally {
+      if (deletedIds.size) {
+        setWorksheets((current) => current.filter(({ id }) => !deletedIds.has(id)));
+        setSelectedIds((current) => {
+          const next = new Set(current);
+          deletedIds.forEach((id) => next.delete(id));
+          return next;
+        });
+      }
+      setBulkDeleting(false);
     }
   }
 
@@ -626,6 +716,29 @@ export function WorksheetManager() {
               count: visibleWorksheets.length,
             })}
           </p>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-sm font-semibold text-secondary">
+              <input
+                checked={pageSelected}
+                disabled={!paginatedWorksheets.length || bulkDeleting}
+                onChange={togglePageSelection}
+                type="checkbox"
+              />
+              {t('documents.selectPage')}
+            </label>
+            {selectedWorksheets.length > 0 && (
+              <Button
+                color="secondary"
+                isDisabled={bulkDeleting}
+                iconLeading={bulkDeleting
+                  ? <Loading01 className="size-4 animate-spin" />
+                  : <Trash01 className="size-4" />}
+                onPress={() => void bulkDeleteWorksheets()}
+              >
+                {t('documents.deleteSelected', { count: selectedWorksheets.length })}
+              </Button>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -640,7 +753,7 @@ export function WorksheetManager() {
               ? 'grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
               : 'flex flex-col gap-3',
           )}>
-            {visibleWorksheets.map((worksheet) => {
+            {paginatedWorksheets.map((worksheet) => {
               const isBusy = busyId === worksheet.id;
               return (
                 <article
@@ -653,6 +766,17 @@ export function WorksheetManager() {
                       : 'grid grid-cols-[9rem_minmax(0,1fr)] sm:grid-cols-[12rem_minmax(0,1fr)]',
                   )}
                 >
+                  <label className="absolute left-3 top-3 z-20 flex size-8 items-center justify-center rounded-md border border-secondary bg-primary/95 shadow-sm">
+                    <span className="sr-only">
+                      {t('documents.selectNamed', { title: worksheet.title })}
+                    </span>
+                    <input
+                      checked={selectedIds.has(worksheet.id)}
+                      disabled={bulkDeleting}
+                      onChange={() => toggleWorksheetSelection(worksheet.id)}
+                      type="checkbox"
+                    />
+                  </label>
                   <a
                     href={`/editor?worksheet=${encodeURIComponent(worksheet.id)}`}
                     aria-label={t('documents.openNamed', {
@@ -807,6 +931,30 @@ export function WorksheetManager() {
               </Button>
             )}
           </div>
+        )}
+        {!loading && visibleWorksheets.length > PAGE_SIZE && (
+          <nav
+            aria-label={t('documents.pagination')}
+            className="mt-6 flex items-center justify-center gap-4"
+          >
+            <Button
+              color="secondary"
+              isDisabled={currentPage === 1}
+              onPress={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            >
+              {t('documents.previousPage')}
+            </Button>
+            <span className="text-sm font-semibold text-secondary">
+              {t('documents.pageStatus', { page: currentPage, pages: pageCount })}
+            </span>
+            <Button
+              color="secondary"
+              isDisabled={currentPage === pageCount}
+              onPress={() => setCurrentPage((page) => Math.min(pageCount, page + 1))}
+            >
+              {t('documents.nextPage')}
+            </Button>
+          </nav>
         )}
       </div>
 
