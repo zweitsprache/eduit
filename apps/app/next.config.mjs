@@ -6,6 +6,7 @@ const nextConfig = {
   outputFileTracingIncludes: {
     '/api/worksheets/preview': [
       '../../node_modules/@sparticuz/chromium/bin/**',
+      '../../node_modules/playwright-core/**',
     ],
   },
   serverExternalPackages: ['playwright-core', '@sparticuz/chromium'],
