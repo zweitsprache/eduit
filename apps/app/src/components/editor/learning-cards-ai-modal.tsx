@@ -6,9 +6,9 @@ import type { LearningCardItem } from '@/components/editor/learning-cards-node';
 import type { GermanVerbTableForms } from '@/components/editor/german-verb-table-node';
 import {
   buildGermanVerbReferenceForms,
+  differingActualCharacters,
   germanLexicalInfinitive,
   GERMAN_REFLEXIVE_PRONOUNS,
-  germanVerbExceptionRuns,
   isGermanOptionalReflexiveInfinitive,
   isGermanReflexiveInfinitive,
   splitGermanSeparableForm,
@@ -57,8 +57,23 @@ function escapeHtml(value: string) {
 }
 
 function exceptionMarkup(actual: string, reference: string) {
-  return germanVerbExceptionRuns(actual, reference)
-    .map(({ different, text }) => (
+  const { characters, differs } = differingActualCharacters(actual, reference);
+  const protectedCharacters = Array<boolean>(characters.length).fill(false);
+  for (const match of actual.matchAll(/\((?:mich|dich|sich|uns|euch)\)/gi)) {
+    const start = Array.from(actual.slice(0, match.index)).length;
+    const length = Array.from(match[0]).length;
+    for (let index = start; index < start + length; index += 1) {
+      protectedCharacters[index] = true;
+    }
+  }
+  const runs: Array<{ different: boolean; text: string }> = [];
+  characters.forEach((character, index) => {
+    const different = differs[index] && !protectedCharacters[index];
+    const previous = runs.at(-1);
+    if (previous?.different === different) previous.text += character;
+    else runs.push({ different, text: character });
+  });
+  return runs.map(({ different, text }) => (
       different
         ? `<strong data-verb-exception>${escapeHtml(text)}</strong>`
         : escapeHtml(text)
