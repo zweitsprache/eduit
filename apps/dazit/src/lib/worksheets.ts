@@ -190,7 +190,7 @@ async function loadWorksheets() {
 const getCachedWorksheets = unstable_cache(
   loadWorksheets,
   ['dazit-library'],
-  { revalidate: 300 },
+  { revalidate: 30 },
 );
 
 export const getWorksheets = cache(getCachedWorksheets);
