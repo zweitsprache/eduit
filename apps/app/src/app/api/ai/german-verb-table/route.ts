@@ -2,6 +2,10 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { getCurrentAppUser } from '@/lib/auth/authorization';
 import { verbGenerationModel } from '@/lib/ai';
+import {
+  GERMAN_REFLEXIVE_PRONOUNS,
+  isGermanOptionalReflexiveInfinitive,
+} from '@/lib/german-verb-forms';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -57,6 +61,17 @@ function normalizeSeparableForm(value: string, prefix: string) {
   return `${base} ${normalizedPrefix}`;
 }
 
+function parenthesizeOptionalReflexivePronoun(
+  value: string,
+  key: keyof typeof GERMAN_REFLEXIVE_PRONOUNS,
+) {
+  const pronoun = GERMAN_REFLEXIVE_PRONOUNS[key];
+  return value.replace(
+    new RegExp(`(?:\\(${pronoun}\\)|\\b${pronoun}\\b)`, 'i'),
+    `(${pronoun})`,
+  );
+}
+
 export async function POST(request: Request) {
   try {
     const user = await getCurrentAppUser();
@@ -110,6 +125,9 @@ Mandatory:
   Always return "ab" as separablePrefix.
 - Never classify an inseparable prefix as separable.
 - For reflexive verbs, include the reflexive pronoun belonging to the person.
+- When the infinitive marks an optionally reflexive verb as "(sich)", retain
+  the parentheses around each corresponding reflexive pronoun, for example
+  "freue (mich)", "freust (dich)", and "freut (sich)".
 - Use lowercase except formal "Sie" is represented only by the requested form,
   so do not include any subject pronoun.
 - Use Swiss orthography: replace every ß with ss.
@@ -117,11 +135,20 @@ Mandatory:
     });
 
     const separablePrefix = swissSpelling(output.separablePrefix ?? '');
+    const optionalReflexive = isGermanOptionalReflexiveInfinitive(infinitive);
     const forms = Object.fromEntries(
-      Object.entries(output.forms).map(([key, value]) => [
-        key,
-        normalizeSeparableForm(value, separablePrefix),
-      ]),
+      Object.entries(output.forms).map(([key, value]) => {
+        const reflexiveKey = key === 'preteriteIch' ? 'ich' : key;
+        return [
+          key,
+          optionalReflexive
+            ? parenthesizeOptionalReflexivePronoun(
+              normalizeSeparableForm(value, separablePrefix),
+              reflexiveKey as keyof typeof GERMAN_REFLEXIVE_PRONOUNS,
+            )
+            : normalizeSeparableForm(value, separablePrefix),
+        ];
+      }),
     );
 
     return Response.json({

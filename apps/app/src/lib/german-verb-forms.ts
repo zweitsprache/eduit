@@ -18,12 +18,16 @@ export const GERMAN_REFLEXIVE_PRONOUNS = {
   wir: 'uns', ihr: 'euch', formalPlural: 'sich', thirdPlural: 'sich',
 } as const;
 
+export function isGermanOptionalReflexiveInfinitive(infinitive: string) {
+  return /^\(sich\)\s+/i.test(infinitive.trim());
+}
+
 export function isGermanReflexiveInfinitive(infinitive: string) {
-  return /^sich\s+/i.test(infinitive.trim());
+  return /^(?:sich|\(sich\))\s+/i.test(infinitive.trim());
 }
 
 export function germanLexicalInfinitive(infinitive: string) {
-  return infinitive.trim().replace(/^sich\s+/i, '').trim();
+  return infinitive.trim().replace(/^(?:sich|\(sich\))\s+/i, '').trim();
 }
 
 export function germanVerbStem(infinitive: string) {
@@ -41,6 +45,7 @@ export function buildGermanVerbReferenceForms(
     .trim()
     .toLocaleLowerCase('de-DE');
   const reflexive = isGermanReflexiveInfinitive(infinitive);
+  const optionalReflexive = isGermanOptionalReflexiveInfinitive(infinitive);
   const normalizedInfinitive = germanLexicalInfinitive(infinitive)
     .toLocaleLowerCase('de-DE');
   // "sein" is suppletive: its finite forms are not transformations of a
@@ -71,7 +76,11 @@ export function buildGermanVerbReferenceForms(
     key: keyof typeof GERMAN_REFLEXIVE_PRONOUNS,
   ) => [
     form,
-    reflexive ? GERMAN_REFLEXIVE_PRONOUNS[key] : '',
+    reflexive
+      ? optionalReflexive
+        ? `(${GERMAN_REFLEXIVE_PRONOUNS[key]})`
+        : GERMAN_REFLEXIVE_PRONOUNS[key]
+      : '',
     normalizedPrefix,
   ].filter(Boolean).join(' ');
   const finiteForms = tense === 'present' && mood === 'subjunctive-one'

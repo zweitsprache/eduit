@@ -9,6 +9,7 @@ import {
   germanLexicalInfinitive,
   GERMAN_REFLEXIVE_PRONOUNS,
   germanVerbExceptionRuns,
+  isGermanOptionalReflexiveInfinitive,
   isGermanReflexiveInfinitive,
   splitGermanSeparableForm,
 } from '@/lib/german-verb-forms';
@@ -96,6 +97,7 @@ function compoundReferenceForms({
   tense: Tense;
 }): GermanVerbTableForms {
   const reflexive = isGermanReflexiveInfinitive(infinitive);
+  const optionalReflexive = isGermanOptionalReflexiveInfinitive(infinitive);
   const lexicalInfinitive = germanLexicalInfinitive(infinitive);
   const indicative = mood === 'indicative';
   const subjunctiveOne = mood === 'subjunctive-one';
@@ -136,7 +138,10 @@ function compoundReferenceForms({
     const pronouns = Object.values(GERMAN_REFLEXIVE_PRONOUNS);
     values = values.map((value, index) => {
       const [finite, ...rest] = value.split(' ');
-      return [finite, pronouns[index], ...rest].join(' ');
+      const pronoun = optionalReflexive
+        ? `(${pronouns[index]})`
+        : pronouns[index];
+      return [finite, pronoun, ...rest].join(' ');
     });
   }
   return {
