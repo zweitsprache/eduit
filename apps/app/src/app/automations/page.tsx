@@ -244,6 +244,20 @@ export default function AutomationsPage() {
             {error && <p className="mt-3 text-sm text-error-primary">{error}</p>}
             {creationFailures.length > 0 && <details className="mt-4 text-sm"><summary className="cursor-pointer font-semibold">{creationFailures.length} fehlgeschlagene Generierungsaufträge</summary><ul className="mt-2 grid gap-1 text-error-primary">{creationFailures.map((failure) => <li key={failure.key}>{failure.label}: {failure.error}</li>)}</ul></details>}
             {finalizationFailed > 0 && !running && <button className="mt-4 rounded-lg border border-primary bg-primary px-4 py-2 text-sm font-semibold" onClick={retryFinalizationFailures} type="button">Fehlgeschlagene Finalisierungen erneut versuchen</button>}
+            {finalizationFailed > 0 && (
+              <details className="mt-4 text-sm" open={!running}>
+                <summary className="cursor-pointer font-semibold">
+                  {finalizationFailed} fehlgeschlagene Finalisierungen
+                </summary>
+                <ul className="mt-2 grid gap-1 text-error-primary">
+                  {finalizing?.jobs
+                    .filter(({ status }) => status === 'failed')
+                    .map((job) => (
+                      <li key={job.id}>{job.title}: {job.error || 'Unbekannter Fehler.'}</li>
+                    ))}
+                </ul>
+              </details>
+            )}
             <button className="mt-6 rounded-lg bg-brand-solid px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50" disabled={running || !total} onClick={() => void run()} type="button">{running ? 'Serie wird verarbeitet …' : `${total || 0} Arbeitsblätter erstellen`}</button>
             {results.length > 0 && <div className="mt-7"><h3 className="font-semibold">Ergebnisse</h3><ul className="mt-2 grid gap-2">{results.map((result) => <li key={result.id}><Link className="text-sm text-brand-secondary underline" href={`/editor?worksheet=${result.id}`}>{result.title}</Link></li>)}</ul></div>}
             {running && finalizing && activeFinalizers.map((job) => (

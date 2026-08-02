@@ -299,9 +299,14 @@ export async function POST(request: Request) {
       await del(blob.pathname).catch(() => undefined);
       throw storageError;
     }
-  } catch {
+  } catch (error) {
+    console.error('Worksheet preview generation failed.', error);
     return NextResponse.json(
-      { error: 'The worksheet preview could not be generated or stored.' },
+      {
+        error: error instanceof Error
+          ? `Worksheet preview failed: ${error.message}`
+          : 'The worksheet preview could not be generated or stored.',
+      },
       { status: 500 },
     );
   } finally {
