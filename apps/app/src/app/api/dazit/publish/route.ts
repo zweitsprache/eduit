@@ -346,8 +346,15 @@ beziehungsweise Kursleiter:innen und Lernende.`
 export async function POST(request: Request) {
   try {
     const user = await getCurrentAppUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
-    if (!user.isAdmin) {
+    const workflowToken = request.headers.get('x-eduit-workflow-token');
+    const isWorkflowRequest = Boolean(
+      process.env.QSTASH_TOKEN
+      && workflowToken === process.env.QSTASH_TOKEN,
+    );
+    if (!user && !isWorkflowRequest) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+    }
+    if (user && !user.isAdmin && !isWorkflowRequest) {
       return NextResponse.json({ error: 'Only administrators can publish worksheets.' }, { status: 403 });
     }
     const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN;
@@ -361,7 +368,13 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const pdf = formData.get('pdf');
     const metadataValue = formData.get('metadata');
-    const mode = formData.get('mode') === 'pdf-only' ? 'pdf-only' : 'full';
+    const requestedMode = formData.get('mode');
+    const mode = requestedMode === 'pdf-only' || requestedMode === 'metadata-only'
+      ? requestedMode
+      : 'full';
+    if (isWorkflowRequest && mode !== 'metadata-only') {
+      return NextResponse.json({ error: 'Invalid workflow publishing mode.' }, { status: 403 });
+    }
     if (!(pdf instanceof File) || pdf.type !== 'application/pdf') {
       return NextResponse.json({ error: 'A PDF file is required.' }, { status: 400 });
     }
@@ -378,7 +391,7 @@ export async function POST(request: Request) {
     if (!documentTypes.includes(metadata.documentType)) {
       return NextResponse.json({ error: 'Invalid Dazit document type.' }, { status: 400 });
     }
-    if (!thumbnails.length || thumbnails.length !== metadata.pages) {
+    if (mode !== 'metadata-only' && (!thumbnails.length || thumbnails.length !== metadata.pages)) {
       return NextResponse.json({ error: 'One thumbnail per PDF page is required.' }, { status: 400 });
     }
     const revisionRows = await sql`
@@ -391,43 +404,59 @@ export async function POST(request: Request) {
     }
     const sourceRevision = Number(revisionRows[0].sourceRevision);
     const publicationRows = await sql`
-      select worksheet_id
+      select
+        worksheet_id as "worksheetId",
+        pdf_path as "pdfPath",
+        thumbnail_paths as "thumbnailPaths",
+        size_bytes as "sizeBytes"
       from dazit_publications
       where worksheet_id = ${metadata.worksheetId}
-    `;
-    if (mode === 'pdf-only' && !publicationRows[0]) {
+    ` as Array<{
+      worksheetId: string;
+      pdfPath: string;
+      thumbnailPaths: string[];
+      sizeBytes: number;
+    }>;
+    if (mode !== 'full' && !publicationRows[0]) {
       return NextResponse.json(
-        { error: 'PDF-only publishing requires an existing Dazit publication.' },
+        { error: 'This publishing mode requires an existing Dazit publication.' },
         { status: 400 },
       );
     }
-    const description = mode === 'full'
+    const description = mode !== 'pdf-only'
       ? await generateDescription(pdf, metadata)
       : null;
 
-    const pdfPath = `worksheets/${metadata.worksheetId}/${metadata.slug}.pdf`;
-    await put(pdfPath, pdf, {
-      access: 'private',
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      contentType: 'application/pdf',
-      token,
-    });
-    const thumbnailPaths = await Promise.all(thumbnails.map(async (thumbnail, index) => {
-      if (thumbnail.type !== 'image/webp') throw new Error('Invalid thumbnail format.');
-      const path = `worksheets/${metadata.worksheetId}/thumbnails/page-${index + 1}.webp`;
-      await put(path, thumbnail, {
+    const pdfPath = mode === 'metadata-only'
+      ? publicationRows[0].pdfPath
+      : `worksheets/${metadata.worksheetId}/${metadata.slug}.pdf`;
+    if (mode !== 'metadata-only') {
+      await put(pdfPath, pdf, {
         access: 'private',
         addRandomSuffix: false,
         allowOverwrite: true,
-        contentType: 'image/webp',
+        contentType: 'application/pdf',
         token,
       });
-      return path;
-    }));
+    }
+    const thumbnailPaths = mode === 'metadata-only'
+      ? publicationRows[0].thumbnailPaths
+      : await Promise.all(thumbnails.map(async (thumbnail, index) => {
+        if (thumbnail.type !== 'image/webp') throw new Error('Invalid thumbnail format.');
+        const path = `worksheets/${metadata.worksheetId}/thumbnails/page-${index + 1}.webp`;
+        await put(path, thumbnail, {
+          access: 'private',
+          addRandomSuffix: false,
+          allowOverwrite: true,
+          contentType: 'image/webp',
+          token,
+        });
+        return path;
+      }));
+    const sizeBytes = mode === 'metadata-only' ? publicationRows[0].sizeBytes : pdf.size;
     const manifestPath = `library/${metadata.worksheetId}.json`;
     let existingManifest: Record<string, unknown> = {};
-    if (mode === 'pdf-only') {
+    if (mode !== 'full') {
       const existingBlob = await get(manifestPath, {
         access: 'private',
         token,
@@ -440,11 +469,12 @@ export async function POST(request: Request) {
     }
     const manifest = description
       ? {
+        ...existingManifest,
         ...metadata,
         pdfPath,
         thumbnailPaths,
-        sizeBytes: pdf.size,
-        downloads: 0,
+        sizeBytes,
+        downloads: existingManifest.downloads ?? 0,
         description: description.excerpt,
         tags: description.tags,
         level: description.level,
@@ -499,7 +529,7 @@ export async function POST(request: Request) {
         ${pdfPath},
         ${JSON.stringify(thumbnailPaths)}::jsonb,
         ${metadata.pages},
-        ${pdf.size},
+        ${sizeBytes},
         ${description.html},
         ${description.excerpt},
         ${JSON.stringify(description.tags)}::jsonb,
@@ -545,7 +575,9 @@ export async function POST(request: Request) {
         where worksheet_id = ${metadata.worksheetId}
       `;
     }
-    await updateWorksheet(metadata.worksheetId, user.id, { status: 'published' }, true);
+    if (mode !== 'metadata-only') {
+      await updateWorksheet(metadata.worksheetId, user!.id, { status: 'published' }, true);
+    }
     const latestRevisionRows = await sql`
       select source_revision as "sourceRevision"
       from worksheets

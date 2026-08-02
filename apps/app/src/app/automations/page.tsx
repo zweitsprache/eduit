@@ -97,6 +97,7 @@ export default function AutomationsPage() {
   const [metadataRunning, setMetadataRunning] = useState(false);
   const [metadataProgress, setMetadataProgress] = useState('');
   const [metadataError, setMetadataError] = useState('');
+  const [metadataQueuedIds, setMetadataQueuedIds] = useState<string[]>([]);
   const resultsRef = useRef<CreatedWorksheet[]>([]);
 
   useEffect(() => {
@@ -106,6 +107,28 @@ export default function AutomationsPage() {
       setBrandProfileId(active.find((profile: BrandProfile) => profile.name === 'dazit')?.id || active.find((profile: BrandProfile) => profile.isDefault)?.id || '');
     });
   }, []);
+
+  useEffect(() => {
+    if (!metadataRunning || !metadataQueuedIds.length) return;
+    const poll = async () => {
+      const response = await fetch('/api/dazit/metadata-republish', { cache: 'no-store' });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !Array.isArray(result.publications)) return;
+      const publications = result.publications as MetadataPublication[];
+      setMetadataPublications(publications);
+      const remainingIds = new Set(publications.map(({ id }) => id));
+      const remaining = metadataQueuedIds.filter((id) => remainingIds.has(id)).length;
+      const completed = metadataQueuedIds.length - remaining;
+      setMetadataProgress(`${completed}/${metadataQueuedIds.length} Metadaten neu veröffentlicht${remaining ? ' …' : '.'}`);
+      if (!remaining) {
+        setMetadataRunning(false);
+        setMetadataQueuedIds([]);
+      }
+    };
+    void poll();
+    const timer = window.setInterval(() => void poll(), 5_000);
+    return () => window.clearInterval(timer);
+  }, [metadataQueuedIds, metadataRunning]);
 
   useEffect(() => {
     void fetch('/api/dazit/metadata-republish', { cache: 'no-store' })
@@ -307,18 +330,28 @@ export default function AutomationsPage() {
     } : null);
   };
 
-  const startMetadataRepublish = () => {
+  const startMetadataRepublish = async () => {
     const eligible = metadataPublications
       .filter(({ title }) => metadataTense === 'all' || publicationTense(title) === metadataTense)
       .slice(0, metadataBatchSize);
     if (!eligible.length) return;
     setMetadataError('');
-    setMetadataProgress(`0/${eligible.length} Metadaten werden neu veröffentlicht …`);
-    setMetadataFinalizing({
-      publish: true,
-      jobs: eligible.map(({ id, title }) => ({ id, title, attempt: 1, status: 'pending' })),
-    });
-    setMetadataRunning(true);
+    setMetadataProgress(`${eligible.length} Metadaten werden in die Warteschlange gestellt …`);
+    try {
+      const response = await fetch('/api/dazit/metadata-republish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worksheetIds: eligible.map(({ id }) => id) }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(String(result.error || 'Workflow konnte nicht gestartet werden.'));
+      setMetadataQueuedIds(eligible.map(({ id }) => id));
+      setMetadataProgress(`0/${eligible.length} Metadaten neu veröffentlicht …`);
+      setMetadataRunning(true);
+    } catch (startError) {
+      setMetadataError(startError instanceof Error ? startError.message : 'Workflow konnte nicht gestartet werden.');
+      setMetadataProgress('');
+    }
   };
 
   const retryMetadataFailures = () => {
@@ -387,7 +420,7 @@ export default function AutomationsPage() {
             <p className="text-sm font-semibold text-brand-secondary">Dazit-Metadaten</p>
             <h2 className="mt-1 text-xl font-semibold">Lernkarten-Beschreibungen neu veröffentlichen</h2>
             <p className="mt-2 text-sm text-tertiary">
-              Verarbeitet bestehende Lernkarten mit einer älteren Metadatenversion. PDF und Vorschaubilder werden aktualisiert, die Beschreibung wird mit den aktuellen Regeln für Vorder- und Rückseiten neu erzeugt.
+              Verarbeitet bestehende Lernkarten mit einer älteren Metadatenversion. Die Beschreibung wird anhand des bereits veröffentlichten PDFs mit den aktuellen Regeln für Vorder- und Rückseiten neu erzeugt. PDF und Vorschaubilder bleiben unverändert.
             </p>
             <div className="mt-6 grid gap-5 sm:grid-cols-3">
               <label className="text-sm font-semibold">
@@ -433,7 +466,7 @@ export default function AutomationsPage() {
               <button
                 className="rounded-lg bg-brand-solid px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
                 disabled={running || metadataRunning || eligibleMetadataCount === 0}
-                onClick={startMetadataRepublish}
+                onClick={() => void startMetadataRepublish()}
                 type="button"
               >
                 {metadataRunning
@@ -446,15 +479,6 @@ export default function AutomationsPage() {
                 </button>
               )}
             </div>
-            {metadataRunning && metadataActiveFinalizers.map((job) => (
-              <iframe
-                aria-hidden="true"
-                className="pointer-events-none fixed -left-[10000px] top-0 h-[900px] w-[1200px] opacity-0"
-                key={`metadata-${job.id}-${job.attempt}`}
-                src={`/editor?worksheet=${encodeURIComponent(job.id)}&automation=batch-full-publish`}
-                title={`Metadaten neu veröffentlichen: ${job.title}`}
-              />
-            ))}
           </section>
         </div>
       </div>
