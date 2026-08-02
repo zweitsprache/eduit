@@ -5,6 +5,7 @@ import { Grid01, List, SearchLg, XClose } from '@untitledui/icons';
 import { FilterSidebar } from '@/components/filter-sidebar';
 import { WorksheetCard } from '@/components/worksheet-card';
 import type { Worksheet } from '@/lib/worksheets';
+import { trackSearch } from '@/components/search-tracking-form';
 
 export function LibraryBrowser({
   canAdminister = false,
@@ -166,10 +167,17 @@ export function LibraryBrowser({
         </button>
       </div>
       <section className="library-results">
-        <div className="mobile-search documents-search">
+        <form action="/documents" className="mobile-search documents-search" method="get" onSubmit={(event) => {
+          const form = event.currentTarget;
+          const query = String(new FormData(form).get('q') || '');
+          trackSearch(query, visibleWorksheets.length, {
+            levels: selectedLevels,
+            types: selectedTypes,
+          });
+        }}>
           <SearchLg aria-hidden="true" />
-          <input placeholder="Titel oder Stichwort suchen …" aria-label="Bibliothek durchsuchen" />
-        </div>
+          <input name="q" defaultValue={initialQuery} placeholder="Titel oder Stichwort suchen …" aria-label="Bibliothek durchsuchen" />
+        </form>
         <div className="results-toolbar">
           <strong>{visibleWorksheets.length} Ergebnisse</strong>
           <div>
