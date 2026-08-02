@@ -118,7 +118,7 @@ export async function POST(request: Request) {
     // base URL. Start from a controlled same-origin shell before injecting the
     // printable document.
     await page.goto(renderShellUrl, { waitUntil: 'domcontentloaded' });
-    await page.setContent(html, { waitUntil: 'networkidle' });
+    await page.setContent(html, { waitUntil: 'domcontentloaded' });
     await page.evaluate(async ({ pageHeight }) => {
       await document.fonts.ready;
       await Promise.all(

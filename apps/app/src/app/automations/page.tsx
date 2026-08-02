@@ -23,7 +23,7 @@ type FinalizeJob = {
 type FinalizingState = { jobs: FinalizeJob[]; publish: boolean };
 
 const CREATION_CONCURRENCY = 5;
-const FINALIZATION_CONCURRENCY = 2;
+const FINALIZATION_CONCURRENCY = 1;
 const MAX_ATTEMPTS = 3;
 const RETRY_BASE_DELAY_MS = 1_000;
 

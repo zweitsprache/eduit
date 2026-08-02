@@ -113,7 +113,7 @@ export async function POST(request: Request) {
       else await route.abort();
     });
     await page.goto(renderShellUrl, { waitUntil: 'domcontentloaded' });
-    await page.setContent(html, { waitUntil: 'networkidle' });
+    await page.setContent(html, { waitUntil: 'domcontentloaded' });
     await page.evaluate(async () => {
       await document.fonts.ready;
       await Promise.all(Array.from(document.images).map((image) => (
