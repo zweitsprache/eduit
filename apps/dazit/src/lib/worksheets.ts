@@ -27,7 +27,7 @@ export type Worksheet = {
   hasAnswerKey: boolean;
   size: string;
   added: string;
-  color: 'lavender' | 'peach' | 'blue' | 'mint' | 'yellow' | 'pink';
+  color: 'lavender' | 'peach' | 'blue' | 'blue-light' | 'green' | 'green-light' | 'orange' | 'orange-light' | 'mint' | 'yellow' | 'pink';
   tags: string[];
   pdfUrl?: string;
   blobPath?: string;
@@ -109,7 +109,13 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
     added: Number.isNaN(publishedAt.getTime())
       ? '—'
       : formatPublishedDate(publishedAt),
-    color: subject === 'Science' ? 'mint'
+    color: row.level === 'A1.1' ? 'blue-light'
+      : row.level === 'A1.2' ? 'blue'
+        : row.level === 'A2.1' ? 'green-light'
+          : row.level === 'A2.2' ? 'green'
+            : row.level === 'B1.1' ? 'orange-light'
+              : row.level === 'B1.2' ? 'orange'
+                : subject === 'Science' ? 'mint'
       : subject === 'Humanities' ? 'peach'
         : subject === 'Arts' ? 'pink'
           : subject === 'PE & health' ? 'yellow'
