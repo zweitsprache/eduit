@@ -52,15 +52,20 @@ export type DazitHomepageStatsRow = {
 export async function getDazitSearchStats() {
   if (!process.env.DATABASE_URL) return { popular: [], zeroResults: [] };
   const sql = neon(process.env.DATABASE_URL);
-  const [popular, zeroResults] = await Promise.all([
-    sql`select query, count(*)::int as searches, max(created_at) as "lastSearched"
-      from dazit_search_events where created_at > now() - interval '12 months'
-      group by query order by searches desc, "lastSearched" desc limit 100`,
-    sql`select query, count(*)::int as searches, max(created_at) as "lastSearched"
-      from dazit_search_events where result_count = 0 and created_at > now() - interval '12 months'
-      group by query order by searches desc, "lastSearched" desc limit 100`,
-  ]);
-  return { popular, zeroResults };
+  try {
+    const [popular, zeroResults] = await Promise.all([
+      sql`select query, count(*)::int as searches, max(created_at) as "lastSearched"
+        from dazit_search_events where created_at > now() - interval '12 months'
+        group by query order by searches desc, "lastSearched" desc limit 100`,
+      sql`select query, count(*)::int as searches, max(created_at) as "lastSearched"
+        from dazit_search_events where result_count = 0 and created_at > now() - interval '12 months'
+        group by query order by searches desc, "lastSearched" desc limit 100`,
+    ]);
+    return { popular, zeroResults };
+  } catch (error) {
+    console.error('Could not load Dazit search statistics.', error);
+    return { popular: [], zeroResults: [] };
+  }
 }
 
 export type DazitPublicationMetadata = {
