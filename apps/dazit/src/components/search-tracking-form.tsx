@@ -21,7 +21,7 @@ export function SearchTrackingForm({ children, className }: { children: ReactNod
   const submit = (event: FormEvent<HTMLFormElement>) => {
     const form = event.currentTarget;
     const query = String(new FormData(form).get('q') || '').trim();
-    if (query.length >= 2) trackSearch(query, 0);
+    // The homepage has no result set yet; the documents page records the actual count.
   };
   return <form action="/documents" className={className} method="get" onSubmit={submit}>{children}</form>;
 }

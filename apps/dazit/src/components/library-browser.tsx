@@ -170,7 +170,14 @@ export function LibraryBrowser({
         <form action="/documents" className="mobile-search documents-search" method="get" onSubmit={(event) => {
           const form = event.currentTarget;
           const query = String(new FormData(form).get('q') || '');
-          trackSearch(query, visibleWorksheets.length, {
+          const normalized = query.trim().toLocaleLowerCase('de-CH');
+          const resultCount = libraryWorksheets.filter((worksheet) => (
+            (!selectedTypes.length || selectedTypes.includes(worksheet.documentType))
+            && (!selectedLevels.length || (worksheet.level ? selectedLevels.includes(worksheet.level) : false))
+            && (!normalized || [worksheet.title, worksheet.description, ...worksheet.tags]
+              .join(' ').toLocaleLowerCase('de-CH').includes(normalized))
+          )).length;
+          trackSearch(query, resultCount, {
             levels: selectedLevels,
             types: selectedTypes,
           });
