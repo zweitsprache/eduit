@@ -1,6 +1,7 @@
 import { del, get, put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import { getCurrentAppUser } from '@/lib/auth/authorization';
+import { launchRenderingBrowser } from '@/lib/server-chromium';
 import {
   getWorksheetPreviewLocation,
   updateWorksheetPreview,
@@ -12,35 +13,6 @@ export const maxDuration = 60;
 
 const PREVIEW_WIDTH = 960;
 const PREVIEW_HEIGHT = 540;
-const CHROME_PATHS = [
-  process.env.CHROMIUM_EXECUTABLE_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-  '/usr/bin/google-chrome',
-  '/usr/bin/chromium',
-].filter((path): path is string => Boolean(path));
-
-async function findChrome() {
-  const { access } = await import('node:fs/promises');
-  for (const path of CHROME_PATHS) {
-    try {
-      await access(path);
-      return { args: [] as string[], executablePath: path };
-    } catch {
-      // Try the next supported location.
-    }
-  }
-  try {
-    const { default: serverlessChromium } = await import('@sparticuz/chromium');
-    return {
-      args: serverlessChromium.args,
-      executablePath: await serverlessChromium.executablePath(),
-    };
-  } catch {
-    return null;
-  }
-}
-
 function safeHead(value: string) {
   return value
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
@@ -153,17 +125,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const chrome = await findChrome();
-  if (!chrome) {
-    return NextResponse.json(
-      {
-        error:
-          'Chrome is unavailable. Configure CHROMIUM_EXECUTABLE_PATH on the server.',
-      },
-      { status: 503 },
-    );
-  }
-
   const origin = new URL(request.url).origin;
   const scale = PREVIEW_WIDTH / sourceWidth;
   const html = `<!doctype html>
@@ -218,15 +179,10 @@ export async function POST(request: Request) {
 
   let browser: import('playwright-core').Browser | null = null;
   try {
-    const [{ chromium }, { default: sharp }] = await Promise.all([
-      import('playwright-core'),
+    const [{ default: sharp }] = await Promise.all([
       import('sharp'),
     ]);
-    browser = await chromium.launch({
-      args: chrome.args,
-      executablePath: chrome.executablePath,
-      headless: true,
-    });
+    browser = await launchRenderingBrowser();
     const context = await browser.newContext({
       deviceScaleFactor: 1,
       viewport: { width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT },

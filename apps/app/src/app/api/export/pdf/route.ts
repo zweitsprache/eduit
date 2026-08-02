@@ -1,6 +1,5 @@
-import { chromium } from 'playwright-core';
 import { NextResponse } from 'next/server';
-import { findServerChromium } from '@/lib/server-chromium';
+import { launchRenderingBrowser } from '@/lib/server-chromium';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -27,14 +26,6 @@ export async function POST(request: Request) {
 
   if (!payload.content || payload.content.length > 4_000_000) {
     return NextResponse.json({ error: 'The rendered document is missing or too large.' }, { status: 400 });
-  }
-
-  const chrome = await findServerChromium();
-  if (!chrome) {
-    return NextResponse.json(
-      { error: 'Chrome is unavailable. Configure CHROMIUM_EXECUTABLE_PATH on the server.' },
-      { status: 503 },
-    );
   }
 
   const origin = new URL(request.url).origin;
@@ -87,11 +78,19 @@ export async function POST(request: Request) {
       <body><div class="editor-content">${payload.content}</div></body>
     </html>`;
 
-  const browser = await chromium.launch({
-    args: chrome.args,
-    executablePath: chrome.executablePath,
-    headless: true,
-  });
+  let browser: import('playwright-core').Browser;
+  try {
+    browser = await launchRenderingBrowser();
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error
+          ? error.message
+          : 'Chrome is unavailable. Configure Browserless or CHROMIUM_EXECUTABLE_PATH on the server.',
+      },
+      { status: 503 },
+    );
+  }
   try {
     const page = await browser.newPage();
     const renderShellUrl = new URL('/__eduit-pdf-render-shell__', origin).href;

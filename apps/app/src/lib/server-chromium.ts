@@ -1,4 +1,5 @@
 import { access } from 'node:fs/promises';
+import type { Browser } from 'playwright-core';
 
 const CHROME_PATHS = [
   process.env.CHROMIUM_EXECUTABLE_PATH,
@@ -27,4 +28,76 @@ export async function findServerChromium() {
     console.error('Could not prepare serverless Chromium.', error);
     return null;
   }
+}
+
+function appendTokenToEndpoint(endpoint: string, token: string) {
+  const url = new URL(endpoint);
+  if (!url.searchParams.has('token')) {
+    url.searchParams.set('token', token);
+  }
+  return url.toString();
+}
+
+function normalizeBrowserlessEndpoint(endpoint: string) {
+  if (endpoint.startsWith('https://')) {
+    return `wss://${endpoint.slice('https://'.length)}`;
+  }
+  if (endpoint.startsWith('http://')) {
+    return `ws://${endpoint.slice('http://'.length)}`;
+  }
+  return endpoint;
+}
+
+export function getBrowserlessEndpoint() {
+  const endpoint =
+    process.env.BROWSERLESS_WS_ENDPOINT
+    ?? process.env.BROWSERLESS_URL
+    ?? process.env.BROWSERLESS_ENDPOINT;
+  if (!endpoint) {
+    return null;
+  }
+
+  const normalizedEndpoint = normalizeBrowserlessEndpoint(endpoint);
+  const token =
+    process.env.BROWSERLESS_TOKEN
+    ?? process.env.BROWSERLESS_API_KEY
+    ?? process.env.BROWSERLESS_API_TOKEN;
+
+  if (!token) {
+    return normalizedEndpoint;
+  }
+
+  try {
+    return appendTokenToEndpoint(normalizedEndpoint, token);
+  } catch {
+    return normalizedEndpoint;
+  }
+}
+
+export async function launchRenderingBrowser(): Promise<Browser> {
+  const [{ chromium }, browserlessEndpoint] = await Promise.all([
+    import('playwright-core'),
+    Promise.resolve(getBrowserlessEndpoint()),
+  ]);
+
+  if (browserlessEndpoint) {
+    try {
+      return await chromium.connectOverCDP(browserlessEndpoint);
+    } catch (error) {
+      console.error('Could not connect to Browserless.', error);
+    }
+  }
+
+  const chrome = await findServerChromium();
+  if (!chrome) {
+    throw new Error(
+      'Chrome is unavailable. Configure Browserless or CHROMIUM_EXECUTABLE_PATH on the server.',
+    );
+  }
+
+  return chromium.launch({
+    args: chrome.args,
+    executablePath: chrome.executablePath,
+    headless: true,
+  });
 }
