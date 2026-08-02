@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import '@neondatabase/auth-ui/dist/style.css';
 import { dazitSiteUrl } from '@/lib/site-url';
 import { SiteFooter } from '@/components/site-footer';
 import { AuthProvider } from '@/components/auth-provider';
