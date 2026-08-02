@@ -2367,6 +2367,10 @@ export default function EditorPage() {
     if (!editor || !worksheetId || !worksheetInitializationStartedRef.current) {
       return;
     }
+    const automationMode = typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('automation');
+    if (automationMode === 'batch-full-publish') return;
     if (worksheetPreviewTimerRef.current) {
       clearTimeout(worksheetPreviewTimerRef.current);
     }
@@ -2399,18 +2403,20 @@ export default function EditorPage() {
     ) return;
     automationPublishStartedRef.current = true;
     const timer = window.setTimeout(async () => {
-      try {
-        await generateWorksheetPreview(editor, worksheetId, true);
-      } catch (error) {
-        const message = error instanceof Error
-          ? error.message
-          : 'Worksheet preview generation failed.';
-        setExportError(message);
-        if (window.parent !== window) {
-          window.parent.postMessage({ type: 'eduit-automation-item-complete', worksheetId, success: false, error: message }, window.location.origin);
+      if (automationMode !== 'batch-full-publish') {
+        try {
+          await generateWorksheetPreview(editor, worksheetId, true);
+        } catch (error) {
+          const message = error instanceof Error
+            ? error.message
+            : 'Worksheet preview generation failed.';
+          setExportError(message);
+          if (window.parent !== window) {
+            window.parent.postMessage({ type: 'eduit-automation-item-complete', worksheetId, success: false, error: message }, window.location.origin);
+          }
+          automationPublishStartedRef.current = false;
+          return;
         }
-        automationPublishStartedRef.current = false;
-        return;
       }
       if (
         automationMode === 'batch-publish'
