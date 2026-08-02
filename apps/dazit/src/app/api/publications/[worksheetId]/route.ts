@@ -49,6 +49,7 @@ export async function PATCH(request: Request, { params }: Props) {
     if (!payload) return NextResponse.json({ error: 'Invalid metadata.' }, { status: 400 });
     const title = cleanText(payload.title, 200);
     const excerpt = cleanText(payload.excerpt, 280);
+    const searchSnippet = cleanText(payload.searchSnippet, 180);
     const documentType = cleanText(payload.documentType, 50);
     const level = cleanText(payload.level, 10);
     const actionField = cleanText(payload.actionField, 100);
@@ -62,6 +63,7 @@ export async function PATCH(request: Request, { params }: Props) {
     const rows = await sql`
       update dazit_publications set
         title = ${title}, document_type = ${documentType}, excerpt = ${excerpt},
+        search_snippet = ${searchSnippet || null},
         description_html = ${cleanHtml(payload.descriptionHtml)}, level = ${level},
         tags = ${JSON.stringify(cleanList(payload.tags))}::jsonb,
         action_competencies = ${JSON.stringify(cleanList(payload.actionCompetencies, actionCompetencies))}::jsonb,
@@ -77,7 +79,7 @@ export async function PATCH(request: Request, { params }: Props) {
     if (manifestResult?.stream) {
       const manifest = await new Response(manifestResult.stream).json() as Record<string, unknown>;
       await put(manifestPath, JSON.stringify({
-        ...manifest, title, description: excerpt, documentType, subject: level,
+        ...manifest, title, description: excerpt, searchSnippet: searchSnippet || undefined, documentType, subject: level,
         grade: level, tags: cleanList(payload.tags),
       }, null, 2), {
         access: 'private', addRandomSuffix: false, allowOverwrite: true,

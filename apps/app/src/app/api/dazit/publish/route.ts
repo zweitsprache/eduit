@@ -34,6 +34,7 @@ const irrelevantProductionLanguage =
 
 const descriptionSchema = z.object({
   excerpt: z.string().trim().min(120).max(280),
+  searchSnippet: z.string().trim().min(90).max(180),
   tags: z.array(z.string().trim().min(2).max(50)).min(1).max(10),
   level: z.enum(['A1.1', 'A1.2', 'A2.1', 'A2.2', 'B1.1', 'B1.2']),
   actionCompetencies: z.array(z.enum([
@@ -211,6 +212,9 @@ ${metadata.documentType === 'Lernkarten'
 
 Erstelle:
 1. Einen eigenständigen Kartenauszug mit 120 bis 280 Zeichen.
+1a. Ein separates SEO-Snippet mit 90 bis 180 Zeichen für Suchergebnisse.
+    Es soll den sprachlichen Inhalt präzise benennen, natürliche Suchbegriffe
+    enthalten und unabhängig vom Kartenauszug formuliert sein.
 2. Eine kompakte ausführliche Beschreibung mit einer Einleitung von mindestens 100
    Zeichen und 1 bis 3 logisch gegliederten Abschnitten. Jeder Absatz umfasst
    mindestens 40 Zeichen. Nutze Aufzählungspunkte nur, wenn sie den Inhalt
@@ -278,6 +282,7 @@ beziehungsweise Kursleiter:innen und Lernende.`
     output = normalizeDescriptionQuotationMarks(result.output);
     const descriptiveText = JSON.stringify({
       excerpt: output.excerpt,
+      searchSnippet: output.searchSnippet,
       introduction: output.introduction,
       sections: output.sections,
       contribution: output.actionCompetencyContribution,
@@ -285,6 +290,7 @@ beziehungsweise Kursleiter:innen und Lernende.`
     const missingLearningCardReference = metadata.documentType === 'Lernkarten'
       && (
         !/Lernkarten/i.test(output.excerpt)
+        || !/Lernkarten/i.test(output.searchSnippet)
         || !/Lernkarten/i.test(JSON.stringify({
           introduction: output.introduction,
           sections: output.sections,
@@ -299,6 +305,7 @@ beziehungsweise Kursleiter:innen und Lernende.`
   if (!output) throw new Error('Description generation failed.');
   const generatedText = JSON.stringify({
     excerpt: output.excerpt,
+    searchSnippet: output.searchSnippet,
     introduction: output.introduction,
     sections: output.sections,
     contribution: output.actionCompetencyContribution,
@@ -306,6 +313,7 @@ beziehungsweise Kursleiter:innen und Lernende.`
   const missingLearningCardReference = metadata.documentType === 'Lernkarten'
     && (
       !/Lernkarten/i.test(output.excerpt)
+      || !/Lernkarten/i.test(output.searchSnippet)
       || !/Lernkarten/i.test(JSON.stringify({
         introduction: output.introduction,
         sections: output.sections,
@@ -331,6 +339,7 @@ beziehungsweise Kursleiter:innen und Lernende.`
   }).join('');
   return {
     excerpt: output.excerpt,
+    searchSnippet: output.searchSnippet,
     html: `<p>${escapeHtml(output.introduction)}</p>${sections}`,
     tags: [...new Set(output.tags.map((tag) => tag.trim()))].slice(0, 10),
     level: output.level,
@@ -476,6 +485,7 @@ export async function POST(request: Request) {
         sizeBytes,
         downloads: existingManifest.downloads ?? 0,
         description: description.excerpt,
+        searchSnippet: description.searchSnippet,
         tags: description.tags,
         level: description.level,
       actionCompetencies: description.actionCompetencies,
@@ -511,6 +521,7 @@ export async function POST(request: Request) {
         size_bytes,
         description_html,
         excerpt,
+        search_snippet,
         tags,
         level,
         action_competencies,
@@ -532,13 +543,14 @@ export async function POST(request: Request) {
         ${sizeBytes},
         ${description.html},
         ${description.excerpt},
+        ${description.searchSnippet},
         ${JSON.stringify(description.tags)}::jsonb,
         ${description.level},
         ${JSON.stringify(description.actionCompetencies)}::jsonb,
         ${JSON.stringify(description.languageCompetencies)}::jsonb,
         ${description.actionCompetencyContributionHtml},
         ${description.actionField},
-        2,
+        3,
         ${sourceRevision},
         now(),
         now()
@@ -553,6 +565,7 @@ export async function POST(request: Request) {
         size_bytes = excluded.size_bytes,
         description_html = excluded.description_html,
         excerpt = excluded.excerpt,
+        search_snippet = excluded.search_snippet,
         tags = excluded.tags,
         level = excluded.level,
         action_competencies = excluded.action_competencies,

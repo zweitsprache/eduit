@@ -30,7 +30,7 @@ type UnpublishedLearningCard = {
   createdAt: string;
 };
 
-const FINALIZATION_CONCURRENCY = 1;
+const FINALIZATION_CONCURRENCY = 2;
 const MAX_ATTEMPTS = 3;
 
 const INITIAL: Config[] = [

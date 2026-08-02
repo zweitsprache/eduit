@@ -18,16 +18,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!worksheet) return {};
   const pathname = `/documents/${worksheet.slug}`;
   const image = worksheet.thumbnailUrls?.[0];
+  const snippet = worksheet.searchSnippet || worksheet.description;
   return {
     title: worksheet.title,
-    description: worksheet.description,
+    description: snippet,
     alternates: { canonical: pathname },
     openGraph: {
       type: 'article',
       locale: 'de_CH',
       siteName: 'dazit',
       title: worksheet.title,
-      description: worksheet.description,
+      description: snippet,
       url: pathname,
       publishedTime: worksheet.publishedAt,
       images: image ? [{
@@ -40,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: worksheet.title,
-      description: worksheet.description,
+      description: snippet,
       images: image ? [image] : [],
     },
     robots: { index: true, follow: true },
@@ -50,6 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function WorksheetDetailPage({ params }: Props) {
   const worksheet = await worksheetBySlug((await params).slug);
   if (!worksheet) notFound();
+  const searchSnippet = worksheet.searchSnippet || worksheet.description;
   const currentUser = await getCurrentDazitUser();
   const canAdminister = Boolean(currentUser?.isAdmin);
   const allWorksheets = await getWorksheets();
@@ -157,6 +159,14 @@ export default async function WorksheetDetailPage({ params }: Props) {
           <div className="detail-column detail-info-column">
             <div className="detail-copy">
               {canAdminister && <InlineMetadataEditor worksheet={worksheet} />}
+              {canAdminister && (
+                <section className="snippet-preview" aria-label="Google-Snippet-Vorschau">
+                  <span className="snippet-preview-label">Google-Snippet-Vorschau</span>
+                  <span className="snippet-preview-url">www.dazit.io › documents › {worksheet.slug}</span>
+                  <strong>{worksheet.title}</strong>
+                  <p>{searchSnippet}</p>
+                </section>
+              )}
               <div className="detail-flags">
                 <span className={`subject subject-${worksheet.color}`}>{worksheet.documentType.toUpperCase()}</span>
                 {worksheet.hasAnswerKey && <span className="answer-key">✓ Lösungsblatt enthalten</span>}

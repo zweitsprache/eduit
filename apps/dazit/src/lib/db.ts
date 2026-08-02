@@ -6,6 +6,7 @@ export type DazitPublicationMetadata = {
   documentType: 'Arbeitsblatt' | 'Merkblatt' | 'Verbtabelle' | 'Deklinationstabelle' | 'Lernkarten';
   descriptionHtml: string | null;
   excerpt: string | null;
+  searchSnippet: string | null;
   tags: string[];
   level: string | null;
   actionCompetencies: string[];
@@ -35,6 +36,7 @@ export async function getPublicationMetadata() {
       document_type as "documentType",
       description_html as "descriptionHtml",
       excerpt,
+      search_snippet as "searchSnippet",
       tags,
       level,
       action_competencies as "actionCompetencies",

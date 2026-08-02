@@ -1,4 +1,6 @@
-import { access } from 'node:fs/promises';
+import { access, mkdir, readdir, rm, stat } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import type { Browser } from 'playwright-core';
 
 const CHROME_PATHS = [
@@ -48,6 +50,36 @@ function normalizeBrowserlessEndpoint(endpoint: string) {
   return endpoint;
 }
 
+function chromiumTempRoot() {
+  return process.env.EDUIT_CHROMIUM_TMPDIR
+    || path.join(os.tmpdir(), 'eduit-chromium-runtime');
+}
+
+async function pruneStaleChromiumTempDirs(rootDir: string) {
+  await mkdir(rootDir, { recursive: true });
+  const entries = await readdir(rootDir, { withFileTypes: true }).catch(() => []);
+  const cutoff = Date.now() - 6 * 60 * 60 * 1000;
+  await Promise.all(entries
+    .filter((entry) => (
+      entry.isDirectory()
+      && (
+        entry.name.startsWith('playwright_chromiumdev_profile-')
+        || entry.name.startsWith('playwright-artifacts-')
+        || entry.name.startsWith('chromium-profile-')
+      )
+    ))
+    .map(async (entry) => {
+      const entryPath = path.join(rootDir, entry.name);
+      try {
+        const details = await stat(entryPath);
+        if (details.mtimeMs > cutoff) return;
+        await rm(entryPath, { recursive: true, force: true });
+      } catch {
+        // Ignore temp cleanup failures and continue launching Chrome.
+      }
+    }));
+}
+
 export function getBrowserlessEndpoint() {
   const endpoint =
     process.env.BROWSERLESS_WS_ENDPOINT
@@ -83,16 +115,21 @@ export async function launchRenderingBrowser({
   ]);
 
   if (browserlessEndpoint && !preferLocal) {
+    let lastBrowserlessError: unknown = null;
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       try {
         return await chromium.connectOverCDP(browserlessEndpoint);
       } catch (error) {
+        lastBrowserlessError = error;
         console.error(`Could not connect to Browserless (attempt ${attempt}/3).`, error);
         if (attempt < 3) {
           await new Promise((resolve) => setTimeout(resolve, attempt * 1_500));
         }
       }
     }
+    throw new Error(
+      `Browserless connection failed after 3 attempts.${lastBrowserlessError instanceof Error ? ` ${lastBrowserlessError.message}` : ''}`,
+    );
   }
 
   const chrome = await findServerChromium();
@@ -102,8 +139,17 @@ export async function launchRenderingBrowser({
     );
   }
 
+  const tempRoot = chromiumTempRoot();
+  await pruneStaleChromiumTempDirs(tempRoot);
+
   return chromium.launch({
     args: chrome.args,
+    env: {
+      ...process.env,
+      TMPDIR: tempRoot,
+      TMP: tempRoot,
+      TEMP: tempRoot,
+    },
     executablePath: chrome.executablePath,
     headless: true,
   });

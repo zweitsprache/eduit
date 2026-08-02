@@ -17,6 +17,7 @@ export function InlineMetadataEditor({ worksheet }: { worksheet: Worksheet }) {
   const [error, setError] = useState('');
   const [form, setForm] = useState({
     title: worksheet.title, excerpt: worksheet.description,
+    searchSnippet: worksheet.searchSnippet || '',
     documentType: worksheet.documentType,
     level: worksheet.level || 'A1.1', tags: worksheet.tags.join(', '),
     actionCompetencies: worksheet.actionCompetencies || [],
@@ -54,6 +55,7 @@ export function InlineMetadataEditor({ worksheet }: { worksheet: Worksheet }) {
       <div className="metadata-editor-heading"><h2>Metadaten bearbeiten</h2><button onClick={() => setEditing(false)} type="button">Schliessen</button></div>
       <label>Titel<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
       <label>Kartenauszug<textarea maxLength={280} rows={4} value={form.excerpt} onChange={(event) => setForm({ ...form, excerpt: event.target.value })} /></label>
+      <label>SEO-Snippet<textarea maxLength={180} rows={3} value={form.searchSnippet} onChange={(event) => setForm({ ...form, searchSnippet: event.target.value })} /><small>Für Suchergebnisse. Leer lassen für Fallback auf Kartenauszug.</small></label>
       <div className="metadata-editor-row">
         <label>Dokumenttyp<select value={form.documentType} onChange={(event) => setForm({ ...form, documentType: event.target.value as Worksheet['documentType'] })}>{TYPES.map((value) => <option key={value}>{value}</option>)}</select></label>
         <label>Niveau<select value={form.level} onChange={(event) => setForm({ ...form, level: event.target.value })}>{LEVELS.map((value) => <option key={value}>{value}</option>)}</select></label>

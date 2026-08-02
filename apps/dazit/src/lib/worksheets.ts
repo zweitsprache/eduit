@@ -10,6 +10,7 @@ export type Worksheet = {
   slug: string;
   title: string;
   description: string;
+  searchSnippet?: string;
   subject: Subject;
   grade: string;
   documentType:
@@ -50,6 +51,7 @@ type PublishedManifest = {
   slug: string;
   title: string;
   description?: string;
+  searchSnippet?: string;
   subject?: string;
   grade?: string;
   documentType?: string;
@@ -101,6 +103,7 @@ function publishedWorksheet(manifest: PublishedManifest): Worksheet | null {
     slug: manifest.slug,
     title: manifest.title,
     description: manifest.description || 'Druckfertiges Arbeitsblatt für den DaZ-Kurs.',
+    searchSnippet: manifest.searchSnippet,
     subject,
     grade: manifest.grade || '—',
     documentType: documentTypes.includes(manifest.documentType as Worksheet['documentType'])
@@ -179,6 +182,7 @@ async function loadWorksheets() {
         worksheet.title = record.title;
         worksheet.documentType = record.documentType;
         worksheet.description = record.excerpt || worksheet.description;
+        worksheet.searchSnippet = record.searchSnippet || worksheet.searchSnippet;
         worksheet.descriptionHtml = record.descriptionHtml || undefined;
         worksheet.tags = Array.isArray(record.tags) ? record.tags.slice(0, 10) : worksheet.tags;
         worksheet.level = record.level || undefined;
