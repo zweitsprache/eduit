@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Download01, File02, Loading01, Trash01 } from '@untitledui/icons';
+import { Files } from 'lucide-react';
 import type { Worksheet } from '@/lib/worksheets';
 
 export function WorksheetCard({
@@ -38,10 +39,14 @@ export function WorksheetCard({
           {worksheet.hasAnswerKey && <span className="answer-key">✓ Mit Lösungsblatt</span>}
         </div>
         <h2><Link href={`/documents/${worksheet.slug}`}>{worksheet.title}</Link></h2>
-        <p className="card-excerpt">{worksheet.description}</p>
-        <p className="card-meta">{worksheet.grade} · {worksheet.documentType} · {worksheet.pages} Seiten · {worksheet.language}</p>
-        <div className="card-actions">
-          <span><Download01 aria-hidden="true" /> {worksheet.downloads}</span>
+        <p className="card-excerpt">
+          <Link href={`/documents/${worksheet.slug}`}>{worksheet.description}</Link>
+        </p>
+        <div className={`card-actions${onDelete ? '' : ' card-actions--no-delete'}`}>
+          <div className="card-stats">
+            <span><Files aria-hidden="true" /> {worksheet.pages}</span>
+            <span><Download01 aria-hidden="true" /> {worksheet.downloads}</span>
+          </div>
           {onDelete && (
             <button
               aria-label={`${worksheet.title} löschen`}

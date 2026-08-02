@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Copy01, File02, Grid01 } from '@untitledui/icons';
 import { SiteHeader } from '@/components/site-header';
 import { WorksheetCard } from '@/components/worksheet-card';
+import { CountUp } from '@/components/count-up';
 import { getWorksheets } from '@/lib/worksheets';
 
 export const dynamic = 'force-dynamic';
@@ -33,53 +34,34 @@ export default async function HomePage() {
     return counts;
   }, {});
   const newest = worksheets.slice(0, 4);
-  const previewWorksheets = worksheets.filter(
-    ({ thumbnailUrls }) => Boolean(thumbnailUrls?.[0]),
-  );
-  const heroWorksheets = [...previewWorksheets]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 3);
-  const languageCount = new Set(worksheets.map(({ language }) => language)).size;
-
   return (
     <>
       <SiteHeader active="home" />
       <main className="home-page">
         <section className="home-hero">
           <div className="home-hero-content">
+            <span className="home-hero-badge">Deutsch als Zweitsprache noch einfacher machen</span>
             <h1>
-              Arbeits- und Merkblätter,<br />
+              <CountUp value={worksheets.length} /> Arbeits- und Merkblätter,<br />
               Spiele und Kartensets für<br />
-              <em>DaZ-Kurse</em>
+              <em>DaZ-Kurse</em> mit Erwachsenen
             </h1>
             <form action="/documents" className="home-search" method="get">
               <label className="sr-only" htmlFor="home-search">Bibliothek durchsuchen</label>
               <input id="home-search" name="q" type="search" />
               <button type="submit">Suchen</button>
             </form>
-            <p>{worksheets.length} druckfertige PDFs · 6 Niveaus · {languageCount} {languageCount === 1 ? 'Sprache' : 'Sprachen'}</p>
           </div>
           <div aria-hidden="true" className="home-hero-preview">
             <span className="home-preview-sheet home-preview-sheet--back">
-              {heroWorksheets[2]?.thumbnailUrls?.[0] && (
-                <img alt="" src={heroWorksheets[2].thumbnailUrls[0]} />
-              )}
+              <img alt="" src="/eduit-document%20(75).svg" />
             </span>
             <span className="home-preview-sheet home-preview-sheet--middle">
-              {heroWorksheets[1]?.thumbnailUrls?.[0] && (
-                <img alt="" src={heroWorksheets[1].thumbnailUrls[0]} />
-              )}
+              <img alt="" src="/eduit-document%20-%202026-08-02T074736.440.svg" />
             </span>
-            <div className="home-preview-sheet home-preview-sheet--front">
-              {heroWorksheets[0]?.thumbnailUrls?.[0]
-                ? <img alt="" src={heroWorksheets[0].thumbnailUrls[0]} />
-                : (
-                  <span className="home-preview-placeholder">
-                    <File02 />
-                    <small>16:9 Vorschau</small>
-                  </span>
-                )}
-            </div>
+            <span className="home-preview-sheet home-preview-sheet--front">
+              <img alt="" src="/eduit-document%20-%202026-08-01T071645.177.svg" />
+            </span>
           </div>
           <div className="home-hero-levels">
             {levels.map(([level, className]) => (
@@ -96,7 +78,7 @@ export default async function HomePage() {
         </section>
 
         <div className="home-content">
-          <section className="home-section">
+          <section className="home-section home-types">
             <div className="home-section-heading"><h2>Nach Typ</h2></div>
             <div className="home-type-grid">
               <Link className="home-type-card" href="/documents">
@@ -120,14 +102,15 @@ export default async function HomePage() {
 
           <section className="home-section home-new">
             <div className="home-section-heading">
-              <h2>Neu diese Woche</h2>
+              <h2>Diese Woche neu</h2>
               <Link href="/documents">Alle neuen Dokumente ›</Link>
             </div>
             <div className="home-new-grid">
               {newest.map((worksheet) => (
-                <WorksheetCard compact key={worksheet.slug} worksheet={worksheet} />
+                <WorksheetCard key={worksheet.slug} worksheet={worksheet} />
               ))}
             </div>
+            <Link className="home-new-mobile-link" href="/documents">Alle neuen Dokumente</Link>
           </section>
         </div>
       </main>
