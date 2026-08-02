@@ -1,4 +1,36 @@
 @font-face {
+  font-family: "Encode Sans Semi Condensed";
+  src: url("/fonts/EncodeSans-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Encode Sans Semi Condensed";
+  src: url("/fonts/EncodeSans-Medium.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Encode Sans Semi Condensed";
+  src: url("/fonts/EncodeSans-SemiBold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Encode Sans Semi Condensed";
+  src: url("/fonts/EncodeSans-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
   font-family: "Linotype Feltpen";
   src: url("/fonts/feltpen/LinotypeFeltpen-Medium.ttf") format("truetype");
   font-style: normal;
