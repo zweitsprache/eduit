@@ -144,42 +144,58 @@ async function loadWorksheets() {
   if (!token) return [];
   try {
     const result = await list({ prefix: 'library/', limit: 1000, token });
-    const published = (await Promise.all(result.blobs
-      .filter(({ pathname }) => pathname.endsWith('.json'))
-      .map(async ({ pathname }) => {
-        const result = await get(pathname, {
-          access: 'private',
-          token,
-          useCache: false,
-        });
-        if (!result || result.statusCode !== 200 || !result.stream) return null;
-        const manifest = await new Response(result.stream).json() as PublishedManifest;
-        return publishedWorksheet(manifest);
-      })))
-      .filter((item): item is Worksheet => item !== null)
-      .sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''));
-    const metadata = await getPublicationMetadata();
-    published.forEach((worksheet) => {
-      if (!worksheet.worksheetId) return;
-      const record = metadata.get(worksheet.worksheetId);
-      if (!record) return;
-      worksheet.title = record.title;
-      worksheet.documentType = record.documentType;
-      worksheet.description = record.excerpt || worksheet.description;
-      worksheet.descriptionHtml = record.descriptionHtml || undefined;
-      worksheet.tags = Array.isArray(record.tags) ? record.tags.slice(0, 10) : worksheet.tags;
-      worksheet.level = record.level || undefined;
-      worksheet.actionCompetencies = Array.isArray(record.actionCompetencies)
-        ? record.actionCompetencies
-        : [];
-      worksheet.languageCompetencies = Array.isArray(record.languageCompetencies)
-        ? record.languageCompetencies
-        : [];
-      worksheet.actionCompetencyContributionHtml =
-        record.actionCompetencyContributionHtml || undefined;
-      worksheet.actionField = record.actionField || undefined;
-      worksheet.relationships = record.relationships;
-    });
+    const manifests = result.blobs.filter(({ pathname }) => pathname.endsWith('.json'));
+    const published: Worksheet[] = [];
+
+    // Keep private Blob requests bounded. Fetching the whole library concurrently can
+    // exhaust local sockets, and one rejected request used to hide every worksheet.
+    for (let index = 0; index < manifests.length; index += 12) {
+      const batch = manifests.slice(index, index + 12);
+      const worksheets = await Promise.all(batch.map(async ({ pathname }) => {
+        try {
+          const result = await get(pathname, {
+            access: 'private',
+            token,
+            useCache: false,
+          });
+          if (!result || result.statusCode !== 200 || !result.stream) return null;
+          const manifest = await new Response(result.stream).json() as PublishedManifest;
+          return publishedWorksheet(manifest);
+        } catch (error) {
+          console.error(`Could not load Dazit manifest ${pathname}.`, error);
+          return null;
+        }
+      }));
+      published.push(...worksheets.filter((item): item is Worksheet => item !== null));
+    }
+
+    published.sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''));
+    try {
+      const metadata = await getPublicationMetadata();
+      published.forEach((worksheet) => {
+        if (!worksheet.worksheetId) return;
+        const record = metadata.get(worksheet.worksheetId);
+        if (!record) return;
+        worksheet.title = record.title;
+        worksheet.documentType = record.documentType;
+        worksheet.description = record.excerpt || worksheet.description;
+        worksheet.descriptionHtml = record.descriptionHtml || undefined;
+        worksheet.tags = Array.isArray(record.tags) ? record.tags.slice(0, 10) : worksheet.tags;
+        worksheet.level = record.level || undefined;
+        worksheet.actionCompetencies = Array.isArray(record.actionCompetencies)
+          ? record.actionCompetencies
+          : [];
+        worksheet.languageCompetencies = Array.isArray(record.languageCompetencies)
+          ? record.languageCompetencies
+          : [];
+        worksheet.actionCompetencyContributionHtml =
+          record.actionCompetencyContributionHtml || undefined;
+        worksheet.actionField = record.actionField || undefined;
+        worksheet.relationships = record.relationships;
+      });
+    } catch (error) {
+      console.error('Could not load Dazit publication metadata.', error);
+    }
     return published;
   } catch (error) {
     console.error('Could not load Dazit library manifests.', error);

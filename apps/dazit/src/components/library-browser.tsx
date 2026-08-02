@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Grid01, List } from '@untitledui/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { Grid01, List, XClose } from '@untitledui/icons';
 import { FilterSidebar } from '@/components/filter-sidebar';
 import { WorksheetCard } from '@/components/worksheet-card';
 import type { Worksheet } from '@/lib/worksheets';
@@ -23,6 +23,39 @@ export function LibraryBrowser({
   const [selectedLevels, setSelectedLevels] = useState<string[]>(initialLevels);
   const [selectedActionCompetencies, setSelectedActionCompetencies] = useState<string[]>([]);
   const [selectedLanguageCompetencies, setSelectedLanguageCompetencies] = useState<string[]>([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 720px)');
+    const updatePageSize = () => {
+      setPageSize(mediaQuery.matches ? 6 : 12);
+      setCurrentPage(1);
+    };
+    updatePageSize();
+    mediaQuery.addEventListener('change', updatePageSize);
+    return () => mediaQuery.removeEventListener('change', updatePageSize);
+  }, []);
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setFiltersOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [filtersOpen]);
+
+  useEffect(() => {
+    const openFilters = () => setFiltersOpen(true);
+    window.addEventListener('dazit:open-filters', openFilters);
+    return () => window.removeEventListener('dazit:open-filters', openFilters);
+  }, []);
   const typeCounts = useMemo(() => libraryWorksheets.reduce<Record<string, number>>(
     (counts, worksheet) => ({
       ...counts,
@@ -48,14 +81,23 @@ export function LibraryBrowser({
       ...worksheet.tags,
     ].join(' ').toLocaleLowerCase('de-CH').includes(normalizedQuery))
   ));
+  const pageCount = Math.max(1, Math.ceil(visibleWorksheets.length / pageSize));
+  const activePage = Math.min(currentPage, pageCount);
+  const paginatedWorksheets = visibleWorksheets.slice(
+    (activePage - 1) * pageSize,
+    activePage * pageSize,
+  );
 
   const updateSelection = (
     setter: React.Dispatch<React.SetStateAction<string[]>>,
     value: string,
     checked: boolean,
-  ) => setter((current) => (
-    checked ? [...current, value] : current.filter((item) => item !== value)
-  ));
+  ) => {
+    setCurrentPage(1);
+    setter((current) => (
+      checked ? [...current, value] : current.filter((item) => item !== value)
+    ));
+  };
 
   const deleteWorksheet = async (worksheet: Worksheet) => {
     if (!worksheet.worksheetId || !window.confirm(
@@ -81,25 +123,46 @@ export function LibraryBrowser({
 
   return (
     <main className="library-layout">
-      <FilterSidebar
-        selectedTypes={selectedTypes}
-        selectedLevels={selectedLevels}
-        selectedActionCompetencies={selectedActionCompetencies}
-        selectedLanguageCompetencies={selectedLanguageCompetencies}
-        typeCounts={typeCounts}
-        onTypeChange={(value, checked) => updateSelection(setSelectedTypes, value, checked)}
-        onLevelChange={(value, checked) => updateSelection(setSelectedLevels, value, checked)}
-        onActionCompetencyChange={(value, checked) => updateSelection(
-          setSelectedActionCompetencies,
-          value,
-          checked,
-        )}
-        onLanguageCompetencyChange={(value, checked) => updateSelection(
-          setSelectedLanguageCompetencies,
-          value,
-          checked,
-        )}
+      <button
+        aria-label="Filter schließen"
+        className={`mobile-filter-backdrop${filtersOpen ? ' is-open' : ''}`}
+        onClick={() => setFiltersOpen(false)}
+        tabIndex={filtersOpen ? 0 : -1}
+        type="button"
       />
+      <div
+        className={`filter-drawer${filtersOpen ? ' is-open' : ''}`}
+        id="mobile-filters"
+      >
+        <div className="mobile-filter-header">
+          <strong>Filter</strong>
+          <button aria-label="Filter schließen" onClick={() => setFiltersOpen(false)} type="button">
+            <XClose />
+          </button>
+        </div>
+        <FilterSidebar
+          selectedTypes={selectedTypes}
+          selectedLevels={selectedLevels}
+          selectedActionCompetencies={selectedActionCompetencies}
+          selectedLanguageCompetencies={selectedLanguageCompetencies}
+          typeCounts={typeCounts}
+          onTypeChange={(value, checked) => updateSelection(setSelectedTypes, value, checked)}
+          onLevelChange={(value, checked) => updateSelection(setSelectedLevels, value, checked)}
+          onActionCompetencyChange={(value, checked) => updateSelection(
+            setSelectedActionCompetencies,
+            value,
+            checked,
+          )}
+          onLanguageCompetencyChange={(value, checked) => updateSelection(
+            setSelectedLanguageCompetencies,
+            value,
+            checked,
+          )}
+        />
+        <button className="mobile-filter-apply" onClick={() => setFiltersOpen(false)} type="button">
+          {visibleWorksheets.length} Ergebnisse anzeigen
+        </button>
+      </div>
       <section className="library-results">
         <div className="results-toolbar">
           <strong>{visibleWorksheets.length} Ergebnisse</strong>
@@ -114,7 +177,7 @@ export function LibraryBrowser({
           </div>
         </div>
         <div className="worksheet-grid">
-          {visibleWorksheets.map((worksheet) => (
+          {paginatedWorksheets.map((worksheet) => (
             <WorksheetCard
               deleting={deletingId === worksheet.worksheetId}
               key={worksheet.slug}
@@ -123,6 +186,25 @@ export function LibraryBrowser({
             />
           ))}
         </div>
+        {pageCount > 1 && (
+          <nav className="pagination" aria-label="Seitennavigation">
+            <button
+              disabled={activePage === 1}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              type="button"
+            >
+              Zurück
+            </button>
+            <span>Seite {activePage} von {pageCount}</span>
+            <button
+              disabled={activePage === pageCount}
+              onClick={() => setCurrentPage((page) => Math.min(pageCount, page + 1))}
+              type="button"
+            >
+              Weiter
+            </button>
+          </nav>
+        )}
       </section>
     </main>
   );

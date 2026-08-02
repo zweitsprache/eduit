@@ -1,6 +1,8 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
-import { SearchLg } from '@untitledui/icons';
+import { FilterLines, SearchLg } from '@untitledui/icons';
 
 export function SiteHeader({
   active = 'library',
@@ -27,6 +29,17 @@ export function SiteHeader({
         </label>
       )}
       <button className="avatar" type="button" aria-label="Benutzerkonto MK">MK</button>
+      {search && (
+        <button
+          aria-controls="mobile-filters"
+          aria-label="Filter öffnen"
+          className="header-filter-trigger"
+          onClick={() => window.dispatchEvent(new Event('dazit:open-filters'))}
+          type="button"
+        >
+          <FilterLines />
+        </button>
+      )}
     </header>
   );
 }
