@@ -2385,7 +2385,11 @@ export default function EditorPage() {
       ? null
       : new URLSearchParams(window.location.search).get('automation');
     if (
-      (automationMode !== 'batch-publish' && automationMode !== 'batch-preview')
+      (
+        automationMode !== 'batch-publish'
+        && automationMode !== 'batch-full-publish'
+        && automationMode !== 'batch-preview'
+      )
       || automationPublishStartedRef.current
       || !editor
       || !worksheetId
@@ -2408,8 +2412,13 @@ export default function EditorPage() {
         automationPublishStartedRef.current = false;
         return;
       }
-      if (automationMode === 'batch-publish') {
-        const published = await publishPDF();
+      if (
+        automationMode === 'batch-publish'
+        || automationMode === 'batch-full-publish'
+      ) {
+        const published = await publishPDF(
+          automationMode === 'batch-full-publish' ? 'full' : undefined,
+        );
         if (!published) {
           if (window.parent !== window) {
             window.parent.postMessage({
@@ -3537,7 +3546,7 @@ export default function EditorPage() {
     }
   };
 
-  const publishPDF = async () => {
+  const publishPDF = async (modeOverride?: 'full' | 'pdf-only') => {
     const id = worksheetIdRef.current;
     if (!id || publishingPDF) return false;
     setPublishingPDF(true);
@@ -3595,7 +3604,8 @@ export default function EditorPage() {
       formData.set('pdf', pdf, `${metadata.slug}.pdf`);
       formData.set(
         'mode',
-        publicationStatus === 'unpublished' ? 'full' : republishScope,
+        modeOverride
+          ?? (publicationStatus === 'unpublished' ? 'full' : republishScope),
       );
       thumbnailResult.thumbnails.forEach((base64, index) => {
         const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));

@@ -21,6 +21,13 @@ type FinalizeJob = {
   error?: string;
 };
 type FinalizingState = { jobs: FinalizeJob[]; publish: boolean };
+type MetadataPublication = {
+  id: string;
+  title: string;
+  level: string | null;
+  metadataVersion: number;
+  updatedAt: string;
+};
 
 const CREATION_CONCURRENCY = 5;
 const FINALIZATION_CONCURRENCY = 1;
@@ -38,6 +45,16 @@ const INITIAL: Config[] = [
 
 const escape = (value: string) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 const wait = (milliseconds: number) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+
+function publicationTense(title: string) {
+  if (/Konjunktiv II Vergangenheit/i.test(title)) return 'Konjunktiv II Vergangenheit';
+  if (/Plusquamperfekt/i.test(title)) return 'Plusquamperfekt';
+  if (/Präteritum/i.test(title)) return 'Präteritum';
+  if (/Perfekt/i.test(title)) return 'Perfekt';
+  if (/Futur I/i.test(title)) return 'Futur I';
+  if (/Präsens/i.test(title)) return 'Präsens';
+  return 'Sonstige';
+}
 
 function worksheetHtml(title: string, items: unknown[]) {
   const attrs = `data-title="${escape(title)}" data-format="a8-landscape" data-sidedness="double" data-items="${escape(encodeURIComponent(JSON.stringify(items)))}" data-group-index="0" data-type="learning-cards"`;
@@ -73,6 +90,13 @@ export default function AutomationsPage() {
   const [results, setResults] = useState<CreatedWorksheet[]>([]);
   const [creationFailures, setCreationFailures] = useState<CreationFailure[]>([]);
   const [finalizing, setFinalizing] = useState<FinalizingState | null>(null);
+  const [metadataPublications, setMetadataPublications] = useState<MetadataPublication[]>([]);
+  const [metadataTense, setMetadataTense] = useState('all');
+  const [metadataBatchSize, setMetadataBatchSize] = useState(10);
+  const [metadataFinalizing, setMetadataFinalizing] = useState<FinalizingState | null>(null);
+  const [metadataRunning, setMetadataRunning] = useState(false);
+  const [metadataProgress, setMetadataProgress] = useState('');
+  const [metadataError, setMetadataError] = useState('');
   const resultsRef = useRef<CreatedWorksheet[]>([]);
 
   useEffect(() => {
@@ -81,6 +105,18 @@ export default function AutomationsPage() {
       setProfiles(active);
       setBrandProfileId(active.find((profile: BrandProfile) => profile.name === 'dazit')?.id || active.find((profile: BrandProfile) => profile.isDefault)?.id || '');
     });
+  }, []);
+
+  useEffect(() => {
+    void fetch('/api/dazit/metadata-republish', { cache: 'no-store' })
+      .then((response) => response.json())
+      .then((result) => {
+        if (Array.isArray(result.publications)) setMetadataPublications(result.publications);
+        else if (result.error) setMetadataError(String(result.error));
+      })
+      .catch((loadError) => setMetadataError(
+        loadError instanceof Error ? loadError.message : 'Metadaten-Warteschlange konnte nicht geladen werden.',
+      ));
   }, []);
 
   useEffect(() => {
@@ -98,6 +134,20 @@ export default function AutomationsPage() {
       jobs: current.jobs.map((job) => nextIds.includes(job.id) ? { ...job, status: 'running' } : job),
     } : null);
   }, [finalizing, running]);
+
+  useEffect(() => {
+    if (!metadataFinalizing || !metadataRunning) return;
+    const runningCount = metadataFinalizing.jobs.filter(({ status }) => status === 'running').length;
+    if (runningCount >= FINALIZATION_CONCURRENCY) return;
+    const nextId = metadataFinalizing.jobs.find(({ status }) => status === 'pending')?.id;
+    if (!nextId) return;
+    setMetadataFinalizing((current) => current ? {
+      ...current,
+      jobs: current.jobs.map((job) => job.id === nextId
+        ? { ...job, status: 'running' }
+        : job),
+    } : null);
+  }, [metadataFinalizing, metadataRunning]);
 
   useEffect(() => {
     const receive = (event: MessageEvent) => {
@@ -119,6 +169,38 @@ export default function AutomationsPage() {
           const failed = jobs.filter(({ status }) => status === 'failed').length;
           setProgress(`${completed}/${jobs.length} Arbeitsblätter vollständig verarbeitet${failed ? `, ${failed} fehlgeschlagen` : ''}.`);
           setRunning(false);
+        }
+        return { ...current, jobs };
+      });
+      setMetadataFinalizing((current) => {
+        if (!current) return current;
+        const matched = current.jobs.find(({ id, status }) => (
+          id === event.data.worksheetId && status === 'running'
+        ));
+        if (!matched) return current;
+        const retry = !event.data.success && matched.attempt < MAX_ATTEMPTS;
+        const jobs = current.jobs.map((job) => job.id === matched.id ? {
+          ...job,
+          attempt: retry ? job.attempt + 1 : job.attempt,
+          status: event.data.success
+            ? 'completed' as const
+            : retry
+              ? 'pending' as const
+              : 'failed' as const,
+          error: event.data.success
+            ? undefined
+            : event.data.error || 'Metadaten-Neuveröffentlichung fehlgeschlagen.',
+        } : job);
+        if (event.data.success) {
+          setMetadataPublications((publications) => publications.filter(
+            ({ id }) => id !== matched.id,
+          ));
+        }
+        const completed = jobs.filter(({ status }) => status === 'completed').length;
+        const failed = jobs.filter(({ status }) => status === 'failed').length;
+        setMetadataProgress(`${completed}/${jobs.length} Metadaten neu veröffentlicht${failed ? `, ${failed} fehlgeschlagen` : ''}.`);
+        if (jobs.every(({ status }) => status === 'completed' || status === 'failed')) {
+          setMetadataRunning(false);
         }
         return { ...current, jobs };
       });
@@ -225,9 +307,40 @@ export default function AutomationsPage() {
     } : null);
   };
 
+  const startMetadataRepublish = () => {
+    const eligible = metadataPublications
+      .filter(({ title }) => metadataTense === 'all' || publicationTense(title) === metadataTense)
+      .slice(0, metadataBatchSize);
+    if (!eligible.length) return;
+    setMetadataError('');
+    setMetadataProgress(`0/${eligible.length} Metadaten werden neu veröffentlicht …`);
+    setMetadataFinalizing({
+      publish: true,
+      jobs: eligible.map(({ id, title }) => ({ id, title, attempt: 1, status: 'pending' })),
+    });
+    setMetadataRunning(true);
+  };
+
+  const retryMetadataFailures = () => {
+    setMetadataError('');
+    setMetadataRunning(true);
+    setMetadataFinalizing((current) => current ? {
+      ...current,
+      jobs: current.jobs.map((job) => job.status === 'failed'
+        ? { ...job, status: 'pending', attempt: 1, error: undefined }
+        : job),
+    } : null);
+  };
+
   const finalizationCompleted = finalizing?.jobs.filter(({ status }) => status === 'completed').length ?? 0;
   const finalizationFailed = finalizing?.jobs.filter(({ status }) => status === 'failed').length ?? 0;
   const activeFinalizers = finalizing?.jobs.filter(({ status }) => status === 'running') ?? [];
+  const metadataActiveFinalizers = metadataFinalizing?.jobs.filter(({ status }) => status === 'running') ?? [];
+  const metadataFailed = metadataFinalizing?.jobs.filter(({ status }) => status === 'failed') ?? [];
+  const metadataTenses = [...new Set(metadataPublications.map(({ title }) => publicationTense(title)))].sort();
+  const eligibleMetadataCount = metadataPublications.filter(({ title }) => (
+    metadataTense === 'all' || publicationTense(title) === metadataTense
+  )).length;
 
   return (
     <AppShell active="automations" title="Automationen">
@@ -258,7 +371,7 @@ export default function AutomationsPage() {
                 </ul>
               </details>
             )}
-            <button className="mt-6 rounded-lg bg-brand-solid px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50" disabled={running || !total} onClick={() => void run()} type="button">{running ? 'Serie wird verarbeitet …' : `${total || 0} Arbeitsblätter erstellen`}</button>
+            <button className="mt-6 rounded-lg bg-brand-solid px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50" disabled={running || metadataRunning || !total} onClick={() => void run()} type="button">{running ? 'Serie wird verarbeitet …' : `${total || 0} Arbeitsblätter erstellen`}</button>
             {results.length > 0 && <div className="mt-7"><h3 className="font-semibold">Ergebnisse</h3><ul className="mt-2 grid gap-2">{results.map((result) => <li key={result.id}><Link className="text-sm text-brand-secondary underline" href={`/editor?worksheet=${result.id}`}>{result.title}</Link></li>)}</ul></div>}
             {running && finalizing && activeFinalizers.map((job) => (
               <iframe
@@ -267,6 +380,79 @@ export default function AutomationsPage() {
                 key={`${job.id}-${job.attempt}`}
                 src={`/editor?worksheet=${encodeURIComponent(job.id)}&automation=${finalizing.publish ? 'batch-publish' : 'batch-preview'}`}
                 title={`Automatischer Arbeitsblatt-Renderer: ${job.title}`}
+              />
+            ))}
+          </section>
+          <section className="mt-8 rounded-2xl border border-secondary bg-primary p-7 shadow-lg">
+            <p className="text-sm font-semibold text-brand-secondary">Dazit-Metadaten</p>
+            <h2 className="mt-1 text-xl font-semibold">Lernkarten-Beschreibungen neu veröffentlichen</h2>
+            <p className="mt-2 text-sm text-tertiary">
+              Verarbeitet bestehende Lernkarten mit einer älteren Metadatenversion. PDF und Vorschaubilder werden aktualisiert, die Beschreibung wird mit den aktuellen Regeln für Vorder- und Rückseiten neu erzeugt.
+            </p>
+            <div className="mt-6 grid gap-5 sm:grid-cols-3">
+              <label className="text-sm font-semibold">
+                Zeitform
+                <select
+                  className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 font-normal"
+                  disabled={metadataRunning}
+                  onChange={(event) => setMetadataTense(event.target.value)}
+                  value={metadataTense}
+                >
+                  <option value="all">Alle Zeitformen</option>
+                  {metadataTenses.map((tense) => <option key={tense} value={tense}>{tense}</option>)}
+                </select>
+              </label>
+              <label className="text-sm font-semibold">
+                Batchgrösse
+                <select
+                  className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 font-normal"
+                  disabled={metadataRunning}
+                  onChange={(event) => setMetadataBatchSize(Number(event.target.value))}
+                  value={metadataBatchSize}
+                >
+                  {[2, 5, 10, 15, 25].map((size) => <option key={size} value={size}>{size}</option>)}
+                </select>
+              </label>
+              <div className="rounded-xl border border-secondary bg-secondary p-4">
+                <span className="text-xs font-semibold uppercase tracking-wide text-tertiary">Verbleibend</span>
+                <strong className="mt-1 block text-2xl">{eligibleMetadataCount}</strong>
+                <small className="text-tertiary">{metadataPublications.length} insgesamt veraltet</small>
+              </div>
+            </div>
+            {metadataProgress && <p className="mt-5 text-sm text-tertiary">{metadataProgress}</p>}
+            {metadataError && <p className="mt-3 text-sm text-error-primary">{metadataError}</p>}
+            {metadataFailed.length > 0 && (
+              <details className="mt-4 text-sm" open={!metadataRunning}>
+                <summary className="cursor-pointer font-semibold">{metadataFailed.length} fehlgeschlagene Neuveröffentlichungen</summary>
+                <ul className="mt-2 grid gap-1 text-error-primary">
+                  {metadataFailed.map((job) => <li key={job.id}>{job.title}: {job.error || 'Unbekannter Fehler.'}</li>)}
+                </ul>
+              </details>
+            )}
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                className="rounded-lg bg-brand-solid px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                disabled={running || metadataRunning || eligibleMetadataCount === 0}
+                onClick={startMetadataRepublish}
+                type="button"
+              >
+                {metadataRunning
+                  ? 'Metadaten werden neu veröffentlicht …'
+                  : `Nächste ${Math.min(metadataBatchSize, eligibleMetadataCount)} neu veröffentlichen`}
+              </button>
+              {metadataFailed.length > 0 && !metadataRunning && (
+                <button className="rounded-lg border border-primary bg-primary px-4 py-2.5 text-sm font-semibold" onClick={retryMetadataFailures} type="button">
+                  Fehlgeschlagene erneut versuchen
+                </button>
+              )}
+            </div>
+            {metadataRunning && metadataActiveFinalizers.map((job) => (
+              <iframe
+                aria-hidden="true"
+                className="pointer-events-none fixed -left-[10000px] top-0 h-[900px] w-[1200px] opacity-0"
+                key={`metadata-${job.id}-${job.attempt}`}
+                src={`/editor?worksheet=${encodeURIComponent(job.id)}&automation=batch-full-publish`}
+                title={`Metadaten neu veröffentlichen: ${job.title}`}
               />
             ))}
           </section>

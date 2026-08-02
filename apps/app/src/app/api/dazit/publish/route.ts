@@ -487,6 +487,7 @@ export async function POST(request: Request) {
         language_competencies,
         action_competency_contribution_html,
         action_field,
+        metadata_version,
         published_revision,
         published_at,
         updated_at
@@ -507,6 +508,7 @@ export async function POST(request: Request) {
         ${JSON.stringify(description.languageCompetencies)}::jsonb,
         ${description.actionCompetencyContributionHtml},
         ${description.actionField},
+        2,
         ${sourceRevision},
         now(),
         now()
@@ -527,6 +529,7 @@ export async function POST(request: Request) {
         language_competencies = excluded.language_competencies,
         action_competency_contribution_html = excluded.action_competency_contribution_html,
         action_field = excluded.action_field,
+        metadata_version = excluded.metadata_version,
         published_revision = excluded.published_revision,
         updated_at = now()
       `;
