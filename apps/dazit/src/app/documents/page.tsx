@@ -1,4 +1,3 @@
-import { SearchLg } from '@untitledui/icons';
 import { LibraryBrowser } from '@/components/library-browser';
 import { SiteHeader } from '@/components/site-header';
 import { getWorksheetCards } from '@/lib/worksheets';
@@ -49,10 +48,6 @@ export default async function LibraryPage({
         type="application/ld+json"
       />
       <SiteHeader active="library" canAdminister={Boolean(currentUser?.isAdmin)} search />
-      <div className="mobile-search documents-search">
-        <SearchLg aria-hidden="true" />
-        <input placeholder="Titel oder Stichwort suchen …" aria-label="Bibliothek durchsuchen" />
-      </div>
       <div className="subject-bar" aria-label="Themen">
         {topics.map((topic) => <button key={topic}>{topic}</button>)}
       </div>

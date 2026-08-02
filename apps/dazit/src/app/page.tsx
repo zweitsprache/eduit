@@ -6,6 +6,7 @@ import { WorksheetCard } from '@/components/worksheet-card';
 import { CountUp } from '@/components/count-up';
 import { getCurrentDazitUser } from '@/lib/auth/authorization';
 import { getHomepageStats, getWorksheetCards } from '@/lib/worksheets';
+import { SearchTrackingForm } from '@/components/search-tracking-form';
 
 export const revalidate = 300;
 
@@ -38,17 +39,17 @@ export default async function HomePage() {
         <section className="home-hero">
           <span className="hero-beta-ribbon">Public Beta</span>
           <div className="home-hero-content">
-            <span className="home-hero-badge">Deutsch als Zweitsprache noch einfacher machen</span>
+            <span className="home-hero-badge">Suchen · Downloaden · Nutzen</span>
             <h1>
               <CountUp value={total} /> Arbeits- und Merkblätter,<br />
               Spiele und Kartensets für<br />
               <em>DaZ-Kurse</em> mit Erwachsenen
             </h1>
-            <form action="/documents" className="home-search" method="get">
+            <SearchTrackingForm className="home-search">
               <label className="sr-only" htmlFor="home-search">Bibliothek durchsuchen</label>
               <input id="home-search" name="q" type="search" />
               <button type="submit">Suchen</button>
-            </form>
+            </SearchTrackingForm>
           </div>
           <div aria-hidden="true" className="home-hero-preview">
             <span className="home-preview-sheet home-preview-sheet--back">

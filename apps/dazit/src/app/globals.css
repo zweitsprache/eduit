@@ -348,7 +348,7 @@ button { color: inherit; }
 .home-hero-preview { position: absolute; z-index: 1; top: 62px; right: max(42px, calc((100vw - 1540px) / 2)); width: 34%; max-width: 580px; height: 500px; }
 .home-preview-sheet {
   position: absolute; display: block; width: 396px; height: 280.8px;
-  border: 1px solid #d5d6dc; border-radius: 10px; background: #fff;
+  border-radius: 10px; background: #fff; box-shadow: 0 12px 28px rgba(9, 9, 25, .14);
 }
 .home-preview-sheet--back {
   top: 0; right: 10%; height: 558.36px; transform: rotate(-5deg);

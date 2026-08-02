@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Grid01, List, XClose } from '@untitledui/icons';
+import { Grid01, List, SearchLg, XClose } from '@untitledui/icons';
 import { FilterSidebar } from '@/components/filter-sidebar';
 import { WorksheetCard } from '@/components/worksheet-card';
 import type { Worksheet } from '@/lib/worksheets';
@@ -166,6 +166,10 @@ export function LibraryBrowser({
         </button>
       </div>
       <section className="library-results">
+        <div className="mobile-search documents-search">
+          <SearchLg aria-hidden="true" />
+          <input placeholder="Titel oder Stichwort suchen …" aria-label="Bibliothek durchsuchen" />
+        </div>
         <div className="results-toolbar">
           <strong>{visibleWorksheets.length} Ergebnisse</strong>
           <div>
