@@ -1,17 +1,9 @@
-import { access } from 'node:fs/promises';
 import { chromium } from 'playwright-core';
 import { NextResponse } from 'next/server';
+import { findServerChromium } from '@/lib/server-chromium';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
-
-const CHROME_PATHS = [
-  process.env.CHROMIUM_EXECUTABLE_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-  '/usr/bin/google-chrome',
-  '/usr/bin/chromium',
-].filter((path): path is string => Boolean(path));
 
 const PAGE_FORMATS = {
   'a4-portrait': { width: 794, height: 1123 },
@@ -19,18 +11,6 @@ const PAGE_FORMATS = {
   'letter-portrait': { width: 816, height: 1056 },
   'letter-landscape': { width: 1056, height: 816 },
 };
-
-async function findChrome() {
-  for (const path of CHROME_PATHS) {
-    try {
-      await access(path);
-      return path;
-    } catch {
-      // Try the next supported location.
-    }
-  }
-  return null;
-}
 
 export async function POST(request: Request) {
   const payload = await request.json().catch(() => null) as {
@@ -42,8 +22,8 @@ export async function POST(request: Request) {
   if (!payload?.content || payload.content.length > 4_000_000) {
     return NextResponse.json({ error: 'The rendered document is missing or too large.' }, { status: 400 });
   }
-  const executablePath = await findChrome();
-  if (!executablePath) {
+  const chrome = await findServerChromium();
+  if (!chrome) {
     return NextResponse.json({ error: 'Chrome is unavailable.' }, { status: 503 });
   }
 
@@ -76,7 +56,11 @@ export async function POST(request: Request) {
       .ProseMirror-selectednode::after, .rich-text-node__selection-fragment { display: none !important; }
     </style></head><body><div class="editor-content">${payload.content}</div></body></html>`;
 
-  const browser = await chromium.launch({ executablePath, headless: true });
+  const browser = await chromium.launch({
+    args: chrome.args,
+    executablePath: chrome.executablePath,
+    headless: true,
+  });
   try {
     const page = await browser.newPage({
       viewport: { width: format.width, height: format.height },

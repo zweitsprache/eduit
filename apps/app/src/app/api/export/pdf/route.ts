@@ -1,16 +1,9 @@
-import { access } from 'node:fs/promises';
 import { chromium } from 'playwright-core';
 import { NextResponse } from 'next/server';
+import { findServerChromium } from '@/lib/server-chromium';
 
 export const runtime = 'nodejs';
-
-const CHROME_PATHS = [
-  process.env.CHROMIUM_EXECUTABLE_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-  '/usr/bin/google-chrome',
-  '/usr/bin/chromium',
-].filter((path): path is string => Boolean(path));
+export const maxDuration = 60;
 
 const PAGE_FORMATS = {
   'a4-portrait': { cssSize: '210mm 297mm', pageHeight: '297mm' },
@@ -18,18 +11,6 @@ const PAGE_FORMATS = {
   'letter-portrait': { cssSize: '215.9mm 279.4mm', pageHeight: '279.4mm' },
   'letter-landscape': { cssSize: '279.4mm 215.9mm', pageHeight: '215.9mm' },
 };
-
-async function findChrome() {
-  for (const path of CHROME_PATHS) {
-    try {
-      await access(path);
-      return path;
-    } catch {
-      // Try the next supported location.
-    }
-  }
-  return null;
-}
 
 export async function POST(request: Request) {
   const contentLength = Number(request.headers.get('content-length') ?? 0);
@@ -48,8 +29,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'The rendered document is missing or too large.' }, { status: 400 });
   }
 
-  const executablePath = await findChrome();
-  if (!executablePath) {
+  const chrome = await findServerChromium();
+  if (!chrome) {
     return NextResponse.json(
       { error: 'Chrome is unavailable. Configure CHROMIUM_EXECUTABLE_PATH on the server.' },
       { status: 503 },
@@ -106,7 +87,11 @@ export async function POST(request: Request) {
       <body><div class="editor-content">${payload.content}</div></body>
     </html>`;
 
-  const browser = await chromium.launch({ executablePath, headless: true });
+  const browser = await chromium.launch({
+    args: chrome.args,
+    executablePath: chrome.executablePath,
+    headless: true,
+  });
   try {
     const page = await browser.newPage();
     const renderShellUrl = new URL('/__eduit-pdf-render-shell__', origin).href;

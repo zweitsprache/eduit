@@ -1,28 +1,9 @@
-import { access } from 'node:fs/promises';
 import { chromium } from 'playwright-core';
 import { NextResponse } from 'next/server';
+import { findServerChromium } from '@/lib/server-chromium';
 
 export const runtime = 'nodejs';
-
-const CHROME_PATHS = [
-  process.env.CHROMIUM_EXECUTABLE_PATH,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-  '/usr/bin/google-chrome',
-  '/usr/bin/chromium',
-].filter((path): path is string => Boolean(path));
-
-async function findChrome() {
-  for (const path of CHROME_PATHS) {
-    try {
-      await access(path);
-      return path;
-    } catch {
-      // Try the next supported location.
-    }
-  }
-  return null;
-}
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   const contentLength = Number(request.headers.get('content-length') ?? 0);
@@ -45,8 +26,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'The rendered block has an invalid width.' }, { status: 400 });
   }
 
-  const executablePath = await findChrome();
-  if (!executablePath) {
+  const chrome = await findServerChromium();
+  if (!chrome) {
     return NextResponse.json(
       { error: 'Chrome is unavailable. Configure CHROMIUM_EXECUTABLE_PATH on the server.' },
       { status: 503 },
@@ -102,7 +83,11 @@ export async function POST(request: Request) {
       <body><div class="png-stage">${payload.content}</div></body>
     </html>`;
 
-  const browser = await chromium.launch({ executablePath, headless: true });
+  const browser = await chromium.launch({
+    args: chrome.args,
+    executablePath: chrome.executablePath,
+    headless: true,
+  });
   try {
     const context = await browser.newContext({
       deviceScaleFactor: 3,
