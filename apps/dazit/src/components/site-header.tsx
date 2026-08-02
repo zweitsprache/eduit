@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { FilterLines, SearchLg } from '@untitledui/icons';
+import { User } from 'lucide-react';
 
 export function SiteHeader({
   active = 'library',
@@ -28,7 +29,9 @@ export function SiteHeader({
           <input placeholder="Titel oder Stichwort suchen …" />
         </label>
       )}
-      <button className="avatar" type="button" aria-label="Benutzerkonto MK">MK</button>
+      <Link className="avatar" href="/auth/sign-in" aria-label="Admin anmelden">
+        <User aria-hidden="true" />
+      </Link>
       {search && (
         <button
           aria-controls="mobile-filters"

@@ -3,6 +3,7 @@ import { LibraryBrowser } from '@/components/library-browser';
 import { SiteHeader } from '@/components/site-header';
 import { getWorksheets } from '@/lib/worksheets';
 import { absoluteDazitUrl } from '@/lib/site-url';
+import { getCurrentDazitUser } from '@/lib/auth/authorization';
 
 const topics = [
   'Zahlen',
@@ -23,6 +24,7 @@ export default async function LibraryPage({
   searchParams: Promise<{ level?: string; q?: string; type?: string }>;
 }) {
   const worksheets = await getWorksheets();
+  const currentUser = await getCurrentDazitUser();
   const query = await searchParams;
   const structuredData = {
     '@context': 'https://schema.org',
@@ -53,6 +55,7 @@ export default async function LibraryPage({
         {topics.map((topic) => <button key={topic}>{topic}</button>)}
       </div>
       <LibraryBrowser
+        canAdminister={Boolean(currentUser?.isAdmin)}
         initialLevels={query.level ? [query.level] : []}
         initialQuery={query.q || ''}
         initialTypes={query.type ? [query.type] : []}

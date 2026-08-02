@@ -1,6 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 import { del, get, list, put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
+import { getCurrentDazitUser } from '@/lib/auth/authorization';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,6 +37,10 @@ function cleanList(value: unknown, allowed?: string[]) {
 
 export async function PATCH(request: Request, { params }: Props) {
   try {
+    const currentUser = await getCurrentDazitUser();
+    if (!currentUser?.isAdmin) {
+      return NextResponse.json({ error: 'Administrator access required.' }, { status: 403 });
+    }
     const { worksheetId } = await params;
     if (!/^[0-9a-f-]{36}$/i.test(worksheetId)) {
       return NextResponse.json({ error: 'Invalid worksheet ID.' }, { status: 400 });
@@ -88,6 +93,10 @@ export async function PATCH(request: Request, { params }: Props) {
 
 export async function DELETE(_request: Request, { params }: Props) {
   try {
+    const currentUser = await getCurrentDazitUser();
+    if (!currentUser?.isAdmin) {
+      return NextResponse.json({ error: 'Administrator access required.' }, { status: 403 });
+    }
     const { worksheetId } = await params;
     if (!/^[0-9a-f-]{36}$/i.test(worksheetId)) {
       return NextResponse.json({ error: 'Invalid worksheet ID.' }, { status: 400 });

@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import type { Worksheet } from '@/lib/worksheets';
 
 export function InlineHtmlEditor({
+  editable = false,
   field,
   heading,
   html,
   worksheet,
 }: {
+  editable?: boolean;
   field: 'descriptionHtml' | 'actionCompetencyContributionHtml';
   heading: string;
   html: string;
@@ -70,7 +72,7 @@ export function InlineHtmlEditor({
     <article className={`publication-description inline-html-editor${editing ? ' is-editing' : ''}`}>
       <div className="inline-html-heading">
         <h2>{heading}</h2>
-        {!editing && <button onClick={() => setEditing(true)} type="button">Bearbeiten</button>}
+        {editable && !editing && <button onClick={() => setEditing(true)} type="button">Bearbeiten</button>}
       </div>
       {editing && (
         <div className="inline-html-toolbar" aria-label="Textformatierung">

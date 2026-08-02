@@ -9,6 +9,7 @@ import { getWorksheets, worksheetBySlug } from '@/lib/worksheets';
 import { absoluteDazitUrl } from '@/lib/site-url';
 import { InlineMetadataEditor } from '@/components/inline-metadata-editor';
 import { InlineHtmlEditor } from '@/components/inline-html-editor';
+import { getCurrentDazitUser } from '@/lib/auth/authorization';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -49,6 +50,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function WorksheetDetailPage({ params }: Props) {
   const worksheet = await worksheetBySlug((await params).slug);
   if (!worksheet) notFound();
+  const currentUser = await getCurrentDazitUser();
+  const canAdminister = Boolean(currentUser?.isAdmin);
   const allWorksheets = await getWorksheets();
   const related = allWorksheets
     .filter(({ slug, subject }) => slug !== worksheet.slug && subject === worksheet.subject)
@@ -144,6 +147,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
               thumbnailUrls={worksheet.thumbnailUrls}
             />
             <InlineHtmlEditor
+              editable={canAdminister}
               field="descriptionHtml"
               heading="Beschreibung"
               html={worksheet.descriptionHtml || ''}
@@ -152,7 +156,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
           </div>
           <div className="detail-column detail-info-column">
             <div className="detail-copy">
-              <InlineMetadataEditor worksheet={worksheet} />
+              {canAdminister && <InlineMetadataEditor worksheet={worksheet} />}
               <div className="detail-flags">
                 <span className={`subject subject-${worksheet.color}`}>{worksheet.documentType.toUpperCase()}</span>
                 {worksheet.hasAnswerKey && <span className="answer-key">✓ Lösungsblatt enthalten</span>}
@@ -200,6 +204,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
               </div>
             </div>
             <InlineHtmlEditor
+              editable={canAdminister}
               field="actionCompetencyContributionHtml"
               heading="Beitrag zur Sprachhandlungskompetenz"
               html={worksheet.actionCompetencyContributionHtml || ''}

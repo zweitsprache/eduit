@@ -7,11 +7,13 @@ import { WorksheetCard } from '@/components/worksheet-card';
 import type { Worksheet } from '@/lib/worksheets';
 
 export function LibraryBrowser({
+  canAdminister = false,
   initialLevels = [],
   initialQuery = '',
   initialTypes = [],
   worksheets,
 }: {
+  canAdminister?: boolean;
   initialLevels?: string[];
   initialQuery?: string;
   initialTypes?: string[];
@@ -181,7 +183,7 @@ export function LibraryBrowser({
             <WorksheetCard
               deleting={deletingId === worksheet.worksheetId}
               key={worksheet.slug}
-              onDelete={deleteWorksheet}
+              onDelete={canAdminister ? deleteWorksheet : undefined}
               worksheet={worksheet}
             />
           ))}

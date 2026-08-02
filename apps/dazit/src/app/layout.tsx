@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { dazitSiteUrl } from '@/lib/site-url';
 import { SiteFooter } from '@/components/site-footer';
+import { AuthProvider } from '@/components/auth-provider';
 
 export const metadata: Metadata = {
   metadataBase: dazitSiteUrl(),
@@ -32,7 +33,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="de-CH">
-      <body>{children}<SiteFooter /></body>
+      <body><AuthProvider>{children}<SiteFooter /></AuthProvider></body>
     </html>
   );
 }
