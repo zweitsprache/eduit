@@ -101,7 +101,7 @@
 .tiptap[data-brand="eduit"]:is([data-style-preset="academic"], [data-style-preset="semi-academic"])
   .heading-node--h3 {
   margin-block: 0.625rem 0.25rem;
-  font-size: 0.8125rem;
+  font-size: max(0.8125rem, var(--custom-block-body-font-size));
   font-weight: 700;
   line-height: 1.4;
 }

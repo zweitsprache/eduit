@@ -118,8 +118,11 @@ import {
   type FillInTheBlankAttrs,
 } from '@/components/editor/fill-in-the-blank-node';
 import {
+  GLOSSARY_COLUMN_WIDTHS,
+  GLOSSARY_PRESETS,
   GlossaryTerms,
   type GlossaryTerm,
+  type GlossaryPreset,
   type GlossaryTermsAttrs,
   type GlossaryTermWidth,
 } from '@/components/editor/glossary-terms-node';
@@ -6653,6 +6656,58 @@ export default function EditorPage() {
                 <span className="rounded bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-brand-secondary">Glossary</span>
               </div>
 
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold text-tertiary">Show instruction</p>
+                  <p className="mt-0.5 text-xs text-quaternary">Hidden instructions are excluded from task numbering.</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={selectedGlossaryTermsAttrs.showInstruction}
+                  onClick={() => setGlossaryTermsAttr(
+                    editor,
+                    selectedGlossaryTermsPos,
+                    'showInstruction',
+                    !selectedGlossaryTermsAttrs.showInstruction,
+                  )}
+                  className={cx(
+                    'relative h-6 w-11 shrink-0 border transition',
+                    selectedGlossaryTermsAttrs.showInstruction
+                      ? 'border-brand bg-brand-solid'
+                      : 'border-primary bg-quaternary',
+                  )}
+                >
+                  <span
+                    className={cx(
+                      'absolute top-0.5 size-4.5 bg-primary shadow-xs transition-transform',
+                      selectedGlossaryTermsAttrs.showInstruction
+                        ? 'translate-x-4.5'
+                        : 'translate-x-0.5',
+                    )}
+                  />
+                </button>
+              </div>
+
+              <label htmlFor="glossary-preset" className="mt-4 block text-xs font-semibold text-tertiary">
+                Preset
+              </label>
+              <select
+                id="glossary-preset"
+                value={selectedGlossaryTermsAttrs.preset}
+                onChange={(event) => setGlossaryTermsAttr(
+                  editor,
+                  selectedGlossaryTermsPos,
+                  'preset',
+                  event.target.value as GlossaryPreset,
+                )}
+                className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-medium text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
+              >
+                {(Object.entries(GLOSSARY_PRESETS) as [GlossaryPreset, (typeof GLOSSARY_PRESETS)[GlossaryPreset]][]).map(([value, config]) => (
+                  <option value={value} key={value}>{config.label}</option>
+                ))}
+              </select>
+
               <label htmlFor="glossary-term-width" className="mt-4 block text-xs font-semibold text-tertiary">
                 Term column width
               </label>
@@ -6667,10 +6722,28 @@ export default function EditorPage() {
                 )}
                 className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-medium text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
               >
-                <option value={25}>25%</option>
-                <option value={33}>33%</option>
-                <option value={50}>50%</option>
-                <option value={66}>66%</option>
+                {GLOSSARY_COLUMN_WIDTHS.map((width) => (
+                  <option disabled={width + selectedGlossaryTermsAttrs.definitionWidth >= 100} value={width} key={width}>{width}%</option>
+                ))}
+              </select>
+
+              <label htmlFor="glossary-definition-width" className="mt-4 block text-xs font-semibold text-tertiary">
+                Definition column width
+              </label>
+              <select
+                id="glossary-definition-width"
+                value={selectedGlossaryTermsAttrs.definitionWidth}
+                onChange={(event) => setGlossaryTermsAttr(
+                  editor,
+                  selectedGlossaryTermsPos,
+                  'definitionWidth',
+                  Number(event.target.value) as GlossaryTermWidth,
+                )}
+                className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-medium text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
+              >
+                {GLOSSARY_COLUMN_WIDTHS.map((width) => (
+                  <option disabled={width + selectedGlossaryTermsAttrs.termWidth >= 100} value={width} key={width}>{width}%</option>
+                ))}
               </select>
 
               <div className="mt-5 space-y-3">
@@ -6681,10 +6754,10 @@ export default function EditorPage() {
                         {String(itemIndex + 1).padStart(2, '0')}
                       </span>
                       <input
-                        aria-label={`Term ${itemIndex + 1}`}
+                        aria-label={`${GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[0]} ${itemIndex + 1}`}
                         value={item.term}
                         onChange={(event) => updateGlossaryTerm(item.id, { term: event.target.value })}
-                        placeholder="Term"
+                        placeholder={GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[0]}
                         className="min-w-0 flex-1 rounded-md border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
                       />
                       <button
@@ -6700,21 +6773,21 @@ export default function EditorPage() {
                       </button>
                     </div>
                     <textarea
-                      aria-label={`Definition ${itemIndex + 1}`}
+                      aria-label={`${GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[1]} ${itemIndex + 1}`}
                       rows={2}
                       value={item.definition}
                       onChange={(event) => updateGlossaryTerm(item.id, { definition: event.target.value })}
-                      placeholder="Definition"
+                      placeholder={GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[1]}
                       className="mt-2 ml-7 w-[calc(100%_-_1.75rem)] resize-y rounded-md border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
                     />
-                    <textarea
-                      aria-label={`Example ${itemIndex + 1}`}
+                    {GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers.length === 3 && <textarea
+                      aria-label={`${GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[2]} ${itemIndex + 1}`}
                       rows={2}
                       value={item.example}
                       onChange={(event) => updateGlossaryTerm(item.id, { example: event.target.value })}
-                      placeholder="Example"
+                      placeholder={GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[2]}
                       className="mt-2 ml-7 w-[calc(100%_-_1.75rem)] resize-y rounded-md border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-                    />
+                    />}
                   </div>
                 ))}
               </div>

@@ -1,0 +1,509 @@
+niveau,verb
+A1.1,abfahren
+A1.1,ankommen
+A1.1,anrufen
+A1.1,antworten
+A1.1,arbeiten
+A1.1,aufmachen
+A1.1,aufstehen
+A1.1,aufwachen
+A1.1,ausgehen
+A1.1,aussteigen
+A1.1,backen
+A1.1,bezahlen
+A1.1,brauchen
+A1.1,buchstabieren
+A1.1,denken
+A1.1,drucken
+A1.1,duschen
+A1.1,einsteigen
+A1.1,essen
+A1.1,fahren
+A1.1,finden
+A1.1,fragen
+A1.1,frühstücken
+A1.1,gehen
+A1.1,haben
+A1.1,heissen
+A1.1,hören
+A1.1,kaufen
+A1.1,klettern
+A1.1,klicken
+A1.1,kochen
+A1.1,kommen
+A1.1,kosten
+A1.1,laufen
+A1.1,lernen
+A1.1,lesen
+A1.1,mieten
+A1.1,mitkommen
+A1.1,mögen
+A1.1,nehmen
+A1.1,öffnen
+A1.1,sagen
+A1.1,schlafen
+A1.1,schliessen
+A1.1,schneiden
+A1.1,schreiben
+A1.1,sehen
+A1.1,spielen
+A1.1,sprechen
+A1.1,stehen
+A1.1,stellen
+A1.1,suchen
+A1.1,tanzen
+A1.1,trinken
+A1.1,umsteigen
+A1.1,umziehen
+A1.1,verstehen
+A1.1,wandern
+A1.1,wiederholen
+A1.1,wohnen
+A1.1,zumachen
+A1.2,abholen
+A1.2,anmachen
+A1.2,ansehen
+A1.2,aufräumen
+A1.2,ausfüllen
+A1.2,ausmachen
+A1.2,aussehen
+A1.2,beginnen
+A1.2,bekommen
+A1.2,besichtigen
+A1.2,besuchen
+A1.2,bleiben
+A1.2,bringen
+A1.2,buchen
+A1.2,danken
+A1.2,dauern
+A1.2,einkaufen
+A1.2,empfehlen
+A1.2,entspannen
+A1.2,erzählen
+A1.2,fallen
+A1.2,feiern
+A1.2,fernsehen
+A1.2,fliegen
+A1.2,geben
+A1.2,gefallen
+A1.2,geniessen
+A1.2,glauben
+A1.2,gratulieren
+A1.2,gründen
+A1.2,gucken
+A1.2,helfen
+A1.2,kennen
+A1.2,leben
+A1.2,leidtun
+A1.2,lieben
+A1.2,liegen
+A1.2,machen
+A1.2,mitbringen
+A1.2,passen
+A1.2,passieren
+A1.2,planen
+A1.2,putzen
+A1.2,regnen
+A1.2,reisen
+A1.2,sammeln
+A1.2,scheinen
+A1.2,schenken
+A1.2,schicken
+A1.2,schneien
+A1.2,schwimmen
+A1.2,sein
+A1.2,singen
+A1.2,sitzen
+A1.2,spazieren
+A1.2,studieren
+A1.2,tragen
+A1.2,trainieren
+A1.2,treffen
+A1.2,verbringen
+A1.2,verdienen
+A1.2,warten
+A1.2,weggehen
+A1.2,wehtun
+A1.2,werden
+A1.2,wissen
+A1.2,wünschen
+A2.1,abschliessen
+A2.1,abstellen
+A2.1,achten
+A2.1,anerkennen
+A2.1,anschauen
+A2.1,(sich) ärgern
+A2.1,aufpassen
+A2.1,ausdrucken
+A2.1,ausgeben
+A2.1,auspacken
+A2.1,ausrichten
+A2.1,sich ausruhen
+A2.1,ausziehen
+A2.1,basteln
+A2.1,bauen
+A2.1,beachten
+A2.1,sich bedanken
+A2.1,sich beeilen
+A2.1,bemerken
+A2.1,benützen
+A2.1,beraten
+A2.1,berichten
+A2.1,sich beschweren
+A2.1,besprechen
+A2.1,bestehen
+A2.1,betragen
+A2.1,(sich) bewegen
+A2.1,sich bewerben
+A2.1,bieten
+A2.1,bluten
+A2.1,dekorieren
+A2.1,denken
+A2.1,einschlafen
+A2.1,einziehen
+A2.1,entscheiden
+A2.1,erfahren
+A2.1,sich erinnern
+A2.1,erleben
+A2.1,(sich) ernähren
+A2.1,(sich) fühlen
+A2.1,füttern
+A2.1,gelten
+A2.1,giessen
+A2.1,(sich) halten
+A2.1,hängen
+A2.1,hassen
+A2.1,heizen
+A2.1,hereinkommen
+A2.1,hinfallen
+A2.1,hoffen
+A2.1,(sich) interessieren
+A2.1,joggen
+A2.1,(sich) kämmen
+A2.1,klappen
+A2.1,klingeln
+A2.1,kontrollieren
+A2.1,sich konzentrieren
+A2.1,sich kümmern
+A2.1,kündigen
+A2.1,lassen
+A2.1,legen
+A2.1,leiten
+A2.1,liefern
+A2.1,(sich) merken
+A2.1,nennen
+A2.1,notieren
+A2.1,nutzen
+A2.1,pensioniert sein
+A2.1,pensioniert werden
+A2.1,planen
+A2.1,präsentieren
+A2.1,prüfen
+A2.1,(sich) rasieren
+A2.1,raten
+A2.1,recht haben
+A2.1,reichen
+A2.1,rennen
+A2.1,repetieren
+A2.1,riechen
+A2.1,schaffen
+A2.1,schenken
+A2.1,(sich) schminken
+A2.1,schützen
+A2.1,speichern
+A2.1,stattfinden
+A2.1,stecken
+A2.1,stehen
+A2.1,stellen
+A2.1,stimmen
+A2.1,stören
+A2.1,stossen
+A2.1,streiten
+A2.1,teilen
+A2.1,tönen
+A2.1,tragen
+A2.1,träumen
+A2.1,trennen
+A2.1,treten
+A2.1,übernehmen
+A2.1,überraschen
+A2.1,übertreiben
+A2.1,überzeugen
+A2.1,(sich) umziehen
+A2.1,(sich) unterhalten
+A2.1,sich verabreden
+A2.1,(sich) verbessern
+A2.1,(sich) verletzen
+A2.1,verlieren
+A2.1,vermissen
+A2.1,verpassen
+A2.1,versuchen
+A2.1,(sich) vorbereiten
+A2.1,(sich) vorstellen
+A2.1,(sich) waschen
+A2.1,wechseln
+A2.1,weinen
+A2.1,(sich) wenden
+A2.1,werfen
+A2.2,abbiegen
+A2.2,abheben
+A2.2,ablehnen
+A2.2,akzeptieren
+A2.2,ändern
+A2.2,annehmen
+A2.2,ansprechen
+A2.2,auffallen
+A2.2,aufnehmen
+A2.2,auftreten
+A2.2,ausgehen
+A2.2,baden
+A2.2,beantworten
+A2.2,besichtigen
+A2.2,besorgen
+A2.2,bremsen
+A2.2,buchen
+A2.2,danken
+A2.2,einigen
+A2.2,einpacken
+A2.2,einrichten
+A2.2,einzahlen
+A2.2,erkältet sein
+A2.2,erkennen
+A2.2,erledigen
+A2.2,eröffnen
+A2.2,faulenzen
+A2.2,hupen
+A2.2,kaputtgehen
+A2.2,kleben
+A2.2,landen
+A2.2,(sich) melden
+A2.2,mitspielen
+A2.2,reagieren
+A2.2,reden
+A2.2,renovieren
+A2.2,(sich) schneiden
+A2.2,sorgen
+A2.2,sparen
+A2.2,springen
+A2.2,starten
+A2.2,staubsaugen
+A2.2,sterben
+A2.2,stürzen
+A2.2,surfen
+A2.2,tanken
+A2.2,testen
+A2.2,tippen
+A2.2,transportieren
+A2.2,überholen
+A2.2,übernachten
+A2.2,überprüfen
+A2.2,überweisen
+A2.2,unternehmen
+A2.2,verbringen
+A2.2,verhindern
+A2.2,sich verlieben
+A2.2,vermeiden
+A2.2,verpacken
+A2.2,verschicken
+A2.2,verschieben
+A2.2,versprechen
+A2.2,vorschlagen
+A2.2,wegfahren
+A2.2,wiegen
+A2.2,windsurfen
+B1.1,abhängen
+B1.1,abmachen
+B1.1,abnehmen
+B1.1,absagen
+B1.1,absperren
+B1.1,(sich) ändern
+B1.1,angehen
+B1.1,(sich) anstrengen
+B1.1,atmen
+B1.1,auffordern
+B1.1,aufgeben
+B1.1,aufhören
+B1.1,aufschreiben
+B1.1,aufwachen
+B1.1,ausreichen
+B1.1,aussuchen
+B1.1,beenden
+B1.1,sich befinden
+B1.1,begrüssen
+B1.1,beissen
+B1.1,beobachten
+B1.1,(sich) beruhigen
+B1.1,beschädigen
+B1.1,(sich) beschäftigen
+B1.1,besitzen
+B1.1,(sich) bestätigen
+B1.1,betreuen
+B1.1,brechen
+B1.1,brennen
+B1.1,entdecken
+B1.1,sich entschliessen
+B1.1,entstehen
+B1.1,enttäuschen
+B1.1,(sich) entwickeln
+B1.1,erfinden
+B1.1,erfüllen
+B1.1,erhalten
+B1.1,erhöhen
+B1.1,erreichen
+B1.1,erschrecken
+B1.1,erwarten
+B1.1,erziehen
+B1.1,fehlen
+B1.1,festnehmen
+B1.1,feststellen
+B1.1,fliehen
+B1.1,folgen
+B1.1,fordern
+B1.1,führen
+B1.1,geboren werden
+B1.1,gelingen
+B1.1,genügen
+B1.1,gespannt sein
+B1.1,(sich) gewöhnen
+B1.1,gründen
+B1.1,handeln
+B1.1,herstellen
+B1.1,impfen
+B1.1,jobben
+B1.1,krankmelden
+B1.1,krankschreiben
+B1.1,lächeln
+B1.1,läuten
+B1.1,sich lohnen
+B1.1,lösen
+B1.1,losfahren
+B1.1,lügen
+B1.1,messen
+B1.1,mitbringen
+B1.1,mitgehen
+B1.1,nachdenken
+B1.1,pflegen
+B1.1,rechnen
+B1.1,retten
+B1.1,rufen
+B1.1,schiessen
+B1.1,schimpfen
+B1.1,schreien
+B1.1,senden
+B1.1,(sich) setzen
+B1.1,stammen
+B1.1,steigen
+B1.1,teilnehmen
+B1.1,tragen
+B1.1,treiben
+B1.1,(sich) überlegen
+B1.1,überreden
+B1.1,übersetzen
+B1.1,umgehen
+B1.1,umtauschen
+B1.1,unterscheiden
+B1.1,untersuchen
+B1.1,(sich) verabschieden
+B1.1,(sich) verändern
+B1.1,verdächtigen
+B1.1,vereinbaren
+B1.1,vergleichen
+B1.1,verliebt sein
+B1.1,vermuten
+B1.1,verschreiben
+B1.1,verschwinden
+B1.1,verteilen
+B1.1,vertreten
+B1.1,verwechseln
+B1.1,verzichten
+B1.1,vorhaben
+B1.1,weg sein
+B1.1,wiederkommen
+B1.1,(sich) wundern
+B1.1,zunehmen
+B1.1,zurechtkommen
+B1.1,zustimmen
+B1.2,abstimmen
+B1.2,anklicken
+B1.2,anschliessen
+B1.2,anstehen
+B1.2,anzeigen
+B1.2,aufführen
+B1.2,aufhalten
+B1.2,aufregen
+B1.2,beeinflussen
+B1.2,behandeln
+B1.2,behindern
+B1.2,sich bemühen
+B1.2,benötigen
+B1.2,beschliessen
+B1.2,beschreiben
+B1.2,besetzen
+B1.2,bestrafen
+B1.2,(sich) beteiligen
+B1.2,betrügen
+B1.2,braten
+B1.2,diskutieren
+B1.2,(sich) drehen
+B1.2,duzen
+B1.2,einfallen
+B1.2,(sich) einsetzen
+B1.2,eintragen
+B1.2,eintreten
+B1.2,entlassen
+B1.2,entschlossen sein
+B1.2,erscheinen
+B1.2,erstellen
+B1.2,festlegen
+B1.2,fördern
+B1.2,geschehen
+B1.2,glauben
+B1.2,herrschen
+B1.2,herunterladen
+B1.2,installieren
+B1.2,integrieren
+B1.2,kämpfen
+B1.2,klettern
+B1.2,klicken
+B1.2,klingen
+B1.2,korrigieren
+B1.2,(sich) leisten
+B1.2,löschen
+B1.2,mischen
+B1.2,ordnen
+B1.2,schalten
+B1.2,schlagen
+B1.2,schütteln
+B1.2,schweigen
+B1.2,sichern
+B1.2,stehlen
+B1.2,streichen
+B1.2,tauschen
+B1.2,töten
+B1.2,trocknen
+B1.2,überqueren
+B1.2,unterstützen
+B1.2,verbieten
+B1.2,verbrennen
+B1.2,verdienen
+B1.2,verlassen
+B1.2,verpflichtet sein
+B1.2,verreisen
+B1.2,versorgen
+B1.2,sich verspäten
+B1.2,verurteilen
+B1.2,vorkommen
+B1.2,sich vornehmen
+B1.2,wachsen
+B1.2,wählen
+B1.2,warnen
+B1.2,weggehen
+B1.2,wegwerfen
+B1.2,sich weigern
+B1.2,sich weiterbilden
+B1.2,weitermachen
+B1.2,wirken
+B1.2,zerstören
+B1.2,zubereiten
+B1.2,zusagen
+B1.2,zuschauen

@@ -65,10 +65,13 @@ import type {
   OrderingItem,
 } from '@/components/editor/ordering-node';
 import type { FillInTheBlankAttrs } from '@/components/editor/fill-in-the-blank-node';
-import type {
-  GlossaryTerm,
-  GlossaryTermsAttrs,
-  GlossaryTermWidth,
+import {
+  GLOSSARY_COLUMN_WIDTHS,
+  GLOSSARY_PRESETS,
+  type GlossaryPreset,
+  type GlossaryTerm,
+  type GlossaryTermsAttrs,
+  type GlossaryTermWidth,
 } from '@/components/editor/glossary-terms-node';
 import type {
   FrayerModelAttrs,
@@ -2644,22 +2647,61 @@ function GlossaryTermsEditor({
   const updateTerm = (id: string, patch: Partial<GlossaryTerm>) => setTerms(
     attrs.terms.map((term) => term.id === id ? { ...term, ...patch } : term),
   );
+  const presetConfig = GLOSSARY_PRESETS[attrs.preset];
+  const isTwoColumn = presetConfig.headers.length === 2;
 
   return (
     <>
-      <ContentFieldLabel>Term column width</ContentFieldLabel>
+      <ContentSwitch
+        label="Show instruction"
+        isSelected={attrs.showInstruction}
+        onChange={(showInstruction) => updateAttrs(editor, block, {
+          showInstruction,
+        })}
+      />
+      <ContentFieldLabel>Preset</ContentFieldLabel>
       <select
-        aria-label="Term column width"
-        value={attrs.termWidth}
+        aria-label="Glossary preset"
+        value={attrs.preset}
         onChange={(event) => updateAttrs(editor, block, {
-          termWidth: Number(event.target.value) as GlossaryTermWidth,
+          preset: event.target.value as GlossaryPreset,
         })}
         className="mt-2 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
       >
-        {[25, 33, 50, 66].map((width) => (
-          <option value={width} key={width}>{width}%</option>
+        {(Object.entries(GLOSSARY_PRESETS) as [GlossaryPreset, typeof presetConfig][]).map(([value, config]) => (
+          <option value={value} key={value}>{config.label}</option>
         ))}
       </select>
+      {attrs.preset === 'default' && (
+        <>
+          <ContentFieldLabel>Term column width</ContentFieldLabel>
+          <select
+            aria-label="Term column width"
+            value={attrs.termWidth}
+            onChange={(event) => updateAttrs(editor, block, {
+              termWidth: Number(event.target.value) as GlossaryTermWidth,
+            })}
+            className="mt-2 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          >
+            {GLOSSARY_COLUMN_WIDTHS.map((width) => (
+              <option disabled={width + attrs.definitionWidth >= 100} value={width} key={width}>{width}%</option>
+            ))}
+          </select>
+          <ContentFieldLabel>Definition column width</ContentFieldLabel>
+          <select
+            aria-label="Definition column width"
+            value={attrs.definitionWidth}
+            onChange={(event) => updateAttrs(editor, block, {
+              definitionWidth: Number(event.target.value) as GlossaryTermWidth,
+            })}
+            className="mt-2 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          >
+            {GLOSSARY_COLUMN_WIDTHS.map((width) => (
+              <option disabled={width + attrs.termWidth >= 100} value={width} key={width}>{width}%</option>
+            ))}
+          </select>
+        </>
+      )}
       <ContentSectionHeader count={`${attrs.terms.length} terms`}>
         Glossary entries
       </ContentSectionHeader>
@@ -2671,10 +2713,10 @@ function GlossaryTermsEditor({
                 {String(index + 1).padStart(2, '0')}
               </span>
               <input
-                aria-label={`Term ${index + 1}`}
+                aria-label={`${presetConfig.headers[0]} ${index + 1}`}
                 value={term.term}
                 onChange={(event) => updateTerm(term.id, { term: event.target.value })}
-                placeholder="Term"
+                placeholder={presetConfig.headers[0]}
                 className="w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
               />
               <ContentItemActions
@@ -2687,25 +2729,25 @@ function GlossaryTermsEditor({
                 onMoveDown={() => setTerms(moveItem(attrs.terms, index, 1))}
               />
               <textarea
-                aria-label={`Definition ${index + 1}`}
+                aria-label={`${presetConfig.headers[1]} ${index + 1}`}
                 rows={2}
                 value={term.definition}
                 onChange={(event) => updateTerm(term.id, {
                   definition: event.target.value,
                 })}
-                placeholder="Definition"
+                placeholder={presetConfig.headers[1]}
                 className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
               />
-              <textarea
-                aria-label={`Example ${index + 1}`}
+              {!isTwoColumn && <textarea
+                aria-label={`${presetConfig.headers[2]} ${index + 1}`}
                 rows={2}
                 value={term.example}
                 onChange={(event) => updateTerm(term.id, {
                   example: event.target.value,
                 })}
-                placeholder="Example"
+                placeholder={presetConfig.headers[2]}
                 className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-              />
+              />}
             </ContentItemGrid>
           </ContentCard>
         ))}

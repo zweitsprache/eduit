@@ -1,6 +1,6 @@
 @font-face {
   font-family: "Encode Sans Semi Condensed";
-  src: url("/fonts/EncodeSans-Regular.ttf") format("truetype");
+  src: url("https://fonts.gstatic.com/s/encodesanssemicondensed/v13/3qT4oiKqnDuUtQUEHMoXcmspmy55SFWrXFRp9FTOG2yR.ttf") format("truetype");
   font-style: normal;
   font-weight: 400;
   font-display: swap;
@@ -8,7 +8,7 @@
 
 @font-face {
   font-family: "Encode Sans Semi Condensed";
-  src: url("/fonts/EncodeSans-Medium.ttf") format("truetype");
+  src: url("https://fonts.gstatic.com/s/encodesanssemicondensed/v13/3qT7oiKqnDuUtQUEHMoXcmspmy55SFWrXFRp9FTOG1Rl1-FH.ttf") format("truetype");
   font-style: normal;
   font-weight: 500;
   font-display: swap;
@@ -16,7 +16,7 @@
 
 @font-face {
   font-family: "Encode Sans Semi Condensed";
-  src: url("/fonts/EncodeSans-SemiBold.ttf") format("truetype");
+  src: url("https://fonts.gstatic.com/s/encodesanssemicondensed/v13/3qT7oiKqnDuUtQUEHMoXcmspmy55SFWrXFRp9FTOG1RJ0OFH.ttf") format("truetype");
   font-style: normal;
   font-weight: 600;
   font-display: swap;
@@ -24,7 +24,7 @@
 
 @font-face {
   font-family: "Encode Sans Semi Condensed";
-  src: url("/fonts/EncodeSans-Bold.ttf") format("truetype");
+  src: url("https://fonts.gstatic.com/s/encodesanssemicondensed/v13/3qT7oiKqnDuUtQUEHMoXcmspmy55SFWrXFRp9FTOG1Qt0eFH.ttf") format("truetype");
   font-style: normal;
   font-weight: 700;
   font-display: swap;
@@ -2510,56 +2510,112 @@
 
 .glossary-terms-node__table {
   margin-block-start: var(--custom-block-space-section);
+  break-inside: auto;
+  page-break-inside: auto;
+}
+
+.glossary-terms-node__header {
+  border-top: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+}
+
+.custom-block.glossary-terms-node {
+  display: block;
+  break-inside: auto;
+  page-break-inside: auto;
+}
+
+.glossary-terms-node > .custom-block__instruction {
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 .glossary-terms-node__header,
 .glossary-terms-node__row {
-  display: grid;
-  grid-template-columns:
-    var(--custom-block-index-size)
-    minmax(0, 33fr)
-    minmax(0, 33.5fr)
-    minmax(0, 33.5fr);
+  position: relative;
+  display: block;
+  box-sizing: border-box;
   min-width: 0;
-  column-gap: var(--custom-block-inline-gap);
-  align-items: center;
   border-bottom: var(--custom-block-row-border-width) solid
     var(--custom-block-row-border-color);
+  font-size: 0;
+}
+
+.glossary-terms-node__header::before,
+.glossary-terms-node__row::before {
+  display: inline-block;
+  width: 0;
+  height: calc(
+    var(--custom-block-row-height)
+    - var(--custom-block-row-padding-block)
+    - var(--custom-block-row-padding-block)
+  );
+  vertical-align: middle;
+  content: "";
+}
+
+.glossary-terms-node__columns {
+  display: inline-block;
+  width: calc(
+    100% - var(--custom-block-index-size) - var(--custom-block-inline-gap)
+  );
+  vertical-align: middle;
+  font-size: 0;
+}
+
+.glossary-terms-node__columns > strong,
+.glossary-terms-node__cell {
+  display: inline-block;
+  box-sizing: border-box;
+  padding-inline-end: var(--custom-block-inline-gap);
+  vertical-align: middle;
   font-size: var(--custom-block-body-font-size);
 }
 
-.glossary-terms-node__table[data-term-width="25"] > * {
-  grid-template-columns:
-    var(--custom-block-index-size)
-    minmax(0, 25fr)
-    minmax(0, 37.5fr)
-    minmax(0, 37.5fr);
+.glossary-terms-node__columns > strong:last-child,
+.glossary-terms-node__cell:last-child {
+  padding-inline-end: 0;
 }
 
-.glossary-terms-node__table[data-term-width="50"] > * {
-  grid-template-columns:
-    var(--custom-block-index-size)
-    minmax(0, 50fr)
-    minmax(0, 25fr)
-    minmax(0, 25fr);
+.glossary-terms-node__index-spacer,
+.glossary-terms-node__row > .custom-block__row-index {
+  display: inline-flex;
+  width: var(--custom-block-index-size);
+  margin-inline-end: var(--custom-block-inline-gap);
+  vertical-align: middle;
 }
 
-.glossary-terms-node__table[data-term-width="66"] > * {
-  grid-template-columns:
-    var(--custom-block-index-size)
-    minmax(0, 66fr)
-    minmax(0, 17fr)
-    minmax(0, 17fr);
+.glossary-terms-node__index-spacer {
+  height: var(--custom-block-index-size);
 }
 
 .glossary-terms-node__header {
   min-height: var(--custom-block-row-height);
   padding-block: var(--custom-block-row-padding-block);
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 .glossary-terms-node__row {
   min-height: var(--custom-block-row-height);
   padding-block: var(--custom-block-row-padding-block);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* The first pair stays together; all intermediate rows may break. */
+.glossary-terms-node__row:nth-child(2) {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.glossary-terms-node__final-pair {
+  display: inline-block;
+  width: 100%;
+  max-width: 100%;
+  vertical-align: top;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .glossary-terms-node__cell {
@@ -2584,6 +2640,16 @@
 
 .heading-node__content {
   margin: 0 !important;
+}
+
+.heading-node--h1,
+.heading-node--h2,
+.heading-node--h3,
+.tiptap > h1,
+.tiptap > h2,
+.tiptap > h3 {
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 .heading-node--numbered .heading-node__content::before {

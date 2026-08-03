@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { launchRenderingBrowser } from '@/lib/server-chromium';
 
 export const runtime = 'nodejs';
@@ -10,6 +12,49 @@ const PAGE_FORMATS = {
   'letter-portrait': { cssSize: '215.9mm 279.4mm', pageHeight: '279.4mm' },
   'letter-landscape': { cssSize: '279.4mm 215.9mm', pageHeight: '215.9mm' },
 };
+
+const PDF_FONTS = [
+  ['Encode Sans Semi Condensed', 'https://fonts.gstatic.com/s/encodesanssemicondensed/v13/3qT4oiKqnDuUtQUEHMoXcmspmy55SFWrXFRp9FTOG2yR.ttf', 400, 'normal', 'truetype'],
+  ['Encode Sans Semi Condensed', 'https://fonts.gstatic.com/s/encodesanssemicondensed/v13/3qT7oiKqnDuUtQUEHMoXcmspmy55SFWrXFRp9FTOG1Rl1-FH.ttf', 500, 'normal', 'truetype'],
+  ['Encode Sans Semi Condensed', 'https://fonts.gstatic.com/s/encodesanssemicondensed/v13/3qT7oiKqnDuUtQUEHMoXcmspmy55SFWrXFRp9FTOG1RJ0OFH.ttf', 600, 'normal', 'truetype'],
+  ['Encode Sans Semi Condensed', 'https://fonts.gstatic.com/s/encodesanssemicondensed/v13/3qT7oiKqnDuUtQUEHMoXcmspmy55SFWrXFRp9FTOG1Qt0eFH.ttf', 700, 'normal', 'truetype'],
+  ['Linotype Feltpen', 'feltpen/LinotypeFeltpen-Medium.ttf', 500, 'normal', 'truetype'],
+  ['TheSans', 'thesans/BJVNLV+TheSans-LP4SeLig.ttf', 400, 'normal', 'truetype'],
+  ['TheSans', 'thesans/BJVNLV+TheSans-LP6SeBld.ttf', 600, 'normal', 'truetype'],
+  ['TheSans', 'thesans/BJVNLV+TheSans-LP7Bld.ttf', 700, 'normal', 'truetype'],
+] as const;
+
+let embeddedFontsPromise: Promise<string> | null = null;
+
+function embeddedPdfFonts() {
+  if (embeddedFontsPromise) return embeddedFontsPromise;
+  embeddedFontsPromise = Promise.all(PDF_FONTS.map(async (
+    [family, relativePath, weight, style, format],
+  ) => {
+    if (relativePath.startsWith('https://')) {
+      const response = await fetch(relativePath);
+      if (!response.ok) throw new Error(`PDF font could not be downloaded: ${family} ${weight}`);
+      const font = Buffer.from(await response.arrayBuffer());
+      return `@font-face{font-family:${JSON.stringify(family)};src:url(data:font/ttf;base64,${font.toString('base64')}) format(${JSON.stringify(format)});font-style:${style};font-weight:${weight};font-display:block;}`;
+    }
+    const candidates = [
+      path.join(process.cwd(), 'public', 'fonts', relativePath),
+      path.join(process.cwd(), 'apps', 'app', 'public', 'fonts', relativePath),
+    ];
+    let font: Buffer | null = null;
+    for (const candidate of candidates) {
+      try {
+        font = await readFile(candidate);
+        break;
+      } catch {
+        // Try the monorepo path when the server cwd is the repository root.
+      }
+    }
+    if (!font) throw new Error(`PDF font file is missing: ${relativePath}`);
+    return `@font-face{font-family:${JSON.stringify(family)};src:url(data:font/ttf;base64,${font.toString('base64')}) format(${JSON.stringify(format)});font-style:${style};font-weight:${weight};font-display:block;}`;
+  })).then((rules) => rules.join('\n'));
+  return embeddedFontsPromise;
+}
 
 export async function POST(request: Request) {
   const contentLength = Number(request.headers.get('content-length') ?? 0);
@@ -35,12 +80,21 @@ export async function POST(request: Request) {
     .replace(/<meta\b[^>]*http-equiv=["']?refresh["']?[^>]*>/gi, '');
   const pageFormat = PAGE_FORMATS[payload.docSize as keyof typeof PAGE_FORMATS]
     ?? PAGE_FORMATS['a4-portrait'];
+  let embeddedFontCss: string;
+  try {
+    embeddedFontCss = await embeddedPdfFonts();
+  } catch (error) {
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : 'PDF fonts could not be loaded.',
+    }, { status: 500 });
+  }
   const html = `<!doctype html>
     <html>
       <head>
         <base href="${origin}/">
         ${safeHead}
         <style>
+          ${embeddedFontCss}
           @page {
             size: ${pageFormat.cssSize};
             margin: 0;
@@ -95,6 +149,10 @@ export async function POST(request: Request) {
   }
   try {
     const page = await browser.newPage();
+    // Resolve the same font cascade that page.pdf() will use before waiting
+    // for fonts. Otherwise print-only style changes can discover a branded
+    // face after document.fonts.ready has already resolved.
+    await page.emulateMedia({ media: 'print' });
     const renderShellUrl = new URL('/__eduit-pdf-render-shell__', origin).href;
     await page.route('**/*', async (route) => {
       if (route.request().url() === renderShellUrl) {
@@ -121,6 +179,26 @@ export async function POST(request: Request) {
     await page.goto(renderShellUrl, { waitUntil: 'domcontentloaded' });
     await page.setContent(html, { waitUntil: 'domcontentloaded' });
     await page.evaluate(async ({ pageHeight }) => {
+      // Force layout, then explicitly request every font descriptor used by
+      // printable content. This includes body, heading, example, and solution
+      // fonts selected through brand CSS variables.
+      void document.body.offsetHeight;
+      const fontDescriptors = new Set<string>();
+      document.querySelectorAll<HTMLElement>('.editor-content .tiptap, .editor-content .tiptap *')
+        .forEach((element) => {
+          const style = getComputedStyle(element);
+          fontDescriptors.add([
+            style.fontStyle,
+            style.fontWeight,
+            style.fontSize,
+            style.fontFamily,
+          ].join(' '));
+        });
+      await Promise.all(
+        Array.from(fontDescriptors).map((descriptor) => (
+          document.fonts.load(descriptor, 'Aa ÄÖÜ äöü ß 0123456789')
+        )),
+      );
       await document.fonts.ready;
       await Promise.all(
         Array.from(document.images).map((image) => (
