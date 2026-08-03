@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 type Props = { params: Promise<{ worksheetId: string }> };
 
-const documentTypes = ['Arbeitsblatt', 'Merkblatt', 'Verbtabelle', 'Deklinationstabelle', 'Lernkarten'];
+const documentTypes = ['Arbeitsblatt', 'Merkblatt', 'Verbtabelle', 'Deklinationstabelle', 'Lernkarten', 'Dialog', 'Leseverstehen'];
 const levels = ['A1.1', 'A1.2', 'A2.1', 'A2.2', 'B1.1', 'B1.2'];
 const actionCompetencies = ['Lesen', 'Hören', 'Monologisches Sprechen', 'Dialogisches Sprechen', 'Monologisches Schreiben', 'Dialogisches Schreiben'];
 const languageCompetencies = ['Wortschatz', 'Grammatik', 'Aussprache', 'Intonation', 'Orthografie'];

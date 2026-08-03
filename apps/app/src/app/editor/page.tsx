@@ -2183,13 +2183,14 @@ export default function EditorPage() {
           node.type.name === 'pageBreak'
           && node.attrs.restartPagination === true
         ) {
-          const nextPosition = Math.min(
-            editor.state.doc.content.size,
-            pos + node.nodeSize,
-          );
-          const page = pagesStorage.getPageForPosition?.(nextPosition);
-          if (page && page > 1 && page <= footers.length) {
-            restartPages.push(page);
+          // A page-break node belongs to the page it ends. Looking up the
+          // position after it can return a synthetic page past the rendered
+          // footer count, especially for the final break. The restarted
+          // section always begins on the following physical page.
+          const breakPage = pagesStorage.getPageForPosition?.(pos);
+          if (breakPage) {
+            const restartPage = Math.min(footers.length, breakPage + 1);
+            if (restartPage > 1) restartPages.push(restartPage);
           }
           return false;
         }
@@ -2277,7 +2278,14 @@ export default function EditorPage() {
 
     const initializeWorksheet = async () => {
       try {
-        const existingWorksheetId = worksheetIdRef.current;
+        // The ref initializer runs during server rendering, where `window` is
+        // unavailable. Read the query parameter again during client-side
+        // initialization so imported worksheet links do not create a new
+        // untitled worksheet instead of loading the requested record.
+        const existingWorksheetId = new URLSearchParams(
+          window.location.search,
+        ).get('worksheet') ?? worksheetIdRef.current;
+        if (existingWorksheetId) worksheetIdRef.current = existingWorksheetId;
         const legacyContent = localStorage.getItem(STORAGE_KEY) ?? editor.getHTML();
         const response = existingWorksheetId
           ? await fetch(

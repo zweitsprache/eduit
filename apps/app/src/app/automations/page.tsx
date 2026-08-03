@@ -52,6 +52,33 @@ const JSON_IMPORT_EXAMPLE = JSON.stringify({
         type: 'glossary', preset: 'verbs', showInstruction: false,
         entries: [{ term: 'kaufen', definition: 'habe gekauft', example: 'Ich kaufe eine Jacke.' }],
       },
+      {
+        type: 'trueFalse',
+        instruction: 'Sind die Aussagen richtig oder falsch?',
+        question: 'Maria geht einkaufen.',
+        trueLabel: 'Richtig',
+        falseLabel: 'Falsch',
+        rows: [
+          { text: 'Maria kauft Brot.', correctValue: 'true' },
+          { text: 'Maria kauft ein Auto.', correctValue: 'false' },
+        ],
+      },
+      {
+        type: 'mcq',
+        instruction: 'Wählen Sie die richtige Antwort.',
+        blockQuestion: '',
+        columns: 1,
+        questions: [
+          {
+            question: 'Was kauft Maria?',
+            options: [
+              { text: 'Brot', correct: true },
+              { text: 'Ein Auto', correct: false },
+              { text: 'Ein Buch', correct: false },
+            ],
+          },
+        ],
+      },
     ],
   },
 }, null, 2);
@@ -477,7 +504,7 @@ export default function AutomationsPage() {
             <p className="text-sm font-semibold text-brand-secondary">AI-Import</p>
             <h2 className="mt-1 text-xl font-semibold">Arbeitsblätter aus JSON erstellen</h2>
             <p className="mt-2 text-sm text-tertiary">
-              Importiert ein einzelnes <code>worksheet</code> oder bis zu 100 Einträge in <code>worksheets</code>. Überschriften und Glossare werden validiert und in Editor-Blöcke umgewandelt.
+              Importiert ein einzelnes <code>worksheet</code> oder bis zu 100 Einträge in <code>worksheets</code>. Überschriften, Glossare, Lückentexte, Dialoge, Richtig/Falsch, Multiple-Choice und Seitenumbrüche werden validiert und in Editor-Blöcke umgewandelt.
             </p>
             <label className="mt-6 block text-sm font-semibold">
               Worksheet JSON

@@ -1,10 +1,19 @@
 import { neon } from '@neondatabase/serverless';
 
+export type DazitPublicationDocumentType =
+  | 'Arbeitsblatt'
+  | 'Merkblatt'
+  | 'Verbtabelle'
+  | 'Deklinationstabelle'
+  | 'Lernkarten'
+  | 'Dialog'
+  | 'Leseverstehen';
+
 export type DazitPublicationRow = {
   worksheetId: string;
   slug: string;
   title: string;
-  documentType: 'Arbeitsblatt' | 'Merkblatt' | 'Verbtabelle' | 'Deklinationstabelle' | 'Lernkarten';
+  documentType: DazitPublicationDocumentType;
   pdfPath: string;
   thumbnailPaths: string[];
   pageCount: number;
@@ -29,7 +38,7 @@ export type DazitPublicationCardRow = {
   worksheetId: string;
   slug: string;
   title: string;
-  documentType: 'Arbeitsblatt' | 'Merkblatt' | 'Verbtabelle' | 'Deklinationstabelle' | 'Lernkarten';
+  documentType: DazitPublicationDocumentType;
   pdfPath: string;
   thumbnailPaths: string[];
   pageCount: number;
@@ -71,7 +80,7 @@ export async function getDazitSearchStats() {
 export type DazitPublicationMetadata = {
   worksheetId: string;
   title: string;
-  documentType: 'Arbeitsblatt' | 'Merkblatt' | 'Verbtabelle' | 'Deklinationstabelle' | 'Lernkarten';
+  documentType: DazitPublicationDocumentType;
   descriptionHtml: string | null;
   excerpt: string | null;
   searchSnippet: string | null;

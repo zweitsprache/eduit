@@ -1591,6 +1591,17 @@ function MCQEditor({
         </>
       )}
 
+      <label className="block text-sm font-semibold text-secondary">
+        Question
+        <InlineFormattedInput
+          ariaLabel="Block question"
+          value={attrs.blockQuestion ?? ''}
+          onChange={(blockQuestion) => updateAttrs(editor, block, { blockQuestion })}
+          placeholder="Optional question shown between instruction and answers"
+          className="mt-2 min-h-20 whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+        />
+      </label>
+
       <ContentSectionHeader>Learner support</ContentSectionHeader>
       <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3">
         <div className="flex items-center gap-2 text-left text-sm font-semibold text-secondary">
@@ -2965,7 +2976,17 @@ function DialogueEditor({
 
   return (
     <>
-      <ContentSectionHeader className="mt-0">Learner support</ContentSectionHeader>
+      <label className="mt-0 block text-sm font-semibold text-primary">
+        Context
+        <input
+          type="text"
+          value={attrs.context}
+          onChange={(event) => updateAttrs(editor, block, { context: event.target.value })}
+          placeholder="Optional context shown between instruction and dialogue"
+          className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+        />
+      </label>
+      <ContentSectionHeader>Learner support</ContentSectionHeader>
       <ContentSwitchGrid>
         <ContentSwitch
           label="Show original"

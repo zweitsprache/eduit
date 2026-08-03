@@ -9,6 +9,8 @@ export function SiteFooter() {
           <Link href="/documents?type=Verbtabelle">Verbtabellen</Link>
           <Link href="/documents?type=Deklinationstabelle">Deklinationstabellen</Link>
           <Link href="/documents?type=Lernkarten">Lernkarten</Link>
+          <Link href="/documents?type=Dialog">Dialoge</Link>
+          <Link href="/documents?type=Leseverstehen">Leseverstehen</Link>
         </nav>
         <nav aria-label="Sprachniveaus">
           {['A1.1', 'A1.2', 'A2.1', 'A2.2', 'B1.1', 'B1.2'].map((level) => (

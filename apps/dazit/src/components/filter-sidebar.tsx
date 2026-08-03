@@ -6,6 +6,8 @@ const worksheetTypes = [
   'Verbtabelle',
   'Deklinationstabelle',
   'Lernkarten',
+  'Dialog',
+  'Leseverstehen',
 ] as const;
 
 const groups = [

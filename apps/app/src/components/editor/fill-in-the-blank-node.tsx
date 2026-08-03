@@ -296,6 +296,30 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
     };
   }, [hideItemNumbers, measureLineNumbers, showLineNumbers]);
 
+  const finalPairStart = Math.max(0, paragraphs.length - 2);
+  const renderParagraph = (parts: FillInTheBlankPart[], paragraphIndex: number) => (
+    <div
+      className={`fill-in-the-blank-node__item${
+        paragraphIndex === 0 ? ' fill-in-the-blank-node__item--first' : ''
+      }`}
+      key={paragraphIndex}
+    >
+      {!hideItemNumbers && (
+        <span className="custom-block__row-index">
+          {String(paragraphIndex + 1).padStart(2, '0')}
+        </span>
+      )}
+      <p className="fill-in-the-blank-node__text">
+        <FillInTheBlankParts
+          hideBlankNumbers={hideBlankNumbers}
+          itemNumber={paragraphIndex + 1}
+          parts={parts}
+          showFirstAsExample={showFirstAsExample}
+        />
+      </p>
+    </div>
+  );
+
   return (
     <CustomBlockRoot selected={selected} className="fill-in-the-blank-node">
       <BlockInstruction>
@@ -341,23 +365,12 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
               {String(marker.number).padStart(2, '0')}
             </span>
           ))}
-          {paragraphs.map((parts, paragraphIndex) => (
-            <div className="fill-in-the-blank-node__item" key={paragraphIndex}>
-              {!hideItemNumbers && (
-                <span className="custom-block__row-index">
-                  {String(paragraphIndex + 1).padStart(2, '0')}
-                </span>
-              )}
-              <p className="fill-in-the-blank-node__text">
-                <FillInTheBlankParts
-                  hideBlankNumbers={hideBlankNumbers}
-                  itemNumber={paragraphIndex + 1}
-                  parts={parts}
-                  showFirstAsExample={showFirstAsExample}
-                />
-              </p>
-            </div>
-          ))}
+          {paragraphs.slice(0, finalPairStart).map(renderParagraph)}
+          <div className="fill-in-the-blank-node__final-pair">
+            {paragraphs.slice(finalPairStart).map((parts, offset) => (
+              renderParagraph(parts, finalPairStart + offset)
+            ))}
+          </div>
         </div>
       ) : (
         <p className="fill-in-the-blank-node__text">

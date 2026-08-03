@@ -19,7 +19,9 @@ export type Worksheet = {
     | 'Merkblatt'
     | 'Verbtabelle'
     | 'Deklinationstabelle'
-    | 'Lernkarten';
+    | 'Lernkarten'
+    | 'Dialog'
+    | 'Leseverstehen';
   pages: number;
   language: 'German' | 'French' | 'Italian' | 'English';
   difficulty: 'Basic' | 'Intermediate' | 'Advanced';
@@ -85,6 +87,8 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
     'Verbtabelle',
     'Deklinationstabelle',
     'Lernkarten',
+    'Dialog',
+    'Leseverstehen',
   ];
   const subject = subjects.includes(row.level as Subject)
     ? row.level as Subject

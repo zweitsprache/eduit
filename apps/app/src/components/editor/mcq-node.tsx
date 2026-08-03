@@ -36,6 +36,7 @@ export type MCQQuestion = {
 
 export type MCQAttrs = {
   instruction: string;
+  blockQuestion: string;
   questions: MCQQuestion[];
   /** Legacy single-question fields, retained for saved-document compatibility. */
   question: string;
@@ -133,6 +134,7 @@ function shuffledOptions(options: MCQOption[]) {
 function MCQNodeView({ node, selected }: NodeViewProps) {
   const {
     instruction,
+    blockQuestion,
     columns,
     shuffleAnswers,
     showInstruction,
@@ -155,6 +157,9 @@ function MCQNodeView({ node, selected }: NodeViewProps) {
             {instruction || DEFAULT_MCQ_INSTRUCTION}
           </BlockInstruction>
         )}
+        <BlockQuestion>
+          <InlineFormattedText text={blockQuestion} />
+        </BlockQuestion>
         {questions.map((mcqQuestion, questionIndex) => {
           const displayedOptions = shuffleAnswers
             ? shuffledOptions(mcqQuestion.options)
@@ -290,6 +295,15 @@ export const MCQ = Node.create({
           'data-mcq-show-instruction': String(attributes.showInstruction),
         }),
       },
+      blockQuestion: {
+        default: '',
+        parseHTML: (element) => (
+          decodeURIComponent(element.getAttribute('data-mcq-block-question') ?? '')
+        ),
+        renderHTML: (attributes) => ({
+          'data-mcq-block-question': encodeURIComponent(attributes.blockQuestion ?? ''),
+        }),
+      },
     };
   },
 
@@ -314,6 +328,7 @@ export const MCQ = Node.create({
             type: this.name,
             attrs: {
               instruction: attrs.instruction ?? DEFAULT_MCQ_INSTRUCTION,
+              blockQuestion: attrs.blockQuestion ?? '',
               questions: attrs.questions ?? (attrs.question !== undefined || attrs.options !== undefined
                 ? [createMCQQuestion({
                     question: attrs.question,
