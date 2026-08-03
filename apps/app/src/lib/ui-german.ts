@@ -62,6 +62,7 @@ export const uiGerman: Record<string, string> = {
   'Color coding': 'Farbcodierung',
   Columns: 'Spalten',
   'Complete the dialogue.': 'Vervollständige den Dialog.',
+  'Context': 'Kontext',
   'Content indentation': 'Einzug des Inhalts',
   'Copy as HTML': 'Als HTML kopieren',
   'Correct answers': 'Richtige Antworten',

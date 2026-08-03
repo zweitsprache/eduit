@@ -29,6 +29,7 @@ export type DialogueItem = {
 export type DialogueAttrs = {
   items: DialogueItem[];
   speakerNames: DialogueSpeakerNames;
+  context: string;
   showSpeakerNames: boolean;
   showOriginal: boolean;
   showWordBank: boolean;
@@ -99,6 +100,7 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
   const {
     items,
     speakerNames,
+    context,
     showSpeakerNames,
     showOriginal,
     showWordBank,
@@ -129,13 +131,7 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
         : []
     ))
   ));
-  const speakerBadgeWidth = Math.min(
-    14,
-    Math.max(
-      4,
-      ...Object.values(speakerNames).map((name) => name.trim().length + 2),
-    ),
-  );
+  const speakerBadgeWidth = 15;
 
   return (
     <CustomBlockRoot
@@ -145,6 +141,9 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
       <BlockInstruction>
         {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.dialogue}
       </BlockInstruction>
+      {context && (
+        <p className="dialogue-node__context">{context}</p>
+      )}
       {showWordBank && wordBankItems.length > 0 && (
         <div className="custom-block__word-bank dialogue-node__word-bank">
           {wordBankItems.map((item) => (
@@ -318,6 +317,15 @@ export const Dialogue = Node.create({
           ),
         }),
       },
+      context: {
+        default: '',
+        parseHTML: (element) => (
+          decodeURIComponent(element.getAttribute('data-dialogue-context') ?? '')
+        ),
+        renderHTML: (attributes) => ({
+          'data-dialogue-context': encodeURIComponent(attributes.context ?? ''),
+        }),
+      },
     };
   },
 
@@ -343,6 +351,7 @@ export const Dialogue = Node.create({
             attrs: {
               items: attrs.items ?? defaultItems(),
               speakerNames: attrs.speakerNames ?? defaultSpeakerNames(),
+              context: attrs.context ?? '',
               showSpeakerNames: attrs.showSpeakerNames ?? false,
               showOriginal: attrs.showOriginal ?? false,
               showWordBank: attrs.showWordBank ?? false,

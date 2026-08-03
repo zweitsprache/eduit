@@ -32,6 +32,56 @@ type UnpublishedLearningCard = {
 
 const FINALIZATION_CONCURRENCY = 2;
 const MAX_ATTEMPTS = 3;
+const JSON_IMPORT_EXAMPLE = JSON.stringify({
+  schemaVersion: 1,
+  worksheet: {
+    title: 'Basiswortschatz | Einkaufen',
+    documentSize: 'a4-portrait',
+    showSolutions: false,
+    status: 'draft',
+    context: {
+      worksheetLanguage: 'de-formal',
+      subject: 'Deutsch',
+      contentLanguage: 'German',
+      country: 'Schweiz',
+    },
+    blocks: [
+      { type: 'heading', text: 'Basiswortschatz | Einkaufen', level: 1, numbered: false, gapAfter: 2 },
+      { type: 'heading', text: 'Verben', level: 2, numbered: false, gapAfter: 1 },
+      {
+        type: 'glossary', preset: 'verbs', showInstruction: false,
+        entries: [{ term: 'kaufen', definition: 'habe gekauft', example: 'Ich kaufe eine Jacke.' }],
+      },
+      {
+        type: 'trueFalse',
+        instruction: 'Sind die Aussagen richtig oder falsch?',
+        question: 'Maria geht einkaufen.',
+        trueLabel: 'Richtig',
+        falseLabel: 'Falsch',
+        rows: [
+          { text: 'Maria kauft Brot.', correctValue: 'true' },
+          { text: 'Maria kauft ein Auto.', correctValue: 'false' },
+        ],
+      },
+      {
+        type: 'mcq',
+        instruction: 'Wählen Sie die richtige Antwort.',
+        blockQuestion: '',
+        columns: 1,
+        questions: [
+          {
+            question: 'Was kauft Maria?',
+            options: [
+              { text: 'Brot', correct: true },
+              { text: 'Ein Auto', correct: false },
+              { text: 'Ein Buch', correct: false },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+}, null, 2);
 
 const INITIAL: Config[] = [
   { id: 'present', tense: 'present', mood: 'indicative', label: 'Indikativ Präsens', level: 'A1.1', enabled: true },
@@ -77,6 +127,10 @@ export default function AutomationsPage() {
   const [unpublishedLearningCards, setUnpublishedLearningCards] = useState<UnpublishedLearningCard[]>([]);
   const [unpublishedBatchSize, setUnpublishedBatchSize] = useState(25);
   const [unpublishedError, setUnpublishedError] = useState('');
+  const [worksheetJson, setWorksheetJson] = useState('');
+  const [jsonImportRunning, setJsonImportRunning] = useState(false);
+  const [jsonImportError, setJsonImportError] = useState('');
+  const [jsonImportResults, setJsonImportResults] = useState<CreatedWorksheet[]>([]);
   const resultsRef = useRef<CreatedWorksheet[]>([]);
   const isVerbRunning = running && finalizationSource === 'verb';
   const isBacklogRunning = running && finalizationSource === 'backlog';
@@ -366,6 +420,35 @@ export default function AutomationsPage() {
     } : null);
   };
 
+  const importWorksheetJson = async () => {
+    setJsonImportError('');
+    setJsonImportResults([]);
+    setJsonImportRunning(true);
+    try {
+      const data = JSON.parse(worksheetJson) as unknown;
+      const response = await fetch('/api/automations/worksheet-json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data, brandProfileId: brandProfileId || null }),
+      });
+      const result = await response.json().catch(() => ({})) as {
+        worksheets?: CreatedWorksheet[];
+        error?: string;
+      };
+      if (!response.ok || !result.worksheets) {
+        throw new Error(result.error || 'JSON-Import fehlgeschlagen.');
+      }
+      setJsonImportResults(result.worksheets);
+      setWorksheetJson('');
+    } catch (importError) {
+      setJsonImportError(importError instanceof Error
+        ? importError.message
+        : 'JSON-Import fehlgeschlagen.');
+    } finally {
+      setJsonImportRunning(false);
+    }
+  };
+
   const finalizationCompleted = finalizing?.jobs.filter(({ status }) => status === 'completed').length ?? 0;
   const finalizationFailed = finalizing?.jobs.filter(({ status }) => status === 'failed').length ?? 0;
   const activeFinalizers = finalizing?.jobs.filter(({ status }) => status === 'running') ?? [];
@@ -416,6 +499,56 @@ export default function AutomationsPage() {
                 title={`Automatischer Arbeitsblatt-Renderer: ${job.title}`}
               />
             ))}
+          </section>
+          <section className="mt-8 rounded-2xl border border-secondary bg-primary p-7 shadow-lg">
+            <p className="text-sm font-semibold text-brand-secondary">AI-Import</p>
+            <h2 className="mt-1 text-xl font-semibold">Arbeitsblätter aus JSON erstellen</h2>
+            <p className="mt-2 text-sm text-tertiary">
+              Importiert ein einzelnes <code>worksheet</code> oder bis zu 100 Einträge in <code>worksheets</code>. Überschriften, Glossare, Lückentexte, Dialoge, Richtig/Falsch, Multiple-Choice und Seitenumbrüche werden validiert und in Editor-Blöcke umgewandelt.
+            </p>
+            <label className="mt-6 block text-sm font-semibold">
+              Worksheet JSON
+              <textarea
+                className="mt-2 min-h-80 w-full rounded-lg border border-primary bg-primary p-3 font-mono text-xs font-normal leading-5"
+                onChange={(event) => setWorksheetJson(event.target.value)}
+                placeholder={JSON_IMPORT_EXAMPLE}
+                spellCheck={false}
+                value={worksheetJson}
+              />
+            </label>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                className="rounded-lg border border-primary bg-primary px-4 py-2 text-sm font-semibold"
+                disabled={jsonImportRunning}
+                onClick={() => setWorksheetJson(JSON_IMPORT_EXAMPLE)}
+                type="button"
+              >
+                Beispiel einsetzen
+              </button>
+              <button
+                className="rounded-lg bg-brand-solid px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                disabled={jsonImportRunning || !worksheetJson.trim() || !brandProfileId}
+                onClick={() => void importWorksheetJson()}
+                type="button"
+              >
+                {jsonImportRunning ? 'JSON wird importiert …' : 'Arbeitsblätter erstellen'}
+              </button>
+            </div>
+            {jsonImportError && <p className="mt-4 text-sm text-error-primary">{jsonImportError}</p>}
+            {jsonImportResults.length > 0 && (
+              <div className="mt-6">
+                <h3 className="font-semibold">{jsonImportResults.length} Arbeitsblätter erstellt</h3>
+                <ul className="mt-2 grid gap-2">
+                  {jsonImportResults.map((result) => (
+                    <li key={result.id}>
+                      <Link className="text-sm text-brand-secondary underline" href={`/editor?worksheet=${result.id}`}>
+                        {result.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </section>
           <section className="mt-8 rounded-2xl border border-secondary bg-primary p-7 shadow-lg">
             <p className="text-sm font-semibold text-brand-secondary">Dazit-Veröffentlichung</p>

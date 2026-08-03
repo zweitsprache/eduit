@@ -96,6 +96,14 @@ export default async function HomePage() {
                 <Copy01 aria-hidden="true" />
                 <span><strong>Lernkarten</strong><small>Karten zum Ausschneiden und beidseitigen Drucken</small><b>{typeCounts.Lernkarten || 0} Dokumente ›</b></span>
               </Link>
+              <Link className="home-type-card" href="/documents?type=Dialog">
+                <File02 aria-hidden="true" />
+                <span><strong>Dialoge</strong><small>Gespräche zum Hören, Lesen und Nachspielen</small><b>{typeCounts.Dialog || 0} Dokumente ›</b></span>
+              </Link>
+              <Link className="home-type-card" href="/documents?type=Leseverstehen">
+                <File02 aria-hidden="true" />
+                <span><strong>Leseverstehen</strong><small>Texte mit Aufgaben zum Leseverstehen</small><b>{typeCounts.Leseverstehen || 0} Dokumente ›</b></span>
+              </Link>
             </div>
           </section>
 

@@ -21,12 +21,14 @@ export function SidebarAccountCard() {
 
   if (isPending || !user) {
     return (
-      <div className="mt-auto flex items-center gap-3 border-t border-secondary px-2 pt-4">
-        <span className="min-w-0 flex-1 space-y-2">
-          <span className="block h-3 w-24 animate-pulse rounded bg-quaternary" />
-          <span className="block h-3 w-32 animate-pulse rounded bg-quaternary" />
-        </span>
-      </div>
+      <details className="group relative mt-auto border-t border-secondary pt-4">
+        <summary className="flex cursor-pointer list-none items-center gap-3 rounded-lg p-2 outline-none transition hover:bg-primary_hover focus-visible:ring-2 focus-visible:ring-brand [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 flex-1 space-y-2 text-left">
+            <span className="block h-3 w-24 animate-pulse rounded bg-quaternary" />
+            <span className="block h-3 w-32 animate-pulse rounded bg-quaternary" />
+          </span>
+        </summary>
+      </details>
     );
   }
 
