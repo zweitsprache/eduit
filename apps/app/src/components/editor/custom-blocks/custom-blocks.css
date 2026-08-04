@@ -3278,11 +3278,12 @@
 }
 
 .domino-node__grid {
-  --domino-cell-min-height: 2.75rem;
+  --domino-cell-size: 35mm;
   display: grid;
-  width: 100%;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  grid-template-rows: repeat(4, minmax(var(--domino-cell-min-height), auto));
+  width: max-content;
+  max-width: 100%;
+  grid-template-columns: repeat(6, var(--domino-cell-size));
+  grid-template-rows: repeat(4, var(--domino-cell-size));
   margin-block-start: var(--custom-block-space-section);
   border-top: 0.1mm dashed color-mix(in srgb, currentColor 22%, transparent);
   border-left: 0.1mm dashed color-mix(in srgb, currentColor 22%, transparent);
@@ -3291,8 +3292,8 @@
 .domino-node__cell {
   position: relative;
   display: flex;
-  min-width: 0;
-  min-height: var(--domino-cell-min-height);
+  width: var(--domino-cell-size);
+  height: var(--domino-cell-size);
   box-sizing: border-box;
   align-items: center;
   justify-content: center;
