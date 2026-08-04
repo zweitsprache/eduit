@@ -3271,6 +3271,82 @@
   color: var(--color-text-primary);
 }
 
+/* Domino */
+.domino-node {
+  break-inside: auto;
+  page-break-inside: auto;
+}
+
+.domino-node__grid {
+  --domino-cell-min-height: 2.75rem;
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(var(--domino-cell-min-height), auto));
+  margin-block-start: var(--custom-block-space-section);
+  border-top: 0.1mm dashed color-mix(in srgb, currentColor 22%, transparent);
+  border-left: 0.1mm dashed color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.domino-node__cell {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: var(--domino-cell-min-height);
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  border-right: 0.1mm dashed color-mix(in srgb, currentColor 22%, transparent);
+  border-bottom: 0.1mm dashed color-mix(in srgb, currentColor 22%, transparent);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.domino-node__cell:nth-child(odd) {
+  border-right-style: solid;
+  border-right-color: var(--custom-block-row-border-color);
+}
+
+.domino-node__cell--empty {
+  background: transparent;
+}
+
+.domino-node__cell--start,
+.domino-node__cell--end {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.domino-node__cell-text {
+  font-size: var(--custom-block-body-font-size);
+  line-height: var(--custom-block-label-line-height);
+}
+
+.domino-node__cell--example {
+  color: var(--custom-block-example-solution-color);
+  font-family: var(--custom-block-example-font-family);
+  font-size: var(--custom-block-example-font-size);
+  font-weight: 500;
+}
+
+@media print {
+  .domino-node__grid {
+    border-top-color: var(--color-border-primary);
+    border-left-color: var(--color-border-primary);
+  }
+
+  .domino-node__cell {
+    border-right-color: var(--color-border-primary);
+    border-bottom-color: var(--color-border-primary);
+  }
+
+  .domino-node__cell:nth-child(odd) {
+    border-right-color: var(--color-border-primary);
+  }
+}
+
 .choose-correct-words-node__rows {
   position: relative;
   margin: var(--custom-block-space-section) 0 0 !important;

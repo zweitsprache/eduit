@@ -40,7 +40,6 @@ import {
   type MatchingPairsAttrs,
 } from '@/components/editor/matching-pairs-node';
 import {
-  DEFAULT_DOMINO_INSTRUCTION,
   type DominoAttrs,
   type DominoPair,
 } from '@/components/editor/domino-node';
@@ -5298,33 +5297,6 @@ function DominoEditor({
   const setPairs = (pairs: DominoPair[]) => updateAttrs(editor, block, { pairs });
   return (
     <>
-      <div className="flex items-center justify-between gap-3">
-        <label className="block text-sm font-semibold text-secondary">
-          Instruction
-        </label>
-        <button
-          type="button"
-          aria-label="Reset instruction"
-          title="Reset instruction"
-          disabled={attrs.instruction === DEFAULT_DOMINO_INSTRUCTION}
-          onClick={() => updateAttrs(editor, block, {
-            instruction: DEFAULT_DOMINO_INSTRUCTION,
-          })}
-          className="flex size-7 items-center justify-center rounded-md text-secondary transition hover:bg-primary_hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
-        >
-          <RotateCcw className="size-4" />
-        </button>
-      </div>
-      <textarea
-        rows={1}
-        value={attrs.instruction || DEFAULT_DOMINO_INSTRUCTION}
-        placeholder={DEFAULT_DOMINO_INSTRUCTION}
-        onChange={(event) => updateAttrs(editor, block, {
-          instruction: event.target.value,
-        })}
-        className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-      />
-
       <ContentSectionHeader>Learner support</ContentSectionHeader>
       <ContentSwitchGrid>
         <ContentSwitch

@@ -3,7 +3,6 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 import {
-  BlockInstruction,
   CustomBlockRoot,
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
@@ -16,13 +15,9 @@ export type DominoPair = {
 };
 
 export type DominoAttrs = {
-  instruction: string;
   pairs: DominoPair[];
   showFirstAsExample: boolean;
 };
-
-export const DEFAULT_DOMINO_INSTRUCTION =
-  'Build a domino chain from START to FINISH.';
 
 export const DEFAULT_DOMINO_PAIRS: DominoPair[] = [
   { id: 'domino-1', left: 'Hello', right: 'Hallo' },
@@ -72,14 +67,11 @@ function buildDominoCells(pairs: DominoPair[]) {
 }
 
 function DominoNodeView({ node, selected }: NodeViewProps) {
-  const { instruction, pairs, showFirstAsExample } = node.attrs as DominoAttrs;
+  const { pairs, showFirstAsExample } = node.attrs as DominoAttrs;
   const cells = buildDominoCells(pairs);
 
   return (
     <CustomBlockRoot selected={selected} className="domino-node">
-      <BlockInstruction>
-        {instruction || DEFAULT_DOMINO_INSTRUCTION}
-      </BlockInstruction>
       <div className="domino-node__grid">
         {Array.from({ length: GRID_CELLS }, (_, index) => {
           const cell = cells[index];
@@ -127,16 +119,6 @@ export const Domino = Node.create({
 
   addAttributes() {
     return {
-      instruction: {
-        default: DEFAULT_DOMINO_INSTRUCTION,
-        parseHTML: (element) => (
-          element.getAttribute('data-domino-instruction')
-          ?? DEFAULT_DOMINO_INSTRUCTION
-        ),
-        renderHTML: (attributes) => ({
-          'data-domino-instruction': attributes.instruction,
-        }),
-      },
       pairs: {
         default: DEFAULT_DOMINO_PAIRS,
         parseHTML: (element) => parsePairs(
@@ -179,7 +161,6 @@ export const Domino = Node.create({
           return commands.insertContent({
             type: this.name,
             attrs: {
-              instruction: attrs.instruction ?? DEFAULT_DOMINO_INSTRUCTION,
               pairs,
               showFirstAsExample: attrs.showFirstAsExample ?? false,
             },
