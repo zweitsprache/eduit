@@ -3314,8 +3314,10 @@
 
 .domino-node__cell--start,
 .domino-node__cell--end {
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: var(--brand-heading-1-font-size, 2rem);
+  font-weight: var(--brand-heading-1-font-weight, 700);
+  line-height: var(--brand-heading-1-line-height, 1.1);
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 

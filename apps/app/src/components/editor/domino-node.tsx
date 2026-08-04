@@ -57,7 +57,7 @@ function parsePairs(value: string | null): DominoPair[] {
 
 function buildDominoCells(pairs: DominoPair[]) {
   const cells: Array<{ kind: 'start' | 'end' | 'left' | 'right'; text: string; pairId?: string }> = [];
-  cells.push({ kind: 'start', text: 'ZIEL' });
+  cells.push({ kind: 'start', text: 'START' });
   pairs.forEach((pair) => {
     cells.push({ kind: 'left', text: pair.left, pairId: pair.id });
     cells.push({ kind: 'right', text: pair.right, pairId: pair.id });
