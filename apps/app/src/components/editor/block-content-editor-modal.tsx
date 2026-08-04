@@ -3538,7 +3538,7 @@ function WordGridEditor({
         onChange={(rowHeight) => updateAttrs(editor, block, {
           rowHeight: Number(rowHeight),
         })}
-        options={[0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((height) => ({
+        options={[0.5, 0.6, 0.75, 1, 1.25, 1.5, 1.75, 2].map((height) => ({
           label: `${height} ×`,
           value: String(height),
         }))}

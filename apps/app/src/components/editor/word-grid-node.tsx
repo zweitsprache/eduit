@@ -109,8 +109,8 @@ function normalizeAttrs(value: Partial<WordGridAttrs>): WordGridAttrs {
     columns: Math.round(clamp(value.columns, 3, 20, DEFAULT_ATTRS.columns)),
     rows: Math.round(clamp(value.rows, 3, 20, DEFAULT_ATTRS.rows)),
     rowHeight: Math.round(
-      clamp(value.rowHeight, 0.5, 2, DEFAULT_ATTRS.rowHeight) * 4,
-    ) / 4,
+      clamp(value.rowHeight, 0.5, 2, DEFAULT_ATTRS.rowHeight) * 20,
+    ) / 20,
     showWordList: typeof value.showWordList === 'boolean'
       ? value.showWordList
       : DEFAULT_ATTRS.showWordList,
