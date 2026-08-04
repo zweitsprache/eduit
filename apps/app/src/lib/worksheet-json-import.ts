@@ -173,6 +173,44 @@ const timeMatchingSchema = z.object({
   answerStyle: z.enum(['checkboxes', 'writingLines']).default('checkboxes'),
 });
 
+// Key order mirrors normalizeAttrs in components/editor/word-grid-node.tsx so the
+// serialized attribute blob is identical to what the editor writes.
+const wordGridDirectionsSchema = z.object({
+  leftToRight: z.boolean().default(true),
+  rightToLeft: z.boolean().default(false),
+  topToBottom: z.boolean().default(true),
+  bottomToTop: z.boolean().default(false),
+  northWestToSouthEast: z.boolean().default(false),
+  southWestToNorthEast: z.boolean().default(false),
+  northEastToSouthWest: z.boolean().default(false),
+  southEastToNorthWest: z.boolean().default(false),
+});
+
+const wordGridSchema = z.object({
+  type: z.literal('wordGrid'),
+  instruction: z.string().trim().max(1000).default('Find the words in the grid.'),
+  columns: z.number().int().min(3).max(20).default(10),
+  rows: z.number().int().min(3).max(20).default(10),
+  rowHeight: z.number().min(0.5).max(2).default(1),
+  showWordList: z.boolean().default(true),
+  showFirstAsExample: z.boolean().default(false),
+  // Spelled out because zod 4's .default() returns the value unparsed, so {} would
+  // stay {} instead of picking up the per-field defaults.
+  directions: wordGridDirectionsSchema.default({
+    leftToRight: true,
+    rightToLeft: false,
+    topToBottom: true,
+    bottomToTop: false,
+    northWestToSouthEast: false,
+    southWestToNorthEast: false,
+    northEastToSouthWest: false,
+    southEastToNorthWest: false,
+  }),
+  words: z.array(z.string().trim().min(1).max(100)).min(1).max(100),
+  // Part of the layout seed: the same value reproduces the same grid.
+  generation: z.number().int().min(0).max(1_000_000).default(0),
+});
+
 const contextSchema = z.object({
   worksheetLanguage: z.enum(['en', 'de-formal', 'de-informal']).default('en'),
   sourceProfileId: z.string().max(100).nullable().default(null),
@@ -213,6 +251,7 @@ export const generatedWorksheetSchema = z.object({
     timeMatchingSchema,
     learningCardsSchema,
     richTextSchema,
+    wordGridSchema,
   ])).max(1000).default([]),
 }).refine((value) => Boolean(value.sourceWorksheetId) || value.blocks.length >= 1, {
   message: 'Provide blocks or a sourceWorksheetId.',
@@ -262,6 +301,26 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     // The node stores its markup URI-encoded; encodeURIComponent also escapes the
     // characters that would break out of the attribute.
     return `<div data-rich-text-html="${encodeURIComponent(block.html)}" data-type="rich-text"></div>`;
+  }
+  if (block.type === 'wordGrid') {
+    const { leftToRight, ...otherDirections } = block.directions;
+    // normalizeAttrs falls back to left-to-right when nothing is selected.
+    const directions = {
+      leftToRight: leftToRight || !Object.values(otherDirections).some(Boolean),
+      ...otherDirections,
+    };
+    const attrs = {
+      instruction: block.instruction,
+      columns: block.columns,
+      rows: block.rows,
+      rowHeight: block.rowHeight,
+      showWordList: block.showWordList,
+      showFirstAsExample: block.showFirstAsExample,
+      directions,
+      words: block.words,
+      generation: block.generation,
+    };
+    return `<div data-type="word-grid" data-word-grid-attrs="${encodeURIComponent(JSON.stringify(attrs))}"></div>`;
   }
   if (block.type === 'fillInTheBlank') {
     return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-fill-blank-title="${escapeAttribute(block.title)}" data-fill-blank-text="${escapeAttribute(block.items.join('\n'))}" data-fill-blank-distractors="${escapeAttribute(JSON.stringify(block.distractors))}" data-fill-blank-width-factor="${block.widthFactor}" data-fill-blank-hide-numbers="${block.hideBlankNumbers}" data-fill-blank-hide-item-numbers="${block.hideItemNumbers}" data-fill-blank-show-line-numbers="${block.showLineNumbers}" data-fill-blank-show-word-bank="${block.showWordBank}" data-fill-blank-show-first-example="${block.showFirstAsExample}" data-type="fill-in-the-blank"></div>`;

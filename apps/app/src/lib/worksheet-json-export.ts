@@ -11,6 +11,7 @@ import type { MatchingPairsAttrs } from '@/components/editor/matching-pairs-node
 import type { TimeMatchingAttrs } from '@/components/editor/time-matching-node';
 import type { LearningCardsAttrs } from '@/components/editor/learning-cards-node';
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
+import type { WordGridAttrs } from '@/components/editor/word-grid-node';
 import type { WorksheetContext } from '@/lib/worksheet-types';
 
 export type WorksheetJsonExportMeta = {
@@ -198,6 +199,25 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         shuffleRight,
         showFirstAsExample,
         answerStyle,
+      };
+    }
+    case 'wordGrid': {
+      const {
+        instruction, columns, rows, rowHeight, showWordList,
+        showFirstAsExample, directions, words, generation,
+      } = attrs as WordGridAttrs;
+      return {
+        type: 'wordGrid',
+        instruction,
+        columns,
+        rows,
+        rowHeight,
+        showWordList,
+        showFirstAsExample,
+        directions,
+        words,
+        // Layout seed — keep it so the copy reproduces the same grid.
+        generation,
       };
     }
     case 'learningCards': {

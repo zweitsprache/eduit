@@ -519,7 +519,7 @@ export default function AutomationsPage() {
             <p className="text-sm font-semibold text-brand-secondary">AI-Import</p>
             <h2 className="mt-1 text-xl font-semibold">Arbeitsblätter aus JSON erstellen</h2>
             <p className="mt-2 text-sm text-tertiary">
-              Importiert ein einzelnes <code>worksheet</code> oder bis zu 100 Einträge in <code>worksheets</code>. Überschriften, Glossare, Lückentexte, Dialoge, Richtig/Falsch, Multiple-Choice, Zuordnungen, Uhrzeiten, Lernkarten, Rich-Text und Seitenumbrüche werden validiert und in Editor-Blöcke umgewandelt.
+              Importiert ein einzelnes <code>worksheet</code> oder bis zu 100 Einträge in <code>worksheets</code>. Überschriften, Glossare, Lückentexte, Dialoge, Richtig/Falsch, Multiple-Choice, Zuordnungen, Uhrzeiten, Lernkarten, Wortgitter, Rich-Text und Seitenumbrüche werden validiert und in Editor-Blöcke umgewandelt.
             </p>
             <label className="mt-6 block text-sm font-semibold">
               Worksheet JSON
