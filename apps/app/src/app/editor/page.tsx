@@ -79,6 +79,7 @@ import {
   type DominoAttrs,
   type DominoPair,
 } from '@/components/editor/domino-node';
+import { DominoAIModal } from '@/components/editor/domino-ai-modal';
 import {
   DEFAULT_TIME_MATCHING_ATTRS,
   TimeMatching,
@@ -1262,6 +1263,8 @@ export default function EditorPage() {
     useState<{ pos: number; type: 'germanVerbTable' } | null>(null);
   const [learningCardsAIBlock, setLearningCardsAIBlock] =
     useState<{ pos: number; type: 'learningCards' } | null>(null);
+  const [dominoAIBlock, setDominoAIBlock] =
+    useState<{ pos: number; type: 'domino' } | null>(null);
   const [richTextAIBlock, setRichTextAIBlock] =
     useState<ContentEditorBlock | null>(null);
   const [errorCorrectionAIBlock, setErrorCorrectionAIBlock] =
@@ -4341,7 +4344,7 @@ export default function EditorPage() {
                         type: 'learningCards',
                       });
                     } else if (selectedCustomBlock.type === 'domino') {
-                      setContentEditorBlock({
+                      setDominoAIBlock({
                         pos: selectedCustomBlock.pos,
                         type: 'domino',
                       });
@@ -8510,6 +8513,21 @@ export default function EditorPage() {
           setLearningCardsAIBlock(null);
         }}
         open={learningCardsAIBlock !== null}
+      />
+      <DominoAIModal
+        onClose={() => setDominoAIBlock(null)}
+        onGenerated={(result) => {
+          if (!dominoAIBlock) return;
+          const { pos } = dominoAIBlock;
+          editor.chain().command(({ tr }) => {
+            if (tr.doc.nodeAt(pos)?.type.name !== 'domino') return false;
+            tr.setNodeAttribute(pos, 'pairs', result.pairs);
+            tr.setNodeAttribute(pos, 'showFirstAsExample', result.showFirstAsExample);
+            return true;
+          }).run();
+          setDominoAIBlock(null);
+        }}
+        open={dominoAIBlock !== null}
       />
       <GermanVerbTableEditorModal
         block={germanVerbTableEditorBlock}
