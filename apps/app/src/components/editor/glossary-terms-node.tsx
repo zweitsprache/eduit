@@ -20,7 +20,7 @@ export const GLOSSARY_PRESETS: Record<GlossaryPreset, {
   termWidth: GlossaryTermWidth;
   definitionWidth: GlossaryTermWidth;
 }> = {
-  default: { label: 'Standard', headers: ['Term', 'Definition', 'Example'], termWidth: 33, definitionWidth: 33 },
+  default: { label: 'Standard', headers: ['Begriff', 'Definition', 'Beispiel'], termWidth: 33, definitionWidth: 33 },
   verbs: { label: 'Verb', headers: ['Infinitiv', 'Perfekt', 'Beispiel'], termWidth: 20, definitionWidth: 25 },
   nouns: { label: 'Substantive', headers: ['Singular', 'Plural'], termWidth: 50, definitionWidth: 50 },
   adjectives: { label: 'Adjektive', headers: ['Adjektiv', 'Gegenteil'], termWidth: 50, definitionWidth: 50 },
@@ -39,7 +39,26 @@ export type GlossaryTermsAttrs = {
   definitionWidth: GlossaryTermWidth;
   preset: GlossaryPreset;
   showInstruction: boolean;
+  showExample: boolean;
 };
+
+/** Two-column layouts give the definition whatever the term column leaves over. */
+export function glossaryColumnWidths(
+  attrs: Pick<GlossaryTermsAttrs, 'preset' | 'termWidth' | 'definitionWidth' | 'showExample'>,
+) {
+  const presetConfig = GLOSSARY_PRESETS[attrs.preset];
+  const hasExample = presetConfig.headers.length === 3 && attrs.showExample;
+  const termWidth = attrs.preset === 'default' ? attrs.termWidth : presetConfig.termWidth;
+  const definitionWidth = attrs.preset === 'default'
+    ? attrs.definitionWidth
+    : presetConfig.definitionWidth;
+  return {
+    hasExample,
+    widths: hasExample
+      ? [termWidth, definitionWidth, Math.max(1, 100 - termWidth - definitionWidth)]
+      : [termWidth, Math.max(1, 100 - termWidth)],
+  };
+}
 
 export const DEFAULT_GLOSSARY_TERMS: GlossaryTerm[] = [
   {
@@ -85,18 +104,10 @@ function parsePreset(value: string | null): GlossaryPreset {
 }
 
 function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
-  const { terms, termWidth, definitionWidth, preset } = node.attrs as GlossaryTermsAttrs;
+  const attrs = node.attrs as GlossaryTermsAttrs;
+  const { terms, preset } = attrs;
   const presetConfig = GLOSSARY_PRESETS[preset];
-  const isTwoColumn = presetConfig.headers.length === 2;
-  const activeTermWidth = preset === 'default' ? termWidth : presetConfig.termWidth;
-  const activeDefinitionWidth = preset === 'default' ? definitionWidth : presetConfig.definitionWidth;
-  const columnWidths = isTwoColumn
-    ? [activeTermWidth, activeDefinitionWidth]
-    : [
-        activeTermWidth,
-        activeDefinitionWidth,
-        Math.max(1, 100 - activeTermWidth - activeDefinitionWidth),
-      ];
+  const { hasExample, widths: columnWidths } = glossaryColumnWidths(attrs);
   const columnStyle = (index: number) => ({
     width: `${columnWidths[index]}%`,
   }) as CSSProperties;
@@ -109,7 +120,7 @@ function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
       <span className="glossary-terms-node__columns">
         <span className="glossary-terms-node__cell" style={columnStyle(0)}>{item.term}</span>
         <span className="glossary-terms-node__cell" style={columnStyle(1)}>{item.definition}</span>
-        {!isTwoColumn && (
+        {hasExample && (
           <span className="glossary-terms-node__cell" style={columnStyle(2)}>{item.example}</span>
         )}
       </span>
@@ -129,7 +140,7 @@ function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
         <div className="glossary-terms-node__header">
           <span className="glossary-terms-node__index-spacer" />
           <span className="glossary-terms-node__columns">
-            {presetConfig.headers.map((header, index) => (
+            {presetConfig.headers.slice(0, columnWidths.length).map((header, index) => (
               <strong key={header} style={columnStyle(index)}>{header}</strong>
             ))}
           </span>
@@ -201,6 +212,16 @@ export const GlossaryTerms = Node.create({
           'data-glossary-show-instruction': String(attributes.showInstruction),
         }),
       },
+      showExample: {
+        default: true,
+        // Documents saved before this attribute existed keep their example column.
+        parseHTML: (element) => (
+          element.getAttribute('data-glossary-show-example') !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-glossary-show-example': String(attributes.showExample),
+        }),
+      },
     };
   },
 
@@ -232,6 +253,7 @@ export const GlossaryTerms = Node.create({
               definitionWidth: attrs.definitionWidth ?? 33,
               preset: attrs.preset ?? 'default',
               showInstruction: attrs.showInstruction ?? true,
+              showExample: attrs.showExample ?? true,
             },
           }),
     };

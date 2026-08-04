@@ -19,6 +19,7 @@ const glossarySchema = z.object({
   type: z.literal('glossary'),
   preset: z.enum(['default', 'verbs', 'nouns', 'adjectives']).default('default'),
   showInstruction: z.boolean().default(false),
+  showExample: z.boolean().default(true),
   instruction: z.string().trim().max(1000).nullable().optional(),
   termWidth: z.enum(['10', '15', '20', '25', '33', '50', '66']).or(
     z.number().int().refine((value) => [10, 15, 20, 25, 33, 50, 66].includes(value)),
@@ -41,6 +42,11 @@ const fillInTheBlankSchema = z.object({
   showLineNumbers: z.boolean().default(false),
   showWordBank: z.boolean().default(false),
   showFirstAsExample: z.boolean().default(false),
+});
+
+const richTextSchema = z.object({
+  type: z.literal('richText'),
+  html: z.string().min(1).max(100_000),
 });
 
 const pageBreakSchema = z.object({
@@ -205,6 +211,7 @@ export const generatedWorksheetSchema = z.object({
     matchingPairsSchema,
     timeMatchingSchema,
     learningCardsSchema,
+    richTextSchema,
   ])).max(1000).default([]),
 }).refine((value) => Boolean(value.sourceWorksheetId) || value.blocks.length >= 1, {
   message: 'Provide blocks or a sourceWorksheetId.',
@@ -249,6 +256,11 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
   }
   if (block.type === 'pageBreak') {
     return `<div data-restart-pagination="${block.restartPagination}" data-type="pageBreak"></div>`;
+  }
+  if (block.type === 'richText') {
+    // The node stores its markup URI-encoded; encodeURIComponent also escapes the
+    // characters that would break out of the attribute.
+    return `<div data-rich-text-html="${encodeURIComponent(block.html)}" data-type="rich-text"></div>`;
   }
   if (block.type === 'fillInTheBlank') {
     return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-fill-blank-title="${escapeAttribute(block.title)}" data-fill-blank-text="${escapeAttribute(block.items.join('\n'))}" data-fill-blank-distractors="${escapeAttribute(JSON.stringify(block.distractors))}" data-fill-blank-width-factor="${block.widthFactor}" data-fill-blank-hide-numbers="${block.hideBlankNumbers}" data-fill-blank-hide-item-numbers="${block.hideItemNumbers}" data-fill-blank-show-line-numbers="${block.showLineNumbers}" data-fill-blank-show-word-bank="${block.showWordBank}" data-fill-blank-show-first-example="${block.showFirstAsExample}" data-type="fill-in-the-blank"></div>`;
@@ -340,7 +352,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
   const instruction = block.instruction
     ? ` data-block-instruction="${escapeAttribute(block.instruction)}"`
     : '';
-  return `<div data-glossary-terms="${escapeAttribute(encodeURIComponent(JSON.stringify(terms)))}" data-glossary-term-width="${widths.term}" data-glossary-definition-width="${widths.definition}" data-glossary-preset="${block.preset}" data-glossary-show-instruction="${block.showInstruction}"${instruction} data-type="glossary-terms"></div>`;
+  return `<div data-glossary-terms="${escapeAttribute(encodeURIComponent(JSON.stringify(terms)))}" data-glossary-term-width="${widths.term}" data-glossary-definition-width="${widths.definition}" data-glossary-preset="${block.preset}" data-glossary-show-instruction="${block.showInstruction}" data-glossary-show-example="${block.showExample}"${instruction} data-type="glossary-terms"></div>`;
 }
 
 export function worksheetPatchFromGeneratedJson(

@@ -10,6 +10,7 @@ import type { TrueFalseAttrs } from '@/components/editor/true-false-node';
 import type { MatchingPairsAttrs } from '@/components/editor/matching-pairs-node';
 import type { TimeMatchingAttrs } from '@/components/editor/time-matching-node';
 import type { LearningCardsAttrs } from '@/components/editor/learning-cards-node';
+import type { RichTextAttrs } from '@/components/editor/rich-text-node';
 import type { WorksheetContext } from '@/lib/worksheet-types';
 
 export type WorksheetJsonExportMeta = {
@@ -26,7 +27,8 @@ export type WorksheetJsonExportResult = {
   skippedTypes: string[];
 };
 
-// Node types that carry no importable content and are never reported as skipped.
+// Node types that are dropped silently when they hold nothing importable, instead
+// of being reported as unsupported.
 const IGNORED_NODE_TYPES = new Set(['paragraph', 'text', 'hardBreak', 'richText']);
 
 // `instruction` is a global attribute (custom-blocks/instructions.ts) that may be null,
@@ -56,13 +58,18 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     }
     case 'pageBreak':
       return { type: 'pageBreak', restartPagination: Boolean(attrs.restartPagination) };
+    case 'richText': {
+      const { html } = attrs as RichTextAttrs;
+      return html.trim() ? { type: 'richText', html } : null;
+    }
     case 'glossaryTerms': {
-      const { terms, preset, showInstruction, termWidth, definitionWidth } =
+      const { terms, preset, showInstruction, showExample, termWidth, definitionWidth } =
         attrs as GlossaryTermsAttrs;
       return {
         type: 'glossary',
         preset,
         showInstruction,
+        showExample,
         instruction: optionalInstruction(attrs.instruction),
         // Presets override the widths on import, so only default keeps them.
         termWidth: preset === 'default' ? glossaryWidth(termWidth) : undefined,

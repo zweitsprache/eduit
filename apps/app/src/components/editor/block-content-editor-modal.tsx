@@ -76,6 +76,7 @@ import type { FillInTheBlankAttrs } from '@/components/editor/fill-in-the-blank-
 import {
   GLOSSARY_COLUMN_WIDTHS,
   GLOSSARY_PRESETS,
+  glossaryColumnWidths,
   type GlossaryPreset,
   type GlossaryTerm,
   type GlossaryTermsAttrs,
@@ -2711,7 +2712,7 @@ function GlossaryTermsEditor({
     attrs.terms.map((term) => term.id === id ? { ...term, ...patch } : term),
   );
   const presetConfig = GLOSSARY_PRESETS[attrs.preset];
-  const isTwoColumn = presetConfig.headers.length === 2;
+  const { hasExample } = glossaryColumnWidths(attrs);
 
   return (
     <>
@@ -2722,6 +2723,13 @@ function GlossaryTermsEditor({
           showInstruction,
         })}
       />
+      {presetConfig.headers.length === 3 && (
+        <ContentSwitch
+          label="Show example column"
+          isSelected={attrs.showExample}
+          onChange={(showExample) => updateAttrs(editor, block, { showExample })}
+        />
+      )}
       <ContentFieldLabel>Preset</ContentFieldLabel>
       <select
         aria-label="Glossary preset"
@@ -2747,22 +2755,32 @@ function GlossaryTermsEditor({
             className="mt-2 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
           >
             {GLOSSARY_COLUMN_WIDTHS.map((width) => (
-              <option disabled={width + attrs.definitionWidth >= 100} value={width} key={width}>{width}%</option>
+              <option
+                disabled={hasExample && width + attrs.definitionWidth >= 100}
+                value={width}
+                key={width}
+              >
+                {width}%
+              </option>
             ))}
           </select>
-          <ContentFieldLabel>Definition column width</ContentFieldLabel>
-          <select
-            aria-label="Definition column width"
-            value={attrs.definitionWidth}
-            onChange={(event) => updateAttrs(editor, block, {
-              definitionWidth: Number(event.target.value) as GlossaryTermWidth,
-            })}
-            className="mt-2 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-          >
-            {GLOSSARY_COLUMN_WIDTHS.map((width) => (
-              <option disabled={width + attrs.termWidth >= 100} value={width} key={width}>{width}%</option>
-            ))}
-          </select>
+          {hasExample && (
+            <>
+              <ContentFieldLabel>Definition column width</ContentFieldLabel>
+              <select
+                aria-label="Definition column width"
+                value={attrs.definitionWidth}
+                onChange={(event) => updateAttrs(editor, block, {
+                  definitionWidth: Number(event.target.value) as GlossaryTermWidth,
+                })}
+                className="mt-2 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              >
+                {GLOSSARY_COLUMN_WIDTHS.map((width) => (
+                  <option disabled={width + attrs.termWidth >= 100} value={width} key={width}>{width}%</option>
+                ))}
+              </select>
+            </>
+          )}
         </>
       )}
       <ContentSectionHeader count={`${attrs.terms.length} terms`}>
@@ -2801,7 +2819,7 @@ function GlossaryTermsEditor({
                 placeholder={presetConfig.headers[1]}
                 className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
               />
-              {!isTwoColumn && <textarea
+              {hasExample && <textarea
                 aria-label={`${presetConfig.headers[2]} ${index + 1}`}
                 rows={2}
                 value={term.example}

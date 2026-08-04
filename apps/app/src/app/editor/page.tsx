@@ -122,6 +122,7 @@ import {
   GLOSSARY_COLUMN_WIDTHS,
   GLOSSARY_PRESETS,
   GlossaryTerms,
+  glossaryColumnWidths,
   type GlossaryTerm,
   type GlossaryPreset,
   type GlossaryTermsAttrs,
@@ -6756,6 +6757,41 @@ export default function EditorPage() {
                 ))}
               </select>
 
+              {GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers.length === 3 && (
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-tertiary">Show example column</p>
+                    <p className="mt-0.5 text-xs text-quaternary">Without it the definition fills the remaining width.</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={selectedGlossaryTermsAttrs.showExample}
+                    onClick={() => setGlossaryTermsAttr(
+                      editor,
+                      selectedGlossaryTermsPos,
+                      'showExample',
+                      !selectedGlossaryTermsAttrs.showExample,
+                    )}
+                    className={cx(
+                      'relative h-6 w-11 shrink-0 border transition',
+                      selectedGlossaryTermsAttrs.showExample
+                        ? 'border-brand bg-brand-solid'
+                        : 'border-primary bg-quaternary',
+                    )}
+                  >
+                    <span
+                      className={cx(
+                        'absolute top-0.5 size-4.5 bg-primary shadow-xs transition-transform',
+                        selectedGlossaryTermsAttrs.showExample
+                          ? 'translate-x-4.5'
+                          : 'translate-x-0.5',
+                      )}
+                    />
+                  </button>
+                </div>
+              )}
+
               <label htmlFor="glossary-term-width" className="mt-4 block text-xs font-semibold text-tertiary">
                 Term column width
               </label>
@@ -6771,28 +6807,39 @@ export default function EditorPage() {
                 className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-medium text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
               >
                 {GLOSSARY_COLUMN_WIDTHS.map((width) => (
-                  <option disabled={width + selectedGlossaryTermsAttrs.definitionWidth >= 100} value={width} key={width}>{width}%</option>
+                  <option
+                    disabled={glossaryColumnWidths(selectedGlossaryTermsAttrs).hasExample
+                      && width + selectedGlossaryTermsAttrs.definitionWidth >= 100}
+                    value={width}
+                    key={width}
+                  >
+                    {width}%
+                  </option>
                 ))}
               </select>
 
-              <label htmlFor="glossary-definition-width" className="mt-4 block text-xs font-semibold text-tertiary">
-                Definition column width
-              </label>
-              <select
-                id="glossary-definition-width"
-                value={selectedGlossaryTermsAttrs.definitionWidth}
-                onChange={(event) => setGlossaryTermsAttr(
-                  editor,
-                  selectedGlossaryTermsPos,
-                  'definitionWidth',
-                  Number(event.target.value) as GlossaryTermWidth,
-                )}
-                className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-medium text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
-              >
-                {GLOSSARY_COLUMN_WIDTHS.map((width) => (
-                  <option disabled={width + selectedGlossaryTermsAttrs.termWidth >= 100} value={width} key={width}>{width}%</option>
-                ))}
-              </select>
+              {glossaryColumnWidths(selectedGlossaryTermsAttrs).hasExample && (
+                <>
+                  <label htmlFor="glossary-definition-width" className="mt-4 block text-xs font-semibold text-tertiary">
+                    Definition column width
+                  </label>
+                  <select
+                    id="glossary-definition-width"
+                    value={selectedGlossaryTermsAttrs.definitionWidth}
+                    onChange={(event) => setGlossaryTermsAttr(
+                      editor,
+                      selectedGlossaryTermsPos,
+                      'definitionWidth',
+                      Number(event.target.value) as GlossaryTermWidth,
+                    )}
+                    className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-medium text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
+                  >
+                    {GLOSSARY_COLUMN_WIDTHS.map((width) => (
+                      <option disabled={width + selectedGlossaryTermsAttrs.termWidth >= 100} value={width} key={width}>{width}%</option>
+                    ))}
+                  </select>
+                </>
+              )}
 
               <div className="mt-5 space-y-3">
                 {selectedGlossaryTermsAttrs.terms.map((item, itemIndex) => (
@@ -6828,7 +6875,7 @@ export default function EditorPage() {
                       placeholder={GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[1]}
                       className="mt-2 ml-7 w-[calc(100%_-_1.75rem)] resize-y rounded-md border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
                     />
-                    {GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers.length === 3 && <textarea
+                    {glossaryColumnWidths(selectedGlossaryTermsAttrs).hasExample && <textarea
                       aria-label={`${GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[2]} ${itemIndex + 1}`}
                       rows={2}
                       value={item.example}

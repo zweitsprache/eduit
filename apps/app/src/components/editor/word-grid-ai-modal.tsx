@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Loading01 } from '@untitledui/icons';
 import { DocumentContextFields } from '@/components/context/document-context-fields';
+import { SearchSelect } from '@/components/base/select/select';
 import { Toggle } from '@/components/base/toggle/toggle';
 import { AIGenerationModal } from '@/components/editor/ai-generation-modal-ui';
 import {
   EMPTY_WORKSHEET_CONTEXT,
+  type Worksheet,
   type WorksheetContext,
 } from '@/lib/worksheet-types';
 
 export type WordGridAIRequest = {
-  topic: string;
+  topic?: string | null;
   wordCount: number | null;
   context: WorksheetContext;
+  sourceWorksheetId?: string | null;
 };
 
 export function WordGridAIModal({
@@ -38,6 +42,9 @@ export function WordGridAIModal({
   const [generationContext, setGenerationContext] = useState<WorksheetContext>({
     ...EMPTY_WORKSHEET_CONTEXT,
   });
+  const [sourceWorksheetId, setSourceWorksheetId] = useState('');
+  const [worksheets, setWorksheets] = useState<Worksheet[]>([]);
+  const [loadingWorksheets, setLoadingWorksheets] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
 
@@ -50,13 +57,66 @@ export function WordGridAIModal({
       ...EMPTY_WORKSHEET_CONTEXT,
       ...context,
     });
+    setSourceWorksheetId('');
+    setWorksheets([]);
     setError('');
     setPending(false);
+
+    let cancelled = false;
+    setLoadingWorksheets(true);
+    fetch('/api/worksheets', { cache: 'no-store' })
+      .then(async (response) => {
+        const result = await response.json() as {
+          worksheets?: Worksheet[];
+          error?: string;
+        };
+        if (!cancelled && response.ok && result.worksheets) {
+          setWorksheets(
+            [...result.worksheets].sort(
+              (a, b) =>
+                new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+            ),
+          );
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setLoadingWorksheets(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [context, open]);
 
+  const worksheetOptions = useMemo(
+    () =>
+      worksheets.map((worksheet) => ({
+        value: worksheet.id,
+        label: worksheet.title || '(Untitled worksheet)',
+      })),
+    [worksheets],
+  );
+
+  const selectedWorksheet = useMemo(
+    () => worksheets.find((worksheet) => worksheet.id === sourceWorksheetId),
+    [worksheets, sourceWorksheetId],
+  );
+
+  function worksheetPreview(contentHtml: string) {
+    const text = contentHtml
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&\w+;/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return text.slice(0, 220) + (text.length > 220 ? '…' : '');
+  }
+
   async function generate() {
-    if (!topic.trim()) {
-      setError('Enter a topic for the word grid.');
+    if (!topic.trim() && !sourceWorksheetId) {
+      setError('Enter a topic for the word grid or select a source worksheet.');
       return;
     }
     setPending(true);
@@ -66,7 +126,8 @@ export function WordGridAIModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          topic: topic.trim(),
+          topic: topic.trim() || null,
+          sourceWorksheetId: sourceWorksheetId || null,
           wordCount: autoWordCount ? null : wordCount,
           columns,
           rows,
@@ -148,6 +209,45 @@ export function WordGridAIModal({
       >
         I already have a word list
       </button>
+
+      <section className="mt-6 rounded-xl border border-secondary bg-secondary p-5">
+        <h3 className="text-sm font-semibold text-primary">
+          Source worksheet
+        </h3>
+        <p className="mt-1 text-xs leading-5 text-secondary">
+          Optionally choose an existing worksheet. Its content is sent to the
+          AI so it can extract words for the grid.
+        </p>
+        <div className="mt-4">
+          {loadingWorksheets ? (
+            <div className="flex h-10 items-center gap-2 text-sm text-secondary">
+              <Loading01 className="size-4 animate-spin" />
+              Loading worksheets…
+            </div>
+          ) : (
+            <SearchSelect
+              ariaLabel="Source worksheet"
+              placeholder="Search worksheets"
+              value={sourceWorksheetId}
+              options={[
+                { value: '', label: 'No source worksheet' },
+                ...worksheetOptions,
+              ]}
+              onChange={setSourceWorksheetId}
+            />
+          )}
+        </div>
+        {selectedWorksheet && (
+          <div className="mt-3 rounded-md border border-primary bg-primary p-3">
+            <p className="text-xs font-semibold text-primary">
+              {selectedWorksheet.title || '(Untitled worksheet)'}
+            </p>
+            <p className="mt-1 line-clamp-2 text-xs text-secondary">
+              {worksheetPreview(selectedWorksheet.contentHtml)}
+            </p>
+          </div>
+        )}
+      </section>
 
       <div className="mt-6">
         <h3 className="text-sm font-semibold text-primary">
