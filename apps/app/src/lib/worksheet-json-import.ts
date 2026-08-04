@@ -110,6 +110,62 @@ const trueFalseSchema = z.object({
   showFirstAsExample: z.boolean().default(false),
 });
 
+// Mirrors CARDS_PER_GROUP in components/editor/learning-cards-node.tsx.
+const LEARNING_CARDS_PER_GROUP = 9;
+
+const learningCardSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  front: z.string().max(5000).default(''),
+  back: z.string().max(5000).default(''),
+});
+
+const learningCardsSchema = z.object({
+  type: z.literal('learningCards'),
+  title: z.string().trim().max(200).default('Learning cards'),
+  sidedness: z.enum(['single', 'double']).default('double'),
+  items: z.array(learningCardSchema).min(1).max(450),
+});
+
+const matchingPairSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  left: z.string().trim().min(1).max(2000),
+  right: z.string().trim().min(1).max(2000),
+});
+
+const matchingPairsSchema = z.object({
+  type: z.literal('matchingPairs'),
+  instruction: z.string().trim().max(1000).default('Match the items on the left with the items on the right.'),
+  question: z.string().trim().max(2000).default(''),
+  pairs: z.array(matchingPairSchema).min(2).max(100),
+  rightOrder: z.array(z.string().trim().min(1).max(100)).optional(),
+  showWordBank: z.boolean().default(false),
+  shuffleWordBank: z.boolean().default(false),
+  showFirstAsExample: z.boolean().default(false),
+  answerStyle: z.enum(['checkboxes', 'writingLines']).default('checkboxes'),
+});
+
+const timeValueSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  hour: z.number().int().min(0).max(23),
+  minute: z.number().int().min(0).max(59),
+});
+
+const timeMatchingSchema = z.object({
+  type: z.literal('timeMatching'),
+  instruction: z.string().trim().max(1000).default('Verbinden Sie die passenden Uhrzeiten.'),
+  leftRepresentation: z.enum(['analog', 'digital', 'official', 'informal']).default('analog'),
+  rightRepresentation: z.enum(['analog', 'digital', 'official', 'informal']).default('digital'),
+  times: z.array(timeValueSchema).min(2).max(100),
+  rightOrder: z.array(z.string().trim().min(1).max(100)).optional(),
+  allowedMinutes: z.array(z.number().int().min(0).max(59)).max(60).default([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]),
+  rangeStart: z.string().regex(/^\d{2}:\d{2}$/).default('00:00'),
+  rangeEnd: z.string().regex(/^\d{2}:\d{2}$/).default('23:59'),
+  shuffleLeft: z.boolean().default(false),
+  shuffleRight: z.boolean().default(true),
+  showFirstAsExample: z.boolean().default(false),
+  answerStyle: z.enum(['checkboxes', 'writingLines']).default('checkboxes'),
+});
+
 const contextSchema = z.object({
   worksheetLanguage: z.enum(['en', 'de-formal', 'de-informal']).default('en'),
   sourceProfileId: z.string().max(100).nullable().default(null),
@@ -130,12 +186,13 @@ const contextSchema = z.object({
 }).partial();
 
 export const generatedWorksheetSchema = z.object({
-  title: z.string().trim().min(1).max(200),
+  title: z.string().trim().min(1).max(200).optional(),
   documentSize: z.enum(['a4-portrait', 'a4-landscape', 'letter-portrait', 'letter-landscape']).default('a4-portrait'),
   showSolutions: z.boolean().default(false),
   status: z.enum(['draft', 'published']).default('draft'),
   brandProfileId: z.string().uuid().nullable().optional(),
   folderId: z.string().uuid().nullable().optional(),
+  sourceWorksheetId: z.string().uuid().nullable().optional(),
   context: contextSchema.default({}),
   blocks: z.array(z.discriminatedUnion('type', [
     headingSchema,
@@ -145,8 +202,40 @@ export const generatedWorksheetSchema = z.object({
     dialogueSchema,
     mcqSchema,
     trueFalseSchema,
-  ])).min(1).max(1000),
+    matchingPairsSchema,
+    timeMatchingSchema,
+    learningCardsSchema,
+  ])).max(1000).default([]),
+}).refine((value) => Boolean(value.sourceWorksheetId) || value.blocks.length >= 1, {
+  message: 'Provide blocks or a sourceWorksheetId.',
+  path: ['blocks'],
+}).refine((value) => {
+  // The learningCards node rejects any transaction that mixes it with other blocks,
+  // so such a document could not be opened in the editor at all.
+  const cards = value.blocks.filter((block) => block.type === 'learningCards').length;
+  return cards === 0 || (cards === 1 && value.blocks.length === 1);
+}, {
+  message: 'A learningCards block must be the only block of its worksheet.',
+  path: ['blocks'],
 });
+
+function shuffled<T>(values: T[]) {
+  const next = [...values];
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const target = Math.floor(Math.random() * (index + 1));
+    [next[index], next[target]] = [next[target], next[index]];
+  }
+  return next;
+}
+
+// Guarantees at least one displaced item so no row lines up with its own answer.
+function shuffledAgainst(ids: string[], reference: string[]) {
+  const next = shuffled(ids);
+  if (next.length > 1 && next.every((id, index) => id === reference[index])) {
+    return [...next.slice(1), next[0]];
+  }
+  return next;
+}
 
 const escapeAttribute = (value: string) => value
   .replaceAll('&', '&amp;')
@@ -192,6 +281,50 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       correctValue: row.correctValue,
     }));
     return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-true-false-question="${escapeAttribute(block.question)}" data-true-label="${escapeAttribute(block.trueLabel)}" data-false-label="${escapeAttribute(block.falseLabel)}" data-show-na="${block.showNa}" data-na-label="${escapeAttribute(block.naLabel)}" data-true-false-rows="${escapeAttribute(encodeURIComponent(JSON.stringify(rows)))}" data-true-false-show-first-example="${block.showFirstAsExample}" data-type="true-false"></div>`;
+  }
+  if (block.type === 'matchingPairs') {
+    const pairs = block.pairs.map((pair, index) => ({
+      id: pair.id ?? `pair-${index + 1}`,
+      left: pair.left,
+      right: pair.right,
+    }));
+    const rightOrder = block.rightOrder ?? pairs.map((pair) => pair.id);
+    return `<div data-type="matching-pairs" data-matching-instruction="${escapeAttribute(block.instruction)}" data-matching-question="${escapeAttribute(block.question)}" data-matching-pairs="${escapeAttribute(encodeURIComponent(JSON.stringify(pairs)))}" data-matching-right-order="${escapeAttribute(encodeURIComponent(JSON.stringify(rightOrder)))}" data-matching-show-word-bank="${block.showWordBank}" data-matching-shuffle-word-bank="${block.shuffleWordBank}" data-matching-show-first-example="${block.showFirstAsExample}" data-matching-answer-style="${block.answerStyle}"></div>`;
+  }
+  if (block.type === 'learningCards') {
+    // One JSON block becomes the whole sheet sequence the editor expects: a front
+    // (and optional back) sheet per group of nine cards, separated by page breaks.
+    // Every sheet carries the full item list and slices it by data-group-index.
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `learning-card-${index + 1}`,
+      front: item.front,
+      back: item.back,
+    }));
+    const groupCount = Math.ceil(items.length / LEARNING_CARDS_PER_GROUP);
+    const sides = block.sidedness === 'double'
+      ? ['front', 'back'] as const
+      : ['front'] as const;
+    const encodedItems = escapeAttribute(encodeURIComponent(JSON.stringify(items)));
+    const sheets = Array.from({ length: groupCount }, (_, groupIndex) => (
+      sides.map((sheetSide) => (
+        `<div data-title="${escapeAttribute(block.title)}" data-format="a8-landscape" data-sidedness="${block.sidedness}" data-items="${encodedItems}" data-group-index="${groupIndex}" data-sheet-side="${sheetSide}" data-type="learning-cards"></div>`
+      ))
+    )).flat();
+    return sheets.join('<div data-restart-pagination="false" data-type="pageBreak"></div>');
+  }
+  if (block.type === 'timeMatching') {
+    const baseTimes = block.times.map((time, index) => ({
+      id: time.id ?? `time-${index + 1}`,
+      hour: time.hour,
+      minute: time.minute,
+    }));
+    const times = block.shuffleLeft ? shuffled(baseTimes) : baseTimes;
+    const baseOrder = baseTimes.map((time) => time.id);
+    const rightOrder = block.rightOrder
+      ?? (block.shuffleRight
+        ? shuffledAgainst(baseOrder, times.map((time) => time.id))
+        : baseOrder);
+    return `<div data-type="time-matching" data-instruction="${escapeAttribute(block.instruction)}" data-left-representation="${block.leftRepresentation}" data-right-representation="${block.rightRepresentation}" data-times="${escapeAttribute(encodeURIComponent(JSON.stringify(times)))}" data-right-order="${escapeAttribute(encodeURIComponent(JSON.stringify(rightOrder)))}" data-allowed-minutes="${escapeAttribute(encodeURIComponent(JSON.stringify(block.allowedMinutes)))}" data-range-start="${block.rangeStart}" data-range-end="${block.rangeEnd}" data-shuffle-left="${block.shuffleLeft}" data-shuffle-right="${block.shuffleRight}" data-show-first-as-example="${block.showFirstAsExample}" data-answer-style="${block.answerStyle}"></div>`;
   }
   const widths = block.preset === 'verbs'
     ? { term: 20, definition: 25 }

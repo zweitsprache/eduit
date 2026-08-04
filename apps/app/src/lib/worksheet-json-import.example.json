@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "worksheets": [
+    {
+      "title": "Uhrzeiten | 00.00 – 01.00 Uhr | analog → digital",
+      "documentSize": "a4-portrait",
+      "status": "draft",
+      "showSolutions": false,
+      "context": {
+        "worksheetLanguage": "en"
+      },
+      "blocks": [
+        {
+          "type": "heading",
+          "text": "Uhrzeiten | 00.00 – 01.00 Uhr | analog → digital",
+          "level": 1,
+          "numbered": false,
+          "gapAfter": 2
+        },
+        {
+          "type": "timeMatching",
+          "instruction": "Verbinden Sie die passenden Uhrzeiten.",
+          "leftRepresentation": "analog",
+          "rightRepresentation": "digital",
+          "times": [
+            { "hour": 0, "minute": 0 },
+            { "hour": 0, "minute": 5 },
+            { "hour": 0, "minute": 10 },
+            { "hour": 0, "minute": 15 },
+            { "hour": 0, "minute": 20 },
+            { "hour": 0, "minute": 25 },
+            { "hour": 0, "minute": 30 },
+            { "hour": 0, "minute": 35 },
+            { "hour": 0, "minute": 40 },
+            { "hour": 0, "minute": 45 },
+            { "hour": 0, "minute": 50 },
+            { "hour": 0, "minute": 55 },
+            { "hour": 1, "minute": 0 }
+          ],
+          "allowedMinutes": [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
+          "rangeStart": "00:00",
+          "rangeEnd": "01:00",
+          "shuffleLeft": false,
+          "shuffleRight": true,
+          "showFirstAsExample": true,
+          "answerStyle": "writingLines"
+        }
+      ]
+    },
+    {
+      "title": "Uhrzeiten | 01.00 – 02.00 Uhr | analog → digital",
+      "documentSize": "a4-portrait",
+      "status": "draft",
+      "showSolutions": false,
+      "context": {
+        "worksheetLanguage": "en"
+      },
+      "blocks": [
+        {
+          "type": "heading",
+          "text": "Uhrzeiten | 01.00 – 02.00 Uhr | analog → digital",
+          "level": 1,
+          "numbered": false,
+          "gapAfter": 2
+        },
+        {
+          "type": "timeMatching",
+          "instruction": "Verbinden Sie die passenden Uhrzeiten.",
+          "leftRepresentation": "analog",
+          "rightRepresentation": "digital",
+          "times": [
+            { "hour": 1, "minute": 0 },
+            { "hour": 1, "minute": 5 },
+            { "hour": 1, "minute": 10 },
+            { "hour": 1, "minute": 15 },
+            { "hour": 1, "minute": 20 },
+            { "hour": 1, "minute": 25 },
+            { "hour": 1, "minute": 30 },
+            { "hour": 1, "minute": 35 },
+            { "hour": 1, "minute": 40 },
+            { "hour": 1, "minute": 45 },
+            { "hour": 1, "minute": 50 },
+            { "hour": 1, "minute": 55 },
+            { "hour": 2, "minute": 0 }
+          ],
+          "allowedMinutes": [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
+          "rangeStart": "01:00",
+          "rangeEnd": "02:00",
+          "shuffleLeft": false,
+          "shuffleRight": true,
+          "showFirstAsExample": true,
+          "answerStyle": "writingLines"
+        }
+      ]
+    }
+  ]
+}
+

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { launchRenderingBrowser } from '@/lib/server-chromium';
+import { replaceClockPlaceholders } from '@/lib/clock-placeholder';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
       }
       .custom-block--selected::after, .heading-node--selected::after,
       .ProseMirror-selectednode::after, .rich-text-node__selection-fragment { display: none !important; }
-    </style></head><body><div class="editor-content">${payload.content}</div></body></html>`;
+    </style></head><body><div class="editor-content">${replaceClockPlaceholders(payload.content)}</div></body></html>`;
 
   let browser: import('playwright-core').Browser;
   try {

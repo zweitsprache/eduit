@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { launchRenderingBrowser } from '@/lib/server-chromium';
+import { replaceClockPlaceholders } from '@/lib/clock-placeholder';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -129,7 +130,7 @@ export async function POST(request: Request) {
           }
         </style>
       </head>
-      <body><div class="editor-content">${payload.content}</div></body>
+      <body><div class="editor-content">${replaceClockPlaceholders(payload.content)}</div></body>
     </html>`;
 
   let browser: import('playwright-core').Browser;

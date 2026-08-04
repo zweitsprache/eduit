@@ -13,11 +13,15 @@ import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbe
 import {
   digitalTime,
   informalTime,
+  officialAnalogVariants,
   officialTime,
+  officialTimeVariants,
   TIME_MINUTES,
   type TimeRepresentation,
   type TimeValue,
 } from '@/lib/german-time';
+
+export type TimeMatchingAnswerStyle = 'checkboxes' | 'writingLines';
 
 export type TimeMatchingAttrs = {
   instruction: string;
@@ -31,6 +35,7 @@ export type TimeMatchingAttrs = {
   shuffleLeft: boolean;
   shuffleRight: boolean;
   showFirstAsExample: boolean;
+  answerStyle: TimeMatchingAnswerStyle;
 };
 
 export const DEFAULT_TIME_MATCHING_ATTRS: TimeMatchingAttrs = {
@@ -49,6 +54,7 @@ export const DEFAULT_TIME_MATCHING_ATTRS: TimeMatchingAttrs = {
   shuffleLeft: false,
   shuffleRight: true,
   showFirstAsExample: false,
+  answerStyle: 'checkboxes',
 };
 
 function parseJson<T>(value: string | null, fallback: T): T {
@@ -75,9 +81,11 @@ function AnalogClock({ hour, minute }: { hour: number; minute: number }) {
 function TimeDisplay({
   representation,
   time,
+  showVariants,
 }: {
   representation: TimeRepresentation;
   time: TimeValue;
+  showVariants?: boolean;
 }) {
   if (representation === 'analog') {
     return <AnalogClock hour={time.hour} minute={time.minute} />;
@@ -89,11 +97,61 @@ function TimeDisplay({
       </span>
     );
   }
+  if (representation === 'official') {
+    const variants = showVariants
+      ? officialAnalogVariants(time.hour, time.minute)
+      : [officialTime(time.hour, time.minute)];
+    return (
+      <span className="time-matching-node__text time-matching-node__text--official">
+        {variants.map((variant, index) => (
+          <span
+            key={`${index}-${variant}`}
+            className="time-matching-node__official-variant"
+          >
+            {variant}
+            {index < variants.length - 1 && <br />}
+          </span>
+        ))}
+      </span>
+    );
+  }
   return (
     <span className="time-matching-node__text">
-      {representation === 'official'
-        ? officialTime(time.hour, time.minute)
-        : informalTime(time.hour, time.minute)}
+      {informalTime(time.hour, time.minute)}
+    </span>
+  );
+}
+
+function TimeMatchingEndpoint({
+  answerStyle,
+  side,
+  solutionText,
+  solutionKind,
+}: {
+  answerStyle: TimeMatchingAnswerStyle;
+  side: 'left' | 'right';
+  solutionText?: string;
+  solutionKind?: 'solution' | 'example';
+}) {
+  if (answerStyle === 'writingLines') {
+    return (
+      <span
+        aria-hidden="true"
+        className="matching-pairs-node__endpoint matching-pairs-node__writing-line time-matching-node__writing-line"
+        data-matching-endpoint
+        data-matching-endpoint-side={side}
+        data-solution-text={solutionText}
+        data-solution-kind={solutionKind}
+      />
+    );
+  }
+  return (
+    <span
+      className="matching-pairs-node__endpoint"
+      data-matching-endpoint
+      data-matching-endpoint-side={side}
+    >
+      <BlockChoiceIndicator checked={false} />
     </span>
   );
 }
@@ -107,6 +165,13 @@ function TimeMatchingNodeView({ node, selected }: NodeViewProps) {
     ...attrs.rightOrder.map((id) => byId.get(id)).filter(Boolean),
     ...attrs.times.filter(({ id }) => !attrs.rightOrder.includes(id)),
   ] as TimeValue[];
+  const rightLetterByTimeId = new Map(
+    rightTimes.map((time, index) => [time.id, String.fromCharCode(97 + index)]),
+  );
+  const leftNumberByTimeId = new Map(
+    attrs.times.map((time, index) => [time.id, String(index + 1)]),
+  );
+  const firstTimeId = attrs.times[0]?.id;
 
   useLayoutEffect(() => {
     const root = rootRef.current;
@@ -146,7 +211,7 @@ function TimeMatchingNodeView({ node, selected }: NodeViewProps) {
         const id = row.dataset.timeId;
         const side = row.dataset.timeSide;
         const indicator = row.querySelector<HTMLElement>(
-          '.custom-block__choice-indicator',
+          '[data-matching-endpoint]',
         );
         if (!id || !indicator || (side !== 'left' && side !== 'right')) return;
         const endpoint = endpoints.get(id) ?? {};
@@ -198,7 +263,7 @@ function TimeMatchingNodeView({ node, selected }: NodeViewProps) {
       resizeObserver.disconnect();
       window.removeEventListener('resize', drawSolutions);
     };
-  }, [attrs.rightOrder, attrs.showFirstAsExample, attrs.times]);
+  }, [attrs.rightOrder, attrs.showFirstAsExample, attrs.times, attrs.answerStyle]);
 
   return (
     <CustomBlockRoot
@@ -207,7 +272,7 @@ function TimeMatchingNodeView({ node, selected }: NodeViewProps) {
       rootRef={rootRef}
     >
       <BlockInstruction>{attrs.instruction}</BlockInstruction>
-      <div className="matching-pairs-node__columns time-matching-node__columns">
+      <div className={`matching-pairs-node__columns time-matching-node__columns${attrs.answerStyle === 'writingLines' ? ' matching-pairs-node__columns--writing-lines' : ''}`}>
         {attrs.times.map((time, index) => {
           const right = rightTimes[index];
           return (
@@ -223,17 +288,31 @@ function TimeMatchingNodeView({ node, selected }: NodeViewProps) {
                 <span className="matching-pairs-node__label matching-pairs-node__label--left">
                   <TimeDisplay representation={attrs.leftRepresentation} time={time} />
                 </span>
-                <BlockChoiceIndicator checked={false} />
+                <TimeMatchingEndpoint
+                  answerStyle={attrs.answerStyle}
+                  side="left"
+                  solutionText={rightLetterByTimeId.get(time.id)}
+                  solutionKind={attrs.showFirstAsExample && time.id === firstTimeId ? 'example' : 'solution'}
+                />
               </div>
               <div
                 className="matching-pairs-node__row time-matching-node__row time-matching-node__row--right"
                 data-time-id={right?.id}
                 data-time-side="right"
               >
-                <BlockChoiceIndicator checked={false} />
+                <TimeMatchingEndpoint
+                  answerStyle={attrs.answerStyle}
+                  side="right"
+                  solutionText={right ? leftNumberByTimeId.get(right.id) : undefined}
+                  solutionKind={attrs.showFirstAsExample && right?.id === firstTimeId ? 'example' : 'solution'}
+                />
                 <span className="matching-pairs-node__label">
                   {right && (
-                    <TimeDisplay representation={attrs.rightRepresentation} time={right} />
+                    <TimeDisplay
+                      representation={attrs.rightRepresentation}
+                      time={right}
+                      showVariants={attrs.leftRepresentation === 'analog' && attrs.rightRepresentation === 'official'}
+                    />
                   )}
                 </span>
                 <span className="custom-block__row-index matching-pairs-node__letter">
@@ -368,6 +447,17 @@ export const TimeMatching = Node.create({
         ),
         renderHTML: ({ showFirstAsExample }) => ({
           'data-show-first-as-example': String(showFirstAsExample),
+        }),
+      },
+      answerStyle: {
+        default: DEFAULT_TIME_MATCHING_ATTRS.answerStyle,
+        parseHTML: (element) => (
+          element.getAttribute('data-answer-style') === 'writingLines'
+            ? 'writingLines'
+            : 'checkboxes'
+        ),
+        renderHTML: (attributes) => ({
+          'data-answer-style': attributes.answerStyle,
         }),
       },
     };

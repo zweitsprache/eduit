@@ -40,6 +40,14 @@ import {
   type MatchingPairsAttrs,
 } from '@/components/editor/matching-pairs-node';
 import {
+  DEFAULT_TIME_MATCHING_ATTRS,
+  type TimeMatchingAttrs,
+} from '@/components/editor/time-matching-node';
+import {
+  TIME_REPRESENTATIONS,
+  type TimeRepresentation,
+} from '@/lib/german-time';
+import {
   normalizeMCMRowText,
   type MCMAttrs,
   type MCMOption,
@@ -182,6 +190,7 @@ export type ContentEditorBlock = {
     | 'mcq'
     | 'ordering'
     | 'matchingPairs'
+    | 'timeMatching'
     | 'mcm'
     | 'mch'
     | 'trueFalse'
@@ -210,6 +219,7 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   mcq: 'Multiple-choice content',
   ordering: 'Ordering / sequencing content',
   matchingPairs: 'Matching-pairs content',
+  timeMatching: 'Time matching content',
   mcm: 'Multiple-choice matrix content',
   mch: 'Header matrix content',
   trueFalse: 'True / false content',
@@ -1174,6 +1184,48 @@ function Preview({
                 Select text and press <strong className="font-semibold text-secondary">⌘B</strong>{' '}
                 on macOS or <strong className="font-semibold text-secondary">Ctrl+B</strong>{' '}
                 elsewhere to make it bold. Line breaks are preserved.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-3">
+              <span className="mt-1 text-center font-semibold text-secondary">╱</span>
+              <p>
+                <strong className="block font-semibold text-secondary">
+                  Preview solutions
+                </strong>
+                When worksheet solutions are enabled, the preview draws the
+                correct connections between both columns.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      {block.type === 'timeMatching' && (
+        <div className="mt-6 border-t border-secondary pt-5">
+          <BookOpen
+            aria-label="Editing guide"
+            className="size-5 text-secondary"
+          />
+          <div className="mt-4 space-y-4 text-sm leading-6 text-tertiary">
+            <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-3">
+              <span className="mt-1 text-center text-lg text-secondary">↔</span>
+              <p>
+                <strong className="block font-semibold text-secondary">
+                  Match times
+                </strong>
+                Choose how times are shown on the left and right. Each row on
+                the left has exactly one matching partner on the right.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] items-start gap-3">
+              <span className="mt-1 text-center text-secondary">▢</span>
+              <p>
+                <strong className="block font-semibold text-secondary">
+                  Choose answer style
+                </strong>
+                Show checkboxes to connect with lines, or writing lines where
+                learners write the matching number or letter.
               </p>
             </div>
 
@@ -5103,6 +5155,28 @@ function MatchingEditor({
           <span>Show example</span>
         </div>
       </div>
+      <ContentSectionHeader>Style</ContentSectionHeader>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        {([
+          ['checkboxes', 'Checkboxes'],
+          ['writingLines', 'Writing lines'],
+        ] as const).map(([value, label]) => (
+          <button
+            aria-pressed={attrs.answerStyle === value}
+            className={[
+              'h-10 rounded-md border px-3 text-sm font-semibold transition',
+              attrs.answerStyle === value
+                ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+            ].join(' ')}
+            key={value}
+            onClick={() => updateAttrs(editor, block, { answerStyle: value })}
+            type="button"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div className="mt-6 flex items-center justify-between">
         <p className="text-sm font-semibold text-secondary">Correct pairs</p>
         <span className="text-xs text-quaternary">{attrs.pairs.length} pairs</span>
@@ -5148,6 +5222,136 @@ function MatchingEditor({
       }])} className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover">
         <PlusSquare className="size-4" /> Add pair
       </button>
+    </>
+  );
+}
+
+function TimeMatchingEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: TimeMatchingAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  return (
+    <>
+      <div className="flex items-center justify-between gap-3">
+        <label className="block text-sm font-semibold text-secondary">
+          Instruction
+        </label>
+        <button
+          type="button"
+          aria-label="Reset instruction"
+          title="Reset instruction"
+          disabled={attrs.instruction === DEFAULT_TIME_MATCHING_ATTRS.instruction}
+          onClick={() => updateAttrs(editor, block, {
+            instruction: DEFAULT_TIME_MATCHING_ATTRS.instruction,
+          })}
+          className="flex size-7 items-center justify-center rounded-md text-secondary transition hover:bg-primary_hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          <RotateCcw className="size-4" />
+        </button>
+      </div>
+      <textarea
+        rows={1}
+        value={attrs.instruction || DEFAULT_TIME_MATCHING_ATTRS.instruction}
+        placeholder={DEFAULT_TIME_MATCHING_ATTRS.instruction}
+        onChange={(event) => updateAttrs(editor, block, {
+          instruction: event.target.value,
+        })}
+        className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+
+      <ContentSectionHeader>Representations</ContentSectionHeader>
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        {([
+          ['leftRepresentation', 'Left'] as const,
+          ['rightRepresentation', 'Right'] as const,
+        ]).map(([key, label]) => (
+          <label className="block text-sm font-semibold text-secondary" key={key}>
+            {label}
+            <select
+              className="mt-1.5 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              value={attrs[key]}
+              onChange={(event) => updateAttrs(editor, block, {
+                [key]: event.target.value as TimeRepresentation,
+              })}
+            >
+              {TIME_REPRESENTATIONS.map((option) => (
+                <option
+                  disabled={option.value === attrs[key === 'leftRepresentation' ? 'rightRepresentation' : 'leftRepresentation']}
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+      </div>
+
+      <ContentSectionHeader>Style</ContentSectionHeader>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        {([
+          ['checkboxes', 'Checkboxes'],
+          ['writingLines', 'Writing lines'],
+        ] as const).map(([value, label]) => (
+          <button
+            aria-pressed={attrs.answerStyle === value}
+            className={[
+              'h-10 rounded-md border px-3 text-sm font-semibold transition',
+              attrs.answerStyle === value
+                ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+            ].join(' ')}
+            key={value}
+            onClick={() => updateAttrs(editor, block, { answerStyle: value })}
+            type="button"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <ContentSectionHeader>Learner support</ContentSectionHeader>
+      <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3">
+        <div className="flex items-center gap-2 text-left text-sm font-semibold text-secondary">
+          <Toggle
+            aria-label="Show example"
+            size="md"
+            isSelected={attrs.showFirstAsExample}
+            onChange={(showFirstAsExample) => updateAttrs(editor, block, {
+              showFirstAsExample,
+            })}
+          />
+          <span>Show example</span>
+        </div>
+        <div className="flex items-center gap-2 text-left text-sm font-semibold text-secondary">
+          <Toggle
+            aria-label="Shuffle left side"
+            size="md"
+            isSelected={attrs.shuffleLeft}
+            onChange={(shuffleLeft) => updateAttrs(editor, block, {
+              shuffleLeft,
+            })}
+          />
+          <span>Shuffle left side</span>
+        </div>
+        <div className="flex items-center gap-2 text-left text-sm font-semibold text-secondary">
+          <Toggle
+            aria-label="Shuffle right side"
+            size="md"
+            isSelected={attrs.shuffleRight}
+            onChange={(shuffleRight) => updateAttrs(editor, block, {
+              shuffleRight,
+            })}
+          />
+          <span>Shuffle right side</span>
+        </div>
+      </div>
     </>
   );
 }
@@ -5220,6 +5424,7 @@ export function BlockContentEditorModal({
             {block.type === 'mcq' && <MCQEditor attrs={attrs as unknown as MCQAttrs} block={block} editor={editor} />}
             {block.type === 'ordering' && <OrderingEditor attrs={attrs as unknown as OrderingAttrs} block={block} editor={editor} />}
             {block.type === 'matchingPairs' && <MatchingEditor attrs={attrs as unknown as MatchingPairsAttrs} block={block} editor={editor} />}
+            {block.type === 'timeMatching' && <TimeMatchingEditor attrs={attrs as unknown as TimeMatchingAttrs} block={block} editor={editor} />}
             {block.type === 'mcm' && <MCMEditor attrs={attrs as unknown as MCMAttrs} block={block} editor={editor} />}
             {block.type === 'mch' && <MCHEditor attrs={attrs as unknown as MCHAttrs} block={block} editor={editor} />}
             {block.type === 'trueFalse' && <TrueFalseEditor attrs={attrs as unknown as TrueFalseAttrs} block={block} editor={editor} />}

@@ -16,6 +16,7 @@ export type TimeMatchingGenerationSettings = {
   shuffleLeft: boolean;
   shuffleRight: boolean;
   showFirstAsExample: boolean;
+  answerStyle: 'checkboxes' | 'writingLines';
 };
 
 const NUMBERS = [
@@ -61,6 +62,29 @@ export function officialTime(hour: number, minute: number) {
   return minute === 0
     ? `${hourWord} Uhr`
     : `${hourWord} Uhr ${germanNumber(minute)}`;
+}
+
+export function officialTime12Hour(hour: number, minute: number) {
+  const normalizedHour = hour % 12 || 12;
+  const hourWord = normalizedHour === 1 ? 'ein' : germanNumber(normalizedHour);
+  return minute === 0
+    ? `${hourWord} Uhr`
+    : `${hourWord} Uhr ${germanNumber(minute)}`;
+}
+
+export function officialTimeVariants(hour: number, minute: number) {
+  const twelve = officialTime12Hour(hour, minute);
+  const twentyFour = officialTime(hour, minute);
+  return [twelve, twentyFour];
+}
+
+export function officialAnalogVariants(hour: number, minute: number) {
+  const firstHour = hour % 12;
+  const secondHour = (firstHour + 12) % 24;
+  const first = officialTime(firstHour, minute);
+  const second = officialTime(secondHour, minute);
+  if (first === second) return [first];
+  return firstHour < secondHour ? [first, second] : [second, first];
 }
 
 function informalHour(hour: number) {

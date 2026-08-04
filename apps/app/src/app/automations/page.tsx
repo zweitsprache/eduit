@@ -115,7 +115,7 @@ export default function AutomationsPage() {
   const [creationFailures, setCreationFailures] = useState<CreationFailure[]>([]);
   const [generationBatchId, setGenerationBatchId] = useState('');
   const [finalizing, setFinalizing] = useState<FinalizingState | null>(null);
-  const [finalizationSource, setFinalizationSource] = useState<'verb' | 'backlog' | null>(null);
+  const [finalizationSource, setFinalizationSource] = useState<'verb' | 'backlog' | 'json' | null>(null);
   const [metadataPublications, setMetadataPublications] = useState<MetadataPublication[]>([]);
   const [metadataTense, setMetadataTense] = useState('all');
   const [metadataBatchSize, setMetadataBatchSize] = useState(10);
@@ -131,14 +131,17 @@ export default function AutomationsPage() {
   const [jsonImportRunning, setJsonImportRunning] = useState(false);
   const [jsonImportError, setJsonImportError] = useState('');
   const [jsonImportResults, setJsonImportResults] = useState<CreatedWorksheet[]>([]);
+  const [jsonImportPublish, setJsonImportPublish] = useState(false);
   const resultsRef = useRef<CreatedWorksheet[]>([]);
   const isVerbRunning = running && finalizationSource === 'verb';
   const isBacklogRunning = running && finalizationSource === 'backlog';
+  const isJsonRunning = jsonImportRunning || (running && finalizationSource === 'json');
 
   useEffect(() => {
     const storedBatchId = sessionStorage.getItem('eduit-verb-series-batch');
     if (!storedBatchId) return;
     setGenerationBatchId(storedBatchId);
+    setFinalizationSource('verb');
     setRunning(true);
   }, []);
 
@@ -440,6 +443,18 @@ export default function AutomationsPage() {
       }
       setJsonImportResults(result.worksheets);
       setWorksheetJson('');
+      if (jsonImportPublish && result.worksheets.length) {
+        setError('');
+        setCreationFailures([]);
+        setResults([]);
+        setFinalizationSource('json');
+        setProgress(`0/${result.worksheets.length}: Vorschau und Veröffentlichung mit ${FINALIZATION_CONCURRENCY} parallelen Renderern …`);
+        setFinalizing({
+          publish: true,
+          jobs: result.worksheets.map(({ id, title }) => ({ id, title, attempt: 1, status: 'pending' })),
+        });
+        setRunning(true);
+      }
     } catch (importError) {
       setJsonImportError(importError instanceof Error
         ? importError.message
@@ -469,12 +484,12 @@ export default function AutomationsPage() {
             <label className="mt-6 block text-sm font-semibold">Infinitive<textarea className="mt-2 min-h-28 w-full rounded-lg border border-primary bg-primary p-3 font-normal" onChange={(event) => setVerbs(event.target.value)} placeholder={'sein\nhaben\nwerden'} value={verbs} /></label>
             <div className="mt-6 overflow-hidden rounded-xl border border-secondary">{configs.map((config) => <div className="grid grid-cols-[auto_1fr_8rem] items-center gap-4 border-b border-secondary p-4 last:border-0" key={config.id}><input checked={config.enabled} onChange={(event) => updateConfig(config.id, { enabled: event.target.checked })} type="checkbox" /><span className="text-sm font-semibold">{config.label}</span><select className="rounded-md border border-primary bg-primary px-2 py-1.5 text-sm" onChange={(event) => updateConfig(config.id, { level: event.target.value })} value={config.level}>{['A1.1','A1.2','A2.1','A2.2','B1.1','B1.2'].map((level) => <option key={level}>{level}</option>)}</select></div>)}</div>
             <div className="mt-6 grid gap-5 sm:grid-cols-2"><label className="text-sm font-semibold">Marke<select className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2" onChange={(event) => setBrandProfileId(event.target.value)} value={brandProfileId}>{profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}</select></label><label className="flex items-end gap-2 pb-2 text-sm font-semibold"><input checked={publish} onChange={(event) => setPublish(event.target.checked)} type="checkbox" /> Nach Erstellung auf Dazit veröffentlichen</label></div>
-            {finalizationSource !== 'backlog' && progress && <p className="mt-5 text-sm text-tertiary">{progress}</p>}
-            {finalizationSource !== 'backlog' && finalizing && <p className="mt-2 text-sm text-tertiary">Finalisierung: {finalizationCompleted}/{finalizing.jobs.length} abgeschlossen{finalizationFailed ? `, ${finalizationFailed} fehlgeschlagen` : ''}</p>}
-            {finalizationSource !== 'backlog' && error && <p className="mt-3 text-sm text-error-primary">{error}</p>}
+            {finalizationSource === 'verb' && progress && <p className="mt-5 text-sm text-tertiary">{progress}</p>}
+            {finalizationSource === 'verb' && finalizing && <p className="mt-2 text-sm text-tertiary">Finalisierung: {finalizationCompleted}/{finalizing.jobs.length} abgeschlossen{finalizationFailed ? `, ${finalizationFailed} fehlgeschlagen` : ''}</p>}
+            {finalizationSource === 'verb' && error && <p className="mt-3 text-sm text-error-primary">{error}</p>}
             {creationFailures.length > 0 && <details className="mt-4 text-sm"><summary className="cursor-pointer font-semibold">{creationFailures.length} fehlgeschlagene Generierungsaufträge</summary><ul className="mt-2 grid gap-1 text-error-primary">{creationFailures.map((failure) => <li key={failure.key}>{failure.label}: {failure.error}</li>)}</ul></details>}
-            {finalizationSource !== 'backlog' && finalizationFailed > 0 && !running && <button className="mt-4 rounded-lg border border-primary bg-primary px-4 py-2 text-sm font-semibold" onClick={retryFinalizationFailures} type="button">Fehlgeschlagene Finalisierungen erneut versuchen</button>}
-            {finalizationSource !== 'backlog' && finalizationFailed > 0 && (
+            {finalizationSource === 'verb' && finalizationFailed > 0 && !running && <button className="mt-4 rounded-lg border border-primary bg-primary px-4 py-2 text-sm font-semibold" onClick={retryFinalizationFailures} type="button">Fehlgeschlagene Finalisierungen erneut versuchen</button>}
+            {finalizationSource === 'verb' && finalizationFailed > 0 && (
               <details className="mt-4 text-sm" open={!running}>
                 <summary className="cursor-pointer font-semibold">
                   {finalizationFailed} fehlgeschlagene Finalisierungen
@@ -489,7 +504,7 @@ export default function AutomationsPage() {
               </details>
             )}
             <button className="mt-6 rounded-lg bg-brand-solid px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50" disabled={running || metadataRunning || !total} onClick={() => void run()} type="button">{isVerbRunning ? 'Serie wird verarbeitet …' : `${total || 0} Arbeitsblätter erstellen`}</button>
-            {finalizationSource !== 'backlog' && results.length > 0 && <div className="mt-7"><h3 className="font-semibold">Ergebnisse</h3><ul className="mt-2 grid gap-2">{results.map((result) => <li key={result.id}><Link className="text-sm text-brand-secondary underline" href={`/editor?worksheet=${result.id}`}>{result.title}</Link></li>)}</ul></div>}
+            {finalizationSource === 'verb' && results.length > 0 && <div className="mt-7"><h3 className="font-semibold">Ergebnisse</h3><ul className="mt-2 grid gap-2">{results.map((result) => <li key={result.id}><Link className="text-sm text-brand-secondary underline" href={`/editor?worksheet=${result.id}`}>{result.title}</Link></li>)}</ul></div>}
             {running && finalizing && activeFinalizers.map((job) => (
               <iframe
                 aria-hidden="true"
@@ -504,7 +519,7 @@ export default function AutomationsPage() {
             <p className="text-sm font-semibold text-brand-secondary">AI-Import</p>
             <h2 className="mt-1 text-xl font-semibold">Arbeitsblätter aus JSON erstellen</h2>
             <p className="mt-2 text-sm text-tertiary">
-              Importiert ein einzelnes <code>worksheet</code> oder bis zu 100 Einträge in <code>worksheets</code>. Überschriften, Glossare, Lückentexte, Dialoge, Richtig/Falsch, Multiple-Choice und Seitenumbrüche werden validiert und in Editor-Blöcke umgewandelt.
+              Importiert ein einzelnes <code>worksheet</code> oder bis zu 100 Einträge in <code>worksheets</code>. Überschriften, Glossare, Lückentexte, Dialoge, Richtig/Falsch, Multiple-Choice, Zuordnungen, Uhrzeiten, Lernkarten und Seitenumbrüche werden validiert und in Editor-Blöcke umgewandelt.
             </p>
             <label className="mt-6 block text-sm font-semibold">
               Worksheet JSON
@@ -516,10 +531,22 @@ export default function AutomationsPage() {
                 value={worksheetJson}
               />
             </label>
+            <label className="mt-4 flex items-center gap-2 text-sm font-semibold">
+              <input
+                checked={jsonImportPublish}
+                disabled={isJsonRunning}
+                onChange={(event) => setJsonImportPublish(event.target.checked)}
+                type="checkbox"
+              />
+              Nach dem Import auf Dazit veröffentlichen
+            </label>
+            <p className="mt-1 text-sm text-tertiary">
+              Erstellt für jedes importierte Arbeitsblatt die Vorschau und veröffentlicht es inklusive PDF, Seitenbildern und Metadaten. Läuft in ausgeblendeten Renderern – dieser Tab muss geöffnet bleiben.
+            </p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button
                 className="rounded-lg border border-primary bg-primary px-4 py-2 text-sm font-semibold"
-                disabled={jsonImportRunning}
+                disabled={isJsonRunning}
                 onClick={() => setWorksheetJson(JSON_IMPORT_EXAMPLE)}
                 type="button"
               >
@@ -527,14 +554,48 @@ export default function AutomationsPage() {
               </button>
               <button
                 className="rounded-lg bg-brand-solid px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-                disabled={jsonImportRunning || !worksheetJson.trim() || !brandProfileId}
+                disabled={isJsonRunning || running || metadataRunning || !worksheetJson.trim() || !brandProfileId}
                 onClick={() => void importWorksheetJson()}
                 type="button"
               >
-                {jsonImportRunning ? 'JSON wird importiert …' : 'Arbeitsblätter erstellen'}
+                {jsonImportRunning
+                  ? 'JSON wird importiert …'
+                  : isJsonRunning
+                    ? 'Arbeitsblätter werden veröffentlicht …'
+                    : 'Arbeitsblätter erstellen'}
               </button>
             </div>
             {jsonImportError && <p className="mt-4 text-sm text-error-primary">{jsonImportError}</p>}
+            {finalizationSource === 'json' && progress && <p className="mt-4 text-sm text-tertiary">{progress}</p>}
+            {finalizationSource === 'json' && finalizing && (
+              <p className="mt-2 text-sm text-tertiary">
+                Finalisierung: {finalizationCompleted}/{finalizing.jobs.length} abgeschlossen{finalizationFailed ? `, ${finalizationFailed} fehlgeschlagen` : ''}
+              </p>
+            )}
+            {finalizationSource === 'json' && error && <p className="mt-3 text-sm text-error-primary">{error}</p>}
+            {finalizationSource === 'json' && finalizationFailed > 0 && (
+              <details className="mt-4 text-sm" open={!running}>
+                <summary className="cursor-pointer font-semibold">
+                  {finalizationFailed} fehlgeschlagene Veröffentlichungen
+                </summary>
+                <ul className="mt-2 grid gap-1 text-error-primary">
+                  {finalizing?.jobs
+                    .filter(({ status }) => status === 'failed')
+                    .map((job) => (
+                      <li key={job.id}>{job.title}: {job.error || 'Unbekannter Fehler.'}</li>
+                    ))}
+                </ul>
+              </details>
+            )}
+            {finalizationSource === 'json' && finalizationFailed > 0 && !running && (
+              <button
+                className="mt-4 rounded-lg border border-primary bg-primary px-4 py-2 text-sm font-semibold"
+                onClick={retryFinalizationFailures}
+                type="button"
+              >
+                Fehlgeschlagene Veröffentlichungen erneut versuchen
+              </button>
+            )}
             {jsonImportResults.length > 0 && (
               <div className="mt-6">
                 <h3 className="font-semibold">{jsonImportResults.length} Arbeitsblätter erstellt</h3>

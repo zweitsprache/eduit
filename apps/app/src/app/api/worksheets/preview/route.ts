@@ -2,6 +2,7 @@ import { del, get, put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import { getCurrentAppUser } from '@/lib/auth/authorization';
 import { launchRenderingBrowser } from '@/lib/server-chromium';
+import { replaceClockPlaceholders } from '@/lib/clock-placeholder';
 import {
   getWorksheetPreviewLocation,
   updateWorksheetPreview,
@@ -21,7 +22,7 @@ function safeHead(value: string) {
 }
 
 function safeContent(value: string) {
-  return value
+  return replaceClockPlaceholders(value)
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
     .replace(/<(?:iframe|object|embed)\b[^>]*>[\s\S]*?<\/(?:iframe|object|embed)>/gi, '')
     .replace(/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')

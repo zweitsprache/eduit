@@ -40,6 +40,7 @@ export function TimeMatchingAIModal({
     shuffleLeft: boolean;
     shuffleRight: boolean;
     showFirstAsExample: boolean;
+    answerStyle: 'checkboxes' | 'writingLines';
   }) => void;
   open: boolean;
 }) {
@@ -54,6 +55,7 @@ export function TimeMatchingAIModal({
   const [shuffleLeft, setShuffleLeft] = useState(false);
   const [shuffleRight, setShuffleRight] = useState(true);
   const [showFirstAsExample, setShowFirstAsExample] = useState(false);
+  const [answerStyle, setAnswerStyle] = useState<'checkboxes' | 'writingLines'>('checkboxes');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -67,6 +69,7 @@ export function TimeMatchingAIModal({
     setShuffleLeft(initialSettings.shuffleLeft);
     setShuffleRight(initialSettings.shuffleRight);
     setShowFirstAsExample(initialSettings.showFirstAsExample);
+    setAnswerStyle(initialSettings.answerStyle ?? 'checkboxes');
     setError('');
   // Rehydrate once when the modal opens. The parent derives this object from
   // the selected node, so depending on its identity would reset in-progress
@@ -126,6 +129,7 @@ export function TimeMatchingAIModal({
       shuffleLeft,
       shuffleRight,
       showFirstAsExample,
+      answerStyle,
     });
   };
 
@@ -234,6 +238,28 @@ export function TimeMatchingAIModal({
           {' '}
           {showFirstAsExample ? (de ? 'Ja' : 'Yes') : (de ? 'Nein' : 'No')}
         </button>
+
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          {([
+            ['checkboxes', de ? 'Kästchen' : 'Checkboxes'],
+            ['writingLines', de ? 'Schreiblinien' : 'Writing lines'],
+          ] as const).map(([value, label]) => (
+            <button
+              aria-pressed={answerStyle === value}
+              className={[
+                'h-10 rounded-md border px-3 text-sm font-semibold transition',
+                answerStyle === value
+                  ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                  : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+              ].join(' ')}
+              key={value}
+              onClick={() => setAnswerStyle(value)}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
         <div className="mt-5 grid grid-cols-2 gap-4">
           {([

@@ -16,13 +16,14 @@ import { PageBreak } from '@tiptap-pro/extension-pagebreak';
 import {
   Trash01,
   Copy01,
-  Home03,
   File02,
   GraduationHat01,
   Image01,
   Settings01,
   Grid01,
   Download01,
+  Code02,
+  ClipboardCheck,
   Loading01,
   PlusSquare,
   Edit05,
@@ -209,6 +210,7 @@ import {
   EMPTY_WORKSHEET_CONTEXT,
   type WorksheetContext,
 } from '@/lib/worksheet-types';
+import { worksheetJsonFromDoc } from '@/lib/worksheet-json-export';
 import type { ContextProfile } from '@/lib/context-profiles';
 import { CustomBlockNumbering } from '@/components/editor/custom-blocks/numbering';
 import { InsertBlockPalette } from '@/components/editor/custom-blocks/insert-block-palette';
@@ -387,6 +389,7 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'trueFalse',
   'ordering',
   'matchingPairs',
+  'timeMatching',
   'fillInTheBlank',
   'glossaryTerms',
   'frayerModel',
@@ -632,6 +635,7 @@ function getTimeMatchingGenerationSettings(editor: Editor, pos: number) {
     shuffleLeft: DEFAULT_TIME_MATCHING_ATTRS.shuffleLeft,
     shuffleRight: DEFAULT_TIME_MATCHING_ATTRS.shuffleRight,
     showFirstAsExample: DEFAULT_TIME_MATCHING_ATTRS.showFirstAsExample,
+    answerStyle: DEFAULT_TIME_MATCHING_ATTRS.answerStyle,
   };
   if (pos < 0 || pos > editor.state.doc.content.size) return defaults;
   const node = editor.state.doc.nodeAt(pos);
@@ -649,6 +653,7 @@ function getTimeMatchingGenerationSettings(editor: Editor, pos: number) {
     shuffleLeft: attrs.shuffleLeft,
     shuffleRight: attrs.shuffleRight,
     showFirstAsExample: attrs.showFirstAsExample,
+    answerStyle: attrs.answerStyle,
   };
 }
 
@@ -1153,6 +1158,7 @@ export default function EditorPage() {
   const worksheetPreviewTimerRef =
     useRef<ReturnType<typeof setTimeout> | null>(null);
   const contextSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const jsonCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const worksheetInitializationStartedRef = useRef(false);
   const automationPublishStartedRef = useRef(false);
   const automationPublishErrorRef = useRef<string | null>(null);
@@ -1185,6 +1191,7 @@ export default function EditorPage() {
   >('unpublished');
   const [republishScope, setRepublishScope] = useState<'pdf-only' | 'full'>('pdf-only');
   const [exportingBlockPNG, setExportingBlockPNG] = useState(false);
+  const [jsonCopied, setJsonCopied] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [blockExportError, setBlockExportError] = useState<string | null>(null);
@@ -2370,6 +2377,7 @@ export default function EditorPage() {
         clearTimeout(worksheetPreviewTimerRef.current);
       }
       if (contextSaveTimerRef.current) clearTimeout(contextSaveTimerRef.current);
+      if (jsonCopiedTimerRef.current) clearTimeout(jsonCopiedTimerRef.current);
     };
   }, [docSize, editor]);
 
@@ -3732,6 +3740,31 @@ export default function EditorPage() {
     }
   };
 
+  const copyWorksheetJson = async () => {
+    if (!editor) return;
+    const { json, skippedTypes } = worksheetJsonFromDoc(editor.state.doc, {
+      title: worksheetTitle,
+      documentSize: docSize,
+      showSolutions,
+      brandProfileId,
+      context: documentContext,
+    });
+    try {
+      await navigator.clipboard.writeText(json);
+    } catch {
+      setPublishSuccess(false);
+      setExportError(t('editor.jsonCopyFailed'));
+      return;
+    }
+    setPublishSuccess(true);
+    setExportError(skippedTypes.length
+      ? t('editor.jsonCopiedPartial', { types: skippedTypes.join(', ') })
+      : t('editor.jsonCopied'));
+    setJsonCopied(true);
+    if (jsonCopiedTimerRef.current) clearTimeout(jsonCopiedTimerRef.current);
+    jsonCopiedTimerRef.current = setTimeout(() => setJsonCopied(false), 2500);
+  };
+
   const duplicateCurrentWorksheet = async () => {
     if (!worksheetIdRef.current || duplicatingWorksheet) return;
     setDuplicatingWorksheet(true);
@@ -3912,9 +3945,6 @@ export default function EditorPage() {
             {saved ? t('editor.allChangesSaved') : t('editor.saving')}
           </span>
           <LanguageSwitcher compact />
-          <Button color="secondary" size="md" iconLeading={<Home03 className="size-4.5" />} onPress={() => { window.location.href = '/'; }}>
-            {t('editor.home')}
-          </Button>
           <Button
             color="secondary"
             size="md"
@@ -3927,6 +3957,16 @@ export default function EditorPage() {
             {duplicatingWorksheet
               ? `${t('documents.duplicate')}…`
               : t('documents.duplicate')}
+          </Button>
+          <Button
+            color="secondary"
+            size="md"
+            iconLeading={jsonCopied
+              ? <ClipboardCheck className="size-4.5" />
+              : <Code02 className="size-4.5" />}
+            onPress={() => void copyWorksheetJson()}
+          >
+            {jsonCopied ? t('editor.jsonCopied') : t('editor.copyJson')}
           </Button>
           <Button
             color="secondary"
@@ -8185,17 +8225,28 @@ export default function EditorPage() {
               ...DEFAULT_LEARNING_CARDS_ATTRS,
               ...selectedNode.attrs,
               ...result,
-              groupIndex: 0,
-              sheetSide: 'front',
             };
-            const nodes = [cardType.create(baseAttrs)];
-            if (baseAttrs.sidedness === 'double') {
-              if (pageBreakType) nodes.push(pageBreakType.create());
-              nodes.push(cardType.create({
+            const groupCount = Math.max(1, Math.ceil(baseAttrs.items.length / 9));
+            const sheets = Array.from({ length: groupCount }, (_, groupIndex) => {
+              const groupSheets = [cardType.create({
                 ...baseAttrs,
-                sheetSide: 'back',
-              }));
-            }
+                groupIndex,
+                sheetSide: 'front',
+              })];
+              if (baseAttrs.sidedness === 'double') {
+                groupSheets.push(cardType.create({
+                  ...baseAttrs,
+                  groupIndex,
+                  sheetSide: 'back',
+                }));
+              }
+              return groupSheets;
+            }).flat();
+            const nodes = sheets.flatMap((sheet, index) => (
+              index < sheets.length - 1 && pageBreakType
+                ? [sheet, pageBreakType.create()]
+                : [sheet]
+            ));
             tr.replaceWith(0, tr.doc.content.size, nodes);
             tr.setSelection(NodeSelection.create(tr.doc, 0));
             return true;
@@ -8311,6 +8362,7 @@ export default function EditorPage() {
               'showFirstAsExample',
               result.showFirstAsExample,
             );
+            tr.setNodeAttribute(pos, 'answerStyle', result.answerStyle);
             return true;
           }).run();
           setTimeMatchingAIBlock(null);

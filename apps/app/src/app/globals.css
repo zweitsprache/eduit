@@ -213,11 +213,13 @@
 }
 
 .pdf-exporting .tiptap-page-break-node {
+  break-before: page;
   border-top-color: transparent;
 }
 
-.pdf-exporting .tiptap-page-break-node::before {
-  display: none;
+.pdf-exporting .tiptap-page-break-node::before,
+.pdf-exporting .tiptap-page-break-node::after {
+  display: none !important;
 }
 
 @media print {
@@ -290,10 +292,12 @@
   }
 
   .tiptap-page-break-node {
+    break-before: page !important;
     border-top-color: transparent !important;
   }
 
-  .tiptap-page-break-node::before {
+  .tiptap-page-break-node::before,
+  .tiptap-page-break-node::after {
     display: none !important;
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AIGenerationModal } from '@/components/editor/ai-generation-modal-ui';
 import type { LearningCardItem } from '@/components/editor/learning-cards-node';
 import type { GermanVerbTableForms } from '@/components/editor/german-verb-table-node';
@@ -13,8 +13,18 @@ import {
   isGermanReflexiveInfinitive,
   splitGermanSeparableForm,
 } from '@/lib/german-verb-forms';
+import {
+  availableUniqueTimes,
+  digitalTime,
+  informalTime,
+  officialAnalogVariants,
+  officialTime,
+  TIME_MINUTES,
+  TIME_REPRESENTATIONS,
+  type TimeRepresentation,
+} from '@/lib/german-time';
 
-type Preset = 'verb-conjugation' | 'article-training' | 'plural-training';
+type Preset = 'verb-conjugation' | 'time-matching' | 'article-training' | 'plural-training';
 export type Tense =
   | 'present'
   | 'preterite'
@@ -215,6 +225,42 @@ export function buildGeneratedVerbLearningCards(
   return { items, title: `«${result.infinitive}» | ${moodLabel} ${tenseLabel}` };
 }
 
+function timeToHtml(
+  representation: TimeRepresentation,
+  hour: number,
+  minute: number,
+  showVariants: boolean,
+) {
+  if (representation === 'analog') {
+    return `[[clock hour=${hour} minute=${minute}]]`;
+  }
+  if (representation === 'digital') {
+    return digitalTime(hour, minute);
+  }
+  if (representation === 'official') {
+    const variants = showVariants
+      ? officialAnalogVariants(hour, minute)
+      : [officialTime(hour, minute)];
+    return variants.join('\n');
+  }
+  return informalTime(hour, minute);
+}
+
+function representationHint(representation: TimeRepresentation) {
+  const label = (TIME_REPRESENTATIONS.find((option) => option.value === representation)?.label
+    ?? representation).toLowerCase();
+  return `[[card-answer]]${label}?[[/card-answer]]`;
+}
+
+function shuffled<T>(values: T[]) {
+  const next = [...values];
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const target = Math.floor(Math.random() * (index + 1));
+    [next[index], next[target]] = [next[target], next[index]];
+  }
+  return next;
+}
+
 export function LearningCardsAIModal({
   onClose,
   onGenerated,
@@ -228,6 +274,13 @@ export function LearningCardsAIModal({
   const [tense, setTense] = useState<Tense>('present');
   const [mood, setMood] = useState<Mood>('indicative');
   const [infinitive, setInfinitive] = useState('');
+  const [left, setLeft] = useState<TimeRepresentation>('analog');
+  const [right, setRight] = useState<TimeRepresentation>('official');
+  const [minutes, setMinutes] = useState<number[]>(TIME_MINUTES);
+  const [start, setStart] = useState('00:00');
+  const [end, setEnd] = useState('23:59');
+  const [count, setCount] = useState(9);
+  const [shuffle, setShuffle] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
 
@@ -237,11 +290,58 @@ export function LearningCardsAIModal({
     setTense('present');
     setMood('indicative');
     setInfinitive('');
+    setLeft('analog');
+    setRight('official');
+    setMinutes(TIME_MINUTES);
+    setStart('00:00');
+    setEnd('23:59');
+    setCount(9);
+    setShuffle(false);
     setPending(false);
     setError('');
   }, [open]);
 
+  const available = useMemo(() => availableUniqueTimes({
+    start,
+    end,
+    minutes,
+    left,
+    right,
+  }), [end, left, minutes, right, start]);
+  const actualCount = Math.min(count, available.length);
+
   async function generate() {
+    if (preset === 'time-matching') {
+      if (!minutes.length) {
+        setError('Wähle mindestens einen Minutenwert aus.');
+        return;
+      }
+      if (!available.length) {
+        setError('In diesem Bereich sind keine eindeutigen Zeiten verfügbar.');
+        return;
+      }
+      const baseTimes = shuffled(available)
+        .slice(0, actualCount)
+        .sort((first, second) => (
+          first.hour * 60 + first.minute - (second.hour * 60 + second.minute)
+        ));
+      const selectedTimes = shuffle ? shuffled(baseTimes) : baseTimes;
+      const showVariants = left === 'analog' && right === 'official';
+      const items: LearningCardItem[] = selectedTimes.map((time, index) => ({
+        id: `time-card-${Date.now()}-${index + 1}`,
+        front: `${timeToHtml(left, time.hour, time.minute, false)}\n${representationHint(right)}`,
+        back: timeToHtml(right, time.hour, time.minute, showVariants),
+      }));
+      items.push({ id: `time-card-${Date.now()}-empty`, front: '', back: '' });
+      onGenerated({
+        items,
+        title: left === 'analog' && right === 'official'
+          ? 'Uhrzeiten'
+          : `${TIME_REPRESENTATIONS.find((option) => option.value === left)?.label ?? left} → ${TIME_REPRESENTATIONS.find((option) => option.value === right)?.label ?? right}`,
+      });
+      onClose();
+      return;
+    }
     if (preset !== 'verb-conjugation' || !infinitive.trim()) {
       setError('Gib einen deutschen Infinitiv ein.');
       return;
@@ -341,7 +441,7 @@ export function LearningCardsAIModal({
       onGenerate={() => void generate()}
       open={open}
       pending={pending}
-      progressLabel="Verbformen werden generiert …"
+      progressLabel="Lernkarten werden generiert …"
       title="Lernkarten mit Eduit AI generieren"
     >
       <label className="block text-sm font-semibold text-primary">
@@ -352,27 +452,138 @@ export function LearningCardsAIModal({
           value={preset}
         >
           <option value="verb-conjugation">Verbkonjugation</option>
+          <option value="time-matching">Uhrzeiten</option>
           <option disabled value="article-training">Artikeltraining (noch nicht verfügbar)</option>
           <option disabled value="plural-training">Pluraltraining (noch nicht verfügbar)</option>
         </select>
       </label>
 
-      <section className="mt-5 rounded-xl border border-secondary bg-secondary p-5">
-        <label className="block text-sm font-semibold text-primary">
-          Zeitform
-          <select
-            className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-            onChange={(event) => setTense(event.target.value as Tense)}
-            value={tense}
+      {preset === 'time-matching' && (
+        <section className="mt-5 rounded-xl border border-secondary bg-secondary p-5">
+          <div className="grid grid-cols-2 gap-4">
+            {([
+              ['Vorne', left, setLeft, right],
+              ['Hinten', right, setRight, left],
+            ] as const).map(([label, value, setValue, unavailable]) => (
+              <label className="text-sm font-semibold text-primary" key={label}>
+                {label}
+                <select
+                  className="mt-1.5 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  onChange={(event) => setValue(event.target.value as TimeRepresentation)}
+                  value={value}
+                >
+                  {TIME_REPRESENTATIONS.map((option) => (
+                    <option
+                      disabled={option.value === unavailable}
+                      key={option.value}
+                      value={option.value}
+                    >
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+
+          <p className="mt-5 text-sm font-semibold text-primary">Minuten</p>
+          <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6">
+            {TIME_MINUTES.map((minute) => {
+              const selected = minutes.includes(minute);
+              return (
+                <button
+                  aria-pressed={selected}
+                  className={[
+                    'h-9 rounded-md border text-sm font-semibold transition',
+                    selected
+                      ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                      : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+                  ].join(' ')}
+                  key={minute}
+                  onClick={() => setMinutes((current) => (
+                    selected
+                      ? current.filter((value) => value !== minute)
+                      : [...current, minute].sort((a, b) => a - b)
+                  ))}
+                  type="button"
+                >
+                  00:{String(minute).padStart(2, '0')}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-4">
+            <label className="text-sm font-semibold text-primary">
+              Von
+              <input
+                className="mt-1.5 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                onChange={(event) => setStart(event.target.value)}
+                type="time"
+                value={start}
+              />
+            </label>
+            <label className="text-sm font-semibold text-primary">
+              Bis
+              <input
+                className="mt-1.5 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                onChange={(event) => setEnd(event.target.value)}
+                type="time"
+                value={end}
+              />
+            </label>
+          </div>
+
+          <button
+            aria-pressed={shuffle}
+            className={[
+              'mt-4 h-10 w-full rounded-md border px-3 text-sm font-semibold transition',
+              shuffle
+                ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+            ].join(' ')}
+            onClick={() => setShuffle(!shuffle)}
+            type="button"
           >
-            <option value="present">Präsens</option>
-            <option value="preterite">Präteritum</option>
-            <option value="perfect">Perfekt</option>
-            <option value="pluperfect">Plusquamperfekt</option>
-            <option value="future-one">Futur I</option>
-            <option value="future-two">Futur II</option>
-          </select>
-        </label>
+            Karten mischen: {shuffle ? 'Ja' : 'Nein'}
+          </button>
+
+          <label className="mt-5 block text-sm font-semibold text-primary">
+            Anzahl
+            <input
+              className="mt-1.5 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              max={54}
+              min={1}
+              onChange={(event) => setCount(Math.min(54, Math.max(1, Number(event.target.value))))}
+              type="number"
+              value={count}
+            />
+          </label>
+          <p className="mt-2 text-xs text-quaternary">
+            {available.length < count
+              ? `${available.length} eindeutige Zeiten verfügbar – es werden ${actualCount} Karten erstellt.`
+              : `${available.length} eindeutige Zeiten verfügbar.`}
+          </p>
+        </section>
+      )}
+
+      {preset === 'verb-conjugation' && (
+        <section className="mt-5 rounded-xl border border-secondary bg-secondary p-5">
+          <label className="block text-sm font-semibold text-primary">
+            Zeitform
+            <select
+              className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              onChange={(event) => setTense(event.target.value as Tense)}
+              value={tense}
+            >
+              <option value="present">Präsens</option>
+              <option value="preterite">Präteritum</option>
+              <option value="perfect">Perfekt</option>
+              <option value="pluperfect">Plusquamperfekt</option>
+              <option value="future-one">Futur I</option>
+              <option value="future-two">Futur II</option>
+            </select>
+          </label>
 
         <label className="mt-5 block text-sm font-semibold text-primary">
           Modus
@@ -403,6 +614,7 @@ export function LearningCardsAIModal({
           />
         </label>
       </section>
+      )}
     </AIGenerationModal>
   );
 }

@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCurrentAppUser } from '@/lib/auth/authorization';
-import { createWorksheet } from '@/lib/worksheets';
-import { worksheetPatchFromGeneratedJson } from '@/lib/worksheet-json-import';
+import { createWorksheet, getWorksheet } from '@/lib/worksheets';
+import {
+  EMPTY_WORKSHEET_CONTEXT,
+  type WorksheetPatch,
+} from '@/lib/worksheet-types';
+import {
+  generatedWorksheetSchema,
+  worksheetPatchFromGeneratedJson,
+} from '@/lib/worksheet-json-import';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,9 +33,30 @@ export async function POST(request: Request) {
     if (!rawWorksheets.length || rawWorksheets.length > 100) {
       throw new Error('Provide between 1 and 100 worksheets.');
     }
-    const patches = rawWorksheets.map((value) => (
-      worksheetPatchFromGeneratedJson(value, brandProfileId)
-    ));
+    const patches: WorksheetPatch[] = [];
+    for (const value of rawWorksheets) {
+      const input = generatedWorksheetSchema.parse(value);
+      if (input.sourceWorksheetId) {
+        const source = await getWorksheet(input.sourceWorksheetId, user.id, true);
+        if (!source) throw new Error(`Source worksheet ${input.sourceWorksheetId} not found.`);
+        patches.push({
+          title: input.title ?? source.title,
+          contentHtml: source.contentHtml,
+          documentSize: input.documentSize ?? source.documentSize,
+          showSolutions: input.showSolutions ?? source.showSolutions,
+          status: input.status ?? source.status,
+          context: input.context
+            ? { ...EMPTY_WORKSHEET_CONTEXT, ...input.context }
+            : source.context,
+          brandProfileId: input.brandProfileId === undefined
+            ? (brandProfileId ?? source.brandProfileId)
+            : input.brandProfileId,
+          folderId: input.folderId ?? source.folderId,
+        });
+      } else {
+        patches.push(worksheetPatchFromGeneratedJson(value, brandProfileId));
+      }
+    }
     const worksheets = [];
     for (const patch of patches) {
       const worksheet = await createWorksheet(user.id, patch);

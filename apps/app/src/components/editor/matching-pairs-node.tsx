@@ -24,6 +24,8 @@ export type MatchingPair = {
   right: string;
 };
 
+export type MatchingPairsAnswerStyle = 'checkboxes' | 'writingLines';
+
 export type MatchingPairsAttrs = {
   instruction: string;
   question: string;
@@ -32,6 +34,7 @@ export type MatchingPairsAttrs = {
   showWordBank: boolean;
   shuffleWordBank: boolean;
   showFirstAsExample: boolean;
+  answerStyle: MatchingPairsAnswerStyle;
 };
 
 export const DEFAULT_MATCHING_INSTRUCTION =
@@ -74,6 +77,40 @@ function stableHash(value: string) {
   return hash >>> 0;
 }
 
+function MatchingEndpoint({
+  answerStyle,
+  side,
+  solutionText,
+  solutionKind,
+}: {
+  answerStyle: MatchingPairsAnswerStyle;
+  side: 'left' | 'right';
+  solutionText?: string;
+  solutionKind?: 'solution' | 'example';
+}) {
+  if (answerStyle === 'writingLines') {
+    return (
+      <span
+        aria-hidden="true"
+        className="matching-pairs-node__endpoint matching-pairs-node__writing-line"
+        data-matching-endpoint
+        data-matching-endpoint-side={side}
+        data-solution-text={solutionText}
+        data-solution-kind={solutionKind}
+      />
+    );
+  }
+  return (
+    <span
+      className="matching-pairs-node__endpoint"
+      data-matching-endpoint
+      data-matching-endpoint-side={side}
+    >
+      <BlockChoiceIndicator checked={false} />
+    </span>
+  );
+}
+
 function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const solutionsRef = useRef<SVGSVGElement>(null);
@@ -85,11 +122,21 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
     showWordBank,
     shuffleWordBank,
     showFirstAsExample,
+    answerStyle,
   } = node.attrs as MatchingPairsAttrs;
   const pairById = new Map(pairs.map((pair) => [pair.id, pair]));
   const orderedRightPairs = normalizedRightOrder(pairs, rightOrder)
     .map((id) => pairById.get(id))
     .filter((pair): pair is MatchingPair => Boolean(pair));
+  const rightLetterByPairId = new Map(
+    orderedRightPairs.map((pair, index) => [
+      pair.id,
+      String.fromCharCode(97 + index),
+    ]),
+  );
+  const leftNumberByPairId = new Map(
+    pairs.map((pair, index) => [pair.id, String(index + 1)]),
+  );
   const wordBankItems = pairs
     .map((pair) => ({
       id: pair.id,
@@ -132,7 +179,7 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
         const pairId = row.dataset.matchingPairId;
         const side = row.dataset.matchingSide;
         const indicator = row.querySelector<HTMLElement>(
-          '.custom-block__choice-indicator',
+          '[data-matching-endpoint]',
         );
         if (!pairId || !indicator || (side !== 'left' && side !== 'right')) {
           return;
@@ -203,7 +250,7 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
       resizeObserver.disconnect();
       window.removeEventListener('resize', drawSolutions);
     };
-  }, [pairs, rightOrder, question, showFirstAsExample, showWordBank]);
+  }, [pairs, rightOrder, question, showFirstAsExample, showWordBank, answerStyle]);
 
   return (
     <CustomBlockRoot
@@ -232,7 +279,7 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
           ))}
         </div>
       )}
-      <div className="matching-pairs-node__columns">
+      <div className={`matching-pairs-node__columns${answerStyle === 'writingLines' ? ' matching-pairs-node__columns--writing-lines' : ''}`}>
         {pairs.map((pair, index) => {
           const rightPair = orderedRightPairs[index];
           return (
@@ -252,14 +299,24 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
                   text={pair.left}
                 />
               </span>
-              <BlockChoiceIndicator checked={false} />
+              <MatchingEndpoint
+                answerStyle={answerStyle}
+                side="left"
+                solutionText={rightLetterByPairId.get(pair.id)}
+                solutionKind={showFirstAsExample && pair === pairs[0] ? 'example' : 'solution'}
+              />
             </div>
             <div
               className="matching-pairs-node__row"
               data-matching-pair-id={rightPair?.id}
               data-matching-side="right"
             >
-              <BlockChoiceIndicator checked={false} />
+              <MatchingEndpoint
+                answerStyle={answerStyle}
+                side="right"
+                solutionText={rightPair ? leftNumberByPairId.get(rightPair.id) : undefined}
+                solutionKind={showFirstAsExample && rightPair?.id === pairs[0]?.id ? 'example' : 'solution'}
+              />
               <span className="matching-pairs-node__label">
                 <InlineFormattedText
                   fallback={`Match ${index + 1}`}
@@ -367,6 +424,17 @@ export const MatchingPairs = Node.create({
           ),
         }),
       },
+      answerStyle: {
+        default: 'checkboxes' satisfies MatchingPairsAnswerStyle,
+        parseHTML: (element) => (
+          element.getAttribute('data-matching-answer-style') === 'writingLines'
+            ? 'writingLines'
+            : 'checkboxes'
+        ),
+        renderHTML: (attributes) => ({
+          'data-matching-answer-style': attributes.answerStyle,
+        }),
+      },
     };
   },
 
@@ -401,6 +469,7 @@ export const MatchingPairs = Node.create({
               showWordBank: attrs.showWordBank ?? false,
               shuffleWordBank: attrs.shuffleWordBank ?? false,
               showFirstAsExample: attrs.showFirstAsExample ?? false,
+              answerStyle: attrs.answerStyle ?? 'checkboxes',
             },
           });
         },

@@ -250,6 +250,15 @@ export function WorksheetManager() {
     window.localStorage.setItem('eduit-worksheet-library-view', mode);
   }
 
+  function publishWorksheet(worksheet: Worksheet) {
+    sessionStorage.setItem(
+      'eduit-automation-publish-queue',
+      JSON.stringify([worksheet.id]),
+    );
+    window.location.href =
+      `/editor?worksheet=${encodeURIComponent(worksheet.id)}&automation=batch-publish`;
+  }
+
   async function duplicateWorksheet(worksheet: Worksheet) {
     setBusyId(worksheet.id);
     setError(null);
@@ -542,6 +551,7 @@ export function WorksheetManager() {
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t('documents.searchPlaceholder')}
               className="h-11 w-full rounded-lg border border-primary bg-primary pl-10 pr-3 text-sm text-primary shadow-xs outline-none placeholder:text-placeholder focus:border-brand focus:ring-2 focus:ring-brand"
+              style={{ color: 'var(--color-text-primary)', caretColor: 'var(--color-text-primary)', backgroundColor: 'var(--color-bg-primary)' }}
             />
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -759,8 +769,11 @@ export function WorksheetManager() {
                 <article
                   key={worksheet.id}
                   className={cx(
-                    'group relative rounded-xl border border-secondary bg-primary shadow-xs transition duration-150 hover:border-primary hover:shadow-lg',
+                    'group relative rounded-xl bg-primary shadow-xs transition duration-150 hover:shadow-lg',
                     openMenuId === worksheet.id && 'z-30',
+                    worksheet.status === 'draft'
+                      ? 'border-2 border-dashed border-error-primary hover:border-error-primary'
+                      : 'border border-secondary hover:border-primary',
                     viewMode === 'cards'
                       ? 'hover:-translate-y-0.5'
                       : 'grid grid-cols-[9rem_minmax(0,1fr)] sm:grid-cols-[12rem_minmax(0,1fr)]',
@@ -833,6 +846,15 @@ export function WorksheetManager() {
                           })}
                         </div>
                       </a>
+                      {worksheet.status === 'draft' && (
+                        <Button
+                          size="sm"
+                          isDisabled={isBusy}
+                          onPress={() => publishWorksheet(worksheet)}
+                        >
+                          {t('documents.publish')}
+                        </Button>
+                      )}
                       <details
                         className="relative"
                         onToggle={(event) => {
