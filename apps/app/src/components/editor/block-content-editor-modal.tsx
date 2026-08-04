@@ -3580,6 +3580,40 @@ function WordGridEditor({
       <ContentSectionHeader count={`${attrs.words.length} words`}>
         Words
       </ContentSectionHeader>
+
+      <details className="mt-3 rounded-xl border border-secondary bg-secondary p-4 group">
+        <summary className="cursor-pointer text-sm font-semibold text-primary">
+          Bulk paste word list
+        </summary>
+        <div className="mt-3 space-y-3">
+          <p className="text-xs leading-5 text-secondary">
+            Paste one word per line, or separate words with commas, semicolons,
+            or tabs. Existing words are replaced.
+          </p>
+          <textarea
+            aria-label="Bulk paste word list"
+            rows={6}
+            placeholder={'word\nexample\nlearning'}
+            onChange={(event) => {
+              const raw = event.target.value;
+              const values = raw
+                .split(/[\r\n,;\t]+/)
+                .map((value) => value.trim())
+                .filter(Boolean);
+              const seen = new Set<string>();
+              const words = values.filter((value) => {
+                const normalized = value.toLocaleLowerCase();
+                if (seen.has(normalized)) return false;
+                seen.add(normalized);
+                return /^\p{L}+$/u.test(value);
+              });
+              if (words.length > 0) setWords(words);
+            }}
+            className="w-full resize-y rounded-md border border-primary bg-primary px-3 py-2 font-mono text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          />
+        </div>
+      </details>
+
       <div className="mt-3 space-y-2">
         {attrs.words.map((word, index) => (
           <ContentCard key={`${index}-${word}`}>

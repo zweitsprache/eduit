@@ -206,6 +206,22 @@ export function WordGridCSVImportModal({
             />
           </label>
 
+          <div className="mt-3 flex items-center justify-between rounded-md border border-secondary bg-secondary p-3">
+            <p className="text-xs text-secondary">
+              <span className="font-semibold text-primary">{parsedWords.length}</span>{' '}
+              {parsedWords.length === 1 ? 'word' : 'words'} detected
+            </p>
+            {parsedWords.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSource('')}
+                className="text-xs font-semibold text-secondary hover:text-primary"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
           <div className="mt-4 flex items-start justify-between gap-5 rounded-lg border border-secondary p-3">
             <div>
               <p className="text-sm font-semibold text-secondary">
