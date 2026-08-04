@@ -53,8 +53,16 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
   const attrs = node.attrs as Record<string, unknown>;
   switch (node.type.name) {
     case 'customHeading': {
-      const { text, level, numbered, gapAfter } = attrs as CustomHeadingAttrs;
-      return { type: 'heading', text, level, numbered, gapAfter };
+      const { text, level, numbered, gapAfter, restartInstructionNumbering } =
+        attrs as CustomHeadingAttrs;
+      return {
+        type: 'heading',
+        text,
+        level,
+        numbered,
+        gapAfter,
+        restartInstructionNumbering,
+      };
     }
     case 'pageBreak':
       return { type: 'pageBreak', restartPagination: Boolean(attrs.restartPagination) };

@@ -319,7 +319,7 @@ function escapeAttribute(value: string) {
 }
 
 function generatedHeadingHtml(title: string) {
-  return `<div data-heading-text="${escapeAttribute(title)}" data-heading-level="1" data-heading-numbered="false" data-heading-gap-after="2" data-type="custom-heading"></div>`;
+  return `<div data-heading-text="${escapeAttribute(title)}" data-heading-level="1" data-heading-numbered="false" data-heading-gap-after="2" data-restart-instruction-numbering="true" data-type="custom-heading"></div>`;
 }
 
 function generatedWordGridHtml(
@@ -6687,6 +6687,39 @@ export default function EditorPage() {
                     className={cx(
                       'absolute top-0.5 size-4.5 bg-primary shadow-xs transition-transform',
                       selectedCustomHeadingAttrs.numbered
+                        ? 'translate-x-4.5'
+                        : 'translate-x-0.5',
+                    )}
+                  />
+                </button>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold text-tertiary">Restart instruction numbering</p>
+                  <p className="mt-0.5 text-xs text-quaternary">Turn off to continue activity numbers from the previous heading.</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={selectedCustomHeadingAttrs.restartInstructionNumbering}
+                  onClick={() => setCustomHeadingAttr(
+                    editor,
+                    selectedCustomHeadingPos,
+                    'restartInstructionNumbering',
+                    !selectedCustomHeadingAttrs.restartInstructionNumbering,
+                  )}
+                  className={cx(
+                    'relative h-6 w-11 shrink-0 border transition',
+                    selectedCustomHeadingAttrs.restartInstructionNumbering
+                      ? 'border-brand bg-brand-solid'
+                      : 'border-primary bg-quaternary',
+                  )}
+                >
+                  <span
+                    className={cx(
+                      'absolute top-0.5 size-4.5 bg-primary shadow-xs transition-transform',
+                      selectedCustomHeadingAttrs.restartInstructionNumbering
                         ? 'translate-x-4.5'
                         : 'translate-x-0.5',
                     )}

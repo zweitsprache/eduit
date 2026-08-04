@@ -36,8 +36,11 @@ function buildNumberingDecorations(
 
   doc.descendants((node, pos) => {
     if (node.type.name === 'customHeading') {
-      // Activity numbering is scoped to the current heading section.
-      ordinal = 0;
+      // Activity numbering is scoped to the current heading section unless the
+      // heading explicitly opts out of restarting instruction numbering.
+      if (node.attrs.restartInstructionNumbering !== false) {
+        ordinal = 0;
+      }
       const level = Math.min(5, Math.max(1, Number(node.attrs.level) || 1));
       if (!node.attrs.numbered) {
         // An unnumbered heading still starts a new hierarchy branch.

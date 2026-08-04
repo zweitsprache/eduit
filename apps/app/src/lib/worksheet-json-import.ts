@@ -7,6 +7,7 @@ const headingSchema = z.object({
   level: z.number().int().min(1).max(5),
   numbered: z.boolean().default(false),
   gapAfter: z.number().int().min(1).max(3).default(1),
+  restartInstructionNumbering: z.boolean().default(true),
 });
 
 const glossaryEntrySchema = z.object({
@@ -252,7 +253,7 @@ const escapeAttribute = (value: string) => value
 
 function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][number]) {
   if (block.type === 'heading') {
-    return `<div data-heading-text="${escapeAttribute(block.text)}" data-heading-level="${block.level}" data-heading-numbered="${block.numbered}" data-heading-gap-after="${block.gapAfter}" data-type="custom-heading"></div>`;
+    return `<div data-heading-text="${escapeAttribute(block.text)}" data-heading-level="${block.level}" data-heading-numbered="${block.numbered}" data-heading-gap-after="${block.gapAfter}" data-restart-instruction-numbering="${block.restartInstructionNumbering}" data-type="custom-heading"></div>`;
   }
   if (block.type === 'pageBreak') {
     return `<div data-restart-pagination="${block.restartPagination}" data-type="pageBreak"></div>`;

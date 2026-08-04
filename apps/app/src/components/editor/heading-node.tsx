@@ -13,6 +13,7 @@ export type CustomHeadingAttrs = {
   level: CustomHeadingLevel;
   numbered: boolean;
   gapAfter: CustomHeadingGapAfter;
+  restartInstructionNumbering: boolean;
 };
 
 function parseLevel(value: string | null): CustomHeadingLevel {
@@ -26,7 +27,13 @@ function parseGapAfter(value: string | null): CustomHeadingGapAfter {
 }
 
 function CustomHeadingNodeView({ node, selected }: NodeViewProps) {
-  const { text, level, numbered, gapAfter } = node.attrs as CustomHeadingAttrs;
+  const {
+    text,
+    level,
+    numbered,
+    gapAfter,
+    restartInstructionNumbering,
+  } = node.attrs as CustomHeadingAttrs;
 
   return (
     <NodeViewWrapper
@@ -37,6 +44,7 @@ function CustomHeadingNodeView({ node, selected }: NodeViewProps) {
         selected && 'heading-node--selected',
       )}
       data-gap-after={gapAfter}
+      data-restart-instruction-numbering={restartInstructionNumbering}
       data-drag-handle
     >
       {createElement(
@@ -89,6 +97,17 @@ export const CustomHeading = Node.create({
           'data-heading-gap-after': attributes.gapAfter,
         }),
       },
+      restartInstructionNumbering: {
+        default: true,
+        parseHTML: (element) => (
+          element.getAttribute('data-restart-instruction-numbering') !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-restart-instruction-numbering': String(
+            attributes.restartInstructionNumbering,
+          ),
+        }),
+      },
     };
   },
 
@@ -119,6 +138,7 @@ export const CustomHeading = Node.create({
               level: attrs.level ?? 2,
               numbered: attrs.numbered ?? false,
               gapAfter: attrs.gapAfter ?? 1,
+              restartInstructionNumbering: attrs.restartInstructionNumbering ?? true,
             },
           }),
     };
