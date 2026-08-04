@@ -40,6 +40,11 @@ import {
   type MatchingPairsAttrs,
 } from '@/components/editor/matching-pairs-node';
 import {
+  DEFAULT_DOMINO_INSTRUCTION,
+  type DominoAttrs,
+  type DominoPair,
+} from '@/components/editor/domino-node';
+import {
   DEFAULT_TIME_MATCHING_ATTRS,
   type TimeMatchingAttrs,
 } from '@/components/editor/time-matching-node';
@@ -213,7 +218,8 @@ export type ContentEditorBlock = {
     | 'instructionBlock'
     | 'letterNode'
     | 'crossword'
-    | 'errorCorrection';
+    | 'errorCorrection'
+    | 'domino';
 };
 
 const TITLES: Record<ContentEditorBlock['type'], string> = {
@@ -243,6 +249,7 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   letterNode: 'Letter Node content',
   crossword: 'Crossword content',
   errorCorrection: 'Error correction text content',
+  domino: 'Domino content',
 };
 
 function updateAttrs(
@@ -5278,6 +5285,116 @@ function MatchingEditor({
   );
 }
 
+function DominoEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: DominoAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const maxPairs = 11;
+  const setPairs = (pairs: DominoPair[]) => updateAttrs(editor, block, { pairs });
+  return (
+    <>
+      <div className="flex items-center justify-between gap-3">
+        <label className="block text-sm font-semibold text-secondary">
+          Instruction
+        </label>
+        <button
+          type="button"
+          aria-label="Reset instruction"
+          title="Reset instruction"
+          disabled={attrs.instruction === DEFAULT_DOMINO_INSTRUCTION}
+          onClick={() => updateAttrs(editor, block, {
+            instruction: DEFAULT_DOMINO_INSTRUCTION,
+          })}
+          className="flex size-7 items-center justify-center rounded-md text-secondary transition hover:bg-primary_hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          <RotateCcw className="size-4" />
+        </button>
+      </div>
+      <textarea
+        rows={1}
+        value={attrs.instruction || DEFAULT_DOMINO_INSTRUCTION}
+        placeholder={DEFAULT_DOMINO_INSTRUCTION}
+        onChange={(event) => updateAttrs(editor, block, {
+          instruction: event.target.value,
+        })}
+        className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+
+      <ContentSectionHeader>Learner support</ContentSectionHeader>
+      <ContentSwitchGrid>
+        <ContentSwitch
+          label="Show first as example"
+          isSelected={attrs.showFirstAsExample}
+          onChange={(showFirstAsExample) => updateAttrs(editor, block, {
+            showFirstAsExample,
+          })}
+        />
+      </ContentSwitchGrid>
+
+      <ContentSectionHeader count={`${attrs.pairs.length} / ${maxPairs}`}>
+        Domino pairs
+      </ContentSectionHeader>
+      <p className="mt-1 text-xs leading-5 text-tertiary">
+        The first and last grid cells are always ZIEL. Each pair fills two
+        adjacent cells, so the 6 × 4 grid holds up to {maxPairs} pairs.
+      </p>
+      <div className="mt-3 space-y-2">
+        {attrs.pairs.map((pair, index) => (
+          <ContentCard key={pair.id}>
+            <ContentItemGrid>
+              <ContentItemNumber>
+                {String(index + 1).padStart(2, '0')}
+              </ContentItemNumber>
+              <div className="grid grid-cols-2 gap-2">
+                <InlineFormattedInput
+                  ariaLabel={`Domino pair ${index + 1} left`}
+                  multiline
+                  value={pair.left}
+                  onChange={(value) => setPairs(attrs.pairs.map((current) => current.id === pair.id ? { ...current, left: value } : current))}
+                  placeholder="Left half"
+                  className="min-h-12 whitespace-pre-wrap rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                />
+                <InlineFormattedInput
+                  ariaLabel={`Domino pair ${index + 1} right`}
+                  multiline
+                  value={pair.right}
+                  onChange={(value) => setPairs(attrs.pairs.map((current) => current.id === pair.id ? { ...current, right: value } : current))}
+                  placeholder="Right half"
+                  className="min-h-12 whitespace-pre-wrap rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                />
+              </div>
+              <ContentItemActions
+                label={`domino pair ${index + 1}`}
+                canDelete={attrs.pairs.length > 1}
+                canMoveUp={index > 0}
+                canMoveDown={index < attrs.pairs.length - 1}
+                onDelete={() => setPairs(attrs.pairs.filter(({ id }) => id !== pair.id))}
+                onMoveUp={() => setPairs(moveItem(attrs.pairs, index, -1))}
+                onMoveDown={() => setPairs(moveItem(attrs.pairs, index, 1))}
+              />
+            </ContentItemGrid>
+          </ContentCard>
+        ))}
+      </div>
+      <ContentAddButton
+        disabled={attrs.pairs.length >= maxPairs}
+        onClick={() => setPairs([...attrs.pairs, {
+          id: `domino-${Date.now()}`,
+          left: `Item ${attrs.pairs.length + 1}`,
+          right: `Match ${attrs.pairs.length + 1}`,
+        }])}
+      >
+        Add pair
+      </ContentAddButton>
+    </>
+  );
+}
+
 function TimeMatchingEditor({
   attrs,
   block,
@@ -5499,6 +5616,7 @@ export function BlockContentEditorModal({
             {block.type === 'letterNode' && <LetterNodeEditor attrs={attrs as unknown as LetterNodeAttrs} block={block} editor={editor} />}
             {block.type === 'crossword' && <CrosswordEditor attrs={attrs as unknown as CrosswordAttrs} block={block} editor={editor} />}
             {block.type === 'errorCorrection' && <ErrorCorrectionEditor attrs={attrs as unknown as ErrorCorrectionAttrs} block={block} editor={editor} />}
+            {block.type === 'domino' && <DominoEditor attrs={attrs as unknown as DominoAttrs} block={block} editor={editor} />}
           </div>
           <div className="overflow-y-auto bg-primary p-6">
             <Preview attrs={attrs} block={block} editor={editor} learningCardsGroupIndex={learningCardsGroupIndex} learningCardsSelectedCardId={learningCardsSelectedCardId} />

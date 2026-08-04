@@ -29,6 +29,8 @@ import {
   Edit05,
   ChevronUp,
   ChevronDown,
+  ArrowUp,
+  ArrowDown,
 } from '@untitledui/icons';
 import {
   TextAlignCenter,
@@ -72,6 +74,11 @@ import {
   type MatchingPair,
   type MatchingPairsAttrs,
 } from '@/components/editor/matching-pairs-node';
+import {
+  Domino,
+  type DominoAttrs,
+  type DominoPair,
+} from '@/components/editor/domino-node';
 import {
   DEFAULT_TIME_MATCHING_ATTRS,
   TimeMatching,
@@ -411,6 +418,7 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'crossword',
   'errorCorrection',
   'familyKinship',
+  'domino',
 ]);
 
 function richTextToPlainText(html: string) {
@@ -907,6 +915,23 @@ function setWordGridAttr(
     .run();
 }
 
+function setDominoAttr(
+  editor: Editor,
+  pos: number,
+  key: keyof DominoAttrs,
+  value: DominoAttrs[keyof DominoAttrs],
+) {
+  editor
+    .chain()
+    // Deliberately no .focus(): sidebar inputs must retain DOM focus.
+    .command(({ tr }) => {
+      if (tr.doc.nodeAt(pos)?.type.name !== 'domino') return false;
+      tr.setNodeAttribute(pos, key, value);
+      return true;
+    })
+    .run();
+}
+
 function setChooseCorrectWordsAttr(
   editor: Editor,
   pos: number,
@@ -1178,6 +1203,7 @@ export default function EditorPage() {
   const [selectedSortingCategoriesPos, setSelectedSortingCategoriesPos] = useState<number | null>(null);
   const [selectedOrderingPos, setSelectedOrderingPos] = useState<number | null>(null);
   const [selectedWordGridPos, setSelectedWordGridPos] = useState<number | null>(null);
+  const [selectedDominoPos, setSelectedDominoPos] = useState<number | null>(null);
   const [selectedChooseCorrectWordsPos, setSelectedChooseCorrectWordsPos] = useState<number | null>(null);
   const [selectedInlineChoicePos, setSelectedInlineChoicePos] = useState<number | null>(null);
   const [selectedMiniFormPos, setSelectedMiniFormPos] = useState<number | null>(null);
@@ -1266,6 +1292,7 @@ export default function EditorPage() {
       MCM,
       MCH,
       MatchingPairs,
+      Domino,
       TimeMatching,
       DateMatching,
       TwoWayPrepositions,
@@ -1395,6 +1422,9 @@ export default function EditorPage() {
       );
       setSelectedWordGridPos(
         selectedNodeName === 'wordGrid' ? selection.from : null,
+      );
+      setSelectedDominoPos(
+        selectedNodeName === 'domino' ? selection.from : null,
       );
       setSelectedChooseCorrectWordsPos(
         selectedNodeName === 'chooseCorrectWords' ? selection.from : null,
@@ -1877,6 +1907,17 @@ export default function EditorPage() {
       const node = currentEditor.state.doc.nodeAt(selectedChooseCorrectWordsPos);
       return node?.type.name === 'chooseCorrectWords'
         ? node.attrs as ChooseCorrectWordsAttrs
+        : null;
+    },
+  });
+
+  const selectedDominoAttrs = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor || selectedDominoPos === null) return null;
+      const node = currentEditor.state.doc.nodeAt(selectedDominoPos);
+      return node?.type.name === 'domino'
+        ? node.attrs as DominoAttrs
         : null;
     },
   });
@@ -2726,6 +2767,25 @@ export default function EditorPage() {
   const updateWordGridWords = (words: string[]) => {
     if (selectedWordGridPos === null) return;
     setWordGridAttr(editor, selectedWordGridPos, 'words', words);
+  };
+
+  const updateDominoPairs = (pairs: DominoPair[]) => {
+    if (selectedDominoPos === null) return;
+    setDominoAttr(editor, selectedDominoPos, 'pairs', pairs);
+  };
+
+  const updateDominoPair = (index: number, patch: Partial<DominoPair>) => {
+    if (!selectedDominoAttrs || selectedDominoPos === null) return;
+    updateDominoPairs(
+      selectedDominoAttrs.pairs.map((pair, pairIndex) => (
+        pairIndex === index ? { ...pair, ...patch } : pair
+      )),
+    );
+  };
+
+  const updateDominoShowFirstAsExample = (showFirstAsExample: boolean) => {
+    if (selectedDominoPos === null) return;
+    setDominoAttr(editor, selectedDominoPos, 'showFirstAsExample', showFirstAsExample);
   };
 
   const updateWordGridWord = (index: number, word: string) => {
@@ -4200,7 +4260,8 @@ export default function EditorPage() {
                 || selectedCustomBlock.type === 'weather'
                 || selectedCustomBlock.type === 'colorFurniture'
                 || selectedCustomBlock.type === 'learningCards'
-                || selectedCustomBlock.type === 'germanVerbTable') && (
+                || selectedCustomBlock.type === 'germanVerbTable'
+                || selectedCustomBlock.type === 'domino') && (
                 <button
                   type="button"
                   onClick={() => {
@@ -4278,6 +4339,11 @@ export default function EditorPage() {
                       setLearningCardsAIBlock({
                         pos: selectedCustomBlock.pos,
                         type: 'learningCards',
+                      });
+                    } else if (selectedCustomBlock.type === 'domino') {
+                      setContentEditorBlock({
+                        pos: selectedCustomBlock.pos,
+                        type: 'domino',
                       });
                     } else {
                       setRichTextAIBlock({
@@ -5329,6 +5395,132 @@ export default function EditorPage() {
               >
                 Regenerate grid
               </button>
+            </div>
+          )}
+
+          {!selectedCustomBlock
+            && selectedDominoAttrs
+            && selectedDominoPos !== null && (
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-quaternary">
+                  Domino
+                </p>
+                <span className="rounded bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-brand-secondary">
+                  Domino
+                </span>
+              </div>
+
+              <label htmlFor="domino-instruction" className="mt-4 block text-xs font-semibold text-tertiary">
+                Instruction
+              </label>
+              <textarea
+                id="domino-instruction"
+                rows={2}
+                value={selectedDominoAttrs.instruction}
+                onChange={(event) => setDominoAttr(
+                  editor,
+                  selectedDominoPos,
+                  'instruction',
+                  event.target.value,
+                )}
+                className="mt-2 w-full resize-y border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+
+              <label className="mt-4 flex cursor-pointer items-center gap-2 text-xs font-semibold text-tertiary">
+                <input
+                  type="checkbox"
+                  checked={selectedDominoAttrs.showFirstAsExample}
+                  onChange={(event) => updateDominoShowFirstAsExample(event.target.checked)}
+                />
+                Show first pair as example
+              </label>
+
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-tertiary">
+                  Pairs
+                  <span className="ml-2 text-quaternary">
+                    {selectedDominoAttrs.pairs.length}
+                  </span>
+                </p>
+                <div className="mt-2 space-y-2">
+                  {selectedDominoAttrs.pairs.map((pair, pairIndex) => (
+                    <div key={pairIndex} className="space-y-1">
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={pair.left}
+                          onChange={(event) => updateDominoPair(pairIndex, { left: event.target.value })}
+                          className="w-full border border-primary bg-primary px-2 py-1.5 text-xs text-secondary outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+                          placeholder="Left"
+                        />
+                        <input
+                          type="text"
+                          value={pair.right}
+                          onChange={(event) => updateDominoPair(pairIndex, { right: event.target.value })}
+                          className="w-full border border-primary bg-primary px-2 py-1.5 text-xs text-secondary outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+                          placeholder="Right"
+                        />
+                      </div>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          disabled={pairIndex === 0}
+                          onClick={() => updateDominoPairs(
+                            selectedDominoAttrs.pairs.map((p, i) => {
+                              if (i !== pairIndex - 1 && i !== pairIndex) return p;
+                              if (i === pairIndex - 1) return selectedDominoAttrs.pairs[pairIndex];
+                              return selectedDominoAttrs.pairs[pairIndex - 1];
+                            }),
+                          )}
+                          className="disabled:opacity-30"
+                          title="Move up"
+                        >
+                          <ArrowUp className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={pairIndex === selectedDominoAttrs.pairs.length - 1}
+                          onClick={() => updateDominoPairs(
+                            selectedDominoAttrs.pairs.map((p, i) => {
+                              if (i !== pairIndex && i !== pairIndex + 1) return p;
+                              if (i === pairIndex) return selectedDominoAttrs.pairs[pairIndex + 1];
+                              return selectedDominoAttrs.pairs[pairIndex];
+                            }),
+                          )}
+                          className="disabled:opacity-30"
+                          title="Move down"
+                        >
+                          <ArrowDown className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={selectedDominoAttrs.pairs.length <= 1}
+                          onClick={() => updateDominoPairs(
+                            selectedDominoAttrs.pairs.filter((_, index) => index !== pairIndex),
+                          )}
+                          className="disabled:opacity-30"
+                          title="Remove pair"
+                        >
+                          <Trash01 className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateDominoPairs([
+                    ...selectedDominoAttrs.pairs,
+                    { id: crypto.randomUUID(), left: 'Left', right: 'Right' },
+                  ])}
+                  disabled={selectedDominoAttrs.pairs.length >= 11}
+                  className="mt-3 flex w-full items-center justify-center gap-2 border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover disabled:opacity-50"
+                >
+                  <PlusSquare className="size-4" />
+                  Add pair
+                </button>
+              </div>
             </div>
           )}
 

@@ -151,6 +151,15 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
     insert: (editor) => editor.chain().focus().insertMatchingPairs().run(),
   },
   {
+    type: 'domino',
+    label: 'Domino',
+    description: 'A 6 × 4 domino trail from ZIEL to ZIEL built from matching pairs.',
+    category: 'Assessment',
+    keywords: ['domino', 'chain', 'matching', 'pairs', 'trail', 'ZIEL'],
+    Icon: SwitchHorizontal01,
+    insert: (editor) => editor.chain().focus().insertDomino().run(),
+  },
+  {
     type: 'timeMatching',
     label: 'Zeit zuordnen',
     description: 'Analoge, digitale und deutsche Uhrzeitangaben einander zuordnen.',
