@@ -3343,6 +3343,18 @@
   line-height: var(--custom-block-label-line-height);
 }
 
+.domino-node__grid + .domino-node__grid {
+  margin-block-start: var(--custom-block-space-section);
+}
+
+.domino-node__cell .custom-block__clock {
+  display: block;
+  width: auto;
+  height: 22mm;
+  max-width: 100%;
+  object-fit: contain;
+}
+
 .domino-node__cell--example {
   color: var(--custom-block-example-solution-color);
   font-family: var(--custom-block-example-font-family);

@@ -8521,8 +8521,39 @@ export default function EditorPage() {
           const { pos } = dominoAIBlock;
           editor.chain().command(({ tr }) => {
             if (tr.doc.nodeAt(pos)?.type.name !== 'domino') return false;
-            tr.setNodeAttribute(pos, 'pairs', result.pairs);
-            tr.setNodeAttribute(pos, 'showFirstAsExample', result.showFirstAsExample);
+            const maxPairsPerGrid = 11;
+            const chunks: DominoPair[][] = [];
+            for (let index = 0; index < result.pairs.length; index += maxPairsPerGrid) {
+              chunks.push(result.pairs.slice(index, index + maxPairsPerGrid));
+            }
+            if (chunks.length <= 1) {
+              tr.setNodeAttribute(pos, 'pairs', result.pairs);
+              tr.setNodeAttribute(pos, 'showFirstAsExample', result.showFirstAsExample);
+              tr.setNodeAttribute(pos, 'groupIndex', 0);
+              tr.setNodeAttribute(pos, 'groupSize', 1);
+              return true;
+            }
+            const dominoType = tr.doc.type.schema.nodes.domino;
+            if (!dominoType) return false;
+            const currentNode = tr.doc.nodeAt(pos);
+            if (!currentNode) return false;
+            const baseAttrs = {
+              ...currentNode.attrs,
+              showFirstAsExample: result.showFirstAsExample,
+            };
+            const nodes = chunks.map((chunk, index) => dominoType.create({
+              ...baseAttrs,
+              pairs: chunk,
+              groupIndex: index,
+              groupSize: chunks.length,
+            }));
+            const pageBreakType = tr.doc.type.schema.nodes.pageBreak;
+            const separatedNodes = nodes.flatMap((node, index) => (
+              index < nodes.length - 1 && pageBreakType
+                ? [node, pageBreakType.create()]
+                : [node]
+            ));
+            tr.replaceWith(pos, pos + currentNode.nodeSize, separatedNodes);
             return true;
           }).run();
           setDominoAIBlock(null);

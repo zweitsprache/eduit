@@ -17,6 +17,8 @@ export type DominoPair = {
 export type DominoAttrs = {
   pairs: DominoPair[];
   showFirstAsExample: boolean;
+  groupIndex: number;
+  groupSize: number;
 };
 
 export const DEFAULT_DOMINO_PAIRS: DominoPair[] = [
@@ -30,6 +32,7 @@ export const DEFAULT_DOMINO_PAIRS: DominoPair[] = [
 const GRID_COLUMNS = 6;
 const GRID_ROWS = 4;
 const GRID_CELLS = GRID_COLUMNS * GRID_ROWS;
+const MAX_PAIRS_PER_GRID = (GRID_CELLS - 2) / 2;
 
 function defaultPairs() {
   return DEFAULT_DOMINO_PAIRS.map((pair) => ({ ...pair }));
@@ -66,40 +69,74 @@ function buildDominoCells(pairs: DominoPair[]) {
   return cells;
 }
 
-function DominoNodeView({ node, selected }: NodeViewProps) {
-  const { pairs, showFirstAsExample } = node.attrs as DominoAttrs;
+function DominoGridView({
+  pairs,
+  showFirstAsExample,
+  isStart,
+  isEnd,
+}: {
+  pairs: DominoPair[];
+  showFirstAsExample: boolean;
+  isStart: boolean;
+  isEnd: boolean;
+}) {
   const cells = buildDominoCells(pairs);
 
   return (
+    <div className="domino-node__grid">
+      {Array.from({ length: GRID_CELLS }, (_, index) => {
+        const cell = cells[index];
+        const isExample = showFirstAsExample && index === 1;
+        return (
+          <div
+            key={index}
+            className={[
+              'domino-node__cell',
+              cell ? `domino-node__cell--${cell.kind}` : 'domino-node__cell--empty',
+              isExample ? 'domino-node__cell--example' : '',
+            ].join(' ')}
+            data-cell-index={index}
+          >
+            {cell && (
+              <span className="domino-node__cell-text">
+                <InlineFormattedText
+                  fallback={cell.kind === 'start' || cell.kind === 'end' ? 'ZIEL' : ''}
+                  text={cell.text}
+                />
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DominoNodeView({ node, selected }: NodeViewProps) {
+  const { pairs, showFirstAsExample } = node.attrs as DominoAttrs;
+  const gridPairs = chunkArray(pairs, MAX_PAIRS_PER_GRID);
+
+  return (
     <CustomBlockRoot selected={selected} className="domino-node">
-      <div className="domino-node__grid">
-        {Array.from({ length: GRID_CELLS }, (_, index) => {
-          const cell = cells[index];
-          const isExample = showFirstAsExample && index === 1;
-          return (
-            <div
-              key={index}
-              className={[
-                'domino-node__cell',
-                cell ? `domino-node__cell--${cell.kind}` : 'domino-node__cell--empty',
-                isExample ? 'domino-node__cell--example' : '',
-              ].join(' ')}
-              data-cell-index={index}
-            >
-              {cell && (
-                <span className="domino-node__cell-text">
-                  <InlineFormattedText
-                    fallback={cell.kind === 'start' || cell.kind === 'end' ? 'ZIEL' : ''}
-                    text={cell.text}
-                  />
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {gridPairs.map((chunk, index) => (
+        <DominoGridView
+          key={index}
+          pairs={chunk}
+          showFirstAsExample={showFirstAsExample && index === 0}
+          isStart={index === 0}
+          isEnd={index === gridPairs.length - 1}
+        />
+      ))}
     </CustomBlockRoot>
   );
+}
+
+function chunkArray<T>(values: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+  return chunks;
 }
 
 declare module '@tiptap/core' {
@@ -137,6 +174,24 @@ export const Domino = Node.create({
           'data-domino-show-first-example': String(attributes.showFirstAsExample),
         }),
       },
+      groupIndex: {
+        default: 0,
+        parseHTML: (element) => (
+          Number(element.getAttribute('data-domino-group-index')) || 0
+        ),
+        renderHTML: (attributes) => ({
+          'data-domino-group-index': String(attributes.groupIndex),
+        }),
+      },
+      groupSize: {
+        default: 1,
+        parseHTML: (element) => (
+          Number(element.getAttribute('data-domino-group-size')) || 1
+        ),
+        renderHTML: (attributes) => ({
+          'data-domino-group-size': String(attributes.groupSize),
+        }),
+      },
     };
   },
 
@@ -163,6 +218,8 @@ export const Domino = Node.create({
             attrs: {
               pairs,
               showFirstAsExample: attrs.showFirstAsExample ?? false,
+              groupIndex: attrs.groupIndex ?? 0,
+              groupSize: attrs.groupSize ?? 1,
             },
           });
         },

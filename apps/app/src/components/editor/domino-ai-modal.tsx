@@ -21,6 +21,8 @@ export type DominoAIGeneratedResult = {
   preset: DominoAIPreset;
   pairs: DominoPair[];
   showFirstAsExample: boolean;
+  groupIndex: number;
+  groupSize: number;
 };
 
 function shuffled<T>(values: T[]) {
@@ -70,6 +72,7 @@ export function DominoAIModal({
   const [count, setCount] = useState(11);
   const [shuffle, setShuffle] = useState(false);
   const [showFirstAsExample, setShowFirstAsExample] = useState(false);
+  const [multiPage, setMultiPage] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -83,6 +86,7 @@ export function DominoAIModal({
     setCount(11);
     setShuffle(false);
     setShowFirstAsExample(false);
+    setMultiPage(false);
     setError('');
   }, [open]);
 
@@ -124,7 +128,11 @@ export function DominoAIModal({
       left: formatTimeRepresentation(left, time.hour, time.minute),
       right: formatTimeRepresentation(right, time.hour, time.minute),
     }));
-    onGenerated({ preset, pairs, showFirstAsExample });
+    const maxPairsPerGrid = 11;
+    const groupSize = multiPage
+      ? Math.max(1, Math.ceil(pairs.length / maxPairsPerGrid))
+      : 1;
+    onGenerated({ preset, pairs, showFirstAsExample, groupIndex: 0, groupSize });
   };
 
   return (
@@ -261,6 +269,22 @@ export function DominoAIModal({
             {de ? 'Reihenfolge mischen' : 'Shuffle order'}:
             {' '}
             {shuffle ? (de ? 'Ja' : 'Yes') : (de ? 'Nein' : 'No')}
+          </button>
+
+          <button
+            aria-pressed={multiPage}
+            className={[
+              'mt-4 h-10 w-full rounded-md border px-3 text-sm font-semibold transition',
+              multiPage
+                ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+            ].join(' ')}
+            onClick={() => setMultiPage((current) => !current)}
+            type="button"
+          >
+            {de ? 'Mehrseitig (je 11 Paare)' : 'Multi-page (11 pairs each)'}:
+            {' '}
+            {multiPage ? (de ? 'Ja' : 'Yes') : (de ? 'Nein' : 'No')}
           </button>
 
           <label className="mt-5 block text-sm font-semibold text-primary">
