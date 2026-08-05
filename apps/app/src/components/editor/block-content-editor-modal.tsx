@@ -42,6 +42,7 @@ import {
 import {
   type DominoAttrs,
   type DominoPair,
+  type DominoTextSize,
 } from '@/components/editor/domino-node';
 import {
   DEFAULT_TIME_MATCHING_ATTRS,
@@ -80,7 +81,9 @@ import type { FillInTheBlankAttrs } from '@/components/editor/fill-in-the-blank-
 import {
   GLOSSARY_COLUMN_WIDTHS,
   GLOSSARY_PRESETS,
+  hasGlossaryAdditionalColumn,
   glossaryColumnWidths,
+  glossaryHeaders,
   type GlossaryPreset,
   type GlossaryTerm,
   type GlossaryTermsAttrs,
@@ -94,7 +97,10 @@ import type {
   LearningObjectiveAttrs,
   SuccessCriterion,
 } from '@/components/editor/learning-objective-node';
-import type { LearningCardsAttrs } from '@/components/editor/learning-cards-node';
+import type {
+  LearningCardsAttrs,
+  LearningCardTextSize,
+} from '@/components/editor/learning-cards-node';
 import { LearningCardContent } from '@/components/editor/learning-cards-node';
 import type {
   DialogueAttrs,
@@ -283,6 +289,7 @@ function LearningCardsEditor({
   selectedCardId: string | null;
   onSelectedCardIdChange: (id: string | null) => void;
 }) {
+  const textSizeOptions: LearningCardTextSize[] = ['xs', 's', 'm', 'l', 'xl'];
   const [activeTab, setActiveTab] = useState<'edit' | 'import'>('edit');
   const [importJson, setImportJson] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
@@ -363,10 +370,26 @@ function LearningCardsEditor({
         };
       });
       const imported = source as Record<string, unknown>;
+      const frontTextSize = imported.frontTextSize;
+      const backTextSize = imported.backTextSize;
       updateLearningCards({
         title: typeof imported.title === 'string' ? imported.title : attrs.title,
         format: 'a8-landscape',
         sidedness: imported.sidedness === 'single' ? 'single' : 'double',
+        frontTextSize: frontTextSize === 'xs'
+          || frontTextSize === 's'
+          || frontTextSize === 'm'
+          || frontTextSize === 'l'
+          || frontTextSize === 'xl'
+          ? frontTextSize
+          : attrs.frontTextSize,
+        backTextSize: backTextSize === 'xs'
+          || backTextSize === 's'
+          || backTextSize === 'm'
+          || backTextSize === 'l'
+          || backTextSize === 'xl'
+          ? backTextSize
+          : attrs.backTextSize,
         items,
       });
       onGroupIndexChange(0);
@@ -465,6 +488,48 @@ function LearningCardsEditor({
           <option value="single">Single sided</option>
           <option value="double">Double sided — short edge</option>
         </select>
+      </div>
+
+      <ContentSectionHeader>Text size</ContentSectionHeader>
+      <p className="mt-1 text-xs leading-5 text-tertiary">
+        Front side
+      </p>
+      <div className="mt-1 flex gap-2">
+        {textSizeOptions.map((size) => (
+          <button
+            key={`learning-cards-front-${size}`}
+            type="button"
+            onClick={() => updateLearningCards({ frontTextSize: size })}
+            className={[
+              'flex-1 rounded-lg border py-2 text-xs font-semibold transition',
+              attrs.frontTextSize === size
+                ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+            ].join(' ')}
+          >
+            {size.toUpperCase()}
+          </button>
+        ))}
+      </div>
+      <p className="mt-2 text-xs leading-5 text-tertiary">
+        Back side
+      </p>
+      <div className="mt-1 flex gap-2">
+        {textSizeOptions.map((size) => (
+          <button
+            key={`learning-cards-back-${size}`}
+            type="button"
+            onClick={() => updateLearningCards({ backTextSize: size })}
+            className={[
+              'flex-1 rounded-lg border py-2 text-xs font-semibold transition',
+              attrs.backTextSize === size
+                ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+            ].join(' ')}
+          >
+            {size.toUpperCase()}
+          </button>
+        ))}
       </div>
 
       <div className="mt-6 rounded-lg border border-secondary bg-secondary p-4">
@@ -598,6 +663,71 @@ function moveItem<T>(items: T[], index: number, direction: -1 | 1) {
   const result = [...items];
   [result[index], result[target]] = [result[target], result[index]];
   return result;
+}
+
+function countDelimitedFields(row: string, delimiter: string) {
+  let count = 1;
+  let inQuotes = false;
+  for (let index = 0; index < row.length; index += 1) {
+    const char = row[index];
+    if (char === '"') {
+      if (inQuotes && row[index + 1] === '"') {
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (!inQuotes && char === delimiter) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function parseDelimitedRow(row: string, delimiter: string) {
+  const cells: string[] = [];
+  let value = '';
+  let inQuotes = false;
+  for (let index = 0; index < row.length; index += 1) {
+    const char = row[index];
+    if (char === '"') {
+      if (inQuotes && row[index + 1] === '"') {
+        value += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (!inQuotes && char === delimiter) {
+      cells.push(value.trim());
+      value = '';
+      continue;
+    }
+    value += char;
+  }
+  cells.push(value.trim());
+  return cells;
+}
+
+function parseCsvRows(value: string) {
+  const rows = value
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (!rows.length) return [];
+
+  const delimiter = [',', ';', '\t'].reduce((best, candidate) => {
+    const score = Math.max(...rows.slice(0, 5).map((row) => (
+      countDelimitedFields(row, candidate)
+    )));
+    return score > best.score ? { delimiter: candidate, score } : best;
+  }, { delimiter: ',', score: 0 }).delimiter;
+
+  return rows.map((row) => parseDelimitedRow(row, delimiter));
 }
 
 function StandaloneInstructionEditor({
@@ -2643,7 +2773,7 @@ function FillInTheBlankEditor({
         onChange={(widthFactor) => updateAttrs(editor, block, {
           widthFactor: Number(widthFactor),
         })}
-        options={[1, 1.25, 1.5, 1.75, 2].map((width) => ({
+        options={[0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((width) => ({
           label: `${width} ×`,
           value: String(width),
         }))}
@@ -2717,8 +2847,67 @@ function GlossaryTermsEditor({
   const updateTerm = (id: string, patch: Partial<GlossaryTerm>) => setTerms(
     attrs.terms.map((term) => term.id === id ? { ...term, ...patch } : term),
   );
+  const [csvImportText, setCsvImportText] = useState('');
+  const [csvImportError, setCsvImportError] = useState<string | null>(null);
   const presetConfig = GLOSSARY_PRESETS[attrs.preset];
-  const { hasExample } = glossaryColumnWidths(attrs);
+  const { hasExample, hasAdditionalColumn } = glossaryColumnWidths(attrs);
+  const headers = glossaryHeaders(attrs);
+  const presetHeaders = presetConfig.headers.slice(0, headers.length);
+  const canShowAdditionalColumn = hasGlossaryAdditionalColumn({
+    preset: attrs.preset,
+    showExample: true,
+    showAdditionalColumn: true,
+  });
+  const setHeaderLabel = (index: number, value: string) => {
+    const nextHeaderLabels = [...(attrs.headerLabels ?? [])];
+    nextHeaderLabels[index] = value;
+    while (nextHeaderLabels.length && !nextHeaderLabels.at(-1)?.trim()) {
+      nextHeaderLabels.pop();
+    }
+    updateAttrs(editor, block, { headerLabels: nextHeaderLabels });
+  };
+  const importGlossaryCsv = () => {
+    try {
+      const parsedRows = parseCsvRows(csvImportText);
+      if (!parsedRows.length) {
+        throw new Error('Add at least one CSV row to import.');
+      }
+
+      const columnCount = headers.length;
+      const normalizedHeaders = headers.map((header) => (
+        (header ?? '').trim().toLocaleLowerCase()
+      ));
+      const firstRow = parsedRows[0]
+        .slice(0, columnCount)
+        .map((value) => value.trim().toLocaleLowerCase());
+      const hasHeaderRow = firstRow.length === columnCount
+        && firstRow.every((value, index) => value === normalizedHeaders[index]);
+
+      const rows = (hasHeaderRow ? parsedRows.slice(1) : parsedRows)
+        .map((row) => row.slice(0, columnCount))
+        .filter((row) => row.some((value) => value.trim().length > 0));
+
+      if (!rows.length) {
+        throw new Error('No data rows found after removing an optional header row.');
+      }
+
+      const importedTerms = rows.map((row, index) => ({
+        id: `term-import-${Date.now()}-${index}`,
+        term: row[0] ?? '',
+        definition: row[1] ?? '',
+        additional: hasAdditionalColumn ? (row[2] ?? '') : '',
+        example: hasExample ? (row[hasAdditionalColumn ? 3 : 2] ?? '') : '',
+      }));
+
+      setTerms(importedTerms);
+      setCsvImportText('');
+      setCsvImportError(null);
+    } catch (error) {
+      setCsvImportError(
+        error instanceof Error ? error.message : 'CSV import failed.',
+      );
+    }
+  };
 
   return (
     <>
@@ -2729,12 +2918,34 @@ function GlossaryTermsEditor({
           showInstruction,
         })}
       />
+      <ContentSwitch
+        label="Show header columns"
+        isSelected={attrs.showColumnHeaders}
+        onChange={(showColumnHeaders) => updateAttrs(editor, block, {
+          showColumnHeaders,
+        })}
+      />
       {presetConfig.headers.length === 3 && (
-        <ContentSwitch
-          label="Show example column"
-          isSelected={attrs.showExample}
-          onChange={(showExample) => updateAttrs(editor, block, { showExample })}
-        />
+        <ContentSwitchGrid>
+          <ContentSwitch
+            label="Show example column"
+            isSelected={attrs.showExample}
+            onChange={(showExample) => updateAttrs(editor, block, {
+              showExample,
+              showAdditionalColumn: showExample
+                ? attrs.showAdditionalColumn
+                : false,
+            })}
+          />
+          <ContentSwitch
+            label="Show additional column"
+            isDisabled={!attrs.showExample || !canShowAdditionalColumn}
+            isSelected={attrs.showExample && attrs.showAdditionalColumn}
+            onChange={(showAdditionalColumn) => updateAttrs(editor, block, {
+              showAdditionalColumn,
+            })}
+          />
+        </ContentSwitchGrid>
       )}
       <ContentFieldLabel>Preset</ContentFieldLabel>
       <select
@@ -2742,6 +2953,7 @@ function GlossaryTermsEditor({
         value={attrs.preset}
         onChange={(event) => updateAttrs(editor, block, {
           preset: event.target.value as GlossaryPreset,
+          headerLabels: [],
         })}
         className="mt-2 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
       >
@@ -2749,6 +2961,21 @@ function GlossaryTermsEditor({
           <option value={value} key={value}>{config.label}</option>
         ))}
       </select>
+      <ContentSectionHeader>Column headers</ContentSectionHeader>
+      <div className="mt-3 space-y-2">
+        {headers.map((header, index) => (
+          <div key={`glossary-header-${index}`}>
+            <ContentFieldLabel>{`Column ${index + 1}`}</ContentFieldLabel>
+            <input
+              aria-label={`Glossary column ${index + 1} header`}
+              value={header}
+              onChange={(event) => setHeaderLabel(index, event.target.value)}
+              placeholder={presetHeaders[index] ?? `Column ${index + 1}`}
+              className="mt-2 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            />
+          </div>
+        ))}
+      </div>
       {attrs.preset === 'default' && (
         <>
           <ContentFieldLabel>Term column width</ContentFieldLabel>
@@ -2762,7 +2989,9 @@ function GlossaryTermsEditor({
           >
             {GLOSSARY_COLUMN_WIDTHS.map((width) => (
               <option
-                disabled={hasExample && width + attrs.definitionWidth >= 100}
+                disabled={hasExample && width + attrs.definitionWidth + (
+                  hasAdditionalColumn ? attrs.additionalWidth : 0
+                ) >= 100}
                 value={width}
                 key={width}
               >
@@ -2782,13 +3011,82 @@ function GlossaryTermsEditor({
                 className="mt-2 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
               >
                 {GLOSSARY_COLUMN_WIDTHS.map((width) => (
-                  <option disabled={width + attrs.termWidth >= 100} value={width} key={width}>{width}%</option>
+                  <option
+                    disabled={width + attrs.termWidth + (
+                      hasAdditionalColumn ? attrs.additionalWidth : 0
+                    ) >= 100}
+                    value={width}
+                    key={width}
+                  >
+                    {width}%
+                  </option>
                 ))}
               </select>
+              {hasAdditionalColumn && (
+                <>
+                  <ContentFieldLabel>Additional column width</ContentFieldLabel>
+                  <select
+                    aria-label="Additional column width"
+                    value={attrs.additionalWidth}
+                    onChange={(event) => updateAttrs(editor, block, {
+                      additionalWidth: Number(event.target.value) as GlossaryTermWidth,
+                    })}
+                    className="mt-2 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  >
+                    {GLOSSARY_COLUMN_WIDTHS.map((width) => (
+                      <option
+                        disabled={width + attrs.termWidth + attrs.definitionWidth >= 100}
+                        value={width}
+                        key={width}
+                      >
+                        {width}%
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
             </>
           )}
         </>
       )}
+      <details className="mt-3 rounded-xl border border-secondary bg-secondary p-4 group">
+        <summary className="cursor-pointer text-sm font-semibold text-primary">
+          Bulk import CSV
+        </summary>
+        <div className="mt-3 space-y-3">
+          <p className="text-xs leading-5 text-secondary">
+            Paste comma-, semicolon-, or tab-separated rows. The first row is
+            skipped automatically when it matches current column headers.
+          </p>
+          <p className="text-xs leading-5 text-secondary">
+            Expected columns: {headers.join(' | ')}
+          </p>
+          <textarea
+            aria-label="Glossary CSV import"
+            rows={6}
+            value={csvImportText}
+            onChange={(event) => {
+              setCsvImportText(event.target.value);
+              setCsvImportError(null);
+            }}
+            placeholder={headers.join(', ')}
+            className="w-full resize-y rounded-md border border-primary bg-primary px-3 py-2 font-mono text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          />
+          {csvImportError && (
+            <p className="text-xs text-error-primary" role="alert">
+              {csvImportError}
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={!csvImportText.trim()}
+            onClick={importGlossaryCsv}
+            className="flex w-full items-center justify-center rounded-lg bg-brand-solid px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-solid_hover disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Import glossary rows
+          </button>
+        </div>
+      </details>
       <ContentSectionHeader count={`${attrs.terms.length} terms`}>
         Glossary entries
       </ContentSectionHeader>
@@ -2800,10 +3098,10 @@ function GlossaryTermsEditor({
                 {String(index + 1).padStart(2, '0')}
               </span>
               <input
-                aria-label={`${presetConfig.headers[0]} ${index + 1}`}
+                aria-label={`${headers[0]} ${index + 1}`}
                 value={term.term}
                 onChange={(event) => updateTerm(term.id, { term: event.target.value })}
-                placeholder={presetConfig.headers[0]}
+                placeholder={headers[0]}
                 className="w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
               />
               <ContentItemActions
@@ -2816,23 +3114,33 @@ function GlossaryTermsEditor({
                 onMoveDown={() => setTerms(moveItem(attrs.terms, index, 1))}
               />
               <textarea
-                aria-label={`${presetConfig.headers[1]} ${index + 1}`}
+                aria-label={`${headers[1]} ${index + 1}`}
                 rows={2}
                 value={term.definition}
                 onChange={(event) => updateTerm(term.id, {
                   definition: event.target.value,
                 })}
-                placeholder={presetConfig.headers[1]}
+                placeholder={headers[1]}
                 className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
               />
+              {hasAdditionalColumn && <textarea
+                aria-label={`${headers[2]} ${index + 1}`}
+                rows={2}
+                value={term.additional ?? ''}
+                onChange={(event) => updateTerm(term.id, {
+                  additional: event.target.value,
+                })}
+                placeholder={headers[2]}
+                className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              />}
               {hasExample && <textarea
-                aria-label={`${presetConfig.headers[2]} ${index + 1}`}
+                aria-label={`${headers[hasAdditionalColumn ? 3 : 2]} ${index + 1}`}
                 rows={2}
                 value={term.example}
                 onChange={(event) => updateTerm(term.id, {
                   example: event.target.value,
                 })}
-                placeholder={presetConfig.headers[2]}
+                placeholder={headers[hasAdditionalColumn ? 3 : 2]}
                 className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
               />}
             </ContentItemGrid>
@@ -2845,6 +3153,7 @@ function GlossaryTermsEditor({
           id: `term-${Date.now()}`,
           term: `Term ${attrs.terms.length + 1}`,
           definition: 'Definition',
+          additional: 'Additional',
           example: 'Example',
         }])}
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover"
@@ -5128,6 +5437,10 @@ function MatchingEditor({
   block: ContentEditorBlock;
   editor: Editor;
 }) {
+  const reshuffleItems = () => updateAttrs(editor, block, {
+    shuffleSeed: Number(attrs.shuffleSeed ?? 0) + 1,
+  });
+
   const setPairs = (pairs: MatchingPair[]) => {
     const ids = new Set(pairs.map(({ id }) => id));
     updateAttrs(editor, block, {
@@ -5203,6 +5516,28 @@ function MatchingEditor({
         </div>
         <div className="flex items-center gap-2 text-left text-sm font-semibold text-secondary">
           <Toggle
+            aria-label="Shuffle left items"
+            size="md"
+            isSelected={attrs.shuffleLeft}
+            onChange={(shuffleLeft) => updateAttrs(editor, block, {
+              shuffleLeft,
+            })}
+          />
+          <span>Shuffle left items</span>
+        </div>
+        <div className="flex items-center gap-2 text-left text-sm font-semibold text-secondary">
+          <Toggle
+            aria-label="Shuffle right items"
+            size="md"
+            isSelected={attrs.shuffleRight}
+            onChange={(shuffleRight) => updateAttrs(editor, block, {
+              shuffleRight,
+            })}
+          />
+          <span>Shuffle right items</span>
+        </div>
+        <div className="flex items-center gap-2 text-left text-sm font-semibold text-secondary">
+          <Toggle
             aria-label="Show example"
             size="md"
             isSelected={attrs.showFirstAsExample}
@@ -5213,6 +5548,13 @@ function MatchingEditor({
           <span>Show example</span>
         </div>
       </div>
+      <button
+        type="button"
+        onClick={reshuffleItems}
+        className="mt-3 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-semibold text-secondary transition hover:bg-primary_hover"
+      >
+        Reshuffle
+      </button>
       <ContentSectionHeader>Style</ContentSectionHeader>
       <div className="mt-4 grid grid-cols-2 gap-3">
         {([
@@ -5307,6 +5649,48 @@ function DominoEditor({
           })}
         />
       </ContentSwitchGrid>
+
+      <ContentSectionHeader>Text size</ContentSectionHeader>
+      <p className="mt-1 text-xs leading-5 text-tertiary">
+        Odd columns
+      </p>
+      <div className="mt-1 flex gap-2">
+        {(['xs', 's', 'm', 'l', 'xl'] as const).map((size) => (
+          <button
+            key={`odd-${size}`}
+            type="button"
+            onClick={() => updateAttrs(editor, block, { oddTextSize: size as DominoTextSize })}
+            className={[
+              'flex-1 rounded-lg border py-2 text-xs font-semibold transition',
+              attrs.oddTextSize === size
+                ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+            ].join(' ')}
+          >
+            {size.toUpperCase()}
+          </button>
+        ))}
+      </div>
+      <p className="mt-2 text-xs leading-5 text-tertiary">
+        Even columns
+      </p>
+      <div className="mt-1 flex gap-2">
+        {(['xs', 's', 'm', 'l', 'xl'] as const).map((size) => (
+          <button
+            key={`even-${size}`}
+            type="button"
+            onClick={() => updateAttrs(editor, block, { evenTextSize: size as DominoTextSize })}
+            className={[
+              'flex-1 rounded-lg border py-2 text-xs font-semibold transition',
+              attrs.evenTextSize === size
+                ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+            ].join(' ')}
+          >
+            {size.toUpperCase()}
+          </button>
+        ))}
+      </div>
 
       <ContentSectionHeader count={`${attrs.pairs.length} / ${maxPairs}`}>
         Domino pairs

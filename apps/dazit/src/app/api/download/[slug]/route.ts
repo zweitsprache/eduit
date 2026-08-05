@@ -19,6 +19,9 @@ export async function GET(
   const result = await get(worksheet.blobPath, {
     access: 'private',
     token,
+    // Republishing overwrites the same path, so a cached read would serve the
+    // previous PDF.
+    useCache: false,
   });
   if (!result) return new Response('PDF not found.', { status: 404 });
   if (result.statusCode === 304) {

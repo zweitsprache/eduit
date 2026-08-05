@@ -31,6 +31,9 @@ export type MatchingPairsAttrs = {
   question: string;
   pairs: MatchingPair[];
   rightOrder: string[];
+  shuffleLeft: boolean;
+  shuffleRight: boolean;
+  shuffleSeed: number;
   showWordBank: boolean;
   shuffleWordBank: boolean;
   showFirstAsExample: boolean;
@@ -77,6 +80,15 @@ function stableHash(value: string) {
   return hash >>> 0;
 }
 
+function shuffledIds(ids: string[], seed: number, salt: string) {
+  return [...ids].sort((left, right) => {
+    const leftScore = stableHash(`${seed}:${salt}:${left}`);
+    const rightScore = stableHash(`${seed}:${salt}:${right}`);
+    if (leftScore === rightScore) return left.localeCompare(right);
+    return leftScore - rightScore;
+  });
+}
+
 function MatchingEndpoint({
   answerStyle,
   side,
@@ -119,13 +131,24 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
     question,
     pairs,
     rightOrder,
+    shuffleLeft,
+    shuffleRight,
+    shuffleSeed,
     showWordBank,
     shuffleWordBank,
     showFirstAsExample,
     answerStyle,
   } = node.attrs as MatchingPairsAttrs;
   const pairById = new Map(pairs.map((pair) => [pair.id, pair]));
-  const orderedRightPairs = normalizedRightOrder(pairs, rightOrder)
+  const normalizedRightIds = normalizedRightOrder(pairs, rightOrder);
+  const displayedLeftPairs = shuffleLeft
+    ? shuffledIds(pairs.map(({ id }) => id), shuffleSeed, 'left')
+      .map((id) => pairById.get(id))
+      .filter((pair): pair is MatchingPair => Boolean(pair))
+    : pairs;
+  const orderedRightPairs = (shuffleRight
+    ? shuffledIds(normalizedRightIds, shuffleSeed, 'right')
+    : normalizedRightIds)
     .map((id) => pairById.get(id))
     .filter((pair): pair is MatchingPair => Boolean(pair));
   const rightLetterByPairId = new Map(
@@ -135,7 +158,7 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
     ]),
   );
   const leftNumberByPairId = new Map(
-    pairs.map((pair, index) => [pair.id, String(index + 1)]),
+    displayedLeftPairs.map((pair, index) => [pair.id, String(index + 1)]),
   );
   const wordBankItems = pairs
     .map((pair) => ({
@@ -224,7 +247,7 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
             strokeWidth: 1.5,
           },
         );
-        const solutionKind = showFirstAsExample && pair === pairs[0]
+        const solutionKind = showFirstAsExample && pair.id === displayedLeftPairs[0]?.id
           ? 'example'
           : 'solution';
         line.dataset.solutionKind = solutionKind;
@@ -250,7 +273,16 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
       resizeObserver.disconnect();
       window.removeEventListener('resize', drawSolutions);
     };
-  }, [pairs, rightOrder, question, showFirstAsExample, showWordBank, answerStyle]);
+  }, [
+    answerStyle,
+    displayedLeftPairs,
+    orderedRightPairs,
+    pairs,
+    question,
+    rightOrder,
+    showFirstAsExample,
+    showWordBank,
+  ]);
 
   return (
     <CustomBlockRoot
@@ -272,7 +304,7 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
               key={item.id}
             >
               <InlineFormattedText text={item.text} />
-              {showFirstAsExample && item.id === pairs[0]?.id && (
+              {showFirstAsExample && item.id === displayedLeftPairs[0]?.id && (
                 <RoughExampleStrike seed={`matching:${item.id}`} />
               )}
             </span>
@@ -280,7 +312,7 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
         </div>
       )}
       <div className={`matching-pairs-node__columns${answerStyle === 'writingLines' ? ' matching-pairs-node__columns--writing-lines' : ''}`}>
-        {pairs.map((pair, index) => {
+        {displayedLeftPairs.map((pair, index) => {
           const rightPair = orderedRightPairs[index];
           return (
             <Fragment key={pair.id}>
@@ -303,7 +335,7 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
                 answerStyle={answerStyle}
                 side="left"
                 solutionText={rightLetterByPairId.get(pair.id)}
-                solutionKind={showFirstAsExample && pair === pairs[0] ? 'example' : 'solution'}
+                solutionKind={showFirstAsExample && pair.id === displayedLeftPairs[0]?.id ? 'example' : 'solution'}
               />
             </div>
             <div
@@ -315,7 +347,7 @@ function MatchingPairsNodeView({ node, selected }: NodeViewProps) {
                 answerStyle={answerStyle}
                 side="right"
                 solutionText={rightPair ? leftNumberByPairId.get(rightPair.id) : undefined}
-                solutionKind={showFirstAsExample && rightPair?.id === pairs[0]?.id ? 'example' : 'solution'}
+                solutionKind={showFirstAsExample && rightPair?.id === displayedLeftPairs[0]?.id ? 'example' : 'solution'}
               />
               <span className="matching-pairs-node__label">
                 <InlineFormattedText
@@ -399,6 +431,30 @@ export const MatchingPairs = Node.create({
           ),
         }),
       },
+      shuffleLeft: {
+        default: false,
+        parseHTML: (element) => element.getAttribute('data-matching-shuffle-left') === 'true',
+        renderHTML: (attributes) => ({
+          'data-matching-shuffle-left': String(attributes.shuffleLeft),
+        }),
+      },
+      shuffleRight: {
+        default: false,
+        parseHTML: (element) => element.getAttribute('data-matching-shuffle-right') === 'true',
+        renderHTML: (attributes) => ({
+          'data-matching-shuffle-right': String(attributes.shuffleRight),
+        }),
+      },
+      shuffleSeed: {
+        default: 0,
+        parseHTML: (element) => {
+          const value = Number(element.getAttribute('data-matching-shuffle-seed'));
+          return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+        },
+        renderHTML: (attributes) => ({
+          'data-matching-shuffle-seed': String(attributes.shuffleSeed ?? 0),
+        }),
+      },
       showWordBank: {
         default: false,
         parseHTML: (element) => element.getAttribute('data-matching-show-word-bank') === 'true',
@@ -466,6 +522,9 @@ export const MatchingPairs = Node.create({
               rightOrder: attrs.rightOrder
                 ?? [pairs[1]?.id, pairs[0]?.id, ...pairs.slice(2).map(({ id }) => id)]
                   .filter((id): id is string => Boolean(id)),
+              shuffleLeft: attrs.shuffleLeft ?? false,
+              shuffleRight: attrs.shuffleRight ?? false,
+              shuffleSeed: attrs.shuffleSeed ?? 0,
               showWordBank: attrs.showWordBank ?? false,
               shuffleWordBank: attrs.shuffleWordBank ?? false,
               showFirstAsExample: attrs.showFirstAsExample ?? false,

@@ -13,6 +13,7 @@ const headingSchema = z.object({
 const glossaryEntrySchema = z.object({
   term: z.string().trim().min(1).max(500),
   definition: z.string().trim().max(2000),
+  additional: z.string().trim().max(3000).optional(),
   example: z.string().trim().max(3000).optional(),
 });
 
@@ -20,12 +21,18 @@ const glossarySchema = z.object({
   type: z.literal('glossary'),
   preset: z.enum(['default', 'verbs', 'nouns', 'adjectives']).default('default'),
   showInstruction: z.boolean().default(false),
+  showColumnHeaders: z.boolean().default(true),
   showExample: z.boolean().default(true),
+  showAdditionalColumn: z.boolean().default(false),
   instruction: z.string().trim().max(1000).nullable().optional(),
+  headerLabels: z.array(z.string().trim().max(200)).max(4).default([]),
   termWidth: z.enum(['10', '15', '20', '25', '33', '50', '66']).or(
     z.number().int().refine((value) => [10, 15, 20, 25, 33, 50, 66].includes(value)),
   ).optional(),
   definitionWidth: z.enum(['10', '15', '20', '25', '33', '50', '66']).or(
+    z.number().int().refine((value) => [10, 15, 20, 25, 33, 50, 66].includes(value)),
+  ).optional(),
+  additionalWidth: z.enum(['10', '15', '20', '25', '33', '50', '66']).or(
     z.number().int().refine((value) => [10, 15, 20, 25, 33, 50, 66].includes(value)),
   ).optional(),
   entries: z.array(glossaryEntrySchema).min(1).max(500),
@@ -37,7 +44,7 @@ const fillInTheBlankSchema = z.object({
   title: z.string().trim().max(500).default(''),
   items: z.array(z.string().trim().min(1).max(5000)).min(1).max(500),
   distractors: z.array(z.string().trim().min(1).max(500)).max(500).default([]),
-  widthFactor: z.number().min(1).max(5).default(1),
+  widthFactor: z.number().min(0.5).max(5).default(1),
   hideBlankNumbers: z.boolean().default(false),
   hideItemNumbers: z.boolean().default(false),
   showLineNumbers: z.boolean().default(false),
@@ -130,6 +137,8 @@ const learningCardsSchema = z.object({
   type: z.literal('learningCards'),
   title: z.string().trim().max(200).default('Learning cards'),
   sidedness: z.enum(['single', 'double']).default('double'),
+  frontTextSize: z.enum(['xs', 's', 'm', 'l', 'xl']).default('m'),
+  backTextSize: z.enum(['xs', 's', 'm', 'l', 'xl']).default('m'),
   items: z.array(learningCardSchema).min(1).max(450),
 });
 
@@ -145,6 +154,9 @@ const matchingPairsSchema = z.object({
   question: z.string().trim().max(2000).default(''),
   pairs: z.array(matchingPairSchema).min(2).max(100),
   rightOrder: z.array(z.string().trim().min(1).max(100)).optional(),
+  shuffleLeft: z.boolean().default(false),
+  shuffleRight: z.boolean().default(false),
+  shuffleSeed: z.number().int().min(0).default(0),
   showWordBank: z.boolean().default(false),
   shuffleWordBank: z.boolean().default(false),
   showFirstAsExample: z.boolean().default(false),
@@ -211,6 +223,27 @@ const wordGridSchema = z.object({
   generation: z.number().int().min(0).max(1_000_000).default(0),
 });
 
+const dominoPairSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  left: z.string().trim().min(1).max(2000),
+  right: z.string().trim().min(1).max(2000),
+});
+
+const DOMINO_GRID_CELLS = 24;
+
+const dominoTextSizeSchema = z.enum(['xs', 's', 'm', 'l', 'xl']).default('m');
+const dominoRepresentationSchema = z.enum(['analog', 'digital', 'official', 'informal', 'text']).default('text');
+
+const dominoSchema = z.object({
+  type: z.literal('domino'),
+  pairs: z.array(dominoPairSchema).min(1).max(500),
+  showFirstAsExample: z.boolean().default(false),
+  oddTextSize: dominoTextSizeSchema,
+  evenTextSize: dominoTextSizeSchema,
+  leftRepresentation: dominoRepresentationSchema,
+  rightRepresentation: dominoRepresentationSchema,
+});
+
 const contextSchema = z.object({
   worksheetLanguage: z.enum(['en', 'de-formal', 'de-informal']).default('en'),
   sourceProfileId: z.string().max(100).nullable().default(null),
@@ -252,6 +285,7 @@ export const generatedWorksheetSchema = z.object({
     learningCardsSchema,
     richTextSchema,
     wordGridSchema,
+    dominoSchema,
   ])).max(1000).default([]),
 }).refine((value) => Boolean(value.sourceWorksheetId) || value.blocks.length >= 1, {
   message: 'Provide blocks or a sourceWorksheetId.',
@@ -361,7 +395,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       right: pair.right,
     }));
     const rightOrder = block.rightOrder ?? pairs.map((pair) => pair.id);
-    return `<div data-type="matching-pairs" data-matching-instruction="${escapeAttribute(block.instruction)}" data-matching-question="${escapeAttribute(block.question)}" data-matching-pairs="${escapeAttribute(encodeURIComponent(JSON.stringify(pairs)))}" data-matching-right-order="${escapeAttribute(encodeURIComponent(JSON.stringify(rightOrder)))}" data-matching-show-word-bank="${block.showWordBank}" data-matching-shuffle-word-bank="${block.shuffleWordBank}" data-matching-show-first-example="${block.showFirstAsExample}" data-matching-answer-style="${block.answerStyle}"></div>`;
+    return `<div data-type="matching-pairs" data-matching-instruction="${escapeAttribute(block.instruction)}" data-matching-question="${escapeAttribute(block.question)}" data-matching-pairs="${escapeAttribute(encodeURIComponent(JSON.stringify(pairs)))}" data-matching-right-order="${escapeAttribute(encodeURIComponent(JSON.stringify(rightOrder)))}" data-matching-shuffle-left="${block.shuffleLeft}" data-matching-shuffle-right="${block.shuffleRight}" data-matching-shuffle-seed="${block.shuffleSeed}" data-matching-show-word-bank="${block.showWordBank}" data-matching-shuffle-word-bank="${block.shuffleWordBank}" data-matching-show-first-example="${block.showFirstAsExample}" data-matching-answer-style="${block.answerStyle}"></div>`;
   }
   if (block.type === 'learningCards') {
     // One JSON block becomes the whole sheet sequence the editor expects: a front
@@ -379,7 +413,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     const encodedItems = escapeAttribute(encodeURIComponent(JSON.stringify(items)));
     const sheets = Array.from({ length: groupCount }, (_, groupIndex) => (
       sides.map((sheetSide) => (
-        `<div data-title="${escapeAttribute(block.title)}" data-format="a8-landscape" data-sidedness="${block.sidedness}" data-items="${encodedItems}" data-group-index="${groupIndex}" data-sheet-side="${sheetSide}" data-type="learning-cards"></div>`
+        `<div data-title="${escapeAttribute(block.title)}" data-format="a8-landscape" data-sidedness="${block.sidedness}" data-front-text-size="${block.frontTextSize}" data-back-text-size="${block.backTextSize}" data-items="${encodedItems}" data-group-index="${groupIndex}" data-sheet-side="${sheetSide}" data-type="learning-cards"></div>`
       ))
     )).flat();
     return sheets.join('<div data-restart-pagination="false" data-type="pageBreak"></div>');
@@ -398,21 +432,48 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
         : baseOrder);
     return `<div data-type="time-matching" data-instruction="${escapeAttribute(block.instruction)}" data-left-representation="${block.leftRepresentation}" data-right-representation="${block.rightRepresentation}" data-times="${escapeAttribute(encodeURIComponent(JSON.stringify(times)))}" data-right-order="${escapeAttribute(encodeURIComponent(JSON.stringify(rightOrder)))}" data-allowed-minutes="${escapeAttribute(encodeURIComponent(JSON.stringify(block.allowedMinutes)))}" data-range-start="${block.rangeStart}" data-range-end="${block.rangeEnd}" data-shuffle-left="${block.shuffleLeft}" data-shuffle-right="${block.shuffleRight}" data-show-first-as-example="${block.showFirstAsExample}" data-answer-style="${block.answerStyle}"></div>`;
   }
+  if (block.type === 'domino') {
+    const pairs = block.pairs.map((pair, index) => ({
+      id: pair.id ?? `domino-${index + 1}`,
+      left: pair.left,
+      right: pair.right,
+    }));
+    const totalCells = pairs.length * 2 + 2;
+    const groupSize = Math.max(1, Math.ceil(totalCells / DOMINO_GRID_CELLS));
+    const groupId = `domino-${Date.now()}`;
+    const encodedPairs = escapeAttribute(encodeURIComponent(JSON.stringify(pairs)));
+    const oddTextSize = block.oddTextSize ?? 'm';
+    const evenTextSize = block.evenTextSize ?? 'm';
+    const leftRepresentation = block.leftRepresentation ?? 'text';
+    const rightRepresentation = block.rightRepresentation ?? 'text';
+    const sheets = Array.from({ length: groupSize }, (_, groupIndex) => (
+      `<div data-type="domino" data-domino-pairs="${encodedPairs}" data-domino-show-first-example="${block.showFirstAsExample}" data-domino-group-index="${groupIndex}" data-domino-group-size="${groupSize}" data-domino-group-id="${groupId}" data-domino-odd-text-size="${oddTextSize}" data-domino-even-text-size="${evenTextSize}" data-domino-left-representation="${leftRepresentation}" data-domino-right-representation="${rightRepresentation}"></div>`
+    ));
+    return sheets.join('<div data-restart-pagination="false" data-type="pageBreak"></div>');
+  }
   const widths = block.preset === 'verbs'
     ? { term: 20, definition: 25 }
     : block.preset === 'nouns' || block.preset === 'adjectives'
       ? { term: 50, definition: 50 }
-      : { term: Number(block.termWidth ?? 33), definition: Number(block.definitionWidth ?? 33) };
+      : {
+        term: Number(block.termWidth ?? 33),
+        definition: Number(block.definitionWidth ?? 33),
+      };
   const terms = block.entries.map((entry, index) => ({
     id: `term-${index + 1}`,
     term: entry.term,
     definition: entry.definition,
+    additional: entry.additional ?? '',
     example: entry.example ?? '',
   }));
+  const additionalWidth = Number(block.additionalWidth ?? 20);
+  const headerLabels = Array.isArray(block.headerLabels)
+    ? block.headerLabels.slice(0, 4).map((label) => label ?? '')
+    : [];
   const instruction = block.instruction
     ? ` data-block-instruction="${escapeAttribute(block.instruction)}"`
     : '';
-  return `<div data-glossary-terms="${escapeAttribute(encodeURIComponent(JSON.stringify(terms)))}" data-glossary-term-width="${widths.term}" data-glossary-definition-width="${widths.definition}" data-glossary-preset="${block.preset}" data-glossary-show-instruction="${block.showInstruction}" data-glossary-show-example="${block.showExample}"${instruction} data-type="glossary-terms"></div>`;
+  return `<div data-glossary-terms="${escapeAttribute(encodeURIComponent(JSON.stringify(terms)))}" data-glossary-term-width="${widths.term}" data-glossary-definition-width="${widths.definition}" data-glossary-additional-width="${additionalWidth}" data-glossary-preset="${block.preset}" data-glossary-header-labels="${escapeAttribute(encodeURIComponent(JSON.stringify(headerLabels)))}" data-glossary-show-instruction="${block.showInstruction}" data-glossary-show-column-headers="${block.showColumnHeaders}" data-glossary-show-example="${block.showExample}" data-glossary-show-additional-column="${block.showAdditionalColumn}"${instruction} data-type="glossary-terms"></div>`;
 }
 
 export function worksheetPatchFromGeneratedJson(

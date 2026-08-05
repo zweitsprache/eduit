@@ -42,13 +42,17 @@ function parseBlankPayload(payload: string, defaultWidthFactor: number) {
 
   const answer = payload.slice(0, separatorIndex).trim();
   const parsedFactor = Number(payload.slice(separatorIndex + 1).trim());
-  if (!answer || !Number.isFinite(parsedFactor) || parsedFactor < 1) {
+  if (!answer) {
     return { answer: payload.trim(), widthFactor: defaultWidthFactor };
+  }
+
+  if (!Number.isFinite(parsedFactor) || parsedFactor < 0.5) {
+    return { answer, widthFactor: defaultWidthFactor };
   }
 
   return {
     answer,
-    widthFactor: Math.min(parsedFactor, 5),
+    widthFactor: Math.min(Math.max(defaultWidthFactor * parsedFactor, 0.5), 5),
   };
 }
 
@@ -58,7 +62,7 @@ export function parseFillInTheBlankText(
 ): FillInTheBlankPart[] {
   const parts: FillInTheBlankPart[] = [];
   const normalizedDefaultWidthFactor = Number.isFinite(defaultWidthFactor)
-    ? Math.min(Math.max(defaultWidthFactor, 1), 5)
+    ? Math.min(Math.max(defaultWidthFactor, 0.5), 5)
     : 1;
   const pattern = /\{\{blank:([^{}]+)\}\}/gi;
   let cursor = 0;
@@ -325,7 +329,7 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
       <BlockInstruction>
         {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.fillInTheBlank}
       </BlockInstruction>
-      {showWordBank && (wordBankItems.length > 0 || distractorItems.length > 0) && (
+      {showWordBank && orderedWordBankItems.length > 0 && (
         <div className="custom-block__word-bank fill-in-the-blank-node__word-bank">
           {orderedWordBankItems.map((item) => (
             <span className="custom-block__word-bank-item" key={item.id}>
@@ -441,7 +445,7 @@ export const FillInTheBlank = Node.create({
         default: 1,
         parseHTML: (element) => {
           const value = Number(element.getAttribute('data-fill-blank-width-factor'));
-          return Number.isFinite(value) && value >= 1 ? Math.min(value, 5) : 1;
+          return Number.isFinite(value) && value >= 0.5 ? Math.min(value, 5) : 1;
         },
         renderHTML: (attributes) => ({
           'data-fill-blank-width-factor': attributes.widthFactor,

@@ -19,7 +19,7 @@ type PublishMetadata = {
   description: string;
   subject: string;
   grade: string;
-  documentType: 'Arbeitsblatt' | 'Merkblatt' | 'Verbtabelle' | 'Deklinationstabelle' | 'Lernkarten';
+  documentType: 'Arbeitsblatt' | 'Merkblatt' | 'Verbtabelle' | 'Deklinationstabelle' | 'Lernkarten' | 'Domino';
   pages: number;
   language: string;
   difficulty: string;
@@ -396,7 +396,7 @@ export async function POST(request: Request) {
     if (!metadata.worksheetId || !metadata.slug || !metadata.title) {
       return NextResponse.json({ error: 'Invalid worksheet metadata.' }, { status: 400 });
     }
-    const documentTypes = ['Arbeitsblatt', 'Merkblatt', 'Verbtabelle', 'Deklinationstabelle', 'Lernkarten'];
+    const documentTypes = ['Arbeitsblatt', 'Merkblatt', 'Verbtabelle', 'Deklinationstabelle', 'Lernkarten', 'Domino'];
     if (!documentTypes.includes(metadata.documentType)) {
       return NextResponse.json({ error: 'Invalid Dazit document type.' }, { status: 400 });
     }

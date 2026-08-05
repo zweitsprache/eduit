@@ -12,6 +12,7 @@ import type { TimeMatchingAttrs } from '@/components/editor/time-matching-node';
 import type { LearningCardsAttrs } from '@/components/editor/learning-cards-node';
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
 import type { WordGridAttrs } from '@/components/editor/word-grid-node';
+import type { DominoAttrs } from '@/components/editor/domino-node';
 import type { WorksheetContext } from '@/lib/worksheet-types';
 
 export type WorksheetJsonExportMeta = {
@@ -72,20 +73,40 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
       return html.trim() ? { type: 'richText', html } : null;
     }
     case 'glossaryTerms': {
-      const { terms, preset, showInstruction, showExample, termWidth, definitionWidth } =
+      const {
+        terms,
+        preset,
+        showInstruction,
+        showColumnHeaders,
+        showExample,
+        showAdditionalColumn,
+        termWidth,
+        definitionWidth,
+        additionalWidth,
+        headerLabels,
+      } =
         attrs as GlossaryTermsAttrs;
       return {
         type: 'glossary',
         preset,
         showInstruction,
+        showColumnHeaders,
         showExample,
+        showAdditionalColumn,
         instruction: optionalInstruction(attrs.instruction),
+        headerLabels: Array.isArray(headerLabels)
+          ? headerLabels
+            .slice(0, 4)
+            .map((label) => (typeof label === 'string' ? label : ''))
+          : [],
         // Presets override the widths on import, so only default keeps them.
         termWidth: preset === 'default' ? glossaryWidth(termWidth) : undefined,
         definitionWidth: preset === 'default' ? glossaryWidth(definitionWidth) : undefined,
-        entries: terms.map(({ term, definition, example }) => ({
+        additionalWidth: preset === 'default' ? glossaryWidth(additionalWidth) : undefined,
+        entries: terms.map(({ term, definition, additional, example }) => ({
           term,
           definition,
+          additional: additional || undefined,
           example: example || undefined,
         })),
       };
@@ -163,12 +184,16 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     case 'matchingPairs': {
       const {
         instruction, question, pairs, rightOrder,
+        shuffleLeft, shuffleRight, shuffleSeed,
         showWordBank, shuffleWordBank, showFirstAsExample, answerStyle,
       } = attrs as MatchingPairsAttrs;
       return {
         type: 'matchingPairs',
         instruction,
         question,
+        shuffleLeft,
+        shuffleRight,
+        shuffleSeed,
         showWordBank,
         shuffleWordBank,
         showFirstAsExample,
@@ -221,14 +246,43 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
       };
     }
     case 'learningCards': {
-      const { title, sidedness, items } = attrs as LearningCardsAttrs;
+      const {
+        title,
+        sidedness,
+        items,
+        frontTextSize,
+        backTextSize,
+      } = attrs as LearningCardsAttrs;
       return {
         type: 'learningCards',
         title,
         sidedness,
+        frontTextSize,
+        backTextSize,
         // Ids are kept because the node view uses an `-empty` suffix to decide
         // whether a blank card renders a "Card N" placeholder.
         items: items.map(({ id, front, back }) => ({ id, front, back })),
+      };
+    }
+    case 'domino': {
+      const {
+        pairs,
+        showFirstAsExample,
+        oddTextSize,
+        evenTextSize,
+        leftRepresentation,
+        rightRepresentation,
+      } = attrs as DominoAttrs;
+      return {
+        type: 'domino',
+        // A multi-page domino is stored as several nodes separated by pageBreaks;
+        // the export only needs the single canonical pair list from the first node.
+        pairs: pairs.map(({ id, left, right }) => ({ id, left, right })),
+        showFirstAsExample,
+        oddTextSize,
+        evenTextSize,
+        leftRepresentation,
+        rightRepresentation,
       };
     }
     default:
@@ -259,6 +313,8 @@ export function worksheetJsonFromDoc(
   // else out. Collapse it back into the single block the import expands again.
   let learningCardsSeen = false;
 
+  let dominoSeen = false;
+
   doc.forEach((node) => {
     if (node.type.name === 'learningCards') {
       if (learningCardsSeen) return;
@@ -267,6 +323,16 @@ export function worksheetJsonFromDoc(
       return;
     }
     if (learningCardsSeen && node.type.name === 'pageBreak') return;
+    if (node.type.name === 'domino') {
+      // Multi-page dominoes are stored as multiple nodes separated by page breaks.
+      // Only the first node carries the canonical block in the export.
+      if (!dominoSeen) {
+        dominoSeen = true;
+        blocks.push(blockJson(node)!);
+      }
+      return;
+    }
+    if (dominoSeen && node.type.name === 'pageBreak') return;
     const block = blockJson(node);
     if (block) {
       blocks.push(block);

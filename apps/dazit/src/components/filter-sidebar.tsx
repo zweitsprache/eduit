@@ -6,6 +6,7 @@ const worksheetTypes = [
   'Verbtabelle',
   'Deklinationstabelle',
   'Lernkarten',
+  'Domino',
   'Dialog',
   'Leseverstehen',
 ] as const;

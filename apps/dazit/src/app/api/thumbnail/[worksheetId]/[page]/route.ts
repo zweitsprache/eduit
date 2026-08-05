@@ -19,13 +19,13 @@ export async function GET(
   ) return new Response('Thumbnail not found.', { status: 404 });
   const thumbnailPath = `worksheets/${worksheetId}/thumbnails/page-${pageIndex + 1}.webp`;
 
-  const result = await get(thumbnailPath, { access: 'private', token });
+  const result = await get(thumbnailPath, { access: 'private', token, useCache: false });
   if (!result || result.statusCode !== 200) {
     return new Response('Thumbnail not found.', { status: 404 });
   }
   return new Response(result.stream, {
     headers: {
-      'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+      'Cache-Control': 'public, max-age=0, must-revalidate',
       'Content-Length': String(result.blob.size),
       'Content-Type': 'image/webp',
       ETag: result.blob.etag,

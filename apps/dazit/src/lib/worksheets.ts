@@ -20,6 +20,7 @@ export type Worksheet = {
     | 'Verbtabelle'
     | 'Deklinationstabelle'
     | 'Lernkarten'
+    | 'Domino'
     | 'Dialog'
     | 'Leseverstehen';
   pages: number;
@@ -87,6 +88,7 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
     'Verbtabelle',
     'Deklinationstabelle',
     'Lernkarten',
+    'Domino',
     'Dialog',
     'Leseverstehen',
   ];
@@ -131,7 +133,7 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
     thumbnailPaths: row.thumbnailPaths || [],
     thumbnailUrls: row.worksheetId
       ? (row.thumbnailPaths || []).map(
-        (_, index) => `/api/thumbnail/${encodeURIComponent(row.worksheetId)}/${index + 1}`,
+        (_, index) => `/api/thumbnail/${encodeURIComponent(row.worksheetId)}/${index + 1}?v=${row.updatedAt ? new Date(row.updatedAt).getTime() : 0}`,
       )
       : [],
     publishedAt: row.publishedAt,

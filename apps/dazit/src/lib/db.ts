@@ -6,6 +6,7 @@ export type DazitPublicationDocumentType =
   | 'Verbtabelle'
   | 'Deklinationstabelle'
   | 'Lernkarten'
+  | 'Domino'
   | 'Dialog'
   | 'Leseverstehen';
 
@@ -44,6 +45,7 @@ export type DazitPublicationCardRow = {
   pageCount: number;
   sizeBytes: number;
   publishedAt: string;
+  updatedAt: string;
   excerpt: string | null;
   tags: string[];
   level: string | null;
@@ -235,6 +237,7 @@ export async function getPublishedWorksheetCardsFromDb() {
       p.page_count as "pageCount",
       p.size_bytes as "sizeBytes",
       p.published_at as "publishedAt",
+      p.updated_at as "updatedAt",
       p.excerpt,
       p.tags,
       p.level,

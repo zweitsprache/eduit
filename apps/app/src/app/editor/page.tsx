@@ -76,8 +76,10 @@ import {
 } from '@/components/editor/matching-pairs-node';
 import {
   Domino,
+  dominoGroupSize,
   type DominoAttrs,
   type DominoPair,
+  type DominoTextSize,
 } from '@/components/editor/domino-node';
 import { DominoAIModal } from '@/components/editor/domino-ai-modal';
 import {
@@ -2556,6 +2558,7 @@ export default function EditorPage() {
         id: `term-${Date.now()}`,
         term: `Term ${index}`,
         definition: 'Definition',
+        additional: 'Additional',
         example: 'Example',
       },
     ]);
@@ -2789,6 +2792,16 @@ export default function EditorPage() {
   const updateDominoShowFirstAsExample = (showFirstAsExample: boolean) => {
     if (selectedDominoPos === null) return;
     setDominoAttr(editor, selectedDominoPos, 'showFirstAsExample', showFirstAsExample);
+  };
+
+  const updateDominoOddTextSize = (oddTextSize: DominoTextSize) => {
+    if (selectedDominoPos === null) return;
+    setDominoAttr(editor, selectedDominoPos, 'oddTextSize', oddTextSize);
+  };
+
+  const updateDominoEvenTextSize = (evenTextSize: DominoTextSize) => {
+    if (selectedDominoPos === null) return;
+    setDominoAttr(editor, selectedDominoPos, 'evenTextSize', evenTextSize);
   };
 
   const updateWordGridWord = (index: number, word: string) => {
@@ -3639,6 +3652,30 @@ export default function EditorPage() {
     }
   };
 
+  function buildPublishDescription(
+    currentEditor: typeof editor,
+    worksheetLanguage: string,
+    baseDescription: string,
+  ) {
+    if (!currentEditor) return baseDescription;
+    const dominoGroups = new Map<string, number>();
+    currentEditor.state.doc.descendants((node) => {
+      if (node.type.name === 'domino') {
+        const attrs = node.attrs as DominoAttrs;
+        if (!dominoGroups.has(attrs.groupId)) {
+          dominoGroups.set(attrs.groupId, attrs.pairs.length);
+        }
+      }
+    });
+    if (dominoGroups.size === 0) return baseDescription;
+    const totalPairs = [...dominoGroups.values()].reduce((sum, count) => sum + count, 0);
+    const isEnglish = /en/i.test(worksheetLanguage);
+    const suffix = isEnglish
+      ? ` Includes a domino activity with ${totalPairs} pairs.`
+      : ` Inklusive Domino-Übung mit ${totalPairs} Paaren.`;
+    return `${baseDescription}${suffix}`;
+  }
+
   const publishPDF = async (modeOverride?: 'full' | 'pdf-only') => {
     const id = worksheetIdRef.current;
     if (!id || publishingPDF) return false;
@@ -3682,8 +3719,12 @@ export default function EditorPage() {
         worksheetId: id,
         slug: `${slugBase}-${id.slice(0, 8)}`,
         title: worksheetTitle.trim() || 'Untitled Worksheet',
-        description: documentContext.learnerContext
-          || 'Druckfertiges Arbeitsblatt für den Unterricht.',
+        description: buildPublishDescription(
+          editor,
+          language,
+          documentContext.learnerContext
+            || 'Druckfertiges Arbeitsblatt für den Unterricht.',
+        ),
         subject,
         grade: documentContext.learnerStage || level,
         documentType: containsLearningCards ? 'Lernkarten' : dazitDocumentType,
@@ -4059,7 +4100,12 @@ export default function EditorPage() {
               editor?.state.doc.descendants((node) => {
                 if (node.type.name === 'learningCards') containsLearningCards = true;
               });
+              let containsDomino = false;
+              editor?.state.doc.descendants((node) => {
+                if (node.type.name === 'domino') containsDomino = true;
+              });
               if (containsLearningCards) setDazitDocumentType('Lernkarten');
+              else if (containsDomino) setDazitDocumentType('Domino');
               setRepublishScope(
                 publicationStatus === 'unpublished' ? 'full' : 'pdf-only',
               );
@@ -5424,6 +5470,46 @@ export default function EditorPage() {
               </label>
 
               <div className="mt-4">
+                <p className="text-xs font-semibold text-tertiary">Text size</p>
+                <p className="mt-1 text-[10px] text-quaternary">Odd columns</p>
+                <div className="mt-1 flex gap-1">
+                  {(['xs', 's', 'm', 'l', 'xl'] as const).map((size) => (
+                    <button
+                      key={`odd-${size}`}
+                      type="button"
+                      onClick={() => updateDominoOddTextSize(size)}
+                      className={[
+                        'flex-1 rounded-md border py-1.5 text-xs font-semibold transition',
+                        selectedDominoAttrs.oddTextSize === size
+                          ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                          : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+                      ].join(' ')}
+                    >
+                      {size.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-[10px] text-quaternary">Even columns</p>
+                <div className="mt-1 flex gap-1">
+                  {(['xs', 's', 'm', 'l', 'xl'] as const).map((size) => (
+                    <button
+                      key={`even-${size}`}
+                      type="button"
+                      onClick={() => updateDominoEvenTextSize(size)}
+                      className={[
+                        'flex-1 rounded-md border py-1.5 text-xs font-semibold transition',
+                        selectedDominoAttrs.evenTextSize === size
+                          ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                          : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+                      ].join(' ')}
+                    >
+                      {size.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4">
                 <p className="text-xs font-semibold text-tertiary">
                   Pairs
                   <span className="ml-2 text-quaternary">
@@ -5501,7 +5587,6 @@ export default function EditorPage() {
                     ...selectedDominoAttrs.pairs,
                     { id: crypto.randomUUID(), left: 'Left', right: 'Right' },
                   ])}
-                  disabled={selectedDominoAttrs.pairs.length >= 11}
                   className="mt-3 flex w-full items-center justify-center gap-2 border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover disabled:opacity-50"
                 >
                   <PlusSquare className="size-4" />
@@ -8227,6 +8312,7 @@ export default function EditorPage() {
                     { value: 'Verbtabelle', label: 'Verbtabelle' },
                     { value: 'Deklinationstabelle', label: 'Deklinationstabelle' },
                     { value: 'Lernkarten', label: 'Lernkarten' },
+                    { value: 'Domino', label: 'Domino' },
                   ]}
                 />
               </div>
@@ -8521,31 +8607,34 @@ export default function EditorPage() {
           const { pos } = dominoAIBlock;
           editor.chain().command(({ tr }) => {
             if (tr.doc.nodeAt(pos)?.type.name !== 'domino') return false;
-            const maxPairsPerGrid = 11;
-            const chunks: DominoPair[][] = [];
-            for (let index = 0; index < result.pairs.length; index += maxPairsPerGrid) {
-              chunks.push(result.pairs.slice(index, index + maxPairsPerGrid));
-            }
-            if (chunks.length <= 1) {
-              tr.setNodeAttribute(pos, 'pairs', result.pairs);
-              tr.setNodeAttribute(pos, 'showFirstAsExample', result.showFirstAsExample);
-              tr.setNodeAttribute(pos, 'groupIndex', 0);
-              tr.setNodeAttribute(pos, 'groupSize', 1);
-              return true;
-            }
             const dominoType = tr.doc.type.schema.nodes.domino;
             if (!dominoType) return false;
             const currentNode = tr.doc.nodeAt(pos);
             if (!currentNode) return false;
+            const groupId = currentNode.attrs.groupId || `domino-${Date.now()}`;
+            const groupSize = dominoGroupSize(result.pairs);
             const baseAttrs = {
               ...currentNode.attrs,
+              pairs: result.pairs,
               showFirstAsExample: result.showFirstAsExample,
+              groupId,
+              leftRepresentation: result.leftRepresentation,
+              rightRepresentation: result.rightRepresentation,
             };
-            const nodes = chunks.map((chunk, index) => dominoType.create({
+            if (groupSize <= 1) {
+              tr.setNodeAttribute(pos, 'pairs', result.pairs);
+              tr.setNodeAttribute(pos, 'showFirstAsExample', result.showFirstAsExample);
+              tr.setNodeAttribute(pos, 'groupIndex', 0);
+              tr.setNodeAttribute(pos, 'groupSize', 1);
+              tr.setNodeAttribute(pos, 'groupId', groupId);
+              tr.setNodeAttribute(pos, 'leftRepresentation', result.leftRepresentation);
+              tr.setNodeAttribute(pos, 'rightRepresentation', result.rightRepresentation);
+              return true;
+            }
+            const nodes = Array.from({ length: groupSize }, (_, index) => dominoType.create({
               ...baseAttrs,
-              pairs: chunk,
               groupIndex: index,
-              groupSize: chunks.length,
+              groupSize,
             }));
             const pageBreakType = tr.doc.type.schema.nodes.pageBreak;
             const separatedNodes = nodes.flatMap((node, index) => (

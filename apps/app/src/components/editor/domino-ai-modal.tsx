@@ -23,6 +23,8 @@ export type DominoAIGeneratedResult = {
   showFirstAsExample: boolean;
   groupIndex: number;
   groupSize: number;
+  leftRepresentation: TimeRepresentation;
+  rightRepresentation: TimeRepresentation;
 };
 
 function shuffled<T>(values: T[]) {
@@ -132,7 +134,15 @@ export function DominoAIModal({
     const groupSize = multiPage
       ? Math.max(1, Math.ceil(pairs.length / maxPairsPerGrid))
       : 1;
-    onGenerated({ preset, pairs, showFirstAsExample, groupIndex: 0, groupSize });
+    onGenerated({
+      preset,
+      pairs,
+      showFirstAsExample,
+      groupIndex: 0,
+      groupSize,
+      leftRepresentation: left,
+      rightRepresentation: right,
+    });
   };
 
   return (
@@ -291,21 +301,25 @@ export function DominoAIModal({
             {de ? 'Anzahl' : 'Number of pairs'}
             <input
               className="mt-1.5 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-              max={11}
+              max={multiPage ? 66 : 11}
               min={1}
-              onChange={(event) => setCount(Math.min(11, Math.max(1, Number(event.target.value))))}
+              onChange={(event) => setCount(Math.min(multiPage ? 66 : 11, Math.max(1, Number(event.target.value))))}
               type="number"
               value={count}
             />
           </label>
           <p className="mt-2 text-xs text-quaternary">
-            {available.length < count
+            {multiPage
               ? (de
-                  ? `${available.length} eindeutige Zeiten verfügbar – es werden ${actualCount} Paare erstellt.`
-                  : `${available.length} unique times available — ${actualCount} pairs will be created.`)
-              : (de
-                  ? `${available.length} eindeutige Zeiten verfügbar.`
-                  : `${available.length} unique times available.`)}
+                  ? 'Bei mehr als 11 Paaren wird der Dominopfad über mehrere Seiten fortgesetzt. START steht auf der ersten Seite, ZIEL auf der letzten.'
+                  : 'More than 11 pairs continues the domino trail across pages. START is on the first page, ZIEL on the last.')
+              : (available.length < count
+                  ? (de
+                      ? `${available.length} eindeutige Zeiten verfügbar – es werden ${actualCount} Paare erstellt.`
+                      : `${available.length} unique times available — ${actualCount} pairs will be created.`)
+                  : (de
+                      ? `${available.length} eindeutige Zeiten verfügbar.`
+                      : `${available.length} unique times available.`))}
           </p>
         </section>
       )}

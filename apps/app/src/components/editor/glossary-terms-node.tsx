@@ -30,32 +30,85 @@ export type GlossaryTerm = {
   id: string;
   term: string;
   definition: string;
+  additional: string;
   example: string;
 };
+
+export type GlossaryHeaderLabels = string[];
 
 export type GlossaryTermsAttrs = {
   terms: GlossaryTerm[];
   termWidth: GlossaryTermWidth;
   definitionWidth: GlossaryTermWidth;
+  additionalWidth: GlossaryTermWidth;
   preset: GlossaryPreset;
+  headerLabels: GlossaryHeaderLabels;
+  showColumnHeaders: boolean;
   showInstruction: boolean;
   showExample: boolean;
+  showAdditionalColumn: boolean;
 };
+
+function parseHeaderLabels(value: string | null): GlossaryHeaderLabels {
+  if (!value) return [];
+  try {
+    const labels = JSON.parse(decodeURIComponent(value));
+    if (!Array.isArray(labels)) return [];
+    return labels
+      .slice(0, 4)
+      .map((label) => (typeof label === 'string' ? label : ''));
+  } catch {
+    return [];
+  }
+}
+
+export function hasGlossaryAdditionalColumn(
+  attrs: Pick<GlossaryTermsAttrs, 'preset' | 'showExample' | 'showAdditionalColumn'>,
+) {
+  return attrs.showAdditionalColumn
+    && attrs.showExample
+    && GLOSSARY_PRESETS[attrs.preset].headers.length === 3;
+}
+
+export function glossaryHeaders(
+  attrs: Pick<GlossaryTermsAttrs, 'preset' | 'headerLabels' | 'showExample' | 'showAdditionalColumn'>,
+) {
+  const presetHeaders = GLOSSARY_PRESETS[attrs.preset].headers;
+  const headers = presetHeaders.length === 3 && attrs.showExample
+    ? hasGlossaryAdditionalColumn(attrs)
+      ? [presetHeaders[0], presetHeaders[1], 'Zusatz', presetHeaders[2]]
+      : [presetHeaders[0], presetHeaders[1], presetHeaders[2]]
+    : [presetHeaders[0], presetHeaders[1]];
+  return headers.map((header, index) => {
+    const customLabel = attrs.headerLabels[index]?.trim();
+    return customLabel?.length ? customLabel : header;
+  });
+}
 
 /** Two-column layouts give the definition whatever the term column leaves over. */
 export function glossaryColumnWidths(
-  attrs: Pick<GlossaryTermsAttrs, 'preset' | 'termWidth' | 'definitionWidth' | 'showExample'>,
+  attrs: Pick<GlossaryTermsAttrs, 'preset' | 'termWidth' | 'definitionWidth' | 'additionalWidth' | 'showExample' | 'showAdditionalColumn'>,
 ) {
   const presetConfig = GLOSSARY_PRESETS[attrs.preset];
   const hasExample = presetConfig.headers.length === 3 && attrs.showExample;
+  const hasAdditionalColumn = hasGlossaryAdditionalColumn(attrs);
   const termWidth = attrs.preset === 'default' ? attrs.termWidth : presetConfig.termWidth;
   const definitionWidth = attrs.preset === 'default'
     ? attrs.definitionWidth
     : presetConfig.definitionWidth;
+  const additionalWidth = attrs.preset === 'default' ? attrs.additionalWidth : 20;
   return {
     hasExample,
+    hasAdditionalColumn,
     widths: hasExample
-      ? [termWidth, definitionWidth, Math.max(1, 100 - termWidth - definitionWidth)]
+      ? hasAdditionalColumn
+        ? [
+            termWidth,
+            definitionWidth,
+            additionalWidth,
+            Math.max(1, 100 - termWidth - definitionWidth - additionalWidth),
+          ]
+        : [termWidth, definitionWidth, Math.max(1, 100 - termWidth - definitionWidth)]
       : [termWidth, Math.max(1, 100 - termWidth)],
   };
 }
@@ -65,12 +118,14 @@ export const DEFAULT_GLOSSARY_TERMS: GlossaryTerm[] = [
     id: 'term-1',
     term: 'Term',
     definition: 'Definition',
+    additional: 'Additional',
     example: 'Example',
   },
   {
     id: 'term-2',
     term: 'Term',
     definition: 'Definition',
+    additional: 'Additional',
     example: 'Example',
   },
 ];
@@ -84,7 +139,18 @@ function parseTerms(value: string | null): GlossaryTerm[] {
 
   try {
     const terms = JSON.parse(decodeURIComponent(value));
-    return Array.isArray(terms) ? terms : defaultTerms();
+    if (!Array.isArray(terms)) return defaultTerms();
+    const parsed = terms.flatMap((term, index): GlossaryTerm[] => {
+      if (!term || typeof term !== 'object') return [];
+      return [{
+        id: typeof term.id === 'string' ? term.id : `term-${index + 1}`,
+        term: typeof term.term === 'string' ? term.term : '',
+        definition: typeof term.definition === 'string' ? term.definition : '',
+        additional: typeof term.additional === 'string' ? term.additional : '',
+        example: typeof term.example === 'string' ? term.example : '',
+      }];
+    });
+    return parsed.length ? parsed : defaultTerms();
   } catch {
     return defaultTerms();
   }
@@ -105,9 +171,13 @@ function parsePreset(value: string | null): GlossaryPreset {
 
 function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
   const attrs = node.attrs as GlossaryTermsAttrs;
-  const { terms, preset } = attrs;
-  const presetConfig = GLOSSARY_PRESETS[preset];
-  const { hasExample, widths: columnWidths } = glossaryColumnWidths(attrs);
+  const { terms } = attrs;
+  const headers = glossaryHeaders(attrs);
+  const {
+    hasAdditionalColumn,
+    hasExample,
+    widths: columnWidths,
+  } = glossaryColumnWidths(attrs);
   const columnStyle = (index: number) => ({
     width: `${columnWidths[index]}%`,
   }) as CSSProperties;
@@ -120,8 +190,15 @@ function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
       <span className="glossary-terms-node__columns">
         <span className="glossary-terms-node__cell" style={columnStyle(0)}>{item.term}</span>
         <span className="glossary-terms-node__cell" style={columnStyle(1)}>{item.definition}</span>
+        {hasAdditionalColumn && (
+          <span className="glossary-terms-node__cell" style={columnStyle(2)}>
+            {item.additional}
+          </span>
+        )}
         {hasExample && (
-          <span className="glossary-terms-node__cell" style={columnStyle(2)}>{item.example}</span>
+          <span className="glossary-terms-node__cell" style={columnStyle(hasAdditionalColumn ? 3 : 2)}>
+            {item.example}
+          </span>
         )}
       </span>
     </div>
@@ -137,14 +214,16 @@ function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
       <div
         className="glossary-terms-node__table"
       >
-        <div className="glossary-terms-node__header">
-          <span className="glossary-terms-node__index-spacer" />
-          <span className="glossary-terms-node__columns">
-            {presetConfig.headers.slice(0, columnWidths.length).map((header, index) => (
-              <strong key={header} style={columnStyle(index)}>{header}</strong>
-            ))}
-          </span>
-        </div>
+        {attrs.showColumnHeaders && (
+          <div className="glossary-terms-node__header">
+            <span className="glossary-terms-node__index-spacer" />
+            <span className="glossary-terms-node__columns">
+              {headers.map((header, index) => (
+                <strong key={`${index}-${header}`} style={columnStyle(index)}>{header}</strong>
+              ))}
+            </span>
+          </div>
+        )}
         {terms.slice(0, finalPairStart).map(renderRow)}
         <div className="glossary-terms-node__final-pair">
           {terms.slice(finalPairStart).map((item, offset) => (
@@ -198,10 +277,30 @@ export const GlossaryTerms = Node.create({
           'data-glossary-definition-width': attributes.definitionWidth,
         }),
       },
+      additionalWidth: {
+        default: 20,
+        parseHTML: (element) => parseTermWidth(
+          element.getAttribute('data-glossary-additional-width'),
+        ),
+        renderHTML: (attributes) => ({
+          'data-glossary-additional-width': attributes.additionalWidth,
+        }),
+      },
       preset: {
         default: 'default',
         parseHTML: (element) => parsePreset(element.getAttribute('data-glossary-preset')),
         renderHTML: (attributes) => ({ 'data-glossary-preset': attributes.preset }),
+      },
+      headerLabels: {
+        default: [],
+        parseHTML: (element) => parseHeaderLabels(
+          element.getAttribute('data-glossary-header-labels'),
+        ),
+        renderHTML: (attributes) => ({
+          'data-glossary-header-labels': encodeURIComponent(
+            JSON.stringify(attributes.headerLabels ?? []),
+          ),
+        }),
       },
       showInstruction: {
         default: true,
@@ -212,6 +311,17 @@ export const GlossaryTerms = Node.create({
           'data-glossary-show-instruction': String(attributes.showInstruction),
         }),
       },
+      showColumnHeaders: {
+        default: true,
+        parseHTML: (element) => (
+          element.getAttribute('data-glossary-show-column-headers') !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-glossary-show-column-headers': String(
+            attributes.showColumnHeaders,
+          ),
+        }),
+      },
       showExample: {
         default: true,
         // Documents saved before this attribute existed keep their example column.
@@ -220,6 +330,17 @@ export const GlossaryTerms = Node.create({
         ),
         renderHTML: (attributes) => ({
           'data-glossary-show-example': String(attributes.showExample),
+        }),
+      },
+      showAdditionalColumn: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-glossary-show-additional-column') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-glossary-show-additional-column': String(
+            attributes.showAdditionalColumn,
+          ),
         }),
       },
     };
@@ -251,9 +372,13 @@ export const GlossaryTerms = Node.create({
               terms: attrs.terms ?? defaultTerms(),
               termWidth: attrs.termWidth ?? 33,
               definitionWidth: attrs.definitionWidth ?? 33,
+              additionalWidth: attrs.additionalWidth ?? 20,
               preset: attrs.preset ?? 'default',
+              headerLabels: attrs.headerLabels ?? [],
               showInstruction: attrs.showInstruction ?? true,
+              showColumnHeaders: attrs.showColumnHeaders ?? true,
               showExample: attrs.showExample ?? true,
+              showAdditionalColumn: attrs.showAdditionalColumn ?? false,
             },
           }),
     };

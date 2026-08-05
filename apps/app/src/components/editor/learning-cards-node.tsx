@@ -3,10 +3,14 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 import { Plugin } from '@tiptap/pm/state';
 import { ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
+import type { CSSProperties } from 'react';
 import { CustomBlockRoot } from '@/components/editor/custom-blocks/primitives';
 import { InlineFormattedText } from '@/components/editor/custom-blocks/inline-formatting';
 import { htmlToInlineFormatting } from '@/components/editor/custom-blocks/inline-formatting';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
+import {
+  isSingleLetterBlankAnswer,
+} from '@/components/editor/fill-in-the-blank-node';
 
 export type LearningCardItem = {
   id: string;
@@ -14,11 +18,15 @@ export type LearningCardItem = {
   back: string;
 };
 
+export type LearningCardTextSize = 'xs' | 's' | 'm' | 'l' | 'xl';
+
 export type LearningCardsAttrs = {
   title: string;
   format: 'a8-landscape';
   sidedness: 'single' | 'double';
   items: LearningCardItem[];
+  frontTextSize: LearningCardTextSize;
+  backTextSize: LearningCardTextSize;
   groupIndex: number;
   sheetSide: 'front' | 'back';
 };
@@ -42,6 +50,8 @@ export const DEFAULT_LEARNING_CARDS_ATTRS: LearningCardsAttrs = {
   format: 'a8-landscape',
   sidedness: 'double',
   items: DEFAULT_LEARNING_CARD_ITEMS,
+  frontTextSize: 'm',
+  backTextSize: 'm',
   groupIndex: 0,
   sheetSide: 'front',
 };
@@ -66,6 +76,58 @@ function parseItems(value: string | null): LearningCardItem[] {
   }
 }
 
+type LearningCardBlankPart =
+  | { type: 'text'; value: string }
+  | { type: 'blank'; answer: string; index: number; widthFactor: number };
+
+function parseLearningCardBlankPayload(payload: string, defaultWidthFactor = 1) {
+  const separatorIndex = payload.lastIndexOf('|');
+  if (separatorIndex === -1) {
+    return { answer: payload.trim(), widthFactor: defaultWidthFactor };
+  }
+
+  const answer = payload.slice(0, separatorIndex).trim();
+  const parsedFactor = Number(payload.slice(separatorIndex + 1).trim());
+  if (!answer || !Number.isFinite(parsedFactor) || parsedFactor < 0.5) {
+    return { answer: payload.trim(), widthFactor: defaultWidthFactor };
+  }
+
+  return {
+    answer,
+    widthFactor: Math.min(parsedFactor, 5),
+  };
+}
+
+function parseLearningCardBlanks(text: string): LearningCardBlankPart[] {
+  const parts: LearningCardBlankPart[] = [];
+  const pattern = /\{\{blank:([^{}]+)\}\}/gi;
+  let cursor = 0;
+  let blankIndex = 0;
+  let match = pattern.exec(text);
+
+  while (match) {
+    if (match.index > cursor) {
+      parts.push({ type: 'text', value: text.slice(cursor, match.index) });
+    }
+    blankIndex += 1;
+    const blank = parseLearningCardBlankPayload(match[1], 1);
+    parts.push({
+      type: 'blank',
+      answer: blank.answer,
+      index: blankIndex,
+      widthFactor: blank.widthFactor,
+    });
+    cursor = match.index + match[0].length;
+    match = pattern.exec(text);
+  }
+
+  if (cursor < text.length) {
+    parts.push({ type: 'text', value: text.slice(cursor) });
+  }
+
+  return parts.length ? parts : [{ type: 'text', value: text }];
+}
+
 function groupsOfNine(items: LearningCardItem[]) {
   const safeItems = items.length ? items : DEFAULT_LEARNING_CARD_ITEMS;
   return Array.from(
@@ -76,9 +138,11 @@ function groupsOfNine(items: LearningCardItem[]) {
 
 function LearningCardsGrid({
   back,
+  textSize,
   items,
 }: {
   back: boolean;
+  textSize: LearningCardTextSize;
   items: LearningCardItem[];
 }) {
   const cells = Array.from({ length: CARDS_PER_GROUP }, (_, index) => items[index] ?? null);
@@ -92,6 +156,7 @@ function LearningCardsGrid({
               fallback={item.id.endsWith('-empty')
                 ? undefined
                 : `Card ${items.indexOf(item) + 1}`}
+              textSize={textSize}
               text={back ? item.back : item.front}
             />
           ) : null}
@@ -103,9 +168,11 @@ function LearningCardsGrid({
 
 export function LearningCardContent({
   fallback,
+  textSize = 'm',
   text,
 }: {
   fallback?: string;
+  textSize?: LearningCardTextSize;
   text: string;
 }) {
   const value = htmlToInlineFormatting(text || fallback || '');
@@ -115,9 +182,36 @@ export function LearningCardContent({
     ? `${value.slice(0, match.index)}${value.slice(match.index + match[0].length)}`
       .replace(/^\n+|\n+$/g, '')
     : value;
+  const parts = parseLearningCardBlanks(body);
+
+  let blankIndex = 0;
   return (
-    <div className="learning-cards-node__content">
-      {body && <InlineFormattedText text={body} />}
+    <div className={`learning-cards-node__content learning-cards-node__content--text-${textSize}`}>
+      <div className="learning-cards-node__body">
+        {parts.map((part, index) => {
+          if (part.type === 'text') {
+            return <InlineFormattedText key={`text-${index}`} text={part.value} />;
+          }
+
+          blankIndex += 1;
+          return (
+            <span
+              aria-label={`Blank ${String(blankIndex).padStart(2, '0')}`}
+              className={`fill-in-the-blank-node__blank${
+                isSingleLetterBlankAnswer(part.answer)
+                  ? ' fill-in-the-blank-node__blank--single-letter'
+                  : ''
+              }`}
+              data-answer={part.answer}
+              key={`blank-${index}`}
+              role="img"
+              style={{
+                '--fill-blank-width-factor': part.widthFactor,
+              } as CSSProperties}
+            />
+          );
+        })}
+      </div>
       {answer !== null && (
         <div className="learning-cards-node__answer">
           <InlineFormattedText text={answer} />
@@ -132,13 +226,14 @@ function LearningCardsNodeView({ node, selected }: NodeViewProps) {
   const groups = groupsOfNine(attrs.items);
   const items = groups[attrs.groupIndex] ?? [];
   const back = attrs.sheetSide === 'back';
+  const textSize = back ? attrs.backTextSize : attrs.frontTextSize;
   return (
     <CustomBlockRoot selected={selected} className="learning-cards-node">
       <section className="learning-cards-node__sheet" data-side={attrs.sheetSide}>
         {attrs.groupIndex === 0 && !back && (
           <h1 className="learning-cards-node__title">{attrs.title}</h1>
         )}
-        <LearningCardsGrid items={items} back={back} />
+        <LearningCardsGrid items={items} back={back} textSize={textSize} />
       </section>
     </CustomBlockRoot>
   );
@@ -175,6 +270,34 @@ export const LearningCards = Node.create({
         default: DEFAULT_LEARNING_CARDS_ATTRS.sidedness,
         parseHTML: (element) => element.getAttribute('data-sidedness') === 'single' ? 'single' : 'double',
         renderHTML: ({ sidedness }) => ({ 'data-sidedness': sidedness }),
+      },
+      frontTextSize: {
+        default: DEFAULT_LEARNING_CARDS_ATTRS.frontTextSize,
+        parseHTML: (element) => {
+          const value = element.getAttribute('data-front-text-size');
+          return value === 'xs'
+            || value === 's'
+            || value === 'm'
+            || value === 'l'
+            || value === 'xl'
+            ? value
+            : DEFAULT_LEARNING_CARDS_ATTRS.frontTextSize;
+        },
+        renderHTML: ({ frontTextSize }) => ({ 'data-front-text-size': frontTextSize }),
+      },
+      backTextSize: {
+        default: DEFAULT_LEARNING_CARDS_ATTRS.backTextSize,
+        parseHTML: (element) => {
+          const value = element.getAttribute('data-back-text-size');
+          return value === 'xs'
+            || value === 's'
+            || value === 'm'
+            || value === 'l'
+            || value === 'xl'
+            ? value
+            : DEFAULT_LEARNING_CARDS_ATTRS.backTextSize;
+        },
+        renderHTML: ({ backTextSize }) => ({ 'data-back-text-size': backTextSize }),
       },
       items: {
         default: DEFAULT_LEARNING_CARD_ITEMS,
