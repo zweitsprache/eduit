@@ -10,6 +10,7 @@ import { absoluteDazitUrl } from '@/lib/site-url';
 import { InlineMetadataEditor } from '@/components/inline-metadata-editor';
 import { InlineHtmlEditor } from '@/components/inline-html-editor';
 import { getCurrentDazitUser } from '@/lib/auth/authorization';
+import { DownloadAuthGate } from '@/components/download-auth-gate';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -54,6 +55,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
   const searchSnippet = worksheet.searchSnippet || worksheet.description;
   const currentUser = await getCurrentDazitUser();
   const canAdminister = Boolean(currentUser?.isAdmin);
+  const isAuthenticated = Boolean(currentUser);
   const allWorksheets = await getWorksheetCards();
   const related = allWorksheets
     .filter(({ slug, subject }) => slug !== worksheet.slug && subject === worksheet.subject)
@@ -174,13 +176,13 @@ export default async function WorksheetDetailPage({ params }: Props) {
               <h1>{worksheet.title}</h1>
               <p className="lead">{worksheet.description}</p>
               <div className="detail-actions">
-                {worksheet.pdfUrl
-                  ? (
-                    <a className="download-primary" href={worksheet.pdfUrl} target="_blank" rel="noreferrer">
-                      <Download01 /> PDF herunterladen
-                    </a>
-                  )
-                  : <button className="download-primary"><Download01 /> PDF herunterladen</button>}
+                <DownloadAuthGate
+                  canDownload={isAuthenticated}
+                  className="download-primary"
+                  downloadUrl={worksheet.pdfUrl}
+                >
+                  <Download01 /> PDF herunterladen
+                </DownloadAuthGate>
                 {canAdminister && <button><Plus /> Zur Sammlung</button>}
               </div>
               <dl className="metadata-grid">
@@ -227,7 +229,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
             <h2>Zugehörige Arbeitsblätter</h2>
             <div className="related-grid">
               {familyMaterials.map((item) => (
-                <WorksheetCard key={item.slug} worksheet={item} />
+                <WorksheetCard canDownload={isAuthenticated} key={item.slug} worksheet={item} />
               ))}
             </div>
           </section>
@@ -235,7 +237,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
         <section className="related">
           <h2>Ähnliche Dokumente</h2>
           <div className="related-grid">
-            {fallbackRelated.map((item) => <WorksheetCard key={item.slug} worksheet={item} />)}
+            {fallbackRelated.map((item) => <WorksheetCard canDownload={isAuthenticated} key={item.slug} worksheet={item} />)}
           </div>
         </section>
       </main>

@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "worksheets": [
+    {
+      "title": "Spenglerpraktiker:in EBA",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "brandProfileId": "35ebecde-f08f-4bfa-94dc-aa6e052187e6",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "contextPdfPageCount": 1
+      },
+      "blocks": [
+        {
+          "type": "heading",
+          "text": "Spenglerpraktiker:in EBA",
+          "level": 1,
+          "numbered": false,
+          "gapAfter": 2,
+          "restartInstructionNumbering": true
+        },
+        {
+          "type": "richText",
+          "html": "<p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\"><strong>Immer ganz oben</strong></p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Spenglerpraktikerinnen und Spenglerpraktiker schützen Gebäude vor Regen, Schnee und Hagel. Sie arbeiten mit dünnem Blech an Dächern und an Fassaden. Die Ausbildung dauert zwei Jahre und endet mit einem eidgenössischen Berufsattest. In der Werkstatt werden die Blechteile zugeschnitten, gebogen und gelötet. Danach werden sie auf der Baustelle montiert. Der Arbeitsort ist deshalb nicht immer gleich.</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Lea ist im zweiten Lehrjahr und arbeitet in einem kleinen Betrieb. Am Morgen fährt das Team mit dem Lieferwagen zur Baustelle. Dort ist es oft laut, und die Leute arbeiten bei jedem Wetter. Die Arbeit in der Werkstatt ist ruhiger als die Arbeit auf dem Dach. Im Winter ist es auf dem Dach eisig, trotzdem steigt Lea hinauf.</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Die Sicherheit ist auf jeder Baustelle sehr wichtig. Ohne Helm und ohne Gurt darf niemand auf ein Dach steigen. Ein Sturz aus grosser Höhe wäre lebensgefährlich. Der Betrieb lässt die Leitern und die Maschinen jedes Jahr prüfen.</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">\n\n\n\n</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Lea fragt ihren Chef manchmal, ob sie schon selbständig arbeiten darf. Nach dem Abschluss kann sie eine verkürzte Lehre als Spenglerin EFZ machen. Sie würde gern noch mehr über Solaranlagen lernen. Junge Leute können zuerst eine Schnupperlehre in einem Betrieb machen. Dann sehen sie, ob dieser Beruf zu ihnen passt.</p>"
+        },
+        {
+          "type": "mcq",
+          "instruction": "Choose the correct answer.",
+          "blockQuestion": "\n",
+          "columns": 1,
+          "shuffleAnswers": false,
+          "showInstruction": true,
+          "questions": [
+            {
+              "question": "Wie lange dauert die Ausbildung zur Spenglerpraktikerin EBA?",
+              "answerMode": "single",
+              "options": [
+                {
+                  "text": "ein Jahr",
+                  "correct": false
+                },
+                {
+                  "text": "zwei Jahre",
+                  "correct": true
+                },
+                {
+                  "text": "drei Jahre",
+                  "correct": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "mcq",
+          "instruction": "Choose the correct answer.",
+          "blockQuestion": "\n",
+          "columns": 1,
+          "shuffleAnswers": false,
+          "showInstruction": true,
+          "questions": [
+            {
+              "question": "Wo werden die Blechteile zugeschnitten und gebogen?",
+              "answerMode": "single",
+              "options": [
+                {
+                  "text": "auf dem Dach",
+                  "correct": false
+                },
+                {
+                  "text": "auf der Baustelle",
+                  "correct": false
+                },
+                {
+                  "text": "in der Werkstatt",
+                  "correct": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "mcq",
+          "instruction": "Choose the correct answer.",
+          "blockQuestion": "\n",
+          "columns": 1,
+          "shuffleAnswers": false,
+          "showInstruction": true,
+          "questions": [
+            {
+              "question": "Warum trägt Lea auf dem Dach immer einen Gurt?",
+              "answerMode": "single",
+              "options": [
+                {
+                  "text": "Ein Sturz aus grosser Höhe wäre lebensgefährlich.",
+                  "correct": true
+                },
+                {
+                  "text": "Der Gurt schützt ihren Rücken bei schwerem Material.",
+                  "correct": false
+                },
+                {
+                  "text": "Der Gurt hält das Werkzeug während der Arbeit fest.",
+                  "correct": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "pageBreak",
+          "restartPagination": false
+        },
+        {
+          "type": "heading",
+          "text": "Spenglerpraktiker:in EBA",
+          "level": 1,
+          "numbered": false,
+          "gapAfter": 2,
+          "restartInstructionNumbering": true
+        },
+        {
+          "type": "glossary",
+          "preset": "default",
+          "showInstruction": false,
+          "showColumnHeaders": true,
+          "showExample": false,
+          "showAdditionalColumn": false,
+          "headerLabels": [],
+          "termWidth": 33,
+          "definitionWidth": 33,
+          "additionalWidth": 20,
+          "entries": [
+            {
+              "term": "die Baustelle, -n",
+              "definition": "Ort, dort baut oder renoviert man ein Haus"
+            },
+            {
+              "term": "das Berufsattest (EBA)",
+              "definition": "Diplom nach einer zweijährigen Lehre"
+            },
+            {
+              "term": "biegen",
+              "definition": "Blech rund oder eckig formen"
+            },
+            {
+              "term": "das Blech, -e",
+              "definition": "dünnes, flaches Metall"
+            },
+            {
+              "term": "eisig",
+              "definition": "sehr kalt"
+            },
+            {
+              "term": "das Fähigkeitszeugnis (EFZ)",
+              "definition": "Diplom nach einer drei- oder vierjährigen Lehre"
+            },
+            {
+              "term": "die Fassade, -n",
+              "definition": "die Aussenwand von einem Haus"
+            },
+            {
+              "term": "der Gurt, -e",
+              "definition": "Er hält eine Person auf dem Dach fest."
+            },
+            {
+              "term": "lebensgefährlich",
+              "definition": "so gefährlich: Man kann sterben."
+            },
+            {
+              "term": "der Lieferwagen, -",
+              "definition": "Auto für Material und Werkzeug"
+            },
+            {
+              "term": "löten",
+              "definition": "zwei Metallteile mit Hitze verbinden"
+            },
+            {
+              "term": "montieren",
+              "definition": "die Teile am Bau zusammenbauen"
+            },
+            {
+              "term": "die Schnupperlehre, -n",
+              "definition": "ein paar Tage einen Beruf ausprobieren"
+            },
+            {
+              "term": "die Solaranlage, -n",
+              "definition": "Anlage auf dem Dach, sie macht Strom aus Sonne"
+            },
+            {
+              "term": "der Sturz, Stürze",
+              "definition": "Eine Person fällt hinunter."
+            },
+            {
+              "term": "die Werkstatt, Werkstätten",
+              "definition": "Raum mit Maschinen und Werkzeug"
+            },
+            {
+              "term": "zuschneiden",
+              "definition": "Blech in die richtige Grösse schneiden"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

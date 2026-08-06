@@ -31,7 +31,97 @@ export type WorksheetJsonExportResult = {
 
 // Node types that are dropped silently when they hold nothing importable, instead
 // of being reported as unsupported.
-const IGNORED_NODE_TYPES = new Set(['paragraph', 'text', 'hardBreak', 'richText']);
+const IGNORED_NODE_TYPES = new Set(['text', 'hardBreak']);
+
+const LEGACY_RICH_TEXT_NODE_TYPES = new Set([
+  'paragraph',
+  'heading',
+  'bulletList',
+  'orderedList',
+  'listItem',
+  'blockquote',
+]);
+
+const CUSTOM_BLOCK_NODE_TYPES = new Set([
+  'customHeading',
+  'pageBreak',
+  'richText',
+  'glossaryTerms',
+  'fillInTheBlank',
+  'dialogue',
+  'mcq',
+  'trueFalse',
+  'matchingPairs',
+  'timeMatching',
+  'wordGrid',
+  'learningCards',
+  'domino',
+]);
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function withMarks(text: string, marks: readonly { type: { name: string }; attrs?: Record<string, unknown> }[]) {
+  return marks.reduce((content, mark) => {
+    if (mark.type.name === 'bold') return `<strong>${content}</strong>`;
+    if (mark.type.name === 'italic') return `<em>${content}</em>`;
+    if (mark.type.name === 'underline') return `<u>${content}</u>`;
+    if (mark.type.name === 'strike') return `<s>${content}</s>`;
+    if (mark.type.name === 'link') {
+      const href = typeof mark.attrs?.href === 'string' ? mark.attrs.href : '';
+      if (!href) return content;
+      return `<a href="${escapeHtml(href)}">${content}</a>`;
+    }
+    return content;
+  }, text);
+}
+
+function nodeHtml(node: ProseMirrorNode): string {
+  switch (node.type.name) {
+    case 'text': {
+      const text = escapeHtml(node.text ?? '');
+      return withMarks(text, node.marks as readonly { type: { name: string }; attrs?: Record<string, unknown> }[]);
+    }
+    case 'hardBreak':
+      return '<br>';
+    case 'paragraph':
+      return `<p>${node.content.content.map(nodeHtml).join('')}</p>`;
+    case 'heading': {
+      const levelRaw = Number((node.attrs as Record<string, unknown>).level ?? 2);
+      const level = [1, 2, 3, 4, 5, 6].includes(levelRaw) ? levelRaw : 2;
+      return `<h${level}>${node.content.content.map(nodeHtml).join('')}</h${level}>`;
+    }
+    case 'bulletList':
+      return `<ul>${node.content.content.map(nodeHtml).join('')}</ul>`;
+    case 'orderedList':
+      return `<ol>${node.content.content.map(nodeHtml).join('')}</ol>`;
+    case 'listItem':
+      return `<li>${node.content.content.map(nodeHtml).join('')}</li>`;
+    case 'blockquote':
+      return `<blockquote>${node.content.content.map(nodeHtml).join('')}</blockquote>`;
+    default:
+      return '';
+  }
+}
+
+function legacyRichTextNode(node: ProseMirrorNode) {
+  if (!LEGACY_RICH_TEXT_NODE_TYPES.has(node.type.name)) return null;
+  const html = nodeHtml(node).trim();
+  return html ? html : null;
+}
+
+function legacyRichTextFromSubtree(node: ProseMirrorNode): string {
+  if (CUSTOM_BLOCK_NODE_TYPES.has(node.type.name)) return '';
+  if (LEGACY_RICH_TEXT_NODE_TYPES.has(node.type.name)) return nodeHtml(node);
+  if (!node.childCount) return '';
+  return node.content.content.map((child) => legacyRichTextFromSubtree(child)).join('');
+}
 
 // `instruction` is a global attribute (custom-blocks/instructions.ts) that may be null,
 // but the import schema requires a non-empty instruction for these two block types.
@@ -70,7 +160,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
       return { type: 'pageBreak', restartPagination: Boolean(attrs.restartPagination) };
     case 'richText': {
       const { html } = attrs as RichTextAttrs;
-      return html.trim() ? { type: 'richText', html } : null;
+      return { type: 'richText', html: html.trim() ? html : '<p><br></p>' };
     }
     case 'glossaryTerms': {
       const {
@@ -308,6 +398,16 @@ export function worksheetJsonFromDoc(
 ): WorksheetJsonExportResult {
   const blocks: Record<string, unknown>[] = [];
   const skippedTypes = new Set<string>();
+  const legacyRichTextParts: string[] = [];
+
+  const flushLegacyRichText = () => {
+    if (!legacyRichTextParts.length) return;
+    blocks.push({
+      type: 'richText',
+      html: legacyRichTextParts.join(''),
+    });
+    legacyRichTextParts.length = 0;
+  };
   // A learning-cards document is a sequence of front/back sheets over the same item
   // list, separated by page breaks, and the node's filterTransaction keeps anything
   // else out. Collapse it back into the single block the import expands again.
@@ -316,6 +416,14 @@ export function worksheetJsonFromDoc(
   let dominoSeen = false;
 
   doc.forEach((node) => {
+    const legacyRichText = legacyRichTextNode(node) ?? legacyRichTextFromSubtree(node).trim();
+    if (legacyRichText) {
+      legacyRichTextParts.push(legacyRichText);
+      return;
+    }
+
+    flushLegacyRichText();
+
     if (node.type.name === 'learningCards') {
       if (learningCardsSeen) return;
       learningCardsSeen = true;
@@ -341,6 +449,8 @@ export function worksheetJsonFromDoc(
     if (IGNORED_NODE_TYPES.has(node.type.name) && !node.textContent.trim()) return;
     skippedTypes.add(node.type.name);
   });
+
+  flushLegacyRichText();
 
   const payload = {
     schemaVersion: 1,

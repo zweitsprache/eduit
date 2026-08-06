@@ -866,6 +866,7 @@ function RichTextEditor({
           ref={inputRef}
           contentEditable
           suppressContentEditableWarning
+          onInput={saveContent}
           onBlur={saveContent}
           className="rich-text-modal-input min-h-72 px-4 py-3 text-sm text-secondary outline-none"
           dangerouslySetInnerHTML={{ __html: attrs.html }}

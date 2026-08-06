@@ -218,10 +218,13 @@ export async function POST(request: Request) {
           editor.querySelectorAll('.tiptap-page-footer').length,
         );
         const exactDocumentHeight = `calc(${pageCount} * ${pageHeight})`;
-        editor.style.height = exactDocumentHeight;
+        // Keep the minimum document height for deterministic pagination,
+        // but avoid hard-clamping height. In Chromium print layout a forced
+        // fixed height can vertically center later fragments after page breaks.
         editor.style.minHeight = exactDocumentHeight;
-        editor.style.maxHeight = exactDocumentHeight;
-        editor.style.overflow = 'hidden';
+        editor.style.height = 'auto';
+        editor.style.maxHeight = 'none';
+        editor.style.overflow = 'visible';
       }
     }, { pageHeight: pageFormat.pageHeight });
     const pdf = await page.pdf({

@@ -2,10 +2,15 @@ import { AuthPage } from '@/components/auth-page';
 
 const authPaths = new Set([
   'sign-in',
+  'sign-up',
+  'email-otp',
+  'magic-link',
   'forgot-password',
+  'recover-account',
   'reset-password',
-  'verify-email',
+  'two-factor',
   'callback',
+  'sign-out',
 ]);
 
 export default async function AuthenticationPage({

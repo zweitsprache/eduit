@@ -9,12 +9,14 @@ import { trackSearch } from '@/components/search-tracking-form';
 
 export function LibraryBrowser({
   canAdminister = false,
+  isAuthenticated = false,
   initialLevels = [],
   initialQuery = '',
   initialTypes = [],
   worksheets,
 }: {
   canAdminister?: boolean;
+  isAuthenticated?: boolean;
   initialLevels?: string[];
   initialQuery?: string;
   initialTypes?: string[];
@@ -210,6 +212,7 @@ export function LibraryBrowser({
         <div className="worksheet-grid">
           {paginatedWorksheets.map((worksheet) => (
             <WorksheetCard
+              canDownload={isAuthenticated}
               deleting={deletingId === worksheet.worksheetId}
               key={worksheet.slug}
               onDelete={canAdminister ? deleteWorksheet : undefined}

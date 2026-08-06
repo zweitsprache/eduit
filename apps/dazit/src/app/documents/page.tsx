@@ -27,6 +27,7 @@ export default async function LibraryPage({
     getCurrentDazitUser(),
     searchParams,
   ]);
+  const isAuthenticated = Boolean(currentUser);
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
@@ -53,6 +54,7 @@ export default async function LibraryPage({
       </div>
       <LibraryBrowser
         canAdminister={Boolean(currentUser?.isAdmin)}
+        isAuthenticated={isAuthenticated}
         initialLevels={query.level ? [query.level] : []}
         initialQuery={query.q || ''}
         initialTypes={query.type ? [query.type] : []}

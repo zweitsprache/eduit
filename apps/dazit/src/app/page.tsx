@@ -31,6 +31,7 @@ export default async function HomePage() {
     getWorksheetCards().then((worksheets) => worksheets.slice(0, 4)),
     getCurrentDazitUser(),
   ]);
+  const isAuthenticated = Boolean(currentUser);
   const { total, levelCounts, typeCounts } = homepageStats;
   return (
     <>
@@ -114,7 +115,7 @@ export default async function HomePage() {
             </div>
             <div className="home-new-grid">
               {newest.map((worksheet) => (
-                <WorksheetCard key={worksheet.slug} worksheet={worksheet} />
+                <WorksheetCard canDownload={isAuthenticated} key={worksheet.slug} worksheet={worksheet} />
               ))}
             </div>
             <Link className="home-new-mobile-link" href="/documents">Alle neuen Dokumente</Link>

@@ -1,0 +1,594 @@
+{
+  "schemaVersion": 1,
+  "worksheets": [
+    {
+      "title": "Spenglerpraktiker:in EBA",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "brandProfileId": "35ebecde-f08f-4bfa-94dc-aa6e052187e6",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "contextPdfPageCount": 1
+      },
+      "blocks": [
+        {
+          "type": "heading",
+          "text": "Spenglerpraktiker:in EBA",
+          "level": 1,
+          "numbered": false,
+          "gapAfter": 2,
+          "restartInstructionNumbering": true
+        },
+        {
+          "type": "richText",
+          "html": "<p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\"><strong>Arben ist Spenglerpraktiker</strong></p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Ich heisse Arben. Ich bin 22 Jahre alt. Ich komme aus dem Kosovo. Vor drei Jahren bin ich in die Schweiz gekommen. Zuerst hatte ich keine Arbeit. Jetzt arbeite ich als Spenglerpraktiker. Ich arbeite bei einer Firma in Aarau.</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Die Ausbildung dauert zwei Jahre. Ich bin im zweiten Lehrjahr. Ich gehe einen Tag pro Woche in die Schule. Vier Tage arbeite ich im Betrieb.</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Wir schützen die Häuser vor Regen und Schnee. Am Morgen fahre ich zur Baustelle. Ich fahre mit dem Auto. Manchmal arbeite ich in der Werkstatt. Dort schneide ich Blech. Ich biege und löte die Teile. Dann montieren wir die Teile am Dach.</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Auf dem Dach ist die Arbeit gefährlich. Ich muss immer einen Helm tragen. Wir tragen auch Handschuhe und Sicherheitsschuhe. Man darf nie ohne Gurt arbeiten. Im Winter ist es kalt. Wir arbeiten bei jedem Wetter draussen.</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Ich arbeite immer im Team. Mein Chef heisst Marco. Er gibt mir die Aufträge. Manchmal helfe ich meinen Kollegen.</p><p>\n\n\n\n\n\n</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Die Arbeit gefällt mir sehr. Am liebsten arbeite ich auf dem Dach. Dort ist die Aussicht schön. Nach der Ausbildung will ich weitermachen. Ich möchte Spengler EFZ werden. Dann muss ich noch zwei Jahre lernen. Ich lerne gern, denn der Beruf hat Zukunft.</p>"
+        },
+        {
+          "type": "trueFalse",
+          "instruction": "Sind diese Aussagen richtig oder falsch? Kreuzen Sie an.",
+          "question": "",
+          "trueLabel": "Richtig",
+          "falseLabel": "Falsch",
+          "showNa": false,
+          "naLabel": "N/A",
+          "showFirstAsExample": false,
+          "rows": [
+            {
+              "text": "Arben arbeitet in Aarau.",
+              "correctValue": "true"
+            },
+            {
+              "text": "Arben geht drei Tage pro Woche in die Schule.",
+              "correctValue": "false"
+            },
+            {
+              "text": "Auf dem Dach trägt Arben einen Helm.",
+              "correctValue": "true"
+            },
+            {
+              "text": "Bei Regen arbeitet Arben nicht.",
+              "correctValue": "false"
+            },
+            {
+              "text": "Arben möchte später Spengler EFZ werden.",
+              "correctValue": "true"
+            }
+          ]
+        },
+        {
+          "type": "pageBreak",
+          "restartPagination": false
+        },
+        {
+          "type": "heading",
+          "text": "Spenglerpraktiker:in EBA",
+          "level": 1,
+          "numbered": false,
+          "gapAfter": 2,
+          "restartInstructionNumbering": true
+        },
+        {
+          "type": "glossary",
+          "preset": "default",
+          "showInstruction": false,
+          "showColumnHeaders": true,
+          "showExample": false,
+          "showAdditionalColumn": false,
+          "headerLabels": [],
+          "termWidth": 33,
+          "definitionWidth": 33,
+          "additionalWidth": 20,
+          "entries": [
+            {
+              "term": "der Auftrag, Aufträge",
+              "definition": "die Arbeit für einen Kunden"
+            },
+            {
+              "term": "die Ausbildung, -en",
+              "definition": "Man lernt zwei bis vier Jahre einen Beruf."
+            },
+            {
+              "term": "die Baustelle, -n",
+              "definition": "Hier baut man ein Haus."
+            },
+            {
+              "term": "der Betrieb, -e",
+              "definition": "die Firma"
+            },
+            {
+              "term": "biegen",
+              "definition": "Man macht das Blech rund oder eckig."
+            },
+            {
+              "term": "das Blech, -e",
+              "definition": "Metall. Es ist dünn und flach."
+            },
+            {
+              "term": "EFZ",
+              "definition": "eidgenössisches Fähigkeitszeugnis: Diplom nach drei oder vier Jahren"
+            },
+            {
+              "term": "gefährlich",
+              "definition": "Hier passiert vielleicht ein Unfall."
+            },
+            {
+              "term": "der Gurt, -e",
+              "definition": "Er hält den Menschen am Dach fest."
+            },
+            {
+              "term": "der Helm, -e",
+              "definition": "Er schützt den Kopf."
+            },
+            {
+              "term": "das Lehrjahr, -e",
+              "definition": "ein Jahr in der Ausbildung"
+            },
+            {
+              "term": "löten",
+              "definition": "Man macht zwei Teile heiss. Dann sind sie zusammen."
+            },
+            {
+              "term": "montieren",
+              "definition": "Man baut die Teile am Haus zusammen."
+            },
+            {
+              "term": "schneiden",
+              "definition": "Man macht das Blech kleiner. Man braucht eine Schere."
+            },
+            {
+              "term": "die Sicherheitsschuhe (Pl.)",
+              "definition": "Sie schützen die Füsse."
+            },
+            {
+              "term": "der Spenglerpraktiker, die Spenglerpraktikerin",
+              "definition": "Er oder sie arbeitet mit Blech am Dach und an der Fassade."
+            },
+            {
+              "term": "die Werkstatt, Werkstätten",
+              "definition": "Hier arbeitet man mit Maschinen und Werkzeug."
+            }
+          ]
+        }
+      ]
+    }
+    {
+      "title": "Spenglerpraktiker:in EBA",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "brandProfileId": "35ebecde-f08f-4bfa-94dc-aa6e052187e6",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "contextPdfPageCount": 1
+      },
+      "blocks": [
+        {
+          "type": "heading",
+          "text": "Spenglerpraktiker:in EBA",
+          "level": 1,
+          "numbered": false,
+          "gapAfter": 2,
+          "restartInstructionNumbering": true
+        },
+        {
+          "type": "richText",
+          "html": "<p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\"><strong>Immer ganz oben</strong></p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Spenglerpraktikerinnen und Spenglerpraktiker schützen Gebäude vor Regen, Schnee und Hagel. Sie arbeiten mit dünnem Blech an Dächern und an Fassaden. Die Ausbildung dauert zwei Jahre und endet mit einem eidgenössischen Berufsattest. In der Werkstatt werden die Blechteile zugeschnitten, gebogen und gelötet. Danach werden sie auf der Baustelle montiert. Der Arbeitsort ist deshalb nicht immer gleich.</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Lea ist im zweiten Lehrjahr und arbeitet in einem kleinen Betrieb. Am Morgen fährt das Team mit dem Lieferwagen zur Baustelle. Dort ist es oft laut, und die Leute arbeiten bei jedem Wetter. Die Arbeit in der Werkstatt ist ruhiger als die Arbeit auf dem Dach. Im Winter ist es auf dem Dach eisig, trotzdem steigt Lea hinauf.</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Die Sicherheit ist auf jeder Baustelle sehr wichtig. Ohne Helm und ohne Gurt darf niemand auf ein Dach steigen. Ein Sturz aus grosser Höhe wäre lebensgefährlich. Der Betrieb lässt die Leitern und die Maschinen jedes Jahr prüfen.</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">\n\n\n\n</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Lea fragt ihren Chef manchmal, ob sie schon selbständig arbeiten darf. Nach dem Abschluss kann sie eine verkürzte Lehre als Spenglerin EFZ machen. Sie würde gern noch mehr über Solaranlagen lernen. Junge Leute können zuerst eine Schnupperlehre in einem Betrieb machen. Dann sehen sie, ob dieser Beruf zu ihnen passt.</p>"
+        },
+        {
+          "type": "mcq",
+          "instruction": "Choose the correct answer.",
+          "blockQuestion": "\n",
+          "columns": 1,
+          "shuffleAnswers": false,
+          "showInstruction": true,
+          "questions": [
+            {
+              "question": "Wie lange dauert die Ausbildung zur Spenglerpraktikerin EBA?",
+              "answerMode": "single",
+              "options": [
+                {
+                  "text": "ein Jahr",
+                  "correct": false
+                },
+                {
+                  "text": "zwei Jahre",
+                  "correct": true
+                },
+                {
+                  "text": "drei Jahre",
+                  "correct": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "mcq",
+          "instruction": "Choose the correct answer.",
+          "blockQuestion": "\n",
+          "columns": 1,
+          "shuffleAnswers": false,
+          "showInstruction": true,
+          "questions": [
+            {
+              "question": "Wo werden die Blechteile zugeschnitten und gebogen?",
+              "answerMode": "single",
+              "options": [
+                {
+                  "text": "auf dem Dach",
+                  "correct": false
+                },
+                {
+                  "text": "auf der Baustelle",
+                  "correct": false
+                },
+                {
+                  "text": "in der Werkstatt",
+                  "correct": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "mcq",
+          "instruction": "Choose the correct answer.",
+          "blockQuestion": "\n",
+          "columns": 1,
+          "shuffleAnswers": false,
+          "showInstruction": true,
+          "questions": [
+            {
+              "question": "Warum trägt Lea auf dem Dach immer einen Gurt?",
+              "answerMode": "single",
+              "options": [
+                {
+                  "text": "Ein Sturz aus grosser Höhe wäre lebensgefährlich.",
+                  "correct": true
+                },
+                {
+                  "text": "Der Gurt schützt ihren Rücken bei schwerem Material.",
+                  "correct": false
+                },
+                {
+                  "text": "Der Gurt hält das Werkzeug während der Arbeit fest.",
+                  "correct": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "pageBreak",
+          "restartPagination": false
+        },
+        {
+          "type": "heading",
+          "text": "Spenglerpraktiker:in EBA",
+          "level": 1,
+          "numbered": false,
+          "gapAfter": 2,
+          "restartInstructionNumbering": true
+        },
+        {
+          "type": "glossary",
+          "preset": "default",
+          "showInstruction": false,
+          "showColumnHeaders": true,
+          "showExample": false,
+          "showAdditionalColumn": false,
+          "headerLabels": [],
+          "termWidth": 33,
+          "definitionWidth": 33,
+          "additionalWidth": 20,
+          "entries": [
+            {
+              "term": "die Baustelle, -n",
+              "definition": "Ort, dort baut oder renoviert man ein Haus"
+            },
+            {
+              "term": "das Berufsattest (EBA)",
+              "definition": "Diplom nach einer zweijährigen Lehre"
+            },
+            {
+              "term": "biegen",
+              "definition": "Blech rund oder eckig formen"
+            },
+            {
+              "term": "das Blech, -e",
+              "definition": "dünnes, flaches Metall"
+            },
+            {
+              "term": "eisig",
+              "definition": "sehr kalt"
+            },
+            {
+              "term": "das Fähigkeitszeugnis (EFZ)",
+              "definition": "Diplom nach einer drei- oder vierjährigen Lehre"
+            },
+            {
+              "term": "die Fassade, -n",
+              "definition": "die Aussenwand von einem Haus"
+            },
+            {
+              "term": "der Gurt, -e",
+              "definition": "Er hält eine Person auf dem Dach fest."
+            },
+            {
+              "term": "lebensgefährlich",
+              "definition": "so gefährlich: Man kann sterben."
+            },
+            {
+              "term": "der Lieferwagen, -",
+              "definition": "Auto für Material und Werkzeug"
+            },
+            {
+              "term": "löten",
+              "definition": "zwei Metallteile mit Hitze verbinden"
+            },
+            {
+              "term": "montieren",
+              "definition": "die Teile am Bau zusammenbauen"
+            },
+            {
+              "term": "die Schnupperlehre, -n",
+              "definition": "ein paar Tage einen Beruf ausprobieren"
+            },
+            {
+              "term": "die Solaranlage, -n",
+              "definition": "Anlage auf dem Dach, sie macht Strom aus Sonne"
+            },
+            {
+              "term": "der Sturz, Stürze",
+              "definition": "Eine Person fällt hinunter."
+            },
+            {
+              "term": "die Werkstatt, Werkstätten",
+              "definition": "Raum mit Maschinen und Werkzeug"
+            },
+            {
+              "term": "zuschneiden",
+              "definition": "Blech in die richtige Grösse schneiden"
+            }
+          ]
+        }
+      ]
+    }
+      {
+      "title": "Spenglerpraktiker:in EBA",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "brandProfileId": "35ebecde-f08f-4bfa-94dc-aa6e052187e6",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "contextPdfPageCount": 1
+      },
+      "blocks": [
+        {
+          "type": "heading",
+          "text": "Spenglerpraktiker:in EBA",
+          "level": 1,
+          "numbered": false,
+          "gapAfter": 2,
+          "restartInstructionNumbering": true
+        },
+        {
+          "type": "richText",
+          "html": "<p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\"><b>Ein Einstieg mit Perspektive</b></p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Wer als Spenglerpraktikerin oder Spenglerpraktiker arbeitet, sorgt dafür, dass Gebäude vor Regen, Schnee und Hagel geschützt sind. Die zweijährige Grundbildung schliesst mit einem eidgenössischen Berufsattest ab und richtet sich vor allem an Jugendliche, die lieber praktisch als schulisch lernen. Der schulische Anteil beträgt einen Tag pro Woche, während die übrige Zeit im Lehrbetrieb verbracht wird. Ergänzend werden während der zwei Jahre überbetriebliche Kurse besucht, in denen die berufliche Grundlagen geübt werden.</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Der Arbeitsalltag verteilt sich auf zwei sehr unterschiedliche Orte. In der Werkstatt werden die benötigten Blechteile zugeschnitten, gebogen und gelötet, bevor sie auf die Baustelle transportiert werden. Dort montiert das Team die fertigen Elemente an Dächern und Fassaden, wobei die Aufträge von den ausgebildeten Spenglerinnen und Spenglern erteilt werden. Da der grössere Teil der Arbeit im Freien stattfindet, ist die Witterung ein ständiger Begleiter: Bei eisigem Wind auf einem Dach zu stehen, verlangt sowohl körperliche Fitness als auch eine gute Portion Ausdauer.</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Entsprechend hoch ist der Stellenwert der Arbeitssicherheit. Weder ohne Helm noch ohne Gurt darf jemand ein Gerüst betreten, und die Leitern und Maschinen werden regelmässig geprüft. Je sorgfältiger die Vorbereitung ausfällt, desto geringer ist das Unfallrisiko. Ausser der persönlichen Schutzausrüstung gehören auch Absperrungen und Auffangnetze zur täglichen Ausrüstung.</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Der Beruf hat sich in den letzten Jahren stark verändert. Seitdem die Energiestrategie des Bundes umgesetzt wird, sind zahlreiche Dächer saniert und mit Solaranlagen ergänzt worden. Fachkräfte werden deshalb dringend gesucht. Wer die Ausbildung mit guten Leistungen abschliesst, kann anschliessend eine verkürzte Lehre als Spengler/in EFZ absolvieren. Danach stehen weitere Wege offen, etwa die Berufsprüfung zum Spenglerpolier oder zur Projektleiterin Gebäudetechnik.</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">\n\n\n\n</p><p class=\"font-claude-response-body break-words whitespace-normal\" dir=\"ltr\">Interessierte sollten zuerst eine Schnupperlehre machen, bevor sie sich für eine Lehrstelle bewerben. Nur so lässt sich herausfinden, ob die Arbeit in der Höhe wirklich zu einem passt. Wer Freude an Metall hat und schwindelfrei ist, wird in diesem Beruf viel Zufriedenheit finden – denn am Abend sieht man genau, was man den ganzen Tag geleistet hat.</p>"
+        },
+        {
+          "type": "richText",
+          "html": "<p></p>"
+        },
+        {
+          "type": "pageBreak",
+          "restartPagination": false
+        },
+        {
+          "type": "heading",
+          "text": "Spenglerpraktiker:in EBA",
+          "level": 1,
+          "numbered": false,
+          "gapAfter": 2,
+          "restartInstructionNumbering": true
+        },
+        {
+          "type": "mcq",
+          "instruction": "Choose the correct answer.",
+          "blockQuestion": "",
+          "columns": 1,
+          "shuffleAnswers": false,
+          "showInstruction": true,
+          "questions": [
+            {
+              "question": "Wie ist die zweijährige Grundbildung organisiert?",
+              "answerMode": "single",
+              "options": [
+                {
+                  "text": "Ein Tag pro Woche findet in der Berufsfachschule statt, die übrige Zeit im Lehrbetrieb.",
+                  "correct": true
+                },
+                {
+                  "text": "Zwei Tage pro Woche finden in der Berufsfachschule statt, die übrige Zeit im Lehrbetrieb.",
+                  "correct": false
+                },
+                {
+                  "text": "Das erste Jahr findet in der Berufsfachschule statt, das zweite Jahr im Lehrbetrieb.",
+                  "correct": false
+                },
+                {
+                  "text": "OptioDie gesamte Ausbildung findet im Lehrbetrieb statt, ergänzt durch Abendkurse.n D",
+                  "correct": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "mcq",
+          "instruction": "Choose the correct answer.",
+          "blockQuestion": "",
+          "columns": 1,
+          "shuffleAnswers": false,
+          "showInstruction": true,
+          "questions": [
+            {
+              "question": "Welche Arbeiten werden in der Werkstatt ausgeführt?",
+              "answerMode": "single",
+              "options": [
+                {
+                  "text": "Die Masse werden an Dach und Fassade aufgenommen.",
+                  "correct": false
+                },
+                {
+                  "text": "Die Blechteile werden zugeschnitten, gebogen und gelötet.",
+                  "correct": true
+                },
+                {
+                  "text": "Die fertigen Elemente werden an der Fassade befestigt.",
+                  "correct": false
+                },
+                {
+                  "text": "Die Gerüste werden aufgestellt und wieder abgebaut.",
+                  "correct": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "mcq",
+          "instruction": "Choose the correct answer.",
+          "blockQuestion": "",
+          "columns": 1,
+          "shuffleAnswers": false,
+          "showInstruction": true,
+          "questions": [
+            {
+              "question": "Warum wird der Beruf im Text als zukunftsträchtig beschrieben?",
+              "answerMode": "single",
+              "options": [
+                {
+                  "text": "Die Löhne in der Gebäudetechnik sind in den letzten Jahren stark gestiegen.",
+                  "correct": false
+                },
+                {
+                  "text": "Der Anteil der Arbeit in der Werkstatt nimmt gegenüber der Baustelle zu.",
+                  "correct": false
+                },
+                {
+                  "text": "Im Zuge der Energiestrategie werden viele Dächer saniert und mit Solaranlagen ergänzt.",
+                  "correct": true
+                },
+                {
+                  "text": "Die Ausbildung dauert kürzer als in den meisten anderen Bauberufen.",
+                  "correct": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "pageBreak",
+          "restartPagination": false
+        },
+        {
+          "type": "heading",
+          "text": "Spenglerpraktiker:in EBA",
+          "level": 1,
+          "numbered": false,
+          "gapAfter": 2,
+          "restartInstructionNumbering": true
+        },
+        {
+          "type": "glossary",
+          "preset": "default",
+          "showInstruction": false,
+          "showColumnHeaders": true,
+          "showExample": false,
+          "showAdditionalColumn": false,
+          "headerLabels": [],
+          "termWidth": 33,
+          "definitionWidth": 33,
+          "additionalWidth": 20,
+          "entries": [
+            {
+              "term": "das Auffangnetz, -e",
+              "definition": "Netz, das eine stürzende Person auffängt"
+            },
+            {
+              "term": "die Berufsprüfung, -en",
+              "definition": "Weiterbildung mit eidgenössischem Fachausweis"
+            },
+            {
+              "term": "biegen",
+              "definition": "Blech in die gewünschte Form bringen"
+            },
+            {
+              "term": "das Blech, -e",
+              "definition": "dünnes, flaches Metall, meist aus Kupfer, Zink oder Stahl"
+            },
+            {
+              "term": "EBA / EFZ",
+              "definition": "Berufsattest nach zwei Jahren / Fähigkeitszeugnis nach drei bis vier Jahren"
+            },
+            {
+              "term": "die Fassade, -n",
+              "definition": "die Aussenwand eines Gebäudes"
+            },
+            {
+              "term": "das Gerüst, -e",
+              "definition": "Konstruktion aus Rohren, auf der man am Bau arbeitet"
+            },
+            {
+              "term": "der Gurt, -e",
+              "definition": "Sicherheitsgurt, der eine Person gegen Absturz sichert"
+            },
+            {
+              "term": "löten",
+              "definition": "zwei Metallteile mit Hitze verbinden"
+            },
+            {
+              "term": "montieren",
+              "definition": "vorgefertigte Teile am Bau befestigen"
+            },
+            {
+              "term": "sanieren",
+              "definition": "ein Gebäude erneuern und verbessern"
+            },
+            {
+              "term": "die Schnupperlehre, -n",
+              "definition": "mehrtägiges Ausprobieren eines Berufs im Betrieb"
+            },
+            {
+              "term": "die Schutzausrüstung",
+              "definition": "Helm, Handschuhe, Sicherheitsschuhe, Schutzbrille"
+            },
+            {
+              "term": "schwindelfrei",
+              "definition": "ohne Angst in grosser Höhe"
+            },
+            {
+              "term": "die Solaranlage, -n",
+              "definition": "Anlage auf dem Dach, die Strom oder Wärme aus Sonnenlicht gewinnt"
+            },
+            {
+              "term": "die überbetrieblichen Kurse (Pl.)",
+              "definition": "Kurse ausserhalb von Betrieb und Schule, dort werden Grundlagen geübt"
+            },
+            {
+              "term": "die Witterung",
+              "definition": "das Wetter über einen längeren Zeitraum"
+            },
+            {
+              "term": "zuschneiden",
+              "definition": "Blech in die richtige Grösse schneiden"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { AuthUIProvider } from '@neondatabase/auth/react/ui';
 import { authClient } from '@/lib/auth/client';
 import { useI18n } from '@/components/i18n/locale-provider';
@@ -48,11 +49,19 @@ const germanAuth = {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { locale } = useI18n();
+  const baseURL = useMemo(() => {
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      return window.location.origin;
+    }
+    return '';
+  }, []);
 
   return (
     <div className="neon-auth-ui">
       <AuthUIProvider
         authClient={authClient}
+        basePath="/auth"
+        baseURL={baseURL}
         redirectTo="/documents"
         localization={locale === 'de' ? germanAuth : undefined}
         magicLink={false}

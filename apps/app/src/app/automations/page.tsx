@@ -8,6 +8,7 @@ import { AppShell } from '@/components/app/app-shell';
 type Config = { id: string; tense: string; mood: string; label: string; level: string; enabled: boolean };
 type CreatedWorksheet = { id: string; title: string };
 type CreationFailure = { key: string; label: string; error: string };
+type OccupationAutomationFailure = { sourceUrl: string; error: string };
 type FinalizeJob = {
   id: string;
   title: string;
@@ -115,7 +116,7 @@ export default function AutomationsPage() {
   const [creationFailures, setCreationFailures] = useState<CreationFailure[]>([]);
   const [generationBatchId, setGenerationBatchId] = useState('');
   const [finalizing, setFinalizing] = useState<FinalizingState | null>(null);
-  const [finalizationSource, setFinalizationSource] = useState<'verb' | 'backlog' | 'json' | null>(null);
+  const [finalizationSource, setFinalizationSource] = useState<'verb' | 'backlog' | 'json' | 'occupation' | null>(null);
   const [metadataPublications, setMetadataPublications] = useState<MetadataPublication[]>([]);
   const [metadataTense, setMetadataTense] = useState('all');
   const [metadataBatchSize, setMetadataBatchSize] = useState(10);
@@ -132,10 +133,16 @@ export default function AutomationsPage() {
   const [jsonImportError, setJsonImportError] = useState('');
   const [jsonImportResults, setJsonImportResults] = useState<CreatedWorksheet[]>([]);
   const [jsonImportPublish, setJsonImportPublish] = useState(false);
+  const [occupationUrls, setOccupationUrls] = useState('');
+  const [occupationPublish, setOccupationPublish] = useState(false);
+  const [occupationRunning, setOccupationRunning] = useState(false);
+  const [occupationFailures, setOccupationFailures] = useState<OccupationAutomationFailure[]>([]);
+  const [occupationError, setOccupationError] = useState('');
   const resultsRef = useRef<CreatedWorksheet[]>([]);
   const isVerbRunning = running && finalizationSource === 'verb';
   const isBacklogRunning = running && finalizationSource === 'backlog';
   const isJsonRunning = jsonImportRunning || (running && finalizationSource === 'json');
+  const isOccupationRunning = occupationRunning || (running && finalizationSource === 'occupation');
 
   useEffect(() => {
     const storedBatchId = sessionStorage.getItem('eduit-verb-series-batch');
@@ -464,6 +471,58 @@ export default function AutomationsPage() {
     }
   };
 
+  const runOccupationAutomation = async () => {
+    const urls = [...new Set(
+      occupationUrls
+        .split(/[\n,;\s]+/)
+        .map((value) => value.trim())
+        .filter(Boolean),
+    )];
+    if (!urls.length || !brandProfileId) return;
+    setOccupationRunning(true);
+    setOccupationError('');
+    setOccupationFailures([]);
+    setError('');
+    setProgress(`${urls.length} URL${urls.length === 1 ? '' : 's'} werden verarbeitet …`);
+    setResults([]);
+    setCreationFailures([]);
+    setFinalizing(null);
+    setFinalizationSource('occupation');
+    try {
+      const response = await fetch('/api/automations/occupation-url-worksheets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls, brandProfileId }),
+      });
+      const result = await response.json().catch(() => ({})) as {
+        worksheets?: Array<{ id: string; title: string }>;
+        failures?: OccupationAutomationFailure[];
+        error?: string;
+      };
+      if (!response.ok || !Array.isArray(result.worksheets)) {
+        throw new Error(result.error || 'Automation konnte nicht gestartet werden.');
+      }
+      const created = result.worksheets.map(({ id, title }) => ({ id, title }));
+      const failed = Array.isArray(result.failures) ? result.failures : [];
+      setResults(created);
+      setOccupationFailures(failed);
+      setProgress(`${created.length} Arbeitsblätter erstellt${failed.length ? `, ${failed.length} URL${failed.length === 1 ? '' : 's'} fehlgeschlagen` : ''}.`);
+
+      if (occupationPublish && created.length > 0) {
+        setProgress(`0/${created.length}: Vorschau und Veröffentlichung mit ${FINALIZATION_CONCURRENCY} parallelen Renderern …`);
+        setFinalizing({
+          publish: true,
+          jobs: created.map(({ id, title }) => ({ id, title, attempt: 1, status: 'pending' })),
+        });
+        setRunning(true);
+      }
+    } catch (runError) {
+      setOccupationError(runError instanceof Error ? runError.message : 'Automation fehlgeschlagen.');
+    } finally {
+      setOccupationRunning(false);
+    }
+  };
+
   const finalizationCompleted = finalizing?.jobs.filter(({ status }) => status === 'completed').length ?? 0;
   const finalizationFailed = finalizing?.jobs.filter(({ status }) => status === 'failed').length ?? 0;
   const activeFinalizers = finalizing?.jobs.filter(({ status }) => status === 'running') ?? [];
@@ -514,6 +573,100 @@ export default function AutomationsPage() {
                 title={`Automatischer Arbeitsblatt-Renderer: ${job.title}`}
               />
             ))}
+          </section>
+          <section className="mt-8 rounded-2xl border border-secondary bg-primary p-7 shadow-lg">
+            <p className="text-sm font-semibold text-brand-secondary">Berufsprofil-Import</p>
+            <h2 className="mt-1 text-xl font-semibold">Arbeitsblätter aus berufsberatung.ch-URLs</h2>
+            <p className="mt-2 text-sm text-tertiary">
+              Pro URL werden automatisch drei Arbeitsblätter erstellt: A1.2, A2.2 und B1.2.
+              Die Struktur folgt den hinterlegten Samples inklusive Quellenzeile unter dem Lesetext.
+            </p>
+            <label className="mt-6 block text-sm font-semibold">
+              URLs (eine pro Zeile)
+              <textarea
+                className="mt-2 min-h-28 w-full rounded-lg border border-primary bg-primary p-3 font-normal"
+                onChange={(event) => setOccupationUrls(event.target.value)}
+                placeholder={'https://www.berufsberatung.ch/de/berufe/spenglerpraktiker-in-eba'}
+                value={occupationUrls}
+              />
+            </label>
+            <label className="mt-4 flex items-center gap-2 text-sm font-semibold">
+              <input
+                checked={occupationPublish}
+                disabled={isOccupationRunning}
+                onChange={(event) => setOccupationPublish(event.target.checked)}
+                type="checkbox"
+              />
+              Nach Erstellung auf Dazit veröffentlichen
+            </label>
+            <p className="mt-1 text-sm text-tertiary">
+              MCQs werden mit strengen Qualitätskriterien erzeugt: genau eine korrekte Antwort, plausible Distraktoren und keine Cueing-Muster.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                className="rounded-lg bg-brand-solid px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                disabled={isOccupationRunning || running || metadataRunning || !occupationUrls.trim() || !brandProfileId}
+                onClick={() => void runOccupationAutomation()}
+                type="button"
+              >
+                {isOccupationRunning ? 'Berufsprofile werden verarbeitet …' : 'Arbeitsblätter aus URLs erstellen'}
+              </button>
+            </div>
+            {finalizationSource === 'occupation' && progress && <p className="mt-4 text-sm text-tertiary">{progress}</p>}
+            {finalizationSource === 'occupation' && finalizing && (
+              <p className="mt-2 text-sm text-tertiary">
+                Finalisierung: {finalizationCompleted}/{finalizing.jobs.length} abgeschlossen{finalizationFailed ? `, ${finalizationFailed} fehlgeschlagen` : ''}
+              </p>
+            )}
+            {occupationError && <p className="mt-3 text-sm text-error-primary">{occupationError}</p>}
+            {finalizationSource === 'occupation' && error && <p className="mt-3 text-sm text-error-primary">{error}</p>}
+            {occupationFailures.length > 0 && (
+              <details className="mt-4 text-sm" open>
+                <summary className="cursor-pointer font-semibold">{occupationFailures.length} fehlgeschlagene URLs</summary>
+                <ul className="mt-2 grid gap-1 text-error-primary">
+                  {occupationFailures.map((failure) => (
+                    <li key={failure.sourceUrl}>{failure.sourceUrl}: {failure.error}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            {finalizationSource === 'occupation' && finalizationFailed > 0 && !running && (
+              <button
+                className="mt-4 rounded-lg border border-primary bg-primary px-4 py-2 text-sm font-semibold"
+                onClick={retryFinalizationFailures}
+                type="button"
+              >
+                Fehlgeschlagene Veröffentlichungen erneut versuchen
+              </button>
+            )}
+            {finalizationSource === 'occupation' && finalizationFailed > 0 && (
+              <details className="mt-4 text-sm" open={!running}>
+                <summary className="cursor-pointer font-semibold">
+                  {finalizationFailed} fehlgeschlagene Veröffentlichungen
+                </summary>
+                <ul className="mt-2 grid gap-1 text-error-primary">
+                  {finalizing?.jobs
+                    .filter(({ status }) => status === 'failed')
+                    .map((job) => (
+                      <li key={job.id}>{job.title}: {job.error || 'Unbekannter Fehler.'}</li>
+                    ))}
+                </ul>
+              </details>
+            )}
+            {finalizationSource === 'occupation' && results.length > 0 && (
+              <div className="mt-6">
+                <h3 className="font-semibold">{results.length} Arbeitsblätter erstellt</h3>
+                <ul className="mt-2 grid gap-2">
+                  {results.map((result) => (
+                    <li key={result.id}>
+                      <Link className="text-sm text-brand-secondary underline" href={`/editor?worksheet=${result.id}`}>
+                        {result.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </section>
           <section className="mt-8 rounded-2xl border border-secondary bg-primary p-7 shadow-lg">
             <p className="text-sm font-semibold text-brand-secondary">AI-Import</p>

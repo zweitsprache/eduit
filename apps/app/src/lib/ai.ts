@@ -62,6 +62,10 @@ export const educationalContentModel = withGlobalEducationalContentRules(
   EDUCATIONAL_CONTENT_MODEL,
 );
 
+export const occupationAutomationModel = withGlobalEducationalContentRules(
+  'anthropic/claude-opus-5',
+);
+
 export const miniFormContentModel = withGlobalEducationalContentRules(
   MINI_FORM_CONTENT_MODEL,
 );

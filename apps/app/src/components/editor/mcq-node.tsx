@@ -140,6 +140,7 @@ function MCQNodeView({ node, selected }: NodeViewProps) {
     showInstruction,
   } = node.attrs as MCQAttrs;
   const questions = getMCQQuestions(node.attrs as MCQAttrs);
+  const hasBlockQuestion = blockQuestion.trim().length > 0;
   const layoutRef = useRef<HTMLDivElement>(null);
   const solutionsRef = useRoughSolutionXs(layoutRef);
 
@@ -157,9 +158,11 @@ function MCQNodeView({ node, selected }: NodeViewProps) {
             {instruction || DEFAULT_MCQ_INSTRUCTION}
           </BlockInstruction>
         )}
-        <BlockQuestion>
-          <InlineFormattedText text={blockQuestion} />
-        </BlockQuestion>
+        {hasBlockQuestion && (
+          <BlockQuestion>
+            <InlineFormattedText text={blockQuestion} />
+          </BlockQuestion>
+        )}
         {questions.map((mcqQuestion, questionIndex) => {
           const displayedOptions = shuffleAnswers
             ? shuffledOptions(mcqQuestion.options)
