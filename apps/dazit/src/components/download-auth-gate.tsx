@@ -12,7 +12,7 @@ function AuthRequiredModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const [path, setPath] = useState<'sign-in' | 'email-otp'>('sign-in');
+  const [mode, setMode] = useState<'sign-in' | 'email-otp'>('sign-in');
 
   useEffect(() => {
     if (!open) return;
@@ -24,7 +24,7 @@ function AuthRequiredModal({
   }, [onClose, open]);
 
   useEffect(() => {
-    if (open) setPath('sign-in');
+    if (open) setMode('sign-in');
   }, [open]);
 
   if (!open || typeof document === 'undefined') return null;
@@ -55,22 +55,28 @@ function AuthRequiredModal({
         </p>
         <div className="auth-required-modal-switch">
           <button
-            className={path === 'sign-in' ? 'is-active' : ''}
-            onClick={() => setPath('sign-in')}
+            className={mode === 'sign-in' ? 'is-active' : ''}
+            onClick={() => setMode('sign-in')}
             type="button"
           >
             Anmelden
           </button>
           <button
-            className={path === 'email-otp' ? 'is-active' : ''}
-            onClick={() => setPath('email-otp')}
+            className={mode === 'email-otp' ? 'is-active' : ''}
+            onClick={() => setMode('email-otp')}
             type="button"
           >
             Registrieren
           </button>
         </div>
         <div className="auth-required-modal-view">
-          <AuthView pathname={path} />
+          <AuthView
+            classNames={{
+              footer: 'hidden',
+              footerLink: 'hidden',
+            }}
+            view={mode === 'email-otp' ? 'EMAIL_OTP' : 'SIGN_IN'}
+          />
         </div>
       </section>
     </div>,
