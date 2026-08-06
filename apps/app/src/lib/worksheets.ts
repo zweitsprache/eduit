@@ -52,8 +52,38 @@ function mapRow(row: WorksheetRow): Worksheet {
         : row.context?.worksheetLanguage === 'de-informal'
           || (row.context?.worksheetLanguage as string | undefined) === 'de'
           ? 'de-informal'
-          : 'en',
-      subject: row.context?.subject || legacySubjects[0] || '',
+          : 'de-formal',
+      worksheetType: row.context?.worksheetType === 'verb-table'
+        ? 'verb-table'
+        : row.context?.worksheetType === 'fact-sheet'
+          ? 'fact-sheet'
+          : row.context?.worksheetType === 'declension-table'
+            ? 'declension-table'
+            : row.context?.worksheetType === 'learning-cards'
+              ? 'learning-cards'
+              : row.context?.worksheetType === 'domino'
+                ? 'domino'
+        : 'worksheet',
+      subject: row.context?.subject || legacySubjects[0] || 'daz',
+      ageGroups: Array.isArray((row.context as WorksheetContext & {
+        ageGroups?: unknown;
+      })?.ageGroups)
+        ? ((row.context as WorksheetContext & { ageGroups: string[] }).ageGroups)
+        : EMPTY_WORKSHEET_CONTEXT.ageGroups,
+      actionCompetencies: Array.isArray((row.context as WorksheetContext & {
+        actionCompetencies?: unknown;
+      })?.actionCompetencies)
+        ? ((row.context as WorksheetContext & {
+          actionCompetencies: string[];
+        }).actionCompetencies)
+        : EMPTY_WORKSHEET_CONTEXT.actionCompetencies,
+      languageCompetencies: Array.isArray((row.context as WorksheetContext & {
+        languageCompetencies?: unknown;
+      })?.languageCompetencies)
+        ? ((row.context as WorksheetContext & {
+          languageCompetencies: string[];
+        }).languageCompetencies)
+        : EMPTY_WORKSHEET_CONTEXT.languageCompetencies,
     },
     status: row.status,
     hasPreview: row.has_preview,
@@ -202,13 +232,31 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
         : context.worksheetLanguage === 'de-informal'
           || context.worksheetLanguage === 'de'
           ? 'de-informal'
-          : 'en',
+          : 'de-formal',
+      worksheetType: context.worksheetType === 'verb-table'
+        ? 'verb-table'
+        : context.worksheetType === 'fact-sheet'
+          ? 'fact-sheet'
+          : context.worksheetType === 'declension-table'
+            ? 'declension-table'
+            : context.worksheetType === 'learning-cards'
+              ? 'learning-cards'
+              : context.worksheetType === 'domino'
+                ? 'domino'
+        : 'worksheet',
       sourceProfileId: typeof context.sourceProfileId === 'string'
         ? context.sourceProfileId.slice(0, 100)
         : null,
       subject: text('subject', 100),
       customSubject: text('customSubject', 150),
       learnerStage: text('learnerStage', 100),
+      ageGroups: Array.isArray(context.ageGroups)
+        ? context.ageGroups
+          .filter((value): value is string => typeof value === 'string')
+          .map((value) => value.trim().slice(0, 40))
+          .filter(Boolean)
+          .slice(0, 8)
+        : EMPTY_WORKSHEET_CONTEXT.ageGroups,
       ageMin: age('ageMin'),
       ageMax: age('ageMax'),
       contentLanguage: text('contentLanguage', 100),
@@ -216,6 +264,21 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
       localLevel: text('localLevel', 150),
       curriculum: text('curriculum', 250),
       languageLevel: text('languageLevel', 100),
+      actionField: text('actionField', 100),
+      actionCompetencies: Array.isArray(context.actionCompetencies)
+        ? context.actionCompetencies
+          .filter((value): value is string => typeof value === 'string')
+          .map((value) => value.trim().slice(0, 80))
+          .filter(Boolean)
+          .slice(0, 10)
+        : EMPTY_WORKSHEET_CONTEXT.actionCompetencies,
+      languageCompetencies: Array.isArray(context.languageCompetencies)
+        ? context.languageCompetencies
+          .filter((value): value is string => typeof value === 'string')
+          .map((value) => value.trim().slice(0, 80))
+          .filter(Boolean)
+          .slice(0, 10)
+        : EMPTY_WORKSHEET_CONTEXT.languageCompetencies,
       learnerContext: text('learnerContext', 1000),
       contextPdfName: text('contextPdfName', 250),
       contextPdfText: text('contextPdfText', 1_000_000),

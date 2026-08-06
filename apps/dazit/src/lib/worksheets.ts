@@ -24,7 +24,7 @@ export type Worksheet = {
     | 'Dialog'
     | 'Leseverstehen';
   pages: number;
-  language: 'German' | 'French' | 'Italian' | 'English';
+  language: 'Deutsch für die Schweiz' | 'Deutsch' | 'French' | 'Italian' | 'English';
   difficulty: 'Basic' | 'Intermediate' | 'Advanced';
   downloads: string;
   hasAnswerKey: boolean;
@@ -40,10 +40,13 @@ export type Worksheet = {
   worksheetId?: string;
   descriptionHtml?: string;
   level?: string;
+  learnerStage?: string;
   actionCompetencies?: string[];
   languageCompetencies?: string[];
   actionCompetencyContributionHtml?: string;
   actionField?: string;
+  format?: string;
+  ageGroups?: string[];
   relationships?: DazitPublicationRelationship[];
 };
 
@@ -64,16 +67,28 @@ function rowLanguage(context: Record<string, unknown> | null): Worksheet['langua
     : typeof context?.worksheetLanguage === 'string'
       ? context.worksheetLanguage
       : 'German';
+  if (/de[-_ ]?ch/i.test(raw) || /schweiz/i.test(raw)) return 'Deutsch für die Schweiz';
   if (/fr/i.test(raw)) return 'French';
   if (/it/i.test(raw)) return 'Italian';
   if (/en/i.test(raw)) return 'English';
-  return 'German';
+  return 'Deutsch';
 }
 
 function rowDifficulty(level: string | null): Worksheet['difficulty'] {
   if (level && /b1|b2|intermediate/i.test(level)) return 'Intermediate';
   if (level && /c1|c2|advanced/i.test(level)) return 'Advanced';
   return 'Basic';
+}
+
+function rowFormat(documentSize: string): string | undefined {
+  if (documentSize === 'a5-landscape') return 'PDF · A4 druckfertig · 2 x A5';
+  if (documentSize === 'letter-portrait' || documentSize === 'letter-landscape') {
+    return 'PDF · US Letter druckfertig';
+  }
+  if (documentSize === 'a4-portrait' || documentSize === 'a4-landscape') {
+    return 'PDF · A4 druckfertig';
+  }
+  return undefined;
 }
 
 function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Worksheet | null {
@@ -112,6 +127,7 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
     downloads: String(row.downloads || 0),
     hasAnswerKey: Boolean(row.showSolutions),
     size: formatSize(row.sizeBytes),
+    format: rowFormat(row.documentSize),
     added: Number.isNaN(publishedAt.getTime())
       ? '—'
       : formatPublishedDate(publishedAt),
@@ -149,10 +165,14 @@ function publishedWorksheet(row: DazitPublicationRow): Worksheet | null {
     searchSnippet: row.searchSnippet || undefined,
     descriptionHtml: row.descriptionHtml || undefined,
     level: row.level || undefined,
+    learnerStage: typeof row.context?.learnerStage === 'string'
+      ? row.context.learnerStage
+      : undefined,
     actionCompetencies: Array.isArray(row.actionCompetencies) ? row.actionCompetencies : [],
     languageCompetencies: Array.isArray(row.languageCompetencies) ? row.languageCompetencies : [],
     actionCompetencyContributionHtml: row.actionCompetencyContributionHtml || undefined,
     actionField: row.actionField || undefined,
+    ageGroups: Array.isArray(row.context?.ageGroups) ? row.context.ageGroups : [],
   };
 }
 

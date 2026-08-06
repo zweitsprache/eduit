@@ -5,6 +5,7 @@ import { verbGenerationModel } from '@/lib/ai';
 import {
   GERMAN_REFLEXIVE_PRONOUNS,
   isGermanOptionalReflexiveInfinitive,
+  isGermanReflexiveInfinitive,
 } from '@/lib/german-verb-forms';
 
 export const runtime = 'nodejs';
@@ -140,6 +141,12 @@ Mandatory:
 
     const separablePrefix = swissSpelling(output.separablePrefix ?? '');
     const optionalReflexive = isGermanOptionalReflexiveInfinitive(infinitive);
+    const reflexiveMarker = optionalReflexive
+      ? '(sich)'
+      : isGermanReflexiveInfinitive(infinitive)
+        ? 'sich'
+        : '';
+    const prefixForMetadata = separablePrefix || reflexiveMarker;
     const forms = Object.fromEntries(
       Object.entries(output.forms).map(([key, value]) => {
         const reflexiveKey = key === 'preteriteIch' ? 'ich' : key;
@@ -161,7 +168,7 @@ Mandatory:
       auxiliary: output.auxiliary,
       participle: swissSpelling(output.participle),
       comparisonAuxiliary: output.describesMovement ? 'sein' : 'haben',
-      separablePrefix,
+      separablePrefix: prefixForMetadata,
     });
   } catch (error) {
     const message = error instanceof z.ZodError

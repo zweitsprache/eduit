@@ -7,12 +7,13 @@ import { CountUp } from '@/components/count-up';
 import { getCurrentDazitUser } from '@/lib/auth/authorization';
 import { getHomepageStats, getWorksheetCards } from '@/lib/worksheets';
 import { SearchTrackingForm } from '@/components/search-tracking-form';
+import { absoluteDazitUrl } from '@/lib/site-url';
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'Materialien für DaZ-Kurse',
-  description: 'Arbeits- und Merkblätter, Verbtabellen und weitere druckfertige Materialien für DaZ-Kurse mit Erwachsenen.',
+  title: 'DaZ Arbeitsblätter, Dialoge und Lernkarten',
+  description: 'Arbeitsblätter, Merkblätter, Dialoge, Lernkarten sowie Verb- und Deklinationstabellen für DaZ-Kurse mit Erwachsenen.',
   alternates: { canonical: '/' },
 };
 
@@ -33,8 +34,62 @@ export default async function HomePage() {
   ]);
   const isAuthenticated = Boolean(currentUser);
   const { total, levelCounts, typeCounts } = homepageStats;
+  const structuredData = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      '@id': absoluteDazitUrl('/#website'),
+      url: absoluteDazitUrl('/'),
+      name: 'dazit',
+      inLanguage: 'de-CH',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: `${absoluteDazitUrl('/documents')}?q={search_term_string}`,
+        'query-input': 'required name=search_term_string',
+      },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      '@id': absoluteDazitUrl('/#organization'),
+      name: 'dazit',
+      url: absoluteDazitUrl('/'),
+      email: 'daz@dazit.io',
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      '@id': absoluteDazitUrl('/#collection-page'),
+      url: absoluteDazitUrl('/'),
+      name: 'DaZ Arbeitsblätter, Dialoge und Lernkarten',
+      description: 'Druckfertige Materialien für DaZ-Kurse mit Erwachsenen.',
+      inLanguage: 'de-CH',
+      isPartOf: { '@id': absoluteDazitUrl('/#website') },
+      about: ['DaZ', 'Arbeitsblätter', 'Lernkarten', 'Dialoge'],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      '@id': absoluteDazitUrl('/#new-materials'),
+      name: 'Diese Woche neu',
+      itemListOrder: 'https://schema.org/ItemListOrderDescending',
+      numberOfItems: newest.length,
+      itemListElement: newest.map((worksheet, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: absoluteDazitUrl(`/documents/${worksheet.slug}`),
+        name: worksheet.title,
+      })),
+    },
+  ];
   return (
     <>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData).replaceAll('<', '\\u003c'),
+        }}
+        type="application/ld+json"
+      />
       <SiteHeader active="home" canAdminister={Boolean(currentUser?.isAdmin)} />
       <main className="home-page">
         <section className="home-hero">
@@ -81,15 +136,15 @@ export default async function HomePage() {
           <section className="home-section home-types">
             <div className="home-section-heading"><h2>Nach Typ</h2></div>
             <div className="home-type-grid">
-              <Link className="home-type-card" href="/documents">
+              <Link className="home-type-card" href="/documents?type=Arbeitsblatt">
                 <File02 aria-hidden="true" />
                 <span><strong>Arbeits- und Merkblätter</strong><small>Übungsseiten und Übersichten für den DaZ-Kurs</small><b>{(typeCounts.Arbeitsblatt || 0) + (typeCounts.Merkblatt || 0)} Dokumente ›</b></span>
               </Link>
-              <Link className="home-type-card" href="/documents">
+              <Link className="home-type-card" href="/documents?type=Verbtabelle">
                 <Grid01 aria-hidden="true" />
                 <span><strong>Verbtabellen</strong><small>Konjugationen kompakt und übersichtlich darstellen</small><b>{typeCounts.Verbtabelle || 0} Dokumente ›</b></span>
               </Link>
-              <Link className="home-type-card" href="/documents">
+              <Link className="home-type-card" href="/documents?type=Deklinationstabelle">
                 <Copy01 aria-hidden="true" />
                 <span><strong>Deklinationstabellen</strong><small>Formen und Strukturen zum Nachschlagen und Üben</small><b>{typeCounts.Deklinationstabelle || 0} Dokumente ›</b></span>
               </Link>

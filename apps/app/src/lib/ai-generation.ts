@@ -108,16 +108,26 @@ ${CONTENT_PRIVACY_AND_BRAND_RULES}`;
   const subject = context.subject === 'other'
     ? context.customSubject
     : context.subject;
+  const worksheetType = context.worksheetType === 'verb-table'
+    ? 'Verb table'
+    : context.worksheetType === 'fact-sheet'
+      ? 'Fact sheet'
+      : context.worksheetType === 'declension-table'
+        ? 'Declension table'
+        : context.worksheetType === 'learning-cards'
+          ? 'Learning cards'
+          : context.worksheetType === 'domino'
+            ? 'Domino'
+            : 'Worksheet';
   const contextText = [
+    ['Worksheet type', worksheetType],
     ['Curriculum subject', subject],
     ['Learner stage', context.learnerStage],
+    ['Age groups', context.ageGroups.join(', ')],
     ['Typical age range', [context.ageMin, context.ageMax]
       .filter((value) => value !== null)
       .join('–')],
     ['Content language', context.contentLanguage],
-    ['Country / education system', context.country],
-    ['Local level', context.localLevel],
-    ['Curriculum', context.curriculum],
     ['Language proficiency', context.languageLevel],
     ['Learner context', context.learnerContext],
     ['Reference PDF', context.contextPdfName],

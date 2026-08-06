@@ -263,11 +263,12 @@ button { color: inherit; }
 .subject-bar strong, .filter-group h3, .popular-tags h3 {
   color: #858794; font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
 }
-.subject-bar button, .popular-tags button, .detail-tags span {
+.subject-bar a, .subject-bar button, .popular-tags button, .detail-tags span {
   white-space: nowrap; border: 1px solid #c6c7ce; border-radius: 999px;
   background: #fff; padding: 7px 15px; font-size: 13px; font-weight: 600; cursor: pointer;
 }
-.subject-bar button:hover { border-color: var(--orange); color: var(--orange); }
+.subject-bar a { color: inherit; text-decoration: none; }
+.subject-bar a:hover, .subject-bar button:hover { border-color: var(--orange); color: var(--orange); }
 
 .library-layout {
   display: grid; max-width: 1540px; grid-template-columns: 270px minmax(0, 1fr);

@@ -102,8 +102,8 @@ function conjugationMarkup(
   const base = exceptionMarkup(actualParts.base, referenceParts.base);
   if (!actualParts.hasPrefix) return base;
   const prefix = exceptionMarkup(
-    separablePrefix,
-    referenceParts.hasPrefix ? separablePrefix : '',
+    actualParts.prefix,
+    referenceParts.prefix,
   );
   return `${base} ${prefix}`;
 }

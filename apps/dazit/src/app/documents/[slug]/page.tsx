@@ -19,17 +19,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!worksheet) return {};
   const pathname = `/documents/${worksheet.slug}`;
   const image = worksheet.thumbnailUrls?.[0];
-  const snippet = worksheet.searchSnippet || worksheet.description;
+  const snippet = (worksheet.searchSnippet || worksheet.description || '').trim();
+  const detailTitle = `${worksheet.title} | ${worksheet.documentType}${worksheet.level ? ` ${worksheet.level}` : ''}`;
+  const detailDescription = snippet
+    || `${worksheet.documentType}${worksheet.level ? ` für ${worksheet.level}` : ''} zum direkten Einsatz im DaZ-Unterricht.`;
   return {
-    title: worksheet.title,
-    description: snippet,
+    title: detailTitle,
+    description: detailDescription,
     alternates: { canonical: pathname },
     openGraph: {
       type: 'article',
       locale: 'de_CH',
       siteName: 'dazit',
-      title: worksheet.title,
-      description: snippet,
+      title: detailTitle,
+      description: detailDescription,
       url: pathname,
       publishedTime: worksheet.publishedAt,
       images: image ? [{
@@ -41,18 +44,56 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: worksheet.title,
-      description: snippet,
+      title: detailTitle,
+      description: detailDescription,
       images: image ? [image] : [],
     },
     robots: { index: true, follow: true },
   };
 }
 
+function translateLanguage(value?: string) {
+  if (!value) return '';
+  if (value === 'German') return 'Deutsch';
+  if (value === 'French') return 'Französisch';
+  if (value === 'Italian') return 'Italienisch';
+  if (value === 'English') return 'Englisch';
+  return value;
+}
+
+function translateAgeGroup(value?: string) {
+  if (!value) return '';
+  if (value === 'children') return 'Kinder';
+  if (value === 'youth') return 'Jugendliche';
+  if (value === 'adults') return 'Erwachsene';
+  if (value === 'seniors') return 'Senioren';
+  return value;
+}
+
+function translateLearnerStage(value?: string) {
+  if (!value) return '';
+  const translations: Record<string, string> = {
+    'early-childhood': 'Frühförderung',
+    primary: 'Primarschule',
+    'lower-secondary': 'Sekundarstufe I',
+    'upper-secondary': 'Sekundarstufe II',
+    vocational: 'Berufsbildung',
+    'higher-education': 'Hochschule',
+    'adult-education': 'Erwachsenenbildung',
+    'professional-training': 'Weiterbildung',
+    mixed: 'Gemischte Altersgruppen',
+    'not-education-specific': 'Nicht bildungsspezifisch',
+  };
+  return translations[value] || value;
+}
+
 export default async function WorksheetDetailPage({ params }: Props) {
   const worksheet = await worksheetBySlug((await params).slug);
   if (!worksheet) notFound();
-  const searchSnippet = worksheet.searchSnippet || worksheet.description;
+  const snippet = (worksheet.searchSnippet || worksheet.description || '').trim();
+  const detailTitle = `${worksheet.title} | ${worksheet.documentType}${worksheet.level ? ` ${worksheet.level}` : ''}`;
+  const detailDescription = snippet
+    || `${worksheet.documentType}${worksheet.level ? ` für ${worksheet.level}` : ''} zum direkten Einsatz im DaZ-Unterricht.`;
   const currentUser = await getCurrentDazitUser();
   const canAdminister = Boolean(currentUser?.isAdmin);
   const isAuthenticated = Boolean(currentUser);
@@ -70,19 +111,40 @@ export default async function WorksheetDetailPage({ params }: Props) {
     ))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
   const worksheetUrl = absoluteDazitUrl(`/documents/${worksheet.slug}`);
+  const snippetUrl = worksheetUrl.replace(/^https?:\/\//, '');
+  const webpageId = `${worksheetUrl}#webpage`;
+  const resourceId = `${worksheetUrl}#learning-resource`;
   const structuredData = [
     {
       '@context': 'https://schema.org',
-      '@type': 'LearningResource',
-      '@id': worksheetUrl,
+      '@type': 'WebPage',
+      '@id': webpageId,
       url: worksheetUrl,
       name: worksheet.title,
-      description: worksheet.description,
+      description: detailDescription,
+      inLanguage: 'de-CH',
+      breadcrumb: { '@id': `${worksheetUrl}#breadcrumb` },
+      primaryImageOfPage: worksheet.thumbnailUrls?.[0]
+        ? {
+          '@type': 'ImageObject',
+          url: absoluteDazitUrl(worksheet.thumbnailUrls[0]),
+        }
+        : undefined,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': ['LearningResource', 'CreativeWork'],
+      '@id': resourceId,
+      url: worksheetUrl,
+      name: worksheet.title,
+      description: detailDescription,
       inLanguage: 'de-CH',
       learningResourceType: worksheet.documentType,
       educationalLevel: worksheet.level || undefined,
       isAccessibleForFree: true,
+      mainEntityOfPage: { '@id': webpageId },
       datePublished: worksheet.publishedAt,
+      dateModified: worksheet.publishedAt,
       keywords: worksheet.tags,
       thumbnailUrl: worksheet.thumbnailUrls?.[0]
         ? absoluteDazitUrl(worksheet.thumbnailUrls[0])
@@ -91,6 +153,10 @@ export default async function WorksheetDetailPage({ params }: Props) {
         '@type': 'Organization',
         name: 'dazit',
         url: absoluteDazitUrl('/'),
+      },
+      audience: {
+        '@type': 'EducationalAudience',
+        educationalRole: 'student',
       },
       isPartOf: worksheet.relationships?.length
         ? {
@@ -107,6 +173,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
     {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
+      '@id': `${worksheetUrl}#breadcrumb`,
       itemListElement: [
         {
           '@type': 'ListItem',
@@ -162,11 +229,10 @@ export default async function WorksheetDetailPage({ params }: Props) {
             <div className="detail-copy">
               {canAdminister && <InlineMetadataEditor worksheet={worksheet} />}
               {canAdminister && (
-                <section className="snippet-preview" aria-label="Google-Snippet-Vorschau">
-                  <span className="snippet-preview-label">Google-Snippet-Vorschau</span>
-                  <span className="snippet-preview-url">www.dazit.io › documents › {worksheet.slug}</span>
-                  <strong>{worksheet.title}</strong>
-                  <p>{searchSnippet}</p>
+                <section className="snippet-preview" aria-label="Snippet-Vorschau">
+                  <span className="snippet-preview-url">{snippetUrl}</span>
+                  <strong>{detailTitle}</strong>
+                  <p>{detailDescription}</p>
                 </section>
               )}
               <div className="detail-flags">
@@ -187,23 +253,33 @@ export default async function WorksheetDetailPage({ params }: Props) {
               </div>
               <dl className="metadata-grid">
                 <div><dt>Dokumenttyp</dt><dd>{worksheet.documentType}</dd></div>
-                <div><dt>Niveau</dt><dd>{worksheet.level || '—'}</dd></div>
+                {worksheet.level && <div><dt>Niveau</dt><dd>{worksheet.level}</dd></div>}
+                {worksheet.language && <div><dt>Inhaltssprache</dt><dd>{translateLanguage(worksheet.language)}</dd></div>}
+                {worksheet.learnerStage && <div><dt>Bildungsstufe</dt><dd>{translateLearnerStage(worksheet.learnerStage)}</dd></div>}
+                {Boolean(worksheet.ageGroups?.length) && (
+                  <div>
+                    <dt>Altersgruppe</dt>
+                    <dd>{worksheet.ageGroups?.map((ageGroup) => translateAgeGroup(ageGroup)).join(', ')}</dd>
+                  </div>
+                )}
                 <div><dt>Seiten</dt><dd>{worksheet.pages}</dd></div>
                 <div><dt>Lösungsblatt</dt><dd>{worksheet.hasAnswerKey ? 'enthalten' : 'nicht enthalten'}</dd></div>
                 <div><dt>Dateigrösse</dt><dd>{worksheet.size}</dd></div>
                 <div><dt>Hinzugefügt</dt><dd>{worksheet.added}</dd></div>
                 <div><dt>Downloads</dt><dd>{worksheet.downloads}</dd></div>
-                <div><dt>Format</dt><dd>PDF · A4 druckfertig</dd></div>
+                {worksheet.format && <div><dt>Format</dt><dd>{worksheet.format}</dd></div>}
                 {Boolean(worksheet.actionCompetencies?.length) && (
                   <div>
                     <dt>Sprachhandlungskompetenz</dt>
                     <dd>{worksheet.actionCompetencies?.join(', ')}</dd>
                   </div>
                 )}
-                <div>
-                  <dt>Sprachkompetenz</dt>
-                  <dd>{worksheet.languageCompetencies?.join(', ') || '—'}</dd>
-                </div>
+                {Boolean(worksheet.languageCompetencies?.length) && (
+                  <div>
+                    <dt>Sprachkompetenz</dt>
+                    <dd>{worksheet.languageCompetencies?.join(', ')}</dd>
+                  </div>
+                )}
                 {worksheet.actionField && (
                   <div>
                     <dt>Handlungsfeld</dt>

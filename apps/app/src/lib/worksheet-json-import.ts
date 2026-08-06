@@ -106,6 +106,27 @@ const mcqSchema = z.object({
   showInstruction: z.boolean().default(true),
 });
 
+const mcmOptionSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  text: z.string().trim().min(1).max(1000),
+  correct: z.boolean().default(false),
+});
+
+const mcmRowSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  text: z.string().trim().min(1).max(2000),
+  options: z.array(mcmOptionSchema).min(1).max(3),
+});
+
+const mcmSchema = z.object({
+  type: z.literal('mcm'),
+  instruction: z.string().trim().max(1000).default('Choose the correct answer for each row.'),
+  question: z.string().trim().max(2000).default(''),
+  rows: z.array(mcmRowSchema).min(1).max(100),
+  showFirstAsExample: z.boolean().default(false),
+  hideStatement: z.boolean().default(false),
+});
+
 const trueFalseRowSchema = z.object({
   id: z.string().trim().min(1).max(100).optional(),
   text: z.string().trim().min(1).max(2000),
@@ -244,19 +265,74 @@ const dominoSchema = z.object({
   rightRepresentation: dominoRepresentationSchema,
 });
 
+const germanVerbTableFormsSchema = z.object({
+  ich: z.string().trim().max(200).default(''),
+  du: z.string().trim().max(200).default(''),
+  formalSingular: z.string().trim().max(200).default(''),
+  thirdSingular: z.string().trim().max(200).default(''),
+  wir: z.string().trim().max(200).default(''),
+  ihr: z.string().trim().max(200).default(''),
+  formalPlural: z.string().trim().max(200).default(''),
+  thirdPlural: z.string().trim().max(200).default(''),
+  preteriteIch: z.string().trim().max(200).default(''),
+});
+
+const germanVerbTableMultipleVerbSchema = z.object({
+  verb: z.string().trim().max(200).default(''),
+  forms: germanVerbTableFormsSchema,
+  separablePrefix: z.string().trim().max(80).default(''),
+});
+
+const germanVerbTableSchema = z.object({
+  type: z.literal('germanVerbTable'),
+  tableStyle: z.enum(['extended', 'compact', 'multiple']).default('extended'),
+  tense: z.enum(['present', 'preterite']).default('present'),
+  groupId: z.string().trim().max(120).default(''),
+  groupIndex: z.number().int().min(0).default(0),
+  groupSize: z.number().int().min(1).max(100).default(1),
+  hideInfinitiveBadge: z.boolean().default(false),
+  showInfinitiveHeading: z.boolean().default(false),
+  infinitiveHeadingText: z.string().trim().max(200).default(''),
+  leftVerb: z.string().trim().max(200).default('sein'),
+  leftForms: germanVerbTableFormsSchema,
+  leftAuxiliary: z.string().trim().max(100).default('sein'),
+  leftParticiple: z.string().trim().max(200).default('gewesen'),
+  comparisonAuxiliary: z.enum(['haben', 'sein']).default('haben'),
+  separablePrefix: z.string().trim().max(80).default(''),
+  rightVerb: z.string().trim().max(200).default('haben'),
+  forms: germanVerbTableFormsSchema,
+  rightAuxiliary: z.string().trim().max(100).default('haben'),
+  rightParticiple: z.string().trim().max(200).default('gehabt'),
+  multipleVerbCount: z.union([z.literal(4), z.literal(5)]).default(5),
+  multipleBadgeStyle: z.enum(['light', 'dark']).default('light'),
+  multipleVerbs: z.array(germanVerbTableMultipleVerbSchema).min(1).max(20),
+});
+
 const contextSchema = z.object({
-  worksheetLanguage: z.enum(['en', 'de-formal', 'de-informal']).default('en'),
+  worksheetLanguage: z.enum(['en', 'de-formal', 'de-informal']).default('de-formal'),
+  worksheetType: z.enum([
+    'worksheet',
+    'fact-sheet',
+    'verb-table',
+    'declension-table',
+    'learning-cards',
+    'domino',
+  ]).default('worksheet'),
   sourceProfileId: z.string().max(100).nullable().default(null),
-  subject: z.string().max(100).default(''),
+  subject: z.string().max(100).default('daz'),
   customSubject: z.string().max(150).default(''),
-  learnerStage: z.string().max(100).default(''),
+  learnerStage: z.string().max(100).default('professional-training'),
+  ageGroups: z.array(z.string().max(40)).max(8).default(['adults']),
   ageMin: z.number().int().min(0).max(120).nullable().default(null),
   ageMax: z.number().int().min(0).max(120).nullable().default(null),
-  contentLanguage: z.string().max(100).default(''),
+  contentLanguage: z.string().max(100).default('de-CH'),
   country: z.string().max(100).default(''),
   localLevel: z.string().max(150).default(''),
   curriculum: z.string().max(250).default(''),
   languageLevel: z.string().max(100).default(''),
+  actionField: z.string().max(100).default(''),
+  actionCompetencies: z.array(z.string().max(80)).max(10).default([]),
+  languageCompetencies: z.array(z.string().max(80)).max(10).default([]),
   learnerContext: z.string().max(1000).default(''),
   contextPdfName: z.string().max(250).default(''),
   contextPdfText: z.string().max(1_000_000).default(''),
@@ -265,7 +341,7 @@ const contextSchema = z.object({
 
 export const generatedWorksheetSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
-  documentSize: z.enum(['a4-portrait', 'a4-landscape', 'letter-portrait', 'letter-landscape']).default('a4-portrait'),
+  documentSize: z.enum(['a4-portrait', 'a4-landscape', 'a5-landscape', 'letter-portrait', 'letter-landscape']).default('a4-portrait'),
   showSolutions: z.boolean().default(false),
   status: z.enum(['draft', 'published']).default('draft'),
   brandProfileId: z.string().uuid().nullable().optional(),
@@ -279,6 +355,7 @@ export const generatedWorksheetSchema = z.object({
     pageBreakSchema,
     dialogueSchema,
     mcqSchema,
+    mcmSchema,
     trueFalseSchema,
     matchingPairsSchema,
     timeMatchingSchema,
@@ -286,6 +363,7 @@ export const generatedWorksheetSchema = z.object({
     richTextSchema,
     wordGridSchema,
     dominoSchema,
+    germanVerbTableSchema,
   ])).max(1000).default([]),
 }).refine((value) => Boolean(value.sourceWorksheetId) || value.blocks.length >= 1, {
   message: 'Provide blocks or a sourceWorksheetId.',
@@ -380,6 +458,18 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     }));
     return `<div data-mcq-instruction="${escapeAttribute(block.instruction)}" data-mcq-block-question="${escapeAttribute(encodeURIComponent(block.blockQuestion))}" data-mcq-questions="${escapeAttribute(encodeURIComponent(JSON.stringify(questions)))}" data-mcq-columns="${block.columns}" data-mcq-shuffle-answers="${block.shuffleAnswers}" data-mcq-show-instruction="${block.showInstruction}" data-type="mcq"></div>`;
   }
+  if (block.type === 'mcm') {
+    const rows = block.rows.map((row, rowIndex) => ({
+      id: row.id ?? `row-${rowIndex + 1}`,
+      text: row.text,
+      options: row.options.map((option, optionIndex) => ({
+        id: option.id ?? `row-${rowIndex + 1}-option-${optionIndex + 1}`,
+        text: option.text,
+        correct: option.correct,
+      })),
+    }));
+    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-mcm-question="${escapeAttribute(block.question)}" data-mcm-rows="${escapeAttribute(encodeURIComponent(JSON.stringify(rows)))}" data-mcm-show-first-example="${block.showFirstAsExample}" data-mcm-hide-statement="${block.hideStatement}" data-type="mcm"></div>`;
+  }
   if (block.type === 'trueFalse') {
     const rows = block.rows.map((row, index) => ({
       id: row.id ?? `row-${index + 1}`,
@@ -450,6 +540,9 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       `<div data-type="domino" data-domino-pairs="${encodedPairs}" data-domino-show-first-example="${block.showFirstAsExample}" data-domino-group-index="${groupIndex}" data-domino-group-size="${groupSize}" data-domino-group-id="${groupId}" data-domino-odd-text-size="${oddTextSize}" data-domino-even-text-size="${evenTextSize}" data-domino-left-representation="${leftRepresentation}" data-domino-right-representation="${rightRepresentation}"></div>`
     ));
     return sheets.join('<div data-restart-pagination="false" data-type="pageBreak"></div>');
+  }
+  if (block.type === 'germanVerbTable') {
+    return `<div data-type="german-verb-table" data-table-style="${block.tableStyle}" data-tense="${block.tense}" data-group-id="${escapeAttribute(block.groupId)}" data-group-index="${block.groupIndex}" data-group-size="${block.groupSize}" data-hide-infinitive-badge="${block.hideInfinitiveBadge}" data-show-infinitive-heading="${block.showInfinitiveHeading}" data-infinitive-heading-text="${escapeAttribute(block.infinitiveHeadingText)}" data-left-verb="${escapeAttribute(block.leftVerb)}" data-left-forms="${escapeAttribute(encodeURIComponent(JSON.stringify(block.leftForms)))}" data-left-auxiliary="${escapeAttribute(block.leftAuxiliary)}" data-left-participle="${escapeAttribute(block.leftParticiple)}" data-comparison-auxiliary="${block.comparisonAuxiliary}" data-separable-prefix="${escapeAttribute(block.separablePrefix)}" data-right-verb="${escapeAttribute(block.rightVerb)}" data-forms="${escapeAttribute(encodeURIComponent(JSON.stringify(block.forms)))}" data-right-auxiliary="${escapeAttribute(block.rightAuxiliary)}" data-right-participle="${escapeAttribute(block.rightParticiple)}" data-multiple-verb-count="${block.multipleVerbCount}" data-multiple-badge-style="${block.multipleBadgeStyle}" data-multiple-verbs="${escapeAttribute(encodeURIComponent(JSON.stringify(block.multipleVerbs)))}"></div>`;
   }
   const widths = block.preset === 'verbs'
     ? { term: 20, definition: 25 }

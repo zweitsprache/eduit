@@ -11,7 +11,7 @@ select
   'Deutsch als Zweitsprache für erwachsene Lernende in der Schweiz.',
   true,
   jsonb_build_object(
-    'subject', 'additional-languages',
+    'subject', 'daz',
     'customSubject', '',
     'learnerStage', 'adult-education',
     'ageMin', 18,

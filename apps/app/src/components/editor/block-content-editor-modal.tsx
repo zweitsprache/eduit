@@ -2053,6 +2053,13 @@ function MCMEditor({
             showFirstAsExample,
           })}
         />
+        <ContentSwitch
+          label="Hide statement text"
+          isSelected={Boolean(attrs.hideStatement)}
+          onChange={(hideStatement) => updateAttrs(editor, block, {
+            hideStatement,
+          })}
+        />
       </ContentSwitchGrid>
       <ContentSectionHeader count={`${attrs.rows.length} rows`}>
         Statement / Question rows

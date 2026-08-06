@@ -1,0 +1,43 @@
+:root{
+  /* base palette */
+  --navy:#15172c;
+  --muted:#777988;
+  --line:#d5d6dc;
+  --orange:#cc6600;
+  --orange-hover:#b35a00;
+  --lavender:#ece6f8;
+  --lavender-ink:#5b4387;
+  --page:#ffffff;
+  --soft:#f7f7f6;
+  --hero-blue:#4f6899;
+
+  /* semantic aliases */
+  --text-primary:var(--navy);
+  --text-muted:var(--muted);
+  --text-faint:#8a8c98;
+  --surface-page:var(--page);
+  --surface-soft:var(--soft);
+  --surface-card:#ffffff;
+  --border-default:var(--line);
+  --border-strong:#b7b8c0;
+  --accent:var(--orange);
+  --accent-hover:var(--orange-hover);
+  --focus-ring:rgb(204 102 0 / 14%);
+
+  /* level / subject tint pairs — bg + ink, light and solid variants */
+  --tint-lavender-bg:#ece6f8; --tint-lavender-ink:#5b4387;
+  --tint-peach-bg:#f7e2d7; --tint-peach-ink:#98451e;
+  --tint-blue-light-bg:#dcebf8; --tint-blue-light-ink:#2a71b9;
+  --tint-blue-bg:#c5dcf1; --tint-blue-ink:#2a71b9;
+  --tint-green-light-bg:#dff2e8; --tint-green-light-ink:#269266;
+  --tint-green-bg:#c8e5d6; --tint-green-ink:#237b57;
+  --tint-orange-light-bg:#fde4c3; --tint-orange-light-ink:#c76400;
+  --tint-orange-bg:#f6cd9d; --tint-orange-ink:#a65300;
+  --tint-mint-bg:#ddf2e7; --tint-mint-ink:#217c57;
+  --tint-yellow-bg:#f7efc9; --tint-yellow-ink:#7b6600;
+  --tint-pink-bg:#f8ddec; --tint-pink-ink:#a62b67;
+
+  /* feedback */
+  --success:#027a48;
+  --error:#b42318;
+}

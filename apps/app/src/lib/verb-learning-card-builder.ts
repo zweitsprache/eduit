@@ -50,7 +50,7 @@ function conjugationMarkup(actual: string, reference: string, separablePrefix: s
   const referenceParts = splitGermanSeparableForm(reference, separablePrefix);
   const base = marked(actualParts.base, referenceParts.base);
   if (!actualParts.hasPrefix) return base;
-  return `${base} ${marked(separablePrefix, referenceParts.hasPrefix ? separablePrefix : '')}`;
+  return `${base} ${marked(actualParts.prefix, referenceParts.prefix)}`;
 }
 
 function compoundForms(result: VerbResult, tense: VerbTense, mood: VerbMood): Forms {

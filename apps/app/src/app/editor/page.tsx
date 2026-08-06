@@ -11,7 +11,7 @@ import { NodeSelection } from '@tiptap/pm/state';
 import Placeholder from '@tiptap/extension-placeholder';
 import { ConvertKit } from '@tiptap-pro/extension-convert-kit';
 import { TableKit } from '@tiptap-pro/extension-pages-tablekit';
-import { Pages, PAGE_FORMATS, type PageFormat } from '@tiptap-pro/extension-pages';
+import { Pages, PAGE_FORMATS } from '@tiptap-pro/extension-pages';
 import { PageBreak } from '@tiptap-pro/extension-pagebreak';
 import {
   Trash01,
@@ -294,6 +294,7 @@ import {
 } from '@/components/editor/german-verb-table-ai-modal';
 
 const STORAGE_KEY = 'eduit-editor-content';
+const DOC_SIZE_STORAGE_KEY = 'eduit-editor-doc-size';
 const BRAND_PROFILES_UPDATED_KEY = 'eduit-brand-profiles-updated';
 const BRAND_PROFILES_UPDATED_EVENT = 'eduit:brand-profiles-updated';
 const ADDITIONAL_WORKSHEET_LEVELS = [
@@ -1069,10 +1070,29 @@ const NAV_ITEMS = [
 
 const mmToPixels = (millimeters: number) => millimeters * (96 / 25.4);
 
+type PageFormatSpec = {
+  id: string;
+  width: number;
+  height: number;
+  margins: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  };
+};
+
+const A5_FORMAT: PageFormatSpec = {
+  id: 'A5',
+  width: mmToPixels(148.5),
+  height: mmToPixels(210),
+  margins: PAGE_FORMATS.A4.margins,
+};
+
 const documentFormat = (
-  fmt: (typeof PAGE_FORMATS)[keyof typeof PAGE_FORMATS],
+  fmt: PageFormatSpec,
   orientation: 'portrait' | 'landscape' = 'portrait',
-): PageFormat => ({
+): PageFormatSpec => ({
   id: `${fmt.id}-${orientation}-eduit`,
   width: orientation === 'landscape' ? fmt.height : fmt.width,
   height: orientation === 'landscape' ? fmt.width : fmt.height,
@@ -1082,54 +1102,152 @@ const documentFormat = (
       ? mmToPixels(20)
       : fmt.margins.bottom,
     left: mmToPixels(
-      fmt.id === PAGE_FORMATS.A4.id && orientation === 'portrait' ? 25 : 20,
+      fmt.id === PAGE_FORMATS.A4.id && orientation === 'portrait'
+        ? 25
+        : 20,
     ),
     right: mmToPixels(
-      fmt.id === PAGE_FORMATS.A4.id && orientation === 'portrait' ? 15 : 20,
+      fmt.id === PAGE_FORMATS.A4.id && orientation === 'portrait'
+        ? 15
+        : 20,
     ),
   },
 });
 
-const DOC_SIZES: { id: string; label: string; format: () => PageFormat }[] = [
+const A4_PORTRAIT_MARGINS = documentFormat(PAGE_FORMATS.A4, 'portrait').margins;
+
+const A5_LANDSCAPE_FORMAT: PageFormatSpec = {
+  ...documentFormat(A5_FORMAT, 'landscape'),
+  margins: A4_PORTRAIT_MARGINS,
+};
+
+const DOC_SIZES: { id: string; label: string; format: () => PageFormatSpec }[] = [
   { id: 'a4-portrait', label: 'DIN A4 Portrait', format: () => documentFormat(PAGE_FORMATS.A4) },
   { id: 'a4-landscape', label: 'DIN A4 Landscape', format: () => documentFormat(PAGE_FORMATS.A4, 'landscape') },
+  { id: 'a5-landscape', label: 'DIN A5 Landscape', format: () => A5_LANDSCAPE_FORMAT },
   { id: 'letter-portrait', label: 'US Letter Portrait', format: () => documentFormat(PAGE_FORMATS.Letter) },
   { id: 'letter-landscape', label: 'US Letter Landscape', format: () => documentFormat(PAGE_FORMATS.Letter, 'landscape') },
 ];
 
+const DAZIT_PDF_FORMAT_BY_DOC_SIZE: Record<string, string> = {
+  'a4-portrait': 'PDF · A4 druckfertig',
+  'a4-landscape': 'PDF · A4 druckfertig',
+  'a5-landscape': 'PDF · A4 druckfertig · 2 x A5',
+  'letter-portrait': 'PDF · US Letter druckfertig',
+  'letter-landscape': 'PDF · US Letter druckfertig',
+};
+
 const LEARNER_STAGE_OPTIONS = [
-  ['early-childhood', 'Early childhood'],
-  ['primary', 'Primary education'],
-  ['lower-secondary', 'Lower secondary'],
-  ['upper-secondary', 'Upper secondary'],
-  ['vocational', 'Vocational education'],
-  ['higher-education', 'Higher education'],
-  ['adult-education', 'Adult education'],
-  ['professional-training', 'Professional training'],
-  ['mixed', 'Mixed ages'],
-  ['not-education-specific', 'Not education-specific'],
+  ['early-childhood', 'Frühförderung'],
+  ['primary', 'Primarschule'],
+  ['lower-secondary', 'Sekundarstufe I'],
+  ['upper-secondary', 'Sekundarstufe II'],
+  ['vocational', 'Berufsbildung'],
+  ['higher-education', 'Hochschule'],
+  ['adult-education', 'Erwachsenenbildung'],
+  ['professional-training', 'Weiterbildung'],
+  ['mixed', 'Gemischte Altersgruppen'],
+  ['not-education-specific', 'Nicht bildungsspezifisch'],
 ] as const;
 
 const SUBJECT_OPTIONS = [
-  { value: 'additional-languages', label: 'Languages' },
-  { value: 'arts', label: 'Arts' },
-  { value: 'biology', label: 'Biology' },
-  { value: 'chemistry', label: 'Chemistry' },
-  { value: 'civics', label: 'Civics' },
-  { value: 'computer-science', label: 'Computer science' },
-  { value: 'economics', label: 'Economics' },
-  { value: 'general-science', label: 'General science' },
-  { value: 'geography', label: 'Geography' },
-  { value: 'history', label: 'History' },
-  { value: 'language-arts', label: 'Language arts / Literacy' },
-  { value: 'mathematics', label: 'Mathematics' },
-  { value: 'music', label: 'Music' },
-  { value: 'physical-education', label: 'Physical education' },
-  { value: 'physics', label: 'Physics' },
-  { value: 'social-studies', label: 'Social studies' },
-  { value: 'vocational', label: 'Vocational studies' },
-  { value: 'other', label: 'Other' },
+  { value: 'daz', label: 'Deutsch als Zweitsprache (DaZ)' },
+  { value: 'additional-languages', label: 'Sprachen' },
+  { value: 'arts', label: 'Kunst' },
+  { value: 'biology', label: 'Biologie' },
+  { value: 'chemistry', label: 'Chemie' },
+  { value: 'civics', label: 'Politische Bildung' },
+  { value: 'computer-science', label: 'Informatik' },
+  { value: 'economics', label: 'Wirtschaft' },
+  { value: 'general-science', label: 'Naturwissenschaften' },
+  { value: 'geography', label: 'Geografie' },
+  { value: 'history', label: 'Geschichte' },
+  { value: 'language-arts', label: 'Sprache / Literacy' },
+  { value: 'mathematics', label: 'Mathematik' },
+  { value: 'music', label: 'Musik' },
+  { value: 'physical-education', label: 'Sport' },
+  { value: 'physics', label: 'Physik' },
+  { value: 'social-studies', label: 'Gesellschaft' },
+  { value: 'vocational', label: 'Berufskunde' },
+  { value: 'other', label: 'Anderes' },
 ];
+
+const AGE_GROUP_OPTIONS = [
+  ['children', 'Kinder'],
+  ['youth', 'Jugendliche'],
+  ['adults', 'Erwachsene'],
+  ['seniors', 'Senioren'],
+] as const;
+
+const CONTENT_LANGUAGE_OPTIONS = [
+  ['de-CH', 'Deutsch für die Schweiz'],
+  ['de-DE', 'Deutsch (Deutschland) · de-DE'],
+  ['de-AT', 'Deutsch (Österreich) · de-AT'],
+  ['en', 'Englisch · en'],
+] as const;
+
+const LANGUAGE_PROFICIENCY_OPTIONS = [
+  'A1.1',
+  'A1.2',
+  'A1+',
+  'A2.1',
+  'A2.2',
+  'A2+',
+  'B1.1',
+  'B1.2',
+  'B1+',
+] as const;
+
+const ACTION_COMPETENCY_OPTIONS = [
+  'Lesen',
+  'Leseverstehen',
+  'Hören',
+  'Hörverstehen',
+  'Monologisches Sprechen',
+  'Dialogisches Sprechen',
+  'Monologisches Schreiben',
+  'Dialogisches Schreiben',
+] as const;
+
+const LANGUAGE_COMPETENCY_OPTIONS = [
+  'Wortschatz',
+  'Grammatik',
+  'Aussprache',
+  'Intonation',
+  'Orthografie',
+] as const;
+
+const ACTION_FIELD_OPTIONS = [
+  'Deutschkurs',
+  'Gesundheit',
+  'Sicherheit und Notfälle',
+  'Familie und Partnerschaft',
+  'Kinder und Schule',
+  'Soziales Netz',
+  'Beratung und Unterstützung',
+  'Einkaufen',
+  'Ernährung',
+  'Wohnen',
+  'Mobilität',
+  'Finanzen und Versicherungen',
+  'Behörden',
+  'Freizeit und Hobbys',
+  'Kultur und Identität',
+  'Arbeit',
+  'Arbeitssuche',
+  'Umwelt und Klima',
+  'Technologie',
+  'Weiterbildung',
+] as const;
+
+const DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE: Record<WorksheetContext['worksheetType'], string> = {
+  worksheet: 'Arbeitsblatt',
+  'fact-sheet': 'Merkblatt',
+  'verb-table': 'Verbtabelle',
+  'declension-table': 'Deklinationstabelle',
+  'learning-cards': 'Lernkarten',
+  domino: 'Domino',
+};
 
 const WORD_GRID_DIRECTION_OPTIONS: {
   value: WordGridDirection;
@@ -1151,7 +1269,7 @@ export default function EditorPage() {
   const { t } = useI18n();
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [saved, setSaved] = useState(true);
-  const [docSize, setDocSize] = useState('a4-portrait');
+  const [docSize, setDocSize] = useState<string>(getInitialDocSize);
   const [brandProfiles, setBrandProfiles] = useState<BrandProfile[]>([]);
   const [brandProfilesLoaded, setBrandProfilesLoaded] = useState(false);
   const [brandProfileId, setBrandProfileId] = useState<string | null>(null);
@@ -1219,7 +1337,10 @@ export default function EditorPage() {
   const [publicationStatus, setPublicationStatus] = useState<
     'unpublished' | 'current' | 'outdated'
   >('unpublished');
-  const [republishScope, setRepublishScope] = useState<'pdf-only' | 'full'>('pdf-only');
+  const [republishScope, setRepublishScope] = useState<
+    'pdf-only' | 'worksheet-settings-only' | 'full'
+  >('pdf-only');
+  const [allowDescriptionOverride, setAllowDescriptionOverride] = useState(false);
   const [exportingBlockPNG, setExportingBlockPNG] = useState(false);
   const [jsonCopied, setJsonCopied] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -1332,7 +1453,8 @@ export default function EditorPage() {
         label: 'Page break',
       }),
       Pages.configure({
-        pageFormat: documentFormat(PAGE_FORMATS.A4),
+        pageFormat: DOC_SIZES.find(({ id }) => id === docSize)?.format()
+          ?? documentFormat(PAGE_FORMATS.A4),
         header: DOCUMENT_HEADER,
         headerTopMargin: mmToPixels(10),
         footer: documentFooter(DEFAULT_DOCUMENT_BRAND),
@@ -1982,6 +2104,26 @@ export default function EditorPage() {
     }
   }, []);
 
+  function parseJsonOrNull<T>(value: string): T | null {
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  function worksheetDocSizeStorageKey(worksheetId: string) {
+    return `${DOC_SIZE_STORAGE_KEY}:${worksheetId}`;
+  }
+
+  function getInitialDocSize() {
+    if (typeof window === 'undefined') return 'a4-portrait';
+    const stored = localStorage.getItem(DOC_SIZE_STORAGE_KEY);
+    return stored && DOC_SIZES.some(({ id }) => id === stored)
+      ? stored
+      : 'a4-portrait';
+  }
+
   useEffect(() => {
     let cancelled = false;
     const refresh = () => {
@@ -2341,6 +2483,12 @@ export default function EditorPage() {
         ).get('worksheet') ?? worksheetIdRef.current;
         if (existingWorksheetId) worksheetIdRef.current = existingWorksheetId;
         const legacyContent = localStorage.getItem(STORAGE_KEY) ?? editor.getHTML();
+        const legacyDocSize = existingWorksheetId
+          ? localStorage.getItem(worksheetDocSizeStorageKey(existingWorksheetId))
+          : localStorage.getItem(DOC_SIZE_STORAGE_KEY);
+        const initialDocSize = DOC_SIZES.some(({ id }) => id === legacyDocSize)
+          ? legacyDocSize
+          : docSize;
         const response = existingWorksheetId
           ? await fetch(
               `/api/worksheets?id=${encodeURIComponent(existingWorksheetId)}`,
@@ -2351,11 +2499,12 @@ export default function EditorPage() {
               body: JSON.stringify({
                 title: 'Untitled Worksheet',
                 contentHtml: legacyContent,
-                documentSize: docSize,
+                documentSize: initialDocSize,
                 status: 'draft',
               }),
             });
-        const result = await response.json() as {
+        const responseText = await response.text();
+        const result = parseJsonOrNull<{
           worksheet?: {
             id: string;
             title: string;
@@ -2367,7 +2516,10 @@ export default function EditorPage() {
             context?: Partial<WorksheetContext>;
           };
           error?: string;
-        };
+        }>(responseText);
+        if (!result) {
+          throw new Error('Could not load worksheet.');
+        }
         if (!response.ok || !result.worksheet) {
           throw new Error(result.error ?? 'Could not load worksheet.');
         }
@@ -2381,7 +2533,21 @@ export default function EditorPage() {
           localStorage.removeItem(STORAGE_KEY);
         }
         setWorksheetTitle(result.worksheet.title);
-        setDocSize(result.worksheet.documentSize);
+        const storedDocSize = localStorage.getItem(
+          worksheetDocSizeStorageKey(result.worksheet.id),
+        );
+        const nextDocSize = DOC_SIZES.some(({ id }) => id === storedDocSize)
+          ? storedDocSize
+          : result.worksheet.documentSize;
+        if (!nextDocSize) {
+          throw new Error('Could not load worksheet.');
+        }
+        setDocSize(nextDocSize);
+        localStorage.setItem(DOC_SIZE_STORAGE_KEY, nextDocSize);
+        localStorage.setItem(
+          worksheetDocSizeStorageKey(result.worksheet.id),
+          nextDocSize,
+        );
         setBrandProfileId(result.worksheet.brandProfileId);
         setWorksheetFolderId(result.worksheet.folderId);
         setShowSolutions(result.worksheet.showSolutions);
@@ -2392,17 +2558,17 @@ export default function EditorPage() {
         if (existingWorksheetId) {
           editor.commands.setContent(result.worksheet.contentHtml || '');
         }
-        const size = DOC_SIZES.find(({ id }) => id === result.worksheet?.documentSize);
+        const size = DOC_SIZES.find(({ id }) => id === nextDocSize);
         if (size) editor.commands.setPageFormat(size.format());
         setSaved(true);
         const publicationResponse = await fetch(
           `/api/dazit/status?worksheetId=${encodeURIComponent(result.worksheet.id)}`,
         );
         if (publicationResponse.ok) {
-          const publicationResult = await publicationResponse.json() as {
+          const publicationResult = parseJsonOrNull<{
             status?: 'unpublished' | 'current' | 'outdated';
-          };
-          if (publicationResult.status) {
+          }>(await publicationResponse.text());
+            if (publicationResult?.status) {
             setPublicationStatus(publicationResult.status);
           }
         }
@@ -3278,6 +3444,10 @@ export default function EditorPage() {
   const handleDocSize = (id: string) => {
     setPublicationStatus((status) => status === 'current' ? 'outdated' : status);
     setDocSize(id);
+    localStorage.setItem(DOC_SIZE_STORAGE_KEY, id);
+    if (worksheetIdRef.current) {
+      localStorage.setItem(worksheetDocSizeStorageKey(worksheetIdRef.current), id);
+    }
     const size = DOC_SIZES.find((s) => s.id === id);
     if (size) editor.commands.setPageFormat(size.format());
     if (worksheetIdRef.current) {
@@ -3355,7 +3525,7 @@ export default function EditorPage() {
 
   const uploadContextPdf = async (file: File) => {
     if (!file.name.toLocaleLowerCase().endsWith('.pdf')) {
-      setContextPdfError('Choose a PDF file.');
+      setContextPdfError('Bitte eine PDF-Datei auswählen.');
       return;
     }
     setUploadingContextPdf(true);
@@ -3375,7 +3545,7 @@ export default function EditorPage() {
         error?: string;
       };
       if (!response.ok || !result.name || !result.text) {
-        throw new Error(result.error ?? 'Could not read the PDF.');
+        throw new Error(result.error ?? 'Die PDF konnte nicht gelesen werden.');
       }
       updateDocumentContext({
         contextPdfName: result.name,
@@ -3389,7 +3559,7 @@ export default function EditorPage() {
       }
     } catch (error) {
       setContextPdfError(
-        error instanceof Error ? error.message : 'Could not read the PDF.',
+        error instanceof Error ? error.message : 'Die PDF konnte nicht gelesen werden.',
       );
     } finally {
       setUploadingContextPdf(false);
@@ -3409,15 +3579,18 @@ export default function EditorPage() {
   const loadDocumentContextProfile = (profileId: string) => {
     const profile = contextProfiles.find(({ id }) => id === profileId);
     if (!profile) return;
-    const hasValues = Object.entries(documentContext).some(([key, value]) => (
-      key !== 'sourceProfileId'
-      && value !== ''
-      && value !== null
-    ));
+    const hasValues = Object.entries(documentContext).some(([key, value]) => {
+      if (key === 'sourceProfileId') return false;
+      const defaultValue = EMPTY_WORKSHEET_CONTEXT[key as keyof WorksheetContext];
+      if (Array.isArray(value) && Array.isArray(defaultValue)) {
+        return value.join('\u0000') !== defaultValue.join('\u0000');
+      }
+      return value !== defaultValue;
+    });
     if (
       hasValues
       && !window.confirm(
-        'Load this profile and replace the current worksheet context?',
+        'Dieses Profil laden und den aktuellen Dokumentkontext ersetzen?',
       )
     ) return;
     updateDocumentContext({
@@ -3435,7 +3608,7 @@ export default function EditorPage() {
       ({ id }) => id === documentContext.sourceProfileId,
     );
     if (!profile) return;
-    if (!window.confirm('Discard worksheet overrides and reset this context?')) {
+    if (!window.confirm('Lokale Anpassungen verwerfen und den Kontext zurücksetzen?')) {
       return;
     }
     updateDocumentContext({
@@ -3449,7 +3622,7 @@ export default function EditorPage() {
   };
 
   const saveDocumentContextAsProfile = async () => {
-    const name = window.prompt('Name this context profile:')?.trim();
+    const name = window.prompt('Name für dieses Kontextprofil:')?.trim();
     if (!name) return;
     const response = await fetch('/api/context-profiles', {
       method: 'POST',
@@ -3471,7 +3644,7 @@ export default function EditorPage() {
       error?: string;
     };
     if (!response.ok || !result.profile) {
-      setExportError(result.error ?? 'Could not save context profile.');
+      setExportError(result.error ?? 'Kontextprofil konnte nicht gespeichert werden.');
       return;
     }
     setContextProfiles((profiles) => [...profiles, result.profile!]);
@@ -3676,7 +3849,7 @@ export default function EditorPage() {
     return `${baseDescription}${suffix}`;
   }
 
-  const publishPDF = async (modeOverride?: 'full' | 'pdf-only') => {
+  const publishPDF = async (modeOverride?: 'full' | 'pdf-only' | 'worksheet-settings-only') => {
     const id = worksheetIdRef.current;
     if (!id || publishingPDF) return false;
     setPublishingPDF(true);
@@ -3710,11 +3883,14 @@ export default function EditorPage() {
         : /it/i.test(rawLanguage) ? 'Italian'
           : /en/i.test(rawLanguage) ? 'English'
             : 'German';
-      const level = documentContext.languageLevel || documentContext.localLevel || 'Basic';
+      const level = documentContext.languageLevel || 'Basic';
       const difficulty = /c1|c2|advanced/i.test(level) ? 'Advanced'
         : /b1|b2|intermediate/i.test(level) ? 'Intermediate'
           : 'Basic';
       const subject = documentContext.customSubject || documentContext.subject || 'Language';
+      const contextDocumentType = documentContext.worksheetType === 'verb-table'
+        ? DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE['verb-table']
+        : DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE[documentContext.worksheetType];
       const metadata = {
         worksheetId: id,
         slug: `${slugBase}-${id.slice(0, 8)}`,
@@ -3727,12 +3903,17 @@ export default function EditorPage() {
         ),
         subject,
         grade: documentContext.learnerStage || level,
-        documentType: containsLearningCards ? 'Lernkarten' : dazitDocumentType,
+        documentType: containsLearningCards ? 'Lernkarten' : (dazitDocumentType || contextDocumentType),
         pages: exportPayload.pageCount,
+        format: DAZIT_PDF_FORMAT_BY_DOC_SIZE[docSize] || 'PDF · A4 druckfertig',
         language,
         difficulty,
         hasAnswerKey: showSolutions,
         tags: [subject, language, level].filter(Boolean),
+        languageLevel: documentContext.languageLevel,
+        actionCompetencies: documentContext.actionCompetencies,
+        languageCompetencies: documentContext.languageCompetencies,
+        actionField: documentContext.actionField || null,
       };
       const formData = new FormData();
       formData.set('pdf', pdf, `${metadata.slug}.pdf`);
@@ -3740,6 +3921,13 @@ export default function EditorPage() {
         'mode',
         modeOverride
           ?? (publicationStatus === 'unpublished' ? 'full' : republishScope),
+      );
+      formData.set(
+        'allowDescriptionOverride',
+        String(
+          allowDescriptionOverride
+          && (publicationStatus === 'unpublished' || republishScope === 'full'),
+        ),
       );
       thumbnailResult.thumbnails.forEach((base64, index) => {
         const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
@@ -4109,6 +4297,7 @@ export default function EditorPage() {
               setRepublishScope(
                 publicationStatus === 'unpublished' ? 'full' : 'pdf-only',
               );
+              setAllowDescriptionOverride(false);
               setPublishDialogOpen(true);
             }}
           >
@@ -7748,11 +7937,11 @@ export default function EditorPage() {
           {selectedPageBreakPos !== null && (
             <div>
               <p className="text-xs font-semibold text-quaternary">
-                Page break
+                Seitenumbruch
               </p>
               <Toggle
                 className="mt-3"
-                label="Restart pagination"
+                label="Seitennummerierung neu starten"
                 isSelected={Boolean(selectedPageBreakRestartPagination)}
                 onChange={updateSelectedPageBreakRestartPagination}
               />
@@ -7762,7 +7951,7 @@ export default function EditorPage() {
                 className="mt-3 flex w-full items-center justify-center gap-2 border border-primary px-3 py-2 text-xs font-semibold text-error-primary transition hover:bg-error-primary"
               >
                 <Trash01 className="size-4" />
-                Delete page break
+                Seitenumbruch löschen
               </button>
             </div>
           )}
@@ -7778,10 +7967,10 @@ export default function EditorPage() {
                 {exportingBlockPNG
                   ? <Loading01 className="size-4 animate-spin" />
                   : <Download01 className="size-4" />}
-                {exportingBlockPNG ? 'Exporting PNG…' : 'Export PNG'}
+                {exportingBlockPNG ? 'PNG wird exportiert…' : 'PNG exportieren'}
               </button>
               <p className="mt-2 text-xs leading-5 text-quaternary">
-                Exports this block at 3× resolution with surrounding space.
+                Exportiert diesen Block in 3× Auflösung mit umlaufendem Rand.
               </p>
               {blockExportError && (
                 <p role="alert" className="mt-2 text-xs text-error-primary">
@@ -7795,11 +7984,11 @@ export default function EditorPage() {
             <>
             <div>
               <p className="text-xs font-semibold text-quaternary">
-                Document context
+                Dokumentkontext
               </p>
               <div className="mt-3 rounded-lg border border-secondary bg-secondary p-2.5">
                 <label className="block text-xs font-semibold text-tertiary">
-                  Context profile
+                  Kontextprofil
                   <select
                     value={documentContext.sourceProfileId ?? ''}
                     onChange={(event) => {
@@ -7809,11 +7998,11 @@ export default function EditorPage() {
                     }}
                     className="mt-1.5 w-full rounded-md border border-primary bg-primary px-2.5 py-2 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
                   >
-                    <option value="">No profile loaded</option>
+                    <option value="">Kein Profil geladen</option>
                     {contextProfiles.some(({ isSystemTemplate }) => (
                       isSystemTemplate
                     )) && (
-                      <optgroup label="Templates">
+                      <optgroup label="Vorlagen">
                         {contextProfiles
                           .filter(({ isSystemTemplate }) => isSystemTemplate)
                           .map((profile) => (
@@ -7826,7 +8015,7 @@ export default function EditorPage() {
                     {contextProfiles.some(({ isSystemTemplate }) => (
                       !isSystemTemplate
                     )) && (
-                      <optgroup label="Your profiles">
+                      <optgroup label="Eigene Profile">
                         {contextProfiles
                           .filter(({ isSystemTemplate }) => !isSystemTemplate)
                           .map((profile) => (
@@ -7845,28 +8034,28 @@ export default function EditorPage() {
                     onClick={resetDocumentContextProfile}
                     className="rounded-md border border-primary px-2 py-1.5 text-xs font-semibold text-secondary hover:bg-primary_hover disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    Reset profile
+                    zurücksetzen
                   </button>
                   <button
                     type="button"
                     onClick={() => void saveDocumentContextAsProfile()}
                     className="rounded-md border border-primary px-2 py-1.5 text-xs font-semibold text-secondary hover:bg-primary_hover"
                   >
-                    Save as profile
+                    speichern
                   </button>
                   <button
                     type="button"
                     onClick={clearDocumentContext}
                     className="col-span-2 rounded-md px-2 py-1 text-xs font-semibold text-error-primary hover:bg-error-primary"
                   >
-                    Clear context
+                    Kontext leeren
                   </button>
                 </div>
               </div>
               <div className="mt-3">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs font-semibold text-tertiary">
-                    Context PDF
+                    Kontext-PDF
                   </p>
                   {documentContext.contextPdfName && (
                     <button
@@ -7874,7 +8063,7 @@ export default function EditorPage() {
                       onClick={removeContextPdf}
                       className="text-xs font-semibold text-error-primary hover:underline"
                     >
-                      Remove
+                      Entfernen
                     </button>
                   )}
                 </div>
@@ -7927,19 +8116,19 @@ export default function EditorPage() {
                   <span className="min-w-0">
                     <span className="block truncate text-xs font-semibold text-secondary">
                       {uploadingContextPdf
-                        ? 'Reading PDF…'
-                        : documentContext.contextPdfName || 'Upload or drop a PDF'}
+                        ? 'PDF wird gelesen…'
+                        : documentContext.contextPdfName || 'PDF hochladen oder hier ablegen'}
                     </span>
                     <span className="mt-0.5 block text-[11px] leading-4 text-quaternary">
                       {documentContext.contextPdfName
                         ? documentContext.contextPdfText.length === 40_000
-                          ? 'Re-upload once to index the complete PDF'
+                          ? 'Nochmals hochladen, um die komplette PDF zu indexieren'
                           : `${
                             documentContext.contextPdfPageCount
-                              ? `${documentContext.contextPdfPageCount} pages · `
+                              ? `${documentContext.contextPdfPageCount} Seiten · `
                               : ''
-                          }Click or drop to replace`
-                        : 'PDF up to 10 MB · extracted text is used by AI'}
+                          }Klicken oder ablegen zum Ersetzen`
+                        : 'PDF bis 10 MB · extrahierter Text wird von der AI genutzt'}
                     </span>
                   </span>
                 </button>
@@ -7955,7 +8144,7 @@ export default function EditorPage() {
               <div className="mt-3 space-y-3">
                 <fieldset>
                   <legend className="text-xs font-semibold text-tertiary">
-                    Worksheet language
+                    Arbeitsblattsprache
                   </legend>
                   <select
                     value={documentContext.worksheetLanguage}
@@ -7967,17 +8156,37 @@ export default function EditorPage() {
                   >
                     <option value="en">EN</option>
                     <option value="de-formal">DE formell</option>
-                    <option value="de-informal">DE informell</option>
+                    <option value="de-informal">DE informell (du)</option>
                   </select>
                 </fieldset>
 
                 <label className="block text-xs font-semibold text-tertiary">
-                  Subject
+                  Arbeitsblatttyp
+                  <select
+                    value={documentContext.worksheetType}
+                    onChange={(event) => {
+                      const worksheetType = event.target.value as WorksheetContext['worksheetType'];
+                      updateDocumentContext({ worksheetType });
+                      setDazitDocumentType(DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE[worksheetType]);
+                    }}
+                    className="mt-1.5 w-full rounded-md border border-primary bg-primary px-3 py-2 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  >
+                    <option value="worksheet">Arbeitsblatt</option>
+                    <option value="fact-sheet">Merkblatt</option>
+                    <option value="verb-table">Verbtabelle</option>
+                    <option value="declension-table">Deklinationstabelle</option>
+                    <option value="learning-cards">Lernkarten</option>
+                    <option value="domino">Domino</option>
+                  </select>
+                </label>
+
+                <label className="block text-xs font-semibold text-tertiary">
+                  Fach
                   <span className="mt-1.5 block font-normal">
                     <SearchSelect
                       ariaLabel="Subject"
                       value={documentContext.subject}
-                      placeholder="Select a subject"
+                      placeholder="Fach auswählen"
                       options={SUBJECT_OPTIONS}
                       onChange={(subject) => updateDocumentContext({
                         subject,
@@ -7990,11 +8199,11 @@ export default function EditorPage() {
                 </label>
                 {documentContext.subject === 'other' && (
                   <label className="block text-xs font-semibold text-tertiary">
-                    Other subject
+                    Anderes Fach
                     <input
                       type="text"
                       value={documentContext.customSubject}
-                      placeholder="Enter the subject"
+                      placeholder="Fach eingeben"
                       onChange={(event) => updateDocumentContext({
                         customSubject: event.target.value,
                       })}
@@ -8004,7 +8213,7 @@ export default function EditorPage() {
                 )}
 
                 <label className="block text-xs font-semibold text-tertiary">
-                  Learner stage
+                  Bildungsstufe
                   <select
                     value={documentContext.learnerStage}
                     onChange={(event) => updateDocumentContext({
@@ -8012,7 +8221,7 @@ export default function EditorPage() {
                     })}
                     className="mt-1.5 w-full rounded-md border border-primary bg-primary px-3 py-2 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
                   >
-                    <option value="">Not specified</option>
+                    <option value="">Nicht angegeben</option>
                     {LEARNER_STAGE_OPTIONS.map(([value, label]) => (
                       <option key={value} value={value}>{label}</option>
                     ))}
@@ -8021,87 +8230,145 @@ export default function EditorPage() {
 
                 <fieldset>
                   <legend className="text-xs font-semibold text-tertiary">
-                    Typical age range
+                    Altersgruppe
                   </legend>
-                  <div className="mt-1.5 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                    <input
-                      aria-label="Minimum learner age"
-                      type="number"
-                      min={0}
-                      max={120}
-                      value={documentContext.ageMin ?? ''}
-                      placeholder="Min"
-                      onChange={(event) => updateDocumentContext({
-                        ageMin: event.target.value === ''
-                          ? null
-                          : Math.min(120, Math.max(0, Number(event.target.value))),
-                      })}
-                      className="min-w-0 rounded-md border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-                    />
-                    <span className="text-xs text-quaternary">to</span>
-                    <input
-                      aria-label="Maximum learner age"
-                      type="number"
-                      min={0}
-                      max={120}
-                      value={documentContext.ageMax ?? ''}
-                      placeholder="Max"
-                      onChange={(event) => updateDocumentContext({
-                        ageMax: event.target.value === ''
-                          ? null
-                          : Math.min(120, Math.max(0, Number(event.target.value))),
-                      })}
-                      className="min-w-0 rounded-md border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-                    />
+                  <div className="mt-1.5 grid grid-cols-2 gap-2">
+                    {AGE_GROUP_OPTIONS.map(([value, label]) => {
+                      const selected = documentContext.ageGroups.includes(value);
+                      return (
+                        <label
+                          className="flex items-center gap-2 rounded-md border border-primary bg-primary px-2.5 py-2 text-sm font-medium text-secondary"
+                          key={value}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={(event) => {
+                              const next = event.target.checked
+                                ? [...documentContext.ageGroups, value]
+                                : documentContext.ageGroups.filter((item) => item !== value);
+                              updateDocumentContext({ ageGroups: [...new Set(next)] });
+                            }}
+                          />
+                          {label}
+                        </label>
+                      );
+                    })}
                   </div>
                 </fieldset>
 
                 <label className="block text-xs font-semibold text-tertiary">
-                  Content language
-                  <input
-                    type="text"
+                  Inhaltssprache
+                  <select
                     value={documentContext.contentLanguage}
-                    placeholder="e.g. German (de-CH)"
                     onChange={(event) => updateDocumentContext({
                       contentLanguage: event.target.value,
                     })}
                     className="mt-1.5 w-full rounded-md border border-primary bg-primary px-3 py-2 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-                  />
+                  >
+                    {CONTENT_LANGUAGE_OPTIONS.map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
                 </label>
 
-                <details className="border-t border-secondary pt-3">
-                  <summary className="cursor-pointer text-xs font-semibold text-secondary">
-                    More context
-                  </summary>
-                  <div className="mt-3 space-y-3">
-                    {([
-                      ['country', 'Country / education system', 'e.g. Switzerland'],
-                      ['localLevel', 'Local level', 'e.g. Sekundarstufe I'],
-                      ['curriculum', 'Curriculum', 'Name or curriculum code'],
-                      ['languageLevel', 'Language proficiency', 'e.g. CEFR A2'],
-                    ] as const).map(([key, label, placeholder]) => (
-                      <label
-                        className="block text-xs font-semibold text-tertiary"
-                        key={key}
+                <div className="pt-3">
+                  <div className="space-y-3">
+                    <label className="block text-xs font-semibold text-tertiary">
+                      Sprachniveau
+                      <select
+                        value={documentContext.languageLevel}
+                        onChange={(event) => updateDocumentContext({
+                          languageLevel: event.target.value,
+                        })}
+                        className="mt-1.5 w-full rounded-md border border-primary bg-primary px-3 py-2 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
                       >
-                        {label}
-                        <input
-                          type="text"
-                          value={documentContext[key]}
-                          placeholder={placeholder}
+                        <option value="">Nicht angegeben</option>
+                        {LANGUAGE_PROFICIENCY_OPTIONS.map((value) => (
+                          <option key={value} value={value}>{value}</option>
+                        ))}
+                      </select>
+                    </label>
+                    {(documentContext.subject === 'daz'
+                      || documentContext.subject === 'additional-languages') && (
+                      <fieldset>
+                        <legend className="text-xs font-semibold uppercase tracking-wide text-tertiary">
+                          Sprachhandlungskompetenz
+                        </legend>
+                        <div className="mt-1.5 space-y-2">
+                          {ACTION_COMPETENCY_OPTIONS.map((value) => (
+                            <label
+                              className="flex items-center gap-2 text-sm text-secondary"
+                              key={value}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={documentContext.actionCompetencies.includes(value)}
+                                onChange={() => {
+                                  const next = documentContext.actionCompetencies.includes(value)
+                                    ? documentContext.actionCompetencies.filter((item) => item !== value)
+                                    : [...documentContext.actionCompetencies, value];
+                                  updateDocumentContext({ actionCompetencies: next });
+                                }}
+                              />
+                              {value}
+                            </label>
+                          ))}
+                        </div>
+                      </fieldset>
+                    )}
+                    {(documentContext.subject === 'daz'
+                      || documentContext.subject === 'additional-languages') && (
+                      <fieldset>
+                        <legend className="text-xs font-semibold uppercase tracking-wide text-tertiary">
+                          Sprachkompetenz
+                        </legend>
+                        <div className="mt-1.5 space-y-2">
+                          {LANGUAGE_COMPETENCY_OPTIONS.map((value) => (
+                            <label
+                              className="flex items-center gap-2 text-sm text-secondary"
+                              key={value}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={documentContext.languageCompetencies.includes(value)}
+                                onChange={() => {
+                                  const next = documentContext.languageCompetencies.includes(value)
+                                    ? documentContext.languageCompetencies.filter((item) => item !== value)
+                                    : [...documentContext.languageCompetencies, value];
+                                  updateDocumentContext({ languageCompetencies: next });
+                                }}
+                              />
+                              {value}
+                            </label>
+                          ))}
+                        </div>
+                      </fieldset>
+                    )}
+                    {(documentContext.subject === 'daz'
+                      || documentContext.subject === 'additional-languages') && (
+                      <label className="block text-xs font-semibold text-tertiary">
+                        Handlungsfeld
+                        <select
+                          value={documentContext.actionField}
                           onChange={(event) => updateDocumentContext({
-                            [key]: event.target.value,
+                            actionField: event.target.value,
                           })}
                           className="mt-1.5 w-full rounded-md border border-primary bg-primary px-3 py-2 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-                        />
+                        >
+                          <option value="">Nicht angegeben</option>
+                          {ACTION_FIELD_OPTIONS.map((value) => (
+                            <option key={value} value={value}>{value}</option>
+                          ))}
+                        </select>
                       </label>
-                    ))}
+                    )}
                     <label className="block text-xs font-semibold text-tertiary">
-                      Learner context
+                      Lernkontext
                       <textarea
                         rows={3}
                         value={documentContext.learnerContext}
-                        placeholder="Relevant needs, prior knowledge, or learning situation"
+                        placeholder="Relevante Bedürfnisse, Vorwissen oder Lernsituation"
                         onChange={(event) => updateDocumentContext({
                           learnerContext: event.target.value,
                         })}
@@ -8109,13 +8376,13 @@ export default function EditorPage() {
                       />
                     </label>
                   </div>
-                </details>
+                </div>
               </div>
             </div>
 
             <div className="border-t border-secondary pt-5">
             <div>
-            <label htmlFor="doc-size" className="text-xs font-semibold text-quaternary">Document size</label>
+            <label htmlFor="doc-size" className="text-xs font-semibold text-quaternary">Dokumentformat</label>
             <select
               id="doc-size"
               value={docSize}
@@ -8131,7 +8398,7 @@ export default function EditorPage() {
 
           <div>
             <label htmlFor="doc-brand" className="text-xs font-semibold text-quaternary">
-              Brand
+              Marke
             </label>
             <select
               id="doc-brand"
@@ -8142,14 +8409,14 @@ export default function EditorPage() {
               }}
               className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-medium text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
             >
-              <option value="">{brandProfilesLoaded ? 'Default brand (Eduit)' : 'Loading brand…'}</option>
+              <option value="">{brandProfilesLoaded ? 'Standardmarke (Eduit)' : 'Marke wird geladen…'}</option>
               {brandProfilesLoaded && brandProfileId
                 && !brandProfiles.some(({ id }) => id === brandProfileId) && (
-                <option value={brandProfileId}>Saved brand unavailable</option>
+                <option value={brandProfileId}>Gespeicherte Marke nicht verfügbar</option>
               )}
               {brandProfiles.map((brand) => (
                 <option key={brand.id} value={brand.id}>
-                  {brand.name}{brand.isDefault ? ' · Default' : ''}
+                  {brand.name}{brand.isDefault ? ' · Standard' : ''}
                 </option>
               ))}
             </select>
@@ -8158,7 +8425,7 @@ export default function EditorPage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold text-quaternary">
-                Show solutions
+                Lösungen anzeigen
               </p>
             </div>
             <input
@@ -8174,12 +8441,12 @@ export default function EditorPage() {
             <p className="text-xs font-semibold text-quaternary">Status</p>
             <div className="mt-3 flex items-center gap-2 text-sm text-tertiary">
               <span className="size-2 rounded-full bg-fg-success-primary" />
-              Draft · autosaved locally
+              Entwurf · lokal automatisch gespeichert
             </div>
           </div>
 
           <div className="border-t border-secondary pt-5">
-            <p className="text-xs font-semibold text-quaternary">Actions</p>
+            <p className="text-xs font-semibold text-quaternary">Aktionen</p>
             <div className="mt-3 flex flex-col gap-2">
               {availableVerbTableVerbs.length > 0 && (
                 <Button
@@ -8219,10 +8486,17 @@ export default function EditorPage() {
                 color="secondary"
                 size="md"
                 iconLeading={<Trash01 className="size-4.5" />}
-                onPress={() => { editor.commands.clearContent(true); localStorage.removeItem(STORAGE_KEY); }}
+                onPress={() => {
+                  editor.commands.clearContent(true);
+                  localStorage.removeItem(STORAGE_KEY);
+                  localStorage.removeItem(DOC_SIZE_STORAGE_KEY);
+                  if (worksheetIdRef.current) {
+                    localStorage.removeItem(worksheetDocSizeStorageKey(worksheetIdRef.current));
+                  }
+                }}
                 className="justify-start"
               >
-                Clear document
+                Dokument leeren
               </Button>
               <Button
                 color="secondary"
@@ -8231,7 +8505,7 @@ export default function EditorPage() {
                 onPress={() => navigator.clipboard?.writeText(editor.getHTML())}
                 className="justify-start"
               >
-                Copy as HTML
+                Als HTML kopieren
               </Button>
             </div>
           </div>
@@ -8272,6 +8546,11 @@ export default function EditorPage() {
                       'PDF und Vorschaubilder aktualisieren; bestehende Metadaten beibehalten.',
                     ],
                     [
+                      'worksheet-settings-only',
+                      'Nur Arbeitsblatt-Einstellungen',
+                      'PDF und Vorschaubilder aktualisieren; Metadaten aus den aktuellen Arbeitsblatt-Einstellungen übernehmen, ohne AI neu zu generieren.',
+                    ],
+                    [
                       'full',
                       'PDF und Metadaten',
                       'Zusätzlich Beschreibung, Tags, Niveau und Kompetenzen neu generieren.',
@@ -8299,7 +8578,7 @@ export default function EditorPage() {
                 </div>
               </fieldset>
             )}
-            {(publicationStatus === 'unpublished' || republishScope === 'full') && (
+            {(publicationStatus === 'unpublished' || republishScope !== 'pdf-only') && (
               <div className="mt-5">
                 <label className="mb-1.5 block text-sm font-medium text-secondary">Typ</label>
                 <Select
@@ -8315,6 +8594,25 @@ export default function EditorPage() {
                     { value: 'Domino', label: 'Domino' },
                   ]}
                 />
+                {republishScope === 'full' && (
+                  <label className="mt-4 flex items-start gap-3 rounded-lg border border-secondary p-3">
+                    <input
+                      checked={allowDescriptionOverride}
+                      className="mt-0.5 size-4 accent-brand"
+                      onChange={(event) => setAllowDescriptionOverride(event.target.checked)}
+                      type="checkbox"
+                    />
+                    <span>
+                      <strong className="block text-sm text-primary">
+                        Beschreibung trotz Terminologie-Hinweisen zulassen
+                      </strong>
+                      <span className="mt-0.5 block text-xs leading-5 text-tertiary">
+                        Wenn die automatische Prüfung fehlschlägt, kannst du mit dieser Option
+                        trotzdem veröffentlichen. Die gemeldeten Probleme werden weiterhin angezeigt.
+                      </span>
+                    </span>
+                  </label>
+                )}
               </div>
             )}
             <div className="mt-6 flex justify-end gap-3">

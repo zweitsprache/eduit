@@ -8,6 +8,7 @@ export const maxDuration = 60;
 const PAGE_FORMATS = {
   'a4-portrait': { width: 794, height: 1123 },
   'a4-landscape': { width: 1123, height: 794 },
+  'a5-landscape': { width: 794, height: 561 },
   'letter-portrait': { width: 816, height: 1056 },
   'letter-landscape': { width: 1056, height: 816 },
 };

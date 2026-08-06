@@ -171,6 +171,7 @@
   display: none !important;
 }
 
+
 .editor-content .tiptap-page-break-node {
   position: relative;
   border-top: 1px dashed var(--color-border-primary);

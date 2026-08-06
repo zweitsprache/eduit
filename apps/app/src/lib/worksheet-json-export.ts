@@ -6,6 +6,7 @@ import type { CustomHeadingAttrs } from '@/components/editor/heading-node';
 import type { GlossaryTermsAttrs } from '@/components/editor/glossary-terms-node';
 import type { FillInTheBlankAttrs } from '@/components/editor/fill-in-the-blank-node';
 import type { DialogueAttrs } from '@/components/editor/dialogue-node';
+import type { MCMAttrs } from '@/components/editor/mcm-node';
 import type { TrueFalseAttrs } from '@/components/editor/true-false-node';
 import type { MatchingPairsAttrs } from '@/components/editor/matching-pairs-node';
 import type { TimeMatchingAttrs } from '@/components/editor/time-matching-node';
@@ -13,6 +14,7 @@ import type { LearningCardsAttrs } from '@/components/editor/learning-cards-node
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
 import type { WordGridAttrs } from '@/components/editor/word-grid-node';
 import type { DominoAttrs } from '@/components/editor/domino-node';
+import type { GermanVerbTableAttrs } from '@/components/editor/german-verb-table-node';
 import type { WorksheetContext } from '@/lib/worksheet-types';
 
 export type WorksheetJsonExportMeta = {
@@ -49,6 +51,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'glossaryTerms',
   'fillInTheBlank',
   'dialogue',
+  'mcm',
   'mcq',
   'trueFalse',
   'matchingPairs',
@@ -56,6 +59,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'wordGrid',
   'learningCards',
   'domino',
+  'germanVerbTable',
 ]);
 
 function escapeHtml(value: string) {
@@ -255,6 +259,25 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         })),
       };
     }
+    case 'mcm': {
+      const mcmAttrs = attrs as MCMAttrs;
+      return {
+        type: 'mcm',
+        instruction: optionalInstruction(attrs.instruction),
+        question: mcmAttrs.question,
+        showFirstAsExample: mcmAttrs.showFirstAsExample,
+        hideStatement: Boolean(mcmAttrs.hideStatement),
+        rows: mcmAttrs.rows.map((row) => ({
+          id: row.id,
+          text: row.text,
+          options: row.options.map((option) => ({
+            id: option.id,
+            text: option.text,
+            correct: option.correct,
+          })),
+        })),
+      };
+    }
     case 'trueFalse': {
       const {
         question, trueLabel, falseLabel, showNa, naLabel, rows, showFirstAsExample,
@@ -373,6 +396,37 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         evenTextSize,
         leftRepresentation,
         rightRepresentation,
+      };
+    }
+    case 'germanVerbTable': {
+      const verbTableAttrs = attrs as GermanVerbTableAttrs;
+      return {
+        type: 'germanVerbTable',
+        tableStyle: verbTableAttrs.tableStyle,
+        tense: verbTableAttrs.tense,
+        groupId: verbTableAttrs.groupId,
+        groupIndex: verbTableAttrs.groupIndex,
+        groupSize: verbTableAttrs.groupSize,
+        hideInfinitiveBadge: verbTableAttrs.hideInfinitiveBadge,
+        showInfinitiveHeading: verbTableAttrs.showInfinitiveHeading,
+        infinitiveHeadingText: verbTableAttrs.infinitiveHeadingText,
+        leftVerb: verbTableAttrs.leftVerb,
+        leftForms: { ...verbTableAttrs.leftForms },
+        leftAuxiliary: verbTableAttrs.leftAuxiliary,
+        leftParticiple: verbTableAttrs.leftParticiple,
+        comparisonAuxiliary: verbTableAttrs.comparisonAuxiliary,
+        separablePrefix: verbTableAttrs.separablePrefix,
+        rightVerb: verbTableAttrs.rightVerb,
+        forms: { ...verbTableAttrs.forms },
+        rightAuxiliary: verbTableAttrs.rightAuxiliary,
+        rightParticiple: verbTableAttrs.rightParticiple,
+        multipleVerbCount: verbTableAttrs.multipleVerbCount,
+        multipleBadgeStyle: verbTableAttrs.multipleBadgeStyle,
+        multipleVerbs: verbTableAttrs.multipleVerbs.map((verb) => ({
+          verb: verb.verb,
+          forms: { ...verb.forms },
+          separablePrefix: verb.separablePrefix,
+        })),
       };
     }
     default:

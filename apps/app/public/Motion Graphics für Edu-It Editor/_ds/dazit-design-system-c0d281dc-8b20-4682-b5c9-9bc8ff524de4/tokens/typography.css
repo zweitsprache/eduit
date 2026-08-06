@@ -1,0 +1,35 @@
+:root{
+  --font-sans:"Encode Sans Semi Condensed",Arial,sans-serif;
+
+  --fw-regular:400; /* @kind other */
+  --fw-medium:500; /* @kind other */
+  --fw-semibold:600; /* @kind other */
+  --fw-bold:700; /* @kind other */
+  --fw-black:800; /* @kind other */
+
+  /* type scale as used across dazit */
+  --text-hero:clamp(42px,4vw,64px);
+  --text-h1:clamp(28px,3.1vw,38px);
+  --text-h1-detail:clamp(34px,3vw,48px);
+  --text-h2:25px;
+  --text-h2-lg:27px;
+  --text-h2-sm:19px;
+  --text-title-card:16px;
+  --text-lead:20px;
+  --text-body:16px;
+  --text-body-lg:17px;
+  --text-small:14px;
+  --text-xs:13px;
+  --text-2xs:12px;
+  --text-label:11px;
+
+  --lh-tight:1.08; /* @kind other */
+  --lh-snug:1.25; /* @kind other */
+  --lh-normal:1.45; /* @kind other */
+  --lh-relaxed:1.55; /* @kind other */
+  --lh-loose:1.75; /* @kind other */
+
+  --tracking-tight:-.035em; /* @kind other */
+  --tracking-normal:0; /* @kind other */
+  --tracking-wide:.07em; /* @kind other */
+}

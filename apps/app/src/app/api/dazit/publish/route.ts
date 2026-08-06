@@ -2,6 +2,7 @@ import { get, put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
+import { extractText, getDocumentProxy } from 'unpdf';
 import { getCurrentAppUser } from '@/lib/auth/authorization';
 import { updateWorksheet } from '@/lib/worksheets';
 import { sql } from '@/lib/neon';
@@ -25,6 +26,86 @@ type PublishMetadata = {
   difficulty: string;
   hasAnswerKey: boolean;
   tags: string[];
+  format?: string;
+  languageLevel?: string;
+  actionCompetencies?: string[];
+  languageCompetencies?: string[];
+  actionField?: string | null;
+};
+
+type PublicationSnapshot = {
+  worksheetId: string;
+  pdfPath: string;
+  thumbnailPaths: string[];
+  sizeBytes: number;
+  descriptionHtml: string | null;
+  excerpt: string | null;
+  searchSnippet: string | null;
+  tags: string[];
+  level: string | null;
+  actionCompetencies: string[];
+  languageCompetencies: string[];
+  actionCompetencyContributionHtml: string | null;
+  actionField: string | null;
+};
+
+const PUBLICATION_LEVELS = ['A1.1', 'A1.2', 'A2.1', 'A2.2', 'B1.1', 'B1.2'] as const;
+const ACTION_COMPETENCY_OPTIONS = [
+  'Lesen',
+  'Leseverstehen',
+  'Hören',
+  'Hörverstehen',
+  'Monologisches Sprechen',
+  'Dialogisches Sprechen',
+  'Monologisches Schreiben',
+  'Dialogisches Schreiben',
+] as const;
+const LANGUAGE_COMPETENCY_OPTIONS = [
+  'Wortschatz',
+  'Grammatik',
+  'Aussprache',
+  'Intonation',
+  'Orthografie',
+] as const;
+const ACTION_FIELD_OPTIONS = [
+  'Deutschkurs',
+  'Gesundheit',
+  'Sicherheit und Notfälle',
+  'Familie und Partnerschaft',
+  'Kinder und Schule',
+  'Soziales Netz',
+  'Beratung und Unterstützung',
+  'Einkaufen',
+  'Ernährung',
+  'Wohnen',
+  'Mobilität',
+  'Finanzen und Versicherungen',
+  'Behörden',
+  'Freizeit und Hobbys',
+  'Kultur und Identität',
+  'Arbeit',
+  'Arbeitssuche',
+  'Umwelt und Klima',
+  'Technologie',
+  'Weiterbildung',
+] as const;
+
+const TENSE_TAGS = [
+  'Präsens',
+  'Präteritum',
+  'Perfekt',
+  'Plusquamperfekt',
+  'Futur I',
+  'Futur II',
+] as const;
+
+const FALLBACK_TAGS: Record<PublishMetadata['documentType'], string[]> = {
+  Arbeitsblatt: ['Arbeitsblatt'],
+  Merkblatt: ['Merkblatt'],
+  Verbtabelle: ['Verben'],
+  Deklinationstabelle: ['Deklination'],
+  Lernkarten: ['Lernkarten'],
+  Domino: ['Domino'],
 };
 
 const forbiddenAdultDazTerminology =
@@ -36,44 +117,10 @@ const descriptionSchema = z.object({
   excerpt: z.string().trim().min(120).max(280),
   searchSnippet: z.string().trim().min(90).max(180),
   tags: z.array(z.string().trim().min(2).max(50)).min(1).max(10),
-  level: z.enum(['A1.1', 'A1.2', 'A2.1', 'A2.2', 'B1.1', 'B1.2']),
-  actionCompetencies: z.array(z.enum([
-    'Lesen',
-    'Hören',
-    'Monologisches Sprechen',
-    'Dialogisches Sprechen',
-    'Monologisches Schreiben',
-    'Dialogisches Schreiben',
-  ])).max(3),
-  languageCompetencies: z.array(z.enum([
-    'Wortschatz',
-    'Grammatik',
-    'Aussprache',
-    'Intonation',
-    'Orthografie',
-  ])).min(1).max(5),
-  actionField: z.enum([
-    'Deutschkurs',
-    'Gesundheit',
-    'Sicherheit und Notfälle',
-    'Familie und Partnerschaft',
-    'Kinder und Schule',
-    'Soziales Netz',
-    'Beratung und Unterstützung',
-    'Einkaufen',
-    'Ernährung',
-    'Wohnen',
-    'Mobilität',
-    'Finanzen und Versicherungen',
-    'Behörden',
-    'Freizeit und Hobbys',
-    'Kultur und Identität',
-    'Arbeit',
-    'Arbeitssuche',
-    'Umwelt und Klima',
-    'Technologie',
-    'Weiterbildung',
-  ]).nullable(),
+  level: z.enum(PUBLICATION_LEVELS),
+  actionCompetencies: z.array(z.enum(ACTION_COMPETENCY_OPTIONS)).max(3),
+  languageCompetencies: z.array(z.enum(LANGUAGE_COMPETENCY_OPTIONS)).min(1).max(5),
+  actionField: z.enum(ACTION_FIELD_OPTIONS).nullable(),
   actionCompetencyContribution: z.object({
     summary: z.string().trim().min(100).max(900),
   }),
@@ -84,6 +131,107 @@ const descriptionSchema = z.object({
     bullets: z.array(z.string().trim().min(10).max(300)).max(8),
   })).min(1).max(3),
 });
+
+type GeneratedDescription = {
+  excerpt: string;
+  searchSnippet: string;
+  html: string;
+  tags: string[];
+  level: typeof PUBLICATION_LEVELS[number];
+  actionCompetencies: string[];
+  languageCompetencies: string[];
+  actionField: string | null;
+  actionCompetencyContributionHtml: string;
+};
+
+function normalizePublicationLevel(value: string | undefined): typeof PUBLICATION_LEVELS[number] | null {
+  if (!value) return null;
+  const normalized = value.trim().toUpperCase().replaceAll(' ', '');
+  if (normalized === 'A1.1') return 'A1.1';
+  if (normalized === 'A1.2' || normalized === 'A1+') return 'A1.2';
+  if (normalized === 'A2.1') return 'A2.1';
+  if (normalized === 'A2.2' || normalized === 'A2+') return 'A2.2';
+  if (normalized === 'B1.1') return 'B1.1';
+  if (normalized === 'B1.2' || normalized === 'B1+') return 'B1.2';
+  return null;
+}
+
+function applyWorksheetSettingOverrides(
+  generated: GeneratedDescription,
+  metadata: PublishMetadata,
+): GeneratedDescription {
+  const levelOverride = normalizePublicationLevel(metadata.languageLevel);
+  const actionCompetencyOverride = Array.isArray(metadata.actionCompetencies)
+    ? metadata.actionCompetencies.filter((value): value is string => (
+      ACTION_COMPETENCY_OPTIONS.includes(value as typeof ACTION_COMPETENCY_OPTIONS[number])
+    ))
+    : [];
+  const languageCompetencyOverride = Array.isArray(metadata.languageCompetencies)
+    ? metadata.languageCompetencies.filter((value): value is string => (
+      LANGUAGE_COMPETENCY_OPTIONS.includes(value as typeof LANGUAGE_COMPETENCY_OPTIONS[number])
+    ))
+    : [];
+  const actionFieldOverride = typeof metadata.actionField === 'string'
+    && ACTION_FIELD_OPTIONS.includes(metadata.actionField as typeof ACTION_FIELD_OPTIONS[number])
+    ? metadata.actionField
+    : null;
+
+  return {
+    ...generated,
+    level: levelOverride ?? generated.level,
+    actionCompetencies: actionCompetencyOverride.length
+      ? actionCompetencyOverride
+      : generated.actionCompetencies,
+    languageCompetencies: languageCompetencyOverride.length
+      ? languageCompetencyOverride
+      : generated.languageCompetencies,
+    actionField: actionFieldOverride ?? generated.actionField,
+  };
+}
+
+function normalizeSearchText(value: string) {
+  return value
+    .toLocaleLowerCase('de-CH')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '');
+}
+
+async function extractPdfText(pdf: File) {
+  try {
+    const bytes = new Uint8Array(await pdf.arrayBuffer());
+    const document = await getDocumentProxy(bytes);
+    const extracted = await extractText(document, { mergePages: true });
+    return String(extracted.text)
+      .replaceAll('\u0000', '')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  } catch {
+    return '';
+  }
+}
+
+function filterGeneratedTags(
+  tags: string[],
+  documentType: PublishMetadata['documentType'],
+  pdfText: string,
+) {
+  if (!pdfText) return [...new Set(tags.map((tag) => tag.trim()))].slice(0, 10);
+
+  const normalizedPdfText = normalizeSearchText(pdfText);
+  const filtered = [...new Set(tags.map((tag) => tag.trim()))]
+    .filter((tag) => {
+      const normalizedTag = normalizeSearchText(tag);
+      if (!TENSE_TAGS.some((tenseTag) => normalizeSearchText(tenseTag) === normalizedTag)) {
+        return true;
+      }
+      return normalizedPdfText.includes(normalizedTag);
+    })
+    .slice(0, 10);
+
+  if (filtered.length > 0) return filtered;
+  return FALLBACK_TAGS[documentType];
+}
 
 function escapeHtml(value: string) {
   return value
@@ -125,7 +273,42 @@ function normalizeDescriptionQuotationMarks(
   return normalize(description);
 }
 
-async function generateDescription(pdf: File, metadata: PublishMetadata) {
+async function generateDescription(
+  pdf: File,
+  metadata: PublishMetadata,
+  allowTerminologyOverride = false,
+) {
+  const pdfText = await extractPdfText(pdf);
+  const listValidationViolations = (description: z.infer<typeof descriptionSchema>) => {
+    const generatedText = JSON.stringify({
+      excerpt: description.excerpt,
+      searchSnippet: description.searchSnippet,
+      introduction: description.introduction,
+      sections: description.sections,
+      contribution: description.actionCompetencyContribution,
+    });
+    const missingLearningCardReference = metadata.documentType === 'Lernkarten'
+      && (
+        !/Lernkarten/i.test(description.excerpt)
+        || !/Lernkarten/i.test(description.searchSnippet)
+        || !/Lernkarten/i.test(JSON.stringify({
+          introduction: description.introduction,
+          sections: description.sections,
+        }))
+      );
+    const violations: string[] = [];
+    if (forbiddenAdultDazTerminology.test(generatedText)) {
+      violations.push('forbidden adult DaZ terminology detected');
+    }
+    if (irrelevantProductionLanguage.test(generatedText)) {
+      violations.push('irrelevant production language detected');
+    }
+    if (missingLearningCardReference) {
+      violations.push('Lernkarten references are missing in excerpt/snippet/body');
+    }
+    return violations;
+  };
+
   let output: z.infer<typeof descriptionSchema> | null = null;
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const result = await generateText({
@@ -280,52 +463,13 @@ beziehungsweise Kursleiter:innen und Lernende.`
     }],
     });
     output = normalizeDescriptionQuotationMarks(result.output);
-    const descriptiveText = JSON.stringify({
-      excerpt: output.excerpt,
-      searchSnippet: output.searchSnippet,
-      introduction: output.introduction,
-      sections: output.sections,
-      contribution: output.actionCompetencyContribution,
-    });
-    const missingLearningCardReference = metadata.documentType === 'Lernkarten'
-      && (
-        !/Lernkarten/i.test(output.excerpt)
-        || !/Lernkarten/i.test(output.searchSnippet)
-        || !/Lernkarten/i.test(JSON.stringify({
-          introduction: output.introduction,
-          sections: output.sections,
-        }))
-      );
-    if (
-      !forbiddenAdultDazTerminology.test(descriptiveText)
-      && !irrelevantProductionLanguage.test(descriptiveText)
-      && !missingLearningCardReference
-    ) break;
+    if (listValidationViolations(output).length === 0) break;
   }
   if (!output) throw new Error('Description generation failed.');
-  const generatedText = JSON.stringify({
-    excerpt: output.excerpt,
-    searchSnippet: output.searchSnippet,
-    introduction: output.introduction,
-    sections: output.sections,
-    contribution: output.actionCompetencyContribution,
-  });
-  const missingLearningCardReference = metadata.documentType === 'Lernkarten'
-    && (
-      !/Lernkarten/i.test(output.excerpt)
-      || !/Lernkarten/i.test(output.searchSnippet)
-      || !/Lernkarten/i.test(JSON.stringify({
-        introduction: output.introduction,
-        sections: output.sections,
-      }))
-    );
-  if (
-    forbiddenAdultDazTerminology.test(generatedText)
-    || irrelevantProductionLanguage.test(generatedText)
-    || missingLearningCardReference
-  ) {
+  const violations = listValidationViolations(output);
+  if (violations.length > 0 && !allowTerminologyOverride) {
     throw new Error(
-      'The generated description did not follow the adult DaZ terminology rules. Please publish again.',
+      `The generated description did not follow the adult DaZ terminology rules. Issues: ${violations.join('; ')}. Publish again or approve override.`,
     );
   }
   const sections = output.sections.map((section) => {
@@ -341,7 +485,7 @@ beziehungsweise Kursleiter:innen und Lernende.`
     excerpt: output.excerpt,
     searchSnippet: output.searchSnippet,
     html: `<p>${escapeHtml(output.introduction)}</p>${sections}`,
-    tags: [...new Set(output.tags.map((tag) => tag.trim()))].slice(0, 10),
+    tags: filterGeneratedTags(output.tags, metadata.documentType, pdfText),
     level: output.level,
     actionCompetencies: output.actionCompetencies,
     languageCompetencies: output.languageCompetencies,
@@ -378,7 +522,9 @@ export async function POST(request: Request) {
     const pdf = formData.get('pdf');
     const metadataValue = formData.get('metadata');
     const requestedMode = formData.get('mode');
-    const mode = requestedMode === 'pdf-only' || requestedMode === 'metadata-only'
+    const mode = requestedMode === 'pdf-only'
+      || requestedMode === 'worksheet-settings-only'
+      || requestedMode === 'metadata-only'
       ? requestedMode
       : 'full';
     if (isWorkflowRequest && mode !== 'metadata-only') {
@@ -417,7 +563,16 @@ export async function POST(request: Request) {
         worksheet_id as "worksheetId",
         pdf_path as "pdfPath",
         thumbnail_paths as "thumbnailPaths",
-        size_bytes as "sizeBytes"
+        size_bytes as "sizeBytes",
+        description_html as "descriptionHtml",
+        excerpt,
+        search_snippet as "searchSnippet",
+        tags,
+        level,
+        action_competencies as "actionCompetencies",
+        language_competencies as "languageCompetencies",
+        action_competency_contribution_html as "actionCompetencyContributionHtml",
+        action_field as "actionField"
       from dazit_publications
       where worksheet_id = ${metadata.worksheetId}
     ` as Array<{
@@ -425,6 +580,15 @@ export async function POST(request: Request) {
       pdfPath: string;
       thumbnailPaths: string[];
       sizeBytes: number;
+      descriptionHtml: string | null;
+      excerpt: string | null;
+      searchSnippet: string | null;
+      tags: string[];
+      level: string | null;
+      actionCompetencies: string[];
+      languageCompetencies: string[];
+      actionCompetencyContributionHtml: string | null;
+      actionField: string | null;
     }>;
     if (mode !== 'full' && !publicationRows[0]) {
       return NextResponse.json(
@@ -432,8 +596,29 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const description = mode !== 'pdf-only'
-      ? await generateDescription(pdf, metadata)
+    const allowDescriptionOverride = formData.get('allowDescriptionOverride') === 'true';
+    const generatedDescription = mode === 'full'
+      ? await generateDescription(pdf, metadata, allowDescriptionOverride)
+      : null;
+    const description = generatedDescription
+      ? applyWorksheetSettingOverrides(generatedDescription, metadata)
+      : null;
+    const existingPublication = publicationRows[0] as PublicationSnapshot | undefined;
+    const worksheetSettingsOverride = existingPublication
+      ? {
+        level: normalizePublicationLevel(metadata.languageLevel) ?? existingPublication.level,
+        actionCompetencies: Array.isArray(metadata.actionCompetencies)
+          && metadata.actionCompetencies.length
+          ? metadata.actionCompetencies
+          : existingPublication.actionCompetencies,
+        languageCompetencies: Array.isArray(metadata.languageCompetencies)
+          && metadata.languageCompetencies.length
+          ? metadata.languageCompetencies
+          : existingPublication.languageCompetencies,
+        actionField: typeof metadata.actionField === 'string' && metadata.actionField
+          ? metadata.actionField
+          : existingPublication.actionField,
+      }
       : null;
 
     const pdfPath = mode === 'metadata-only'
@@ -493,6 +678,30 @@ export async function POST(request: Request) {
       actionField: description.actionField,
         publishedAt: new Date().toISOString(),
       }
+      : mode === 'worksheet-settings-only' && existingPublication && worksheetSettingsOverride
+        ? {
+          ...existingManifest,
+          ...metadata,
+          pdfPath,
+          thumbnailPaths,
+          sizeBytes,
+          downloads: existingManifest.downloads ?? 0,
+          description: existingManifest.description
+            ?? existingPublication.descriptionHtml
+            ?? '',
+          searchSnippet: existingManifest.searchSnippet
+            ?? existingPublication.searchSnippet
+            ?? '',
+          tags: existingManifest.tags ?? existingPublication.tags ?? [],
+          level: worksheetSettingsOverride.level,
+          actionCompetencies: worksheetSettingsOverride.actionCompetencies,
+          languageCompetencies: worksheetSettingsOverride.languageCompetencies,
+          actionField: worksheetSettingsOverride.actionField,
+          actionCompetencyContributionHtml: existingManifest.actionCompetencyContributionHtml
+            ?? existingPublication.actionCompetencyContributionHtml
+            ?? '',
+          publishedAt: new Date().toISOString(),
+        }
       : {
         ...existingManifest,
         pdfPath,
@@ -575,6 +784,24 @@ export async function POST(request: Request) {
         metadata_version = excluded.metadata_version,
         published_revision = excluded.published_revision,
         updated_at = now()
+      `;
+    } else if (mode === 'worksheet-settings-only' && existingPublication && worksheetSettingsOverride) {
+      await sql`
+        update dazit_publications
+        set slug = ${metadata.slug},
+            title = ${metadata.title},
+            document_type = ${metadata.documentType},
+            pdf_path = ${pdfPath},
+            thumbnail_paths = ${JSON.stringify(thumbnailPaths)}::jsonb,
+            page_count = ${metadata.pages},
+            size_bytes = ${sizeBytes},
+            level = ${worksheetSettingsOverride.level},
+            action_competencies = ${JSON.stringify(worksheetSettingsOverride.actionCompetencies)}::jsonb,
+            language_competencies = ${JSON.stringify(worksheetSettingsOverride.languageCompetencies)}::jsonb,
+            action_field = ${worksheetSettingsOverride.actionField},
+            published_revision = ${sourceRevision},
+            updated_at = now()
+        where worksheet_id = ${metadata.worksheetId}
       `;
     } else {
       await sql`

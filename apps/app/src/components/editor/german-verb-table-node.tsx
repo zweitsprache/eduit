@@ -41,6 +41,9 @@ export type GermanVerbTableAttrs = {
   groupId: string;
   groupIndex: number;
   groupSize: number;
+  hideInfinitiveBadge: boolean;
+  showInfinitiveHeading: boolean;
+  infinitiveHeadingText: string;
   leftVerb: string;
   leftForms: GermanVerbTableForms;
   leftAuxiliary: string;
@@ -62,6 +65,9 @@ export const DEFAULT_GERMAN_VERB_TABLE_ATTRS: GermanVerbTableAttrs = {
   groupId: '',
   groupIndex: 0,
   groupSize: 1,
+  hideInfinitiveBadge: false,
+  showInfinitiveHeading: false,
+  infinitiveHeadingText: '',
   leftVerb: 'sein',
   leftForms: {
     ich: 'bin',
@@ -209,9 +215,12 @@ function SeparableVerbForm({
   if (!normalizedPrefix) {
     return <ExceptionDiff actual={actual} reference={reference} />;
   }
-  const prefixWidth = normalizedPrefix.toLocaleLowerCase('de-DE') === 'zurück'
+  const lowerPrefix = normalizedPrefix.toLocaleLowerCase('de-DE');
+  const prefixWidth = /^(?:\(sich\)|sich)$/.test(lowerPrefix)
+    ? 'reflexive'
+    : lowerPrefix === 'zurück'
     ? 'long'
-    : normalizedPrefix.toLocaleLowerCase('de-DE') === 'nach'
+    : lowerPrefix === 'nach'
       ? 'medium'
       : 'default';
   const actualParts = splitGermanSeparableForm(actual, normalizedPrefix);
@@ -230,8 +239,8 @@ function SeparableVerbForm({
       </span>
       <span>
         <ExceptionDiff
-          actual={actualParts.hasPrefix ? normalizedPrefix : ''}
-          reference={referenceParts.hasPrefix ? normalizedPrefix : ''}
+            actual={actualParts.prefix}
+            reference={referenceParts.prefix}
         />
       </span>
     </span>
@@ -325,13 +334,19 @@ function GermanVerbTableNodeView({ node, selected }: NodeViewProps) {
     && attrs.groupSize > 1
     && attrs.groupIndex % 2 === 0
     && attrs.groupIndex + 1 < attrs.groupSize;
+  const hideInfinitiveBadge = extended && Boolean(attrs.hideInfinitiveBadge);
+  const showInfinitiveHeading = extended && Boolean(attrs.showInfinitiveHeading);
+  const infinitiveHeadingText = showInfinitiveHeading
+    ? attrs.infinitiveHeadingText.trim()
+    : '';
+  const showInfinitiveBadge = extended && !hideInfinitiveBadge && !showInfinitiveHeading;
 
   return (
     <CustomBlockRoot
       selected={selected}
       className={`german-verb-table-node ${
         keepWithNext ? 'german-verb-table-node--keep-with-next' : ''
-      }`}
+      } ${hideInfinitiveBadge ? 'german-verb-table-node--hide-infinitive-badge' : ''}`}
     >
       {tableStyle === 'multiple' ? (
         <div
@@ -452,14 +467,33 @@ function GermanVerbTableNodeView({ node, selected }: NodeViewProps) {
         </div>
       ) : (
         <>
-      <div className="german-verb-table-node__infinitive">
-        <strong
-          aria-label={`Infinitiv: ${attrs.leftVerb}`}
-          className="custom-block__word-bank-item german-verb-table-node__infinitive-badge"
+      {showInfinitiveHeading ? (
+        <div
+          className="german-verb-table-node__infinitive-heading heading-node heading-node--h1"
+          data-gap-after="2"
         >
-          {attrs.leftVerb}
-        </strong>
-      </div>
+          <strong
+            aria-label={`Infinitiv: ${attrs.leftVerb}`}
+            className="custom-block__word-bank-item german-verb-table-node__infinitive-badge german-verb-table-node__infinitive-badge--heading"
+          >
+            {attrs.leftVerb}
+          </strong>
+          {infinitiveHeadingText && (
+            <span className="german-verb-table-node__infinitive-heading-text heading-node__content">
+              {infinitiveHeadingText}
+            </span>
+          )}
+        </div>
+      ) : showInfinitiveBadge ? (
+        <div className="german-verb-table-node__infinitive">
+          <strong
+            aria-label={`Infinitiv: ${attrs.leftVerb}`}
+            className="custom-block__word-bank-item german-verb-table-node__infinitive-badge"
+          >
+            {attrs.leftVerb}
+          </strong>
+        </div>
+      ) : null}
       <div
         aria-label={`Konjugation von ${attrs.leftVerb}`}
         className="german-verb-table-node__grid"
@@ -795,6 +829,31 @@ export const GermanVerbTable = Node.create({
         ),
         renderHTML: ({ groupSize }) => ({
           'data-group-size': String(groupSize || 1),
+        }),
+      },
+      hideInfinitiveBadge: {
+        default: DEFAULT_GERMAN_VERB_TABLE_ATTRS.hideInfinitiveBadge,
+        parseHTML: (element) => (
+          element.getAttribute('data-hide-infinitive-badge') === 'true'
+        ),
+        renderHTML: ({ hideInfinitiveBadge }) => ({
+          'data-hide-infinitive-badge': String(hideInfinitiveBadge),
+        }),
+      },
+      showInfinitiveHeading: {
+        default: DEFAULT_GERMAN_VERB_TABLE_ATTRS.showInfinitiveHeading,
+        parseHTML: (element) => (
+          element.getAttribute('data-show-infinitive-heading') === 'true'
+        ),
+        renderHTML: ({ showInfinitiveHeading }) => ({
+          'data-show-infinitive-heading': String(showInfinitiveHeading),
+        }),
+      },
+      infinitiveHeadingText: {
+        default: DEFAULT_GERMAN_VERB_TABLE_ATTRS.infinitiveHeadingText,
+        parseHTML: (element) => element.getAttribute('data-infinitive-heading-text') ?? '',
+        renderHTML: ({ infinitiveHeadingText }) => ({
+          'data-infinitive-heading-text': infinitiveHeadingText,
         }),
       },
       leftVerb: {

@@ -222,6 +222,52 @@ export function GermanVerbTableEditorModal({
                 Multiple ist nur für Arbeitsblätter im Querformat verfügbar.
               </p>
             )}
+            {draft.tableStyle !== 'multiple' && (
+              <div className="mt-4 space-y-3">
+                <label className="flex items-center justify-between gap-3 rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-semibold text-primary">
+                  <span>Infinitiv-Badge oben ausblenden</span>
+                  <input
+                    checked={Boolean(draft.hideInfinitiveBadge)}
+                    onChange={(event) => setDraft((current) => current ? {
+                      ...current,
+                      hideInfinitiveBadge: event.target.checked,
+                      showInfinitiveHeading: event.target.checked
+                        ? false
+                        : current.showInfinitiveHeading,
+                    } : current)}
+                    type="checkbox"
+                  />
+                </label>
+                <label className="flex items-center justify-between gap-3 rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-semibold text-primary">
+                  <span>Infinitiv als H1 vor der Tabelle</span>
+                  <input
+                    checked={Boolean(draft.showInfinitiveHeading)}
+                    onChange={(event) => setDraft((current) => current ? {
+                      ...current,
+                      showInfinitiveHeading: event.target.checked,
+                      hideInfinitiveBadge: event.target.checked
+                        ? true
+                        : current.hideInfinitiveBadge,
+                    } : current)}
+                    type="checkbox"
+                  />
+                </label>
+                {draft.showInfinitiveHeading && (
+                  <label className="block text-sm font-semibold text-primary">
+                    Optionaler H1-Text
+                    <input
+                      className={`mt-1.5 ${inputClass}`}
+                      onChange={(event) => setDraft((current) => current ? {
+                        ...current,
+                        infinitiveHeadingText: event.target.value,
+                      } : current)}
+                      placeholder="z. B. Konjugation"
+                      value={draft.infinitiveHeadingText}
+                    />
+                  </label>
+                )}
+              </div>
+            )}
           </fieldset>
 
           {draft.tableStyle === 'multiple' ? (

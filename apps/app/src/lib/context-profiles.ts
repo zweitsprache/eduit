@@ -28,17 +28,26 @@ type ContextProfileRow = {
 };
 
 function mapRow(row: ContextProfileRow): ContextProfile {
+  const baseContext = {
+    ...EMPTY_WORKSHEET_CONTEXT,
+    ...(row.context ?? {}),
+    sourceProfileId: null,
+  };
+  const context = row.is_system_template
+    && row.name === 'DaZ Schweiz – Erwachsenenbildung'
+    ? {
+      ...baseContext,
+      subject: 'daz',
+      customSubject: '',
+    }
+    : baseContext;
   return {
     id: row.id,
     ownerUserId: row.owner_user_id,
     name: row.name,
     description: row.description,
     isSystemTemplate: row.is_system_template,
-    context: {
-      ...EMPTY_WORKSHEET_CONTEXT,
-      ...(row.context ?? {}),
-      sourceProfileId: null,
-    },
+    context,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
   };

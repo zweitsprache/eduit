@@ -1,0 +1,23 @@
+:root{
+  --radius-sm:5px;
+  --radius-md:6px;
+  --radius-lg:8px;
+  --radius-xl:10px;
+  --radius-2xl:12px;
+  --radius-3xl:14px;
+  --radius-4xl:18px;
+  --radius-5xl:20px;
+  --radius-pill:999px;
+
+  --shadow-card:0 2px 4px rgba(24,26,45,.08);
+  --shadow-card-hover:0 8px 24px rgba(24,26,45,.12);
+  --shadow-panel:0 18px 50px rgb(21 23 44 / 10%);
+  --shadow-sheet:0 12px 28px rgba(9,9,25,.14);
+  --shadow-sheet-front:0 15px 30px rgba(9,9,25,.2);
+  --shadow-modal:0 26px 70px rgb(17 20 42 / 35%);
+  --shadow-ribbon:0 5px 18px rgb(21 23 44 / 22%);
+
+  --ease-standard:ease; /* @kind other */
+  --duration-fast:.18s; /* @kind other */
+  --duration-slow:.22s; /* @kind other */
+}

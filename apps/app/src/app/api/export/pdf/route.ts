@@ -10,6 +10,7 @@ export const maxDuration = 60;
 const PAGE_FORMATS = {
   'a4-portrait': { cssSize: '210mm 297mm', pageHeight: '297mm' },
   'a4-landscape': { cssSize: '297mm 210mm', pageHeight: '210mm' },
+  'a5-landscape': { cssSize: '210mm 297mm', pageHeight: '148.5mm' },
   'letter-portrait': { cssSize: '215.9mm 279.4mm', pageHeight: '279.4mm' },
   'letter-landscape': { cssSize: '279.4mm 215.9mm', pageHeight: '215.9mm' },
 };
@@ -110,6 +111,27 @@ export async function POST(request: Request) {
             margin: 0 auto !important;
             border: 0 !important;
           }
+          .pdf-a5-stack {
+            display: grid;
+            width: 210mm;
+            margin: 0 auto;
+            grid-template-rows: repeat(2, 148.5mm);
+          }
+          .pdf-a5-stack__sheet {
+            position: relative;
+            overflow: hidden;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          .pdf-a5-stack__sheet > .tiptap {
+            width: 210mm !important;
+            min-height: 148.5mm !important;
+            margin: 0 !important;
+          }
+          .pdf-a5-stack__sheet + .pdf-a5-stack__sheet {
+            break-before: auto !important;
+            page-break-before: auto !important;
+          }
           .tiptap-pagination-gap {
             display: none !important;
             height: 0 !important;
@@ -179,7 +201,7 @@ export async function POST(request: Request) {
     // printable document.
     await page.goto(renderShellUrl, { waitUntil: 'domcontentloaded' });
     await page.setContent(html, { waitUntil: 'domcontentloaded' });
-    await page.evaluate(async ({ pageHeight }) => {
+    await page.evaluate(async ({ pageHeight, docSize }) => {
       // Force layout, then explicitly request every font descriptor used by
       // printable content. This includes body, heading, example, and solution
       // fonts selected through brand CSS variables.
@@ -225,8 +247,30 @@ export async function POST(request: Request) {
         editor.style.height = 'auto';
         editor.style.maxHeight = 'none';
         editor.style.overflow = 'visible';
+
+        if (docSize === 'a5-landscape') {
+          const stack = document.createElement('div');
+          stack.className = 'pdf-a5-stack';
+          const sheetHeight = '148.5mm';
+          for (let index = 0; index < 2; index += 1) {
+            const sheet = document.createElement('div');
+            sheet.className = 'pdf-a5-stack__sheet';
+            sheet.style.height = sheetHeight;
+
+            const clone = editor.cloneNode(true) as HTMLElement;
+            clone.style.minHeight = sheetHeight;
+            clone.style.height = 'auto';
+            clone.style.maxHeight = 'none';
+            clone.style.overflow = 'hidden';
+            clone.style.margin = '0';
+            sheet.appendChild(clone);
+            stack.appendChild(sheet);
+          }
+
+          editor.replaceWith(stack);
+        }
       }
-    }, { pageHeight: pageFormat.pageHeight });
+    }, { pageHeight: pageFormat.pageHeight, docSize: payload.docSize });
     const pdf = await page.pdf({
       printBackground: true,
       margin: { top: 0, right: 0, bottom: 0, left: 0 },

@@ -8,6 +8,7 @@ import { AppShell } from '@/components/app/app-shell';
 type Config = { id: string; tense: string; mood: string; label: string; level: string; enabled: boolean };
 type CreatedWorksheet = { id: string; title: string };
 type CreationFailure = { key: string; label: string; error: string };
+type VerbTableAutomationFailure = { infinitive: string; error: string };
 type OccupationAutomationFailure = { sourceUrl: string; error: string };
 type FinalizeJob = {
   id: string;
@@ -138,6 +139,14 @@ export default function AutomationsPage() {
   const [occupationRunning, setOccupationRunning] = useState(false);
   const [occupationFailures, setOccupationFailures] = useState<OccupationAutomationFailure[]>([]);
   const [occupationError, setOccupationError] = useState('');
+  const [a5VerbInfinitives, setA5VerbInfinitives] = useState('');
+  const [a5VerbHeadingText, setA5VerbHeadingText] = useState('Indikativ Präsens');
+  const [a5VerbTense, setA5VerbTense] = useState<'present' | 'preterite'>('present');
+  const [a5VerbWorksheetLanguage, setA5VerbWorksheetLanguage] = useState<'en' | 'de-formal' | 'de-informal'>('en');
+  const [a5VerbRunning, setA5VerbRunning] = useState(false);
+  const [a5VerbError, setA5VerbError] = useState('');
+  const [a5VerbResults, setA5VerbResults] = useState<CreatedWorksheet[]>([]);
+  const [a5VerbFailures, setA5VerbFailures] = useState<VerbTableAutomationFailure[]>([]);
   const resultsRef = useRef<CreatedWorksheet[]>([]);
   const isVerbRunning = running && finalizationSource === 'verb';
   const isBacklogRunning = running && finalizationSource === 'backlog';
@@ -523,6 +532,49 @@ export default function AutomationsPage() {
     }
   };
 
+  const runA5VerbTableAutomation = async () => {
+    const infinitives = [...new Set(
+      a5VerbInfinitives
+        .split(/[\n,;]+/)
+        .map((value) => value.trim())
+        .filter(Boolean),
+    )];
+    if (!infinitives.length || !brandProfileId) return;
+    setA5VerbRunning(true);
+    setA5VerbError('');
+    setA5VerbResults([]);
+    setA5VerbFailures([]);
+    try {
+      const response = await fetch('/api/automations/german-verb-table-a5', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          infinitives,
+          brandProfileId,
+          headingText: a5VerbHeadingText,
+          tense: a5VerbTense,
+          worksheetLanguage: a5VerbWorksheetLanguage,
+        }),
+      });
+      const result = await response.json().catch(() => ({})) as {
+        worksheets?: CreatedWorksheet[];
+        failures?: VerbTableAutomationFailure[];
+        error?: string;
+      };
+      if (!response.ok || !Array.isArray(result.worksheets)) {
+        throw new Error(result.error || 'A5-Verbtabellen konnten nicht erstellt werden.');
+      }
+      setA5VerbResults(result.worksheets);
+      setA5VerbFailures(Array.isArray(result.failures) ? result.failures : []);
+    } catch (automationError) {
+      setA5VerbError(automationError instanceof Error
+        ? automationError.message
+        : 'A5-Verbtabellen konnten nicht erstellt werden.');
+    } finally {
+      setA5VerbRunning(false);
+    }
+  };
+
   const finalizationCompleted = finalizing?.jobs.filter(({ status }) => status === 'completed').length ?? 0;
   const finalizationFailed = finalizing?.jobs.filter(({ status }) => status === 'failed').length ?? 0;
   const activeFinalizers = finalizing?.jobs.filter(({ status }) => status === 'running') ?? [];
@@ -573,6 +625,93 @@ export default function AutomationsPage() {
                 title={`Automatischer Arbeitsblatt-Renderer: ${job.title}`}
               />
             ))}
+          </section>
+          <section className="mt-8 rounded-2xl border border-secondary bg-primary p-7 shadow-lg">
+            <p className="text-sm font-semibold text-brand-secondary">Verbtabellen A5</p>
+            <h2 className="mt-1 text-xl font-semibold">Bulk-Generierung mit AI</h2>
+            <p className="mt-2 text-sm text-tertiary">
+              Erstellt pro Infinitiv ein DIN A5 Landscape-Arbeitsblatt mit Extended-Verbtabelle,
+              H1-Infinitivkopf und AI-generierten Formen inkl. Ausnahmen-Hervorhebung.
+            </p>
+            <label className="mt-6 block text-sm font-semibold">
+              Infinitive (eine Zeile pro Verb)
+              <textarea
+                className="mt-2 min-h-28 w-full rounded-lg border border-primary bg-primary p-3 font-normal"
+                onChange={(event) => setA5VerbInfinitives(event.target.value)}
+                placeholder={'sein\nhaben\nabfahren'}
+                value={a5VerbInfinitives}
+              />
+            </label>
+            <div className="mt-5 grid gap-5 sm:grid-cols-3">
+              <label className="text-sm font-semibold">
+                Überschrift (H1)
+                <input
+                  className="mt-2 h-10 w-full rounded-lg border border-primary bg-primary px-3 font-normal"
+                  onChange={(event) => setA5VerbHeadingText(event.target.value)}
+                  value={a5VerbHeadingText}
+                />
+              </label>
+              <label className="text-sm font-semibold">
+                Zeitform
+                <select
+                  className="mt-2 h-10 w-full rounded-lg border border-primary bg-primary px-3 font-normal"
+                  onChange={(event) => setA5VerbTense(event.target.value as 'present' | 'preterite')}
+                  value={a5VerbTense}
+                >
+                  <option value="present">Präsens</option>
+                  <option value="preterite">Präteritum</option>
+                </select>
+              </label>
+              <label className="text-sm font-semibold">
+                Worksheet language
+                <select
+                  className="mt-2 h-10 w-full rounded-lg border border-primary bg-primary px-3 font-normal"
+                  onChange={(event) => setA5VerbWorksheetLanguage(event.target.value as 'en' | 'de-formal' | 'de-informal')}
+                  value={a5VerbWorksheetLanguage}
+                >
+                  <option value="en">EN</option>
+                  <option value="de-formal">DE formell</option>
+                  <option value="de-informal">DE informell</option>
+                </select>
+              </label>
+            </div>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <button
+                className="rounded-lg bg-brand-solid px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                disabled={a5VerbRunning || running || metadataRunning || !brandProfileId || !a5VerbInfinitives.trim() || !a5VerbHeadingText.trim()}
+                onClick={() => void runA5VerbTableAutomation()}
+                type="button"
+              >
+                {a5VerbRunning ? 'A5-Verbtabellen werden erstellt …' : 'A5-Verbtabellen erstellen'}
+              </button>
+            </div>
+            {a5VerbError && <p className="mt-4 text-sm text-error-primary">{a5VerbError}</p>}
+            {a5VerbFailures.length > 0 && (
+              <details className="mt-4 text-sm" open>
+                <summary className="cursor-pointer font-semibold">
+                  {a5VerbFailures.length} fehlgeschlagene Verben
+                </summary>
+                <ul className="mt-2 grid gap-1 text-error-primary">
+                  {a5VerbFailures.map((failure) => (
+                    <li key={failure.infinitive}>{failure.infinitive}: {failure.error}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            {a5VerbResults.length > 0 && (
+              <div className="mt-6">
+                <h3 className="font-semibold">{a5VerbResults.length} Arbeitsblätter erstellt</h3>
+                <ul className="mt-2 grid gap-2">
+                  {a5VerbResults.map((result) => (
+                    <li key={result.id}>
+                      <Link className="text-sm text-brand-secondary underline" href={`/editor?worksheet=${result.id}`}>
+                        {result.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </section>
           <section className="mt-8 rounded-2xl border border-secondary bg-primary p-7 shadow-lg">
             <p className="text-sm font-semibold text-brand-secondary">Berufsprofil-Import</p>

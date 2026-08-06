@@ -32,6 +32,7 @@ export type MCMAttrs = {
   question: string;
   rows: MCMRow[];
   showFirstAsExample: boolean;
+  hideStatement: boolean;
 };
 
 export const DEFAULT_MCM_ROWS: MCMRow[] = [
@@ -86,7 +87,12 @@ function parseRows(value: string | null): MCMRow[] {
 }
 
 function MCMNodeView({ node, selected }: NodeViewProps) {
-  const { question, rows, showFirstAsExample } = node.attrs as MCMAttrs;
+  const {
+    question,
+    rows,
+    showFirstAsExample,
+    hideStatement,
+  } = node.attrs as MCMAttrs;
   const optionColumnCount = Math.min(
     3,
     Math.max(1, ...rows.map((row) => row.options.length)),
@@ -99,7 +105,10 @@ function MCMNodeView({ node, selected }: NodeViewProps) {
   const solutionsRef = useRoughSolutionXs(optionWidthRef);
 
   return (
-    <CustomBlockRoot selected={selected} className="mcm-node">
+    <CustomBlockRoot
+      selected={selected}
+      className={`mcm-node${hideStatement ? ' mcm-node--hide-statement' : ''}`}
+    >
       <div className="custom-block__matrix-layout" ref={optionWidthRef}>
         <svg
           aria-hidden="true"
@@ -114,10 +123,12 @@ function MCMNodeView({ node, selected }: NodeViewProps) {
         <BlockRows>
           {rows.map((row, rowIndex) => (
             <BlockRow index={rowIndex} key={row.id}>
-              <BlockRowLabel>
-                {normalizeMCMRowText(row.text)
-                  || `Statement / Question row ${String.fromCharCode(65 + rowIndex)}`}
-              </BlockRowLabel>
+              {!hideStatement && (
+                <BlockRowLabel>
+                  {normalizeMCMRowText(row.text)
+                    || `Statement / Question row ${String.fromCharCode(65 + rowIndex)}`}
+                </BlockRowLabel>
+              )}
               <div className="mcm-node__options" data-columns={optionColumnCount}>
                 {Array.from({ length: optionColumnCount }, (_, optionIndex) => {
                   const option = row.options[optionIndex];
@@ -187,6 +198,15 @@ export const MCM = Node.create({
           'data-mcm-show-first-example': String(attributes.showFirstAsExample),
         }),
       },
+      hideStatement: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-mcm-hide-statement') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-mcm-hide-statement': String(attributes.hideStatement),
+        }),
+      },
     };
   },
 
@@ -213,6 +233,7 @@ export const MCM = Node.create({
               question: attrs.question ?? '',
               rows: attrs.rows ?? defaultRows(),
               showFirstAsExample: attrs.showFirstAsExample ?? false,
+              hideStatement: attrs.hideStatement ?? false,
             },
           }),
     };

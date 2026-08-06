@@ -32,6 +32,7 @@ export type DazitPublicationRow = {
   actionField: string | null;
   downloads: number;
   showSolutions: boolean;
+  documentSize: string;
   context: Record<string, unknown> | null;
 };
 
@@ -51,6 +52,7 @@ export type DazitPublicationCardRow = {
   level: string | null;
   downloads: number;
   showSolutions: boolean;
+  documentSize: string;
   context: null;
 };
 
@@ -214,6 +216,7 @@ export async function getPublishedWorksheetsFromDb() {
       p.action_field as "actionField",
       p.download_count::int as downloads,
       w.show_solutions as "showSolutions",
+      w.document_size as "documentSize",
       w.context
     from dazit_publications p
     join worksheets w on w.id = p.worksheet_id
@@ -243,6 +246,7 @@ export async function getPublishedWorksheetCardsFromDb() {
       p.level,
       p.download_count::int as downloads,
       w.show_solutions as "showSolutions",
+      w.document_size as "documentSize",
       null as context
     from dazit_publications p
     join worksheets w on w.id = p.worksheet_id

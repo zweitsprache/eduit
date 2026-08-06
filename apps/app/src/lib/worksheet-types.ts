@@ -2,6 +2,7 @@ export const WORKSHEET_STATUSES = ['draft', 'published'] as const;
 export const WORKSHEET_DOCUMENT_SIZES = [
   'a4-portrait',
   'a4-landscape',
+  'a5-landscape',
   'letter-portrait',
   'letter-landscape',
 ] as const;
@@ -11,10 +12,18 @@ export type WorksheetDocumentSize = typeof WORKSHEET_DOCUMENT_SIZES[number];
 
 export type WorksheetContext = {
   worksheetLanguage: 'en' | 'de-formal' | 'de-informal';
+  worksheetType:
+    | 'worksheet'
+    | 'fact-sheet'
+    | 'verb-table'
+    | 'declension-table'
+    | 'learning-cards'
+    | 'domino';
   sourceProfileId: string | null;
   subject: string;
   customSubject: string;
   learnerStage: string;
+  ageGroups: string[];
   ageMin: number | null;
   ageMax: number | null;
   contentLanguage: string;
@@ -22,6 +31,9 @@ export type WorksheetContext = {
   localLevel: string;
   curriculum: string;
   languageLevel: string;
+  actionField: string;
+  actionCompetencies: string[];
+  languageCompetencies: string[];
   learnerContext: string;
   contextPdfName: string;
   contextPdfText: string;
@@ -29,18 +41,23 @@ export type WorksheetContext = {
 };
 
 export const EMPTY_WORKSHEET_CONTEXT: WorksheetContext = {
-  worksheetLanguage: 'en',
+  worksheetLanguage: 'de-formal',
+  worksheetType: 'worksheet',
   sourceProfileId: null,
-  subject: '',
+  subject: 'daz',
   customSubject: '',
-  learnerStage: '',
+  learnerStage: 'professional-training',
+  ageGroups: ['adults'],
   ageMin: null,
   ageMax: null,
-  contentLanguage: '',
+  contentLanguage: 'de-CH',
   country: '',
   localLevel: '',
   curriculum: '',
   languageLevel: '',
+  actionField: '',
+  actionCompetencies: [],
+  languageCompetencies: [],
   learnerContext: '',
   contextPdfName: '',
   contextPdfText: '',

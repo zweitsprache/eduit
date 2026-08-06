@@ -30,6 +30,10 @@ export function germanLexicalInfinitive(infinitive: string) {
   return infinitive.trim().replace(/^(?:sich|\(sich\))\s+/i, '').trim();
 }
 
+function isReflexiveMarkerPrefix(prefix: string) {
+  return /^(?:\(sich\)|sich)$/i.test(prefix.trim());
+}
+
 export function germanVerbStem(infinitive: string) {
   const normalized = infinitive.trim().toLocaleLowerCase('de-DE');
   return normalized.endsWith('en') ? normalized.slice(0, -2) : normalized;
@@ -44,15 +48,19 @@ export function buildGermanVerbReferenceForms(
   const normalizedPrefix = separablePrefix
     .trim()
     .toLocaleLowerCase('de-DE');
-  const reflexive = isGermanReflexiveInfinitive(infinitive);
-  const optionalReflexive = isGermanOptionalReflexiveInfinitive(infinitive);
+  const reflexiveFromPrefix = isReflexiveMarkerPrefix(normalizedPrefix);
+  const detachablePrefix = reflexiveFromPrefix ? '' : normalizedPrefix;
+  const reflexive = reflexiveFromPrefix || isGermanReflexiveInfinitive(infinitive);
+  const optionalReflexive = reflexiveFromPrefix
+    ? /^\(sich\)$/i.test(separablePrefix.trim())
+    : isGermanOptionalReflexiveInfinitive(infinitive);
   const normalizedInfinitive = germanLexicalInfinitive(infinitive)
     .toLocaleLowerCase('de-DE');
   // "sein" is suppletive: its finite forms are not transformations of a
   // shared regular stem. Comparing them character-by-character with a
   // hypothetical *sei-* paradigm would incorrectly mark coincidental shared
   // letters as regular, so every character must count as an exception.
-  if (!normalizedPrefix && normalizedInfinitive === 'sein') {
+  if (!detachablePrefix && normalizedInfinitive === 'sein') {
     return {
       ich: '',
       du: '',
@@ -66,9 +74,9 @@ export function buildGermanVerbReferenceForms(
       participle: '',
     };
   }
-  const baseInfinitive = normalizedPrefix
-    && normalizedInfinitive.startsWith(normalizedPrefix)
-    ? normalizedInfinitive.slice(normalizedPrefix.length)
+  const baseInfinitive = detachablePrefix
+    && normalizedInfinitive.startsWith(detachablePrefix)
+    ? normalizedInfinitive.slice(detachablePrefix.length)
     : normalizedInfinitive;
   const stem = germanVerbStem(baseInfinitive);
   const withComplements = (
@@ -81,7 +89,7 @@ export function buildGermanVerbReferenceForms(
         ? `(${GERMAN_REFLEXIVE_PRONOUNS[key]})`
         : GERMAN_REFLEXIVE_PRONOUNS[key]
       : '',
-    normalizedPrefix,
+    detachablePrefix,
   ].filter(Boolean).join(' ');
   const finiteForms = tense === 'present' && mood === 'subjunctive-one'
     ? {
@@ -118,7 +126,7 @@ export function buildGermanVerbReferenceForms(
   return {
     ...finiteForms,
     preteriteIch: withComplements(`${stem}te`, 'ich'),
-    participle: `${normalizedPrefix}ge${stem}t`,
+    participle: `${detachablePrefix}ge${stem}t`,
   };
 }
 
@@ -129,48 +137,42 @@ export function firstPersonAuxiliary(auxiliary: GermanVerbAuxiliary) {
 export function differingActualCharacters(actual: string, reference: string) {
   const actualCharacters = Array.from(actual);
   const referenceCharacters = Array.from(reference);
-  const rows = actualCharacters.length + 1;
-  const columns = referenceCharacters.length + 1;
-  const lengths = Array.from(
-    { length: rows },
-    () => Array<number>(columns).fill(0),
-  );
+  const differs = Array<boolean>(actualCharacters.length).fill(true);
 
-  for (let actualIndex = actualCharacters.length - 1; actualIndex >= 0; actualIndex -= 1) {
-    for (
-      let referenceIndex = referenceCharacters.length - 1;
-      referenceIndex >= 0;
-      referenceIndex -= 1
-    ) {
-      lengths[actualIndex][referenceIndex] =
-        actualCharacters[actualIndex] === referenceCharacters[referenceIndex]
-          ? lengths[actualIndex + 1][referenceIndex + 1] + 1
-          : Math.max(
-              lengths[actualIndex + 1][referenceIndex],
-              lengths[actualIndex][referenceIndex + 1],
-            );
-    }
+  // Keep contiguous shared prefix/suffix as regular, then compare the center.
+  // This preserves stable endings like "-st" in "wirst" vs "werdst".
+  let prefixLength = 0;
+  while (
+    prefixLength < actualCharacters.length
+    && prefixLength < referenceCharacters.length
+    && actualCharacters[prefixLength] === referenceCharacters[prefixLength]
+  ) {
+    differs[prefixLength] = false;
+    prefixLength += 1;
   }
 
-  const differs = Array<boolean>(actualCharacters.length).fill(true);
-  let actualIndex = 0;
-  let referenceIndex = 0;
+  let suffixLength = 0;
   while (
-    actualIndex < actualCharacters.length
-    && referenceIndex < referenceCharacters.length
+    suffixLength < actualCharacters.length - prefixLength
+    && suffixLength < referenceCharacters.length - prefixLength
+    && actualCharacters[actualCharacters.length - 1 - suffixLength]
+      === referenceCharacters[referenceCharacters.length - 1 - suffixLength]
   ) {
-    if (actualCharacters[actualIndex] === referenceCharacters[referenceIndex]) {
-      differs[actualIndex] = false;
-      actualIndex += 1;
-      referenceIndex += 1;
-    } else if (
-      lengths[actualIndex + 1][referenceIndex]
-      >= lengths[actualIndex][referenceIndex + 1]
-    ) {
-      actualIndex += 1;
-    } else {
-      referenceIndex += 1;
-    }
+    differs[actualCharacters.length - 1 - suffixLength] = false;
+    suffixLength += 1;
+  }
+
+  const middleActualStart = prefixLength;
+  const middleActualLength = actualCharacters.length - prefixLength - suffixLength;
+  const middleReferenceStart = prefixLength;
+  const middleReferenceLength = referenceCharacters.length - prefixLength - suffixLength;
+  const overlap = Math.min(middleActualLength, middleReferenceLength);
+
+  for (let index = 0; index < overlap; index += 1) {
+    const actualIndex = middleActualStart + index;
+    const referenceIndex = middleReferenceStart + index;
+    differs[actualIndex] = actualCharacters[actualIndex]
+      !== referenceCharacters[referenceIndex];
   }
 
   return { characters: actualCharacters, differs };
@@ -190,6 +192,21 @@ export function germanVerbExceptionRuns(actual: string, reference: string) {
 export function splitGermanSeparableForm(value: string, separablePrefix: string) {
   const normalizedPrefix = separablePrefix.trim();
   const trimmed = value.trimEnd();
+  if (isReflexiveMarkerPrefix(normalizedPrefix)) {
+    const reflexiveMatch = trimmed.match(/\s+(\(?mich\)?|\(?dich\)?|\(?sich\)?|\(?uns\)?|\(?euch\)?)$/i);
+    if (!reflexiveMatch) {
+      return {
+        base: value,
+        hasPrefix: false,
+        prefix: '',
+      };
+    }
+    return {
+      base: trimmed.slice(0, -reflexiveMatch[0].length).trimEnd(),
+      hasPrefix: true,
+      prefix: reflexiveMatch[1],
+    };
+  }
   const hasPrefix = Boolean(normalizedPrefix) && trimmed
     .toLocaleLowerCase('de-DE')
     .endsWith(normalizedPrefix.toLocaleLowerCase('de-DE'));
@@ -198,5 +215,6 @@ export function splitGermanSeparableForm(value: string, separablePrefix: string)
       ? trimmed.slice(0, -normalizedPrefix.length).trimEnd()
       : value,
     hasPrefix,
+    prefix: hasPrefix ? normalizedPrefix : '',
   };
 }

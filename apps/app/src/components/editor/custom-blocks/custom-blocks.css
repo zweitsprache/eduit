@@ -952,12 +952,42 @@
   margin-block-end: var(--custom-block-space-section) !important;
 }
 
+.german-verb-table-node__infinitive-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-block-start: 0 !important;
+  margin-block-end: calc(2 * var(--custom-block-space-section)) !important;
+}
+
+.german-verb-table-node--hide-infinitive-badge .german-verb-table-node__infinitive {
+  display: none;
+}
+
 .custom-block__word-bank-item.german-verb-table-node__infinitive-badge {
   border: 0;
   background: #cc6600;
   color: #fff;
   font-size: var(--custom-block-body-font-size);
   font-weight: 600;
+}
+
+.custom-block__word-bank-item.german-verb-table-node__infinitive-badge--heading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 0.5em;
+  margin-inline-end: 1rem;
+  font-size: var(--custom-block-heading-h1-font-size);
+  line-height: 1.1;
+}
+
+.german-verb-table-node__infinitive-heading-text {
+  color: #101828;
+  font-size: var(--custom-block-heading-h1-font-size);
+  font-weight: 700;
+  line-height: 1.25;
+  margin-top: 0.05em;
 }
 
 .german-verb-table-node__grid {
@@ -1267,6 +1297,10 @@
 
 .german-verb-table-node__multiple-grid
   .german-verb-table-node__separable-value[data-prefix-width="medium"] {
+  grid-template-columns: minmax(0, 6.5fr) minmax(0, 3.5fr);
+}
+
+.german-verb-table-node__separable-value[data-prefix-width="reflexive"] {
   grid-template-columns: minmax(0, 6.5fr) minmax(0, 3.5fr);
 }
 
@@ -2075,6 +2109,11 @@
 
 .mcm-node__options[data-columns="3"] {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mcm-node--hide-statement .mcm-node__options {
+  flex: 1 1 100%;
+  max-width: none;
 }
 
 .mcm-node__option {

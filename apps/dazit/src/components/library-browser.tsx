@@ -33,6 +33,12 @@ export function LibraryBrowser({
   const [pageSize, setPageSize] = useState(12);
 
   useEffect(() => {
+    setSelectedTypes(initialTypes);
+    setSelectedLevels(initialLevels);
+    setCurrentPage(1);
+  }, [initialTypes, initialLevels]);
+
+  useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 720px)');
     const updatePageSize = () => {
       setPageSize(mediaQuery.matches ? 6 : 12);
