@@ -72,8 +72,11 @@ function AuthRequiredModal({
         <div className="auth-required-modal-view">
           <AuthView
             classNames={{
-              footer: 'hidden',
-              footerLink: 'hidden',
+              footer: 'auth-required-modal-hide',
+              footerLink: 'auth-required-modal-hide',
+              form: {
+                secondaryButton: 'auth-required-modal-hide',
+              },
             }}
             view={mode === 'email-otp' ? 'EMAIL_OTP' : 'SIGN_IN'}
           />

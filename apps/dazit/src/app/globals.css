@@ -413,6 +413,10 @@ button { color: inherit; }
   padding: 0 18px 18px;
 }
 
+.auth-required-modal-hide {
+  display: none !important;
+}
+
 .home-page { overflow: hidden; }
 .home-hero {
   position: relative; min-height: 720px; overflow: hidden;
