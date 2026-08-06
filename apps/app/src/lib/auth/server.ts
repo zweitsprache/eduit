@@ -1,16 +1,28 @@
 import { createNeonAuth } from '@neondatabase/auth/next/server';
 
-const fallbackBaseUrl = 'http://127.0.0.1:3000/__neon-auth-not-configured';
+const fallbackBaseUrl = 'http://127.0.0.1:3000';
 const fallbackCookieSecret = 'development-only-neon-auth-cookie-secret';
 
+const resolvedBaseUrl = (
+  process.env.NEON_AUTH_BASE_URL
+  || process.env.AUTH_URL
+  || process.env.NEXT_PUBLIC_APP_URL
+  || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+  || fallbackBaseUrl
+).replace(/\/$/, '');
+
+const resolvedCookieSecret = process.env.NEON_AUTH_COOKIE_SECRET
+  || process.env.AUTH_SECRET
+  || fallbackCookieSecret;
+
 export const isNeonAuthConfigured = Boolean(
-  process.env.NEON_AUTH_BASE_URL && process.env.NEON_AUTH_COOKIE_SECRET,
+  resolvedBaseUrl && resolvedCookieSecret,
 );
 
 export const auth = createNeonAuth({
-  baseUrl: process.env.NEON_AUTH_BASE_URL ?? fallbackBaseUrl,
+  baseUrl: resolvedBaseUrl,
   cookies: {
-    secret: process.env.NEON_AUTH_COOKIE_SECRET ?? fallbackCookieSecret,
+    secret: resolvedCookieSecret,
     sameSite: 'lax',
   },
 });

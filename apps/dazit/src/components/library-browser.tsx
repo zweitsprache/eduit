@@ -224,6 +224,13 @@ export function LibraryBrowser({
           <nav className="pagination" aria-label="Seitennavigation">
             <button
               disabled={activePage === 1}
+              onClick={() => setCurrentPage(1)}
+              type="button"
+            >
+              Erste
+            </button>
+            <button
+              disabled={activePage === 1}
               onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
               type="button"
             >
@@ -236,6 +243,13 @@ export function LibraryBrowser({
               type="button"
             >
               Weiter
+            </button>
+            <button
+              disabled={activePage === pageCount}
+              onClick={() => setCurrentPage(pageCount)}
+              type="button"
+            >
+              Letzte
             </button>
           </nav>
         )}

@@ -962,6 +962,13 @@ export function WorksheetManager() {
             <Button
               color="secondary"
               isDisabled={currentPage === 1}
+              onPress={() => setCurrentPage(1)}
+            >
+              {t('documents.firstPage')}
+            </Button>
+            <Button
+              color="secondary"
+              isDisabled={currentPage === 1}
               onPress={() => setCurrentPage((page) => Math.max(1, page - 1))}
             >
               {t('documents.previousPage')}
@@ -975,6 +982,13 @@ export function WorksheetManager() {
               onPress={() => setCurrentPage((page) => Math.min(pageCount, page + 1))}
             >
               {t('documents.nextPage')}
+            </Button>
+            <Button
+              color="secondary"
+              isDisabled={currentPage === pageCount}
+              onPress={() => setCurrentPage(pageCount)}
+            >
+              {t('documents.lastPage')}
             </Button>
           </nav>
         )}

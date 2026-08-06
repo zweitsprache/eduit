@@ -120,6 +120,103 @@ button { color: inherit; }
 .auth-card [data-slot="card-footer"] a:hover,
 .auth-card [data-slot="card-footer"] button:hover { color: var(--orange); }
 
+.auth-inline-panel {
+  width: min(100%, 440px);
+  border: 1px solid #d6d8e0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 24px;
+  box-shadow: 0 18px 50px rgb(21 23 44 / 10%);
+}
+.auth-inline-panel h1 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.05;
+  letter-spacing: -.03em;
+}
+.auth-inline-panel > p {
+  margin: 10px 0 0;
+  color: #6e7180;
+  font-size: 14px;
+}
+.auth-inline-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+.auth-inline-tabs button {
+  border: 1px solid #ccd0db;
+  border-radius: 999px;
+  background: #f4f5f8;
+  padding: 7px 12px;
+  color: #3d4356;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.auth-inline-tabs button.is-active {
+  border-color: var(--orange);
+  background: #fff4e9;
+  color: #8d3e00;
+}
+.auth-inline-form-wrap,
+.auth-inline-form {
+  display: grid;
+  gap: 10px;
+}
+.auth-inline-form,
+.auth-inline-form-wrap {
+  margin-top: 14px;
+}
+.auth-inline-form input {
+  width: 100%;
+  height: 46px;
+  border: 1px solid #cfd2db;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0 14px;
+  color: #1f2235;
+  outline: none;
+}
+.auth-inline-form input:focus {
+  border-color: #c7741c;
+  box-shadow: 0 0 0 4px rgb(204 102 0 / 14%);
+}
+.auth-inline-primary,
+.auth-inline-secondary {
+  height: 46px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.auth-inline-primary {
+  border: 0;
+  background: var(--orange);
+  color: #fff;
+}
+.auth-inline-primary:hover { background: #b35a00; }
+.auth-inline-secondary {
+  border: 1px solid #ccd0db;
+  background: #fff;
+  color: #1f2235;
+}
+.auth-inline-primary:disabled,
+.auth-inline-secondary:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+.auth-inline-error {
+  margin: 12px 0 0;
+  color: #b42318;
+  font-size: 14px;
+}
+.auth-inline-success {
+  margin: 12px 0 0;
+  color: #027a48;
+  font-size: 14px;
+}
+
 .site-header {
   position: sticky;
   z-index: 20;
