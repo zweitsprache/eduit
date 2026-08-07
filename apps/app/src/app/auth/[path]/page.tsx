@@ -11,9 +11,20 @@ const AUTH_PATHS = new Set([
 
 export default async function AuthenticationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ path: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { path } = await params;
-  return <AuthPage path={AUTH_PATHS.has(path) ? path : 'sign-in'} />;
+  const { error } = await searchParams;
+
+  return (
+    <AuthPage
+      path={AUTH_PATHS.has(path) ? path : 'sign-in'}
+      errorMessage={error === 'admin-required'
+        ? 'Dieses Konto hat keinen Admin-Zugriff auf diese App.'
+        : null}
+    />
+  );
 }

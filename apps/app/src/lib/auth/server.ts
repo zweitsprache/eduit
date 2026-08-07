@@ -15,6 +15,8 @@ const resolvedCookieSecret = process.env.NEON_AUTH_COOKIE_SECRET
   || process.env.AUTH_SECRET
   || fallbackCookieSecret;
 
+export const authCookieSecret = resolvedCookieSecret;
+
 export const isNeonAuthConfigured = Boolean(
   resolvedBaseUrl && resolvedCookieSecret,
 );

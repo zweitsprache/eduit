@@ -8,6 +8,7 @@ import {
   Settings01,
   User01,
 } from '@untitledui/icons';
+import { Clapperboard } from 'lucide-react';
 import { cx } from '@/utils/cx';
 import { SidebarAccountCard } from '@/components/app/sidebar-account-card';
 import { LanguageSwitcher } from '@/components/i18n/language-switcher';
@@ -15,7 +16,7 @@ import { useI18n } from '@/components/i18n/locale-provider';
 import { EduitLogo } from '@eduit/ui';
 
 type AppShellProps = {
-  active: 'documents' | 'brands' | 'automations';
+  active: 'documents' | 'brands' | 'automations' | 'video-editor';
   title: string;
   isAdmin?: boolean;
   userRole?: string;
@@ -26,6 +27,7 @@ const WORKSPACE_ITEMS = [
   { id: 'dashboard', labelKey: 'navigation.dashboard', Icon: Grid01, href: '/' },
   { id: 'documents', labelKey: 'navigation.documents', Icon: File02, href: '/documents' },
   { id: 'automations', labelKey: 'navigation.automations', Icon: Grid01, href: '/automations' },
+  { id: 'video-editor', labelKey: 'navigation.videoEditor', Icon: Clapperboard, href: '/video-editor' },
   { id: 'lessons', labelKey: 'navigation.lessons', Icon: GraduationHat01, href: '#' },
   { id: 'media', labelKey: 'navigation.media', Icon: Image01, href: '#' },
   { id: 'settings', labelKey: 'navigation.settings', Icon: Settings01, href: '/account' },
@@ -48,6 +50,8 @@ export function AppShell({
     ? t('navigation.documents')
     : active === 'automations'
       ? t('navigation.automations')
+    : active === 'video-editor'
+      ? t('navigation.videoEditor')
     : active === 'brands'
       ? t('navigation.brandProfiles')
       : title;

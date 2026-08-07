@@ -26,6 +26,15 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "app/*": [
+        "./src/vendor/reactvideoeditor-repo/app/*"
+      ],
+      "components/*": [
+        "./src/vendor/reactvideoeditor-repo/components/*"
+      ],
+      "lib/*": [
+        "./src/vendor/reactvideoeditor-repo/lib/*"
       ]
     }
   },

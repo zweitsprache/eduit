@@ -1,0 +1,1 @@
+export { POST } from '@/app/api/latest/local-media/delete/route';

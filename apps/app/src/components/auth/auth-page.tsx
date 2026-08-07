@@ -9,7 +9,7 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-function SignInPanel() {
+function SignInPanel({ errorMessage }: { errorMessage?: string | null }) {
   const [mode, setMode] = useState<SignInMode>('password');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -109,6 +109,8 @@ function SignInPanel() {
       <section className="w-full max-w-md rounded-xl border border-secondary bg-primary p-6 shadow-sm">
         <h1 className="text-xl font-semibold text-primary">Anmelden</h1>
         <p className="mt-2 text-sm text-tertiary">Melde dich an, um auf deine Dokumente zuzugreifen.</p>
+
+        {errorMessage && <p className="mt-4 text-sm text-error-primary">{errorMessage}</p>}
 
         <div className="mt-5 flex gap-2">
           <button
@@ -213,9 +215,15 @@ function SignInPanel() {
   );
 }
 
-export function AuthPage({ path }: { path: string }) {
+export function AuthPage({
+  path,
+  errorMessage,
+}: {
+  path: string;
+  errorMessage?: string | null;
+}) {
   if (path === 'sign-in') {
-    return <SignInPanel />;
+    return <SignInPanel errorMessage={errorMessage} />;
   }
 
   return (
