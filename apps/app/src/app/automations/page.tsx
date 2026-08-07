@@ -4,6 +4,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { BrandProfile } from '@/lib/brand-profile-types';
 import { AppShell } from '@/components/app/app-shell';
+import { DocumentContextFields } from '@/components/context/document-context-fields';
+import {
+  EMPTY_WORKSHEET_CONTEXT,
+  type WorksheetContext,
+} from '@/lib/worksheet-types';
 
 type Config = { id: string; tense: string; mood: string; label: string; level: string; enabled: boolean };
 type CreatedWorksheet = { id: string; title: string };
@@ -117,7 +122,7 @@ export default function AutomationsPage() {
   const [creationFailures, setCreationFailures] = useState<CreationFailure[]>([]);
   const [generationBatchId, setGenerationBatchId] = useState('');
   const [finalizing, setFinalizing] = useState<FinalizingState | null>(null);
-  const [finalizationSource, setFinalizationSource] = useState<'verb' | 'backlog' | 'json' | 'occupation' | null>(null);
+  const [finalizationSource, setFinalizationSource] = useState<'verb' | 'backlog' | 'json' | 'occupation' | 'a5-verb' | null>(null);
   const [metadataPublications, setMetadataPublications] = useState<MetadataPublication[]>([]);
   const [metadataTense, setMetadataTense] = useState('all');
   const [metadataBatchSize, setMetadataBatchSize] = useState(10);
@@ -142,8 +147,12 @@ export default function AutomationsPage() {
   const [a5VerbInfinitives, setA5VerbInfinitives] = useState('');
   const [a5VerbHeadingText, setA5VerbHeadingText] = useState('Indikativ Präsens');
   const [a5VerbTense, setA5VerbTense] = useState<'present' | 'preterite'>('present');
-  const [a5VerbWorksheetLanguage, setA5VerbWorksheetLanguage] = useState<'en' | 'de-formal' | 'de-informal'>('en');
+  const [a5VerbContext, setA5VerbContext] = useState<WorksheetContext>({
+    ...EMPTY_WORKSHEET_CONTEXT,
+    worksheetType: 'verb-table',
+  });
   const [a5VerbRunning, setA5VerbRunning] = useState(false);
+  const [a5VerbPublish, setA5VerbPublish] = useState(false);
   const [a5VerbError, setA5VerbError] = useState('');
   const [a5VerbResults, setA5VerbResults] = useState<CreatedWorksheet[]>([]);
   const [a5VerbFailures, setA5VerbFailures] = useState<VerbTableAutomationFailure[]>([]);
@@ -553,7 +562,10 @@ export default function AutomationsPage() {
           brandProfileId,
           headingText: a5VerbHeadingText,
           tense: a5VerbTense,
-          worksheetLanguage: a5VerbWorksheetLanguage,
+          context: {
+            ...a5VerbContext,
+            worksheetType: 'verb-table',
+          },
         }),
       });
       const result = await response.json().catch(() => ({})) as {
@@ -566,6 +578,18 @@ export default function AutomationsPage() {
       }
       setA5VerbResults(result.worksheets);
       setA5VerbFailures(Array.isArray(result.failures) ? result.failures : []);
+      if (a5VerbPublish && result.worksheets.length > 0) {
+        setError('');
+        setCreationFailures([]);
+        setResults([]);
+        setFinalizationSource('a5-verb');
+        setProgress(`0/${result.worksheets.length}: Vorschau und Veröffentlichung mit ${FINALIZATION_CONCURRENCY} parallelen Renderern …`);
+        setFinalizing({
+          publish: true,
+          jobs: result.worksheets.map(({ id, title }) => ({ id, title, attempt: 1, status: 'pending' })),
+        });
+        setRunning(true);
+      }
     } catch (automationError) {
       setA5VerbError(automationError instanceof Error
         ? automationError.message
@@ -642,7 +666,7 @@ export default function AutomationsPage() {
                 value={a5VerbInfinitives}
               />
             </label>
-            <div className="mt-5 grid gap-5 sm:grid-cols-3">
+            <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <label className="text-sm font-semibold">
                 Überschrift (H1)
                 <input
@@ -662,19 +686,29 @@ export default function AutomationsPage() {
                   <option value="preterite">Präteritum</option>
                 </select>
               </label>
-              <label className="text-sm font-semibold">
-                Worksheet language
-                <select
-                  className="mt-2 h-10 w-full rounded-lg border border-primary bg-primary px-3 font-normal"
-                  onChange={(event) => setA5VerbWorksheetLanguage(event.target.value as 'en' | 'de-formal' | 'de-informal')}
-                  value={a5VerbWorksheetLanguage}
-                >
-                  <option value="en">EN</option>
-                  <option value="de-formal">DE formell</option>
-                  <option value="de-informal">DE informell</option>
-                </select>
-              </label>
             </div>
+            <div className="mt-6 rounded-xl border border-secondary bg-secondary p-4">
+              <p className="text-sm font-semibold text-primary">Worksheet-Einstellungen</p>
+              <p className="mt-1 text-xs text-tertiary">
+                Diese Einstellungen werden vor der Generierung für alle erstellten Arbeitsblätter übernommen.
+              </p>
+              <div className="mt-4">
+                <DocumentContextFields
+                  context={a5VerbContext}
+                  onChange={(patch) => setA5VerbContext((current) => ({ ...current, ...patch }))}
+                  twoColumns
+                />
+              </div>
+            </div>
+            <label className="mt-4 flex items-center gap-2 text-sm font-semibold">
+              <input
+                checked={a5VerbPublish}
+                disabled={a5VerbRunning || running}
+                onChange={(event) => setA5VerbPublish(event.target.checked)}
+                type="checkbox"
+              />
+              Nach Erstellung auf Dazit veröffentlichen
+            </label>
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <button
                 className="rounded-lg bg-brand-solid px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
@@ -685,6 +719,36 @@ export default function AutomationsPage() {
                 {a5VerbRunning ? 'A5-Verbtabellen werden erstellt …' : 'A5-Verbtabellen erstellen'}
               </button>
             </div>
+            {finalizationSource === 'a5-verb' && progress && <p className="mt-4 text-sm text-tertiary">{progress}</p>}
+            {finalizationSource === 'a5-verb' && finalizing && (
+              <p className="mt-2 text-sm text-tertiary">
+                Finalisierung: {finalizationCompleted}/{finalizing.jobs.length} abgeschlossen{finalizationFailed ? `, ${finalizationFailed} fehlgeschlagen` : ''}
+              </p>
+            )}
+            {finalizationSource === 'a5-verb' && error && <p className="mt-3 text-sm text-error-primary">{error}</p>}
+            {finalizationSource === 'a5-verb' && finalizationFailed > 0 && !running && (
+              <button
+                className="mt-4 rounded-lg border border-primary bg-primary px-4 py-2 text-sm font-semibold"
+                onClick={retryFinalizationFailures}
+                type="button"
+              >
+                Fehlgeschlagene Veröffentlichungen erneut versuchen
+              </button>
+            )}
+            {finalizationSource === 'a5-verb' && finalizationFailed > 0 && (
+              <details className="mt-4 text-sm" open={!running}>
+                <summary className="cursor-pointer font-semibold">
+                  {finalizationFailed} fehlgeschlagene Veröffentlichungen
+                </summary>
+                <ul className="mt-2 grid gap-1 text-error-primary">
+                  {finalizing?.jobs
+                    .filter(({ status }) => status === 'failed')
+                    .map((job) => (
+                      <li key={job.id}>{job.title}: {job.error || 'Unbekannter Fehler.'}</li>
+                    ))}
+                </ul>
+              </details>
+            )}
             {a5VerbError && <p className="mt-4 text-sm text-error-primary">{a5VerbError}</p>}
             {a5VerbFailures.length > 0 && (
               <details className="mt-4 text-sm" open>

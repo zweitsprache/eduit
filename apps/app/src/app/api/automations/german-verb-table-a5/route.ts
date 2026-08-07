@@ -34,6 +34,7 @@ const requestSchema = z.object({
   headingText: z.string().trim().min(1).max(120).default('Indikativ Präsens'),
   tense: z.enum(['present', 'preterite']).default('present'),
   worksheetLanguage: z.enum(['en', 'de-formal', 'de-informal']).default('en'),
+  context: z.record(z.string(), z.unknown()).optional(),
 });
 
 const HABEN_FORMS: GermanVerbTableForms = {
@@ -181,6 +182,15 @@ export async function POST(request: Request) {
 
   try {
     const input = requestSchema.parse(await request.json());
+    const contextInput = input.context ?? {};
+    const baseContext = {
+      ...EMPTY_WORKSHEET_CONTEXT,
+      ...contextInput,
+      worksheetType: 'verb-table' as const,
+      worksheetLanguage: typeof contextInput.worksheetLanguage === 'string'
+        ? contextInput.worksheetLanguage
+        : input.worksheetLanguage,
+    };
     const normalizedInfinitives = [
       ...new Set(input.infinitives.map((value) => value.toLocaleLowerCase('de-DE').trim())),
     ];
@@ -224,8 +234,7 @@ export async function POST(request: Request) {
             status: 'draft',
             brandProfileId: input.brandProfileId,
             context: {
-              ...EMPTY_WORKSHEET_CONTEXT,
-              worksheetLanguage: input.worksheetLanguage,
+              ...baseContext,
             },
             blocks: [
               {
@@ -273,8 +282,7 @@ export async function POST(request: Request) {
                 status: 'draft',
                 brandProfileId: input.brandProfileId,
                 context: {
-                  ...EMPTY_WORKSHEET_CONTEXT,
-                  worksheetLanguage: input.worksheetLanguage,
+                  ...baseContext,
                 },
                 blocks: [
                   {

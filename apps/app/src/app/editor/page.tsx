@@ -2555,6 +2555,10 @@ export default function EditorPage() {
           ...EMPTY_WORKSHEET_CONTEXT,
           ...result.worksheet.context,
         });
+        const loadedWorksheetType = (
+          result.worksheet.context?.worksheetType as WorksheetContext['worksheetType'] | undefined
+        ) ?? 'worksheet';
+        setDazitDocumentType(DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE[loadedWorksheetType]);
         if (existingWorksheetId) {
           editor.commands.setContent(result.worksheet.contentHtml || '');
         }
@@ -3891,6 +3895,11 @@ export default function EditorPage() {
       const contextDocumentType = documentContext.worksheetType === 'verb-table'
         ? DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE['verb-table']
         : DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE[documentContext.worksheetType];
+      const automationMode = typeof window === 'undefined'
+        ? null
+        : new URLSearchParams(window.location.search).get('automation');
+      const isAutomationPublish = automationMode === 'batch-publish'
+        || automationMode === 'batch-full-publish';
       const metadata = {
         worksheetId: id,
         slug: `${slugBase}-${id.slice(0, 8)}`,
@@ -3903,7 +3912,11 @@ export default function EditorPage() {
         ),
         subject,
         grade: documentContext.learnerStage || level,
-        documentType: containsLearningCards ? 'Lernkarten' : (dazitDocumentType || contextDocumentType),
+        documentType: containsLearningCards
+          ? 'Lernkarten'
+          : isAutomationPublish
+            ? contextDocumentType
+            : (dazitDocumentType || contextDocumentType),
         pages: exportPayload.pageCount,
         format: DAZIT_PDF_FORMAT_BY_DOC_SIZE[docSize] || 'PDF · A4 druckfertig',
         language,
