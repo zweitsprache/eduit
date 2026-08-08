@@ -712,6 +712,12 @@ button { color: inherit; }
 .detail-copy { padding-top: 2px; }
 .mobile-detail-title { display: none; }
 .detail-copy h1 { margin: 18px 0 12px; font-size: clamp(34px, 3vw, 48px); line-height: 1.08; letter-spacing: -.025em; }
+.detail-flags .subject,
+.mobile-detail-title .subject {
+  padding: 6px 12px;
+  font-size: 12px;
+  letter-spacing: .03em;
+}
 .lead { max-width: 760px; margin: 0; color: #696b79; font-size: 20px; line-height: 1.55; }
 .detail-actions { display: flex; gap: 12px; margin: 22px 0; }
 .detail-actions button, .detail-actions a { display: inline-flex; min-height: 54px; align-items: center; gap: 9px; padding: 0 24px; font-size: 18px; }
@@ -722,8 +728,17 @@ button { color: inherit; }
 .metadata-grid div { display: flex; min-width: 0; justify-content: space-between; gap: 20px; padding: 13px 0; border-bottom: 1px solid var(--line); }
 .metadata-grid div:nth-child(odd) { margin-right: 22px; }
 .metadata-grid div:nth-child(even) { margin-left: 22px; }
+.metadata-grid .metadata-grid-wide {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(170px, 240px) minmax(0, 1fr);
+  align-items: start;
+  margin-right: 0;
+  margin-left: 0;
+}
 .metadata-grid dt { color: #92949f; }
 .metadata-grid dd { margin: 0; font-weight: 700; text-align: right; }
+.metadata-grid .metadata-grid-wide dd { text-align: left; }
 .detail-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 22px; color: #8b8d98; }
 .detail-tags span { padding: 6px 13px; background: #f8f8f8; }
 .related-badge { color: #5b3f91; font-size: 11px; font-weight: 800; }
@@ -955,6 +970,12 @@ button { color: inherit; }
   .detail-actions button, .detail-actions a { justify-content: center; }
   .metadata-grid { grid-template-columns: 1fr; }
   .metadata-grid div:nth-child(n) { margin: 0; }
+  .metadata-grid .metadata-grid-wide {
+    grid-template-columns: 1fr;
+  }
+  .metadata-grid .metadata-grid-wide dd {
+    text-align: right;
+  }
   .metadata-editor-row { grid-template-columns: 1fr; }
   .related { padding: 30px 18px 42px; }
   .related > h2 { font-size: 19px; }

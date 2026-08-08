@@ -127,6 +127,23 @@ const mcmSchema = z.object({
   hideStatement: z.boolean().default(false),
 });
 
+const articlePluralRowSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  term: z.string().trim().max(2000),
+  article: z.enum(['der', 'das', 'die']).nullable().default(null),
+  plural: z.string().trim().max(2000).default(''),
+});
+
+const articlePluralSchema = z.object({
+  type: z.literal('articlePlural'),
+  instruction: z.literal(
+    'Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.',
+  ).default('Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.'),
+  rows: z.array(articlePluralRowSchema).min(1).max(22),
+  order: z.enum(['alphabetical', 'shuffle']).default('alphabetical'),
+  shuffleSeed: z.number().int().min(0).max(1_000_000).default(0),
+});
+
 const trueFalseRowSchema = z.object({
   id: z.string().trim().min(1).max(100).optional(),
   text: z.string().trim().min(1).max(2000),
@@ -379,6 +396,7 @@ export const generatedWorksheetSchema = z.object({
     dialogueSchema,
     mcqSchema,
     mcmSchema,
+    articlePluralSchema,
     trueFalseSchema,
     matchingPairsSchema,
     timeMatchingSchema,
@@ -499,6 +517,15 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       })),
     }));
     return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-mcm-question="${escapeAttribute(block.question)}" data-mcm-rows="${escapeAttribute(encodeURIComponent(JSON.stringify(rows)))}" data-mcm-show-first-example="${block.showFirstAsExample}" data-mcm-hide-statement="${block.hideStatement}" data-type="mcm"></div>`;
+  }
+  if (block.type === 'articlePlural') {
+    const rows = block.rows.map((row, index) => ({
+      id: row.id ?? `article-plural-${index + 1}`,
+      term: row.term,
+      article: row.article,
+      plural: row.plural,
+    }));
+    return `<div data-article-plural-rows="${escapeAttribute(encodeURIComponent(JSON.stringify(rows)))}" data-article-plural-order="${block.order}" data-article-plural-shuffle-seed="${block.shuffleSeed}" data-type="article-plural"></div>`;
   }
   if (block.type === 'trueFalse') {
     const rows = block.rows.map((row, index) => ({

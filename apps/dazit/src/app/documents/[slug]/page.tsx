@@ -251,6 +251,15 @@ export default async function WorksheetDetailPage({ params }: Props) {
                 >
                   <Download01 /> PDF herunterladen
                 </DownloadAuthGate>
+                {worksheet.hasAnswerKey && (
+                  <DownloadAuthGate
+                    canDownload={isAuthenticated}
+                    className="download-primary"
+                    downloadUrl={worksheet.answerKeyPdfUrl ?? worksheet.pdfUrl}
+                  >
+                    <Download01 /> Lösungsblatt herunterladen
+                  </DownloadAuthGate>
+                )}
                 {canAdminister && <button><Plus /> Zur Sammlung</button>}
               </div>
               <dl className="metadata-grid">
@@ -271,19 +280,19 @@ export default async function WorksheetDetailPage({ params }: Props) {
                 <div><dt>Downloads</dt><dd>{worksheet.downloads}</dd></div>
                 {worksheet.format && <div><dt>Format</dt><dd>{worksheet.format}</dd></div>}
                 {Boolean(worksheet.actionCompetencies?.length) && (
-                  <div>
+                  <div className="metadata-grid-wide">
                     <dt>Sprachhandlungskompetenz</dt>
                     <dd>{worksheet.actionCompetencies?.join(', ')}</dd>
                   </div>
                 )}
                 {Boolean(worksheet.languageCompetencies?.length) && (
-                  <div>
+                  <div className="metadata-grid-wide">
                     <dt>Sprachkompetenz</dt>
                     <dd>{worksheet.languageCompetencies?.join(', ')}</dd>
                   </div>
                 )}
                 {worksheet.actionField && (
-                  <div>
+                  <div className="metadata-grid-wide">
                     <dt>Handlungsfeld</dt>
                     <dd>{worksheet.actionField}</dd>
                   </div>

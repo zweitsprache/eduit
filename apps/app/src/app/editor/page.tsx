@@ -69,6 +69,7 @@ import {
   type MCHOption,
   type MCHRow,
 } from '@/components/editor/mch-node';
+import { ArticlePlural } from '@/components/editor/article-plural-node';
 import {
   MatchingPairs,
   type MatchingPair,
@@ -225,6 +226,7 @@ import {
   type WorksheetContext,
 } from '@/lib/worksheet-types';
 import { worksheetJsonFromDoc } from '@/lib/worksheet-json-export';
+import { hasMeaningfulSolutions } from '@/lib/worksheet-solutions';
 import type { ContextProfile } from '@/lib/context-profiles';
 import { CustomBlockNumbering } from '@/components/editor/custom-blocks/numbering';
 import { InsertBlockPalette } from '@/components/editor/custom-blocks/insert-block-palette';
@@ -401,6 +403,7 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'mcq',
   'mcm',
   'mch',
+  'articlePlural',
   'trueFalse',
   'ordering',
   'matchingPairs',
@@ -1432,6 +1435,7 @@ export default function EditorPage() {
       CustomBlockInstructions,
       MCM,
       MCH,
+      ArticlePlural,
       MatchingPairs,
       Domino,
       TimeMatching,
@@ -3801,7 +3805,7 @@ export default function EditorPage() {
       .run();
   };
 
-  const renderPDF = async () => {
+  const renderPDF = async (options?: { showSolutions?: boolean }) => {
     const editorElement = document.querySelector<HTMLElement>('.editor-content .tiptap');
     const appElement = document.querySelector<HTMLElement>('.editor-app');
     if (!editorElement || !appElement) throw new Error('The worksheet is not ready.');
@@ -3822,6 +3826,11 @@ export default function EditorPage() {
         }
       }).join('\n');
       const exportContent = editorElement.cloneNode(true) as HTMLElement;
+      if (options?.showSolutions) {
+        exportContent.setAttribute('data-show-solutions', 'true');
+      } else {
+        exportContent.setAttribute('data-show-solutions', 'false');
+      }
       exportContent.querySelectorAll<HTMLElement>(
         '.ProseMirror-selectednode, .custom-block--selected, .heading-node--selected',
       ).forEach((element) => {
@@ -3914,6 +3923,7 @@ export default function EditorPage() {
     setPublishSuccess(false);
     try {
       const { pdf, exportPayload } = await renderPDF();
+      const { pdf: solutionKeyPdf } = await renderPDF({ showSolutions: true });
       const thumbnailResponse = await fetch('/api/export/thumbnails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -3958,6 +3968,7 @@ export default function EditorPage() {
         || containsLearningCards;
       const isDominoWorksheet = documentContext.worksheetType === 'domino'
         || containsDomino;
+      const hasAnswerKey = hasMeaningfulSolutions(editor.state.doc);
       const metadata = {
         worksheetId: id,
         slug: `${slugBase}-${id.slice(0, 8)}`,
@@ -3983,7 +3994,7 @@ export default function EditorPage() {
         format: DAZIT_PDF_FORMAT_BY_DOC_SIZE[docSize] || 'PDF · A4 druckfertig',
         language,
         difficulty,
-        hasAnswerKey: showSolutions,
+        hasAnswerKey,
         tags: [subject, language, level].filter(Boolean),
         languageLevel: documentContext.languageLevel,
         actionCompetencies: documentContext.actionCompetencies,
@@ -3992,6 +4003,9 @@ export default function EditorPage() {
       };
       const formData = new FormData();
       formData.set('pdf', pdf, `${metadata.slug}.pdf`);
+      if (hasAnswerKey) {
+        formData.set('solutionKeyPdf', solutionKeyPdf, `${metadata.slug}-solution-key.pdf`);
+      }
       formData.set(
         'mode',
         modeOverride

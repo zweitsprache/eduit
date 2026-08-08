@@ -63,6 +63,12 @@ import type {
   MCHOption,
   MCHRow,
 } from '@/components/editor/mch-node';
+import {
+  ARTICLE_OPTIONS,
+  ARTICLE_PLURAL_ROWS_PER_PAGE,
+  type ArticlePluralAttrs,
+  type ArticlePluralRow,
+} from '@/components/editor/article-plural-node';
 import type {
   TrueFalseAttrs,
   TrueFalseRow,
@@ -207,6 +213,7 @@ export type ContentEditorBlock = {
     | 'timeMatching'
     | 'mcm'
     | 'mch'
+    | 'articlePlural'
     | 'trueFalse'
     | 'familyKinship'
     | 'fillInTheBlank'
@@ -238,6 +245,7 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   timeMatching: 'Time matching content',
   mcm: 'Multiple-choice matrix content',
   mch: 'Header matrix content',
+  articlePlural: 'Artikel- und Pluraltraining',
   trueFalse: 'True / false content',
   familyKinship: 'Familie | Verwandtschaftsgrade',
   fillInTheBlank: 'Fill in the blank content',
@@ -2117,6 +2125,22 @@ function Preview({
           </ContentManualItem>
         </ContentManual>
       )}
+      {block.type === 'articlePlural' && (
+        <ContentManual>
+          <ContentManualItem icon="der" title="Set article and plural">
+            Enter the noun without its article, choose der, das, or die, and
+            store the plural form as the worksheet solution.
+          </ContentManualItem>
+          <ContentManualItem icon="A–Z" title="Choose row order">
+            Sort terms alphabetically or shuffle them into a reproducible
+            worksheet order.
+          </ContentManualItem>
+          <ContentManualItem icon="↻" title="Reshuffle rows">
+            Use reshuffle to generate a new row order without changing the
+            authored term list.
+          </ContentManualItem>
+        </ContentManual>
+      )}
       {block.type === 'trueFalse' && (
         <ContentManual>
           <ContentManualItem icon="T/F" title="Set answer labels">
@@ -3005,6 +3029,118 @@ function MCHEditor({
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover"
       >
         <PlusSquare className="size-4" /> Add row
+      </button>
+    </>
+  );
+}
+
+function ArticlePluralEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: ArticlePluralAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const setRows = (rows: ArticlePluralRow[]) => updateAttrs(editor, block, { rows });
+  return (
+    <>
+      <ContentSectionHeader>Row order</ContentSectionHeader>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {(['alphabetical', 'shuffle'] as const).map((order) => (
+          <button
+            type="button"
+            key={order}
+            aria-pressed={attrs.order === order}
+            onClick={() => updateAttrs(editor, block, { order })}
+            className={`rounded-md border px-3 py-2 text-sm font-semibold ${
+              attrs.order === order
+                ? 'border-brand bg-brand-primary_alt text-brand-secondary'
+                : 'border-primary text-secondary hover:bg-primary_hover'
+            }`}
+          >
+            {order === 'alphabetical' ? 'Alphabetical' : 'Shuffle'}
+          </button>
+        ))}
+      </div>
+      {attrs.order === 'shuffle' && (
+        <button
+          type="button"
+          onClick={() => updateAttrs(editor, block, { shuffleSeed: attrs.shuffleSeed + 1 })}
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover"
+        >
+          <RotateCcw className="size-4" /> Reshuffle
+        </button>
+      )}
+      <ContentSectionHeader count={`${attrs.rows.length} rows`}>
+        Terms
+      </ContentSectionHeader>
+      <div className="mt-3 space-y-2">
+        {attrs.rows.map((row, index) => (
+          <ContentCard key={row.id}>
+            <ContentItemGrid>
+              <span className="rounded bg-primary px-2 py-1 text-[10px] font-bold text-secondary">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <div className="grid min-w-0 grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)] gap-2">
+                <select
+                  aria-label={`Article for term ${index + 1}`}
+                  value={row.article ?? ''}
+                  onChange={(event) => setRows(attrs.rows.map((current) => (
+                    current.id === row.id
+                      ? { ...current, article: event.target.value as ArticlePluralRow['article'] }
+                      : current
+                  )))}
+                  className="rounded-md border border-primary bg-primary px-2 py-1.5 text-sm text-secondary"
+                >
+                  <option value="">–</option>
+                  {ARTICLE_OPTIONS.map((article) => <option key={article}>{article}</option>)}
+                </select>
+                <input
+                  aria-label={`Term ${index + 1}`}
+                  value={row.term}
+                  placeholder="Begriff"
+                  onChange={(event) => setRows(attrs.rows.map((current) => (
+                    current.id === row.id ? { ...current, term: event.target.value } : current
+                  )))}
+                  className="min-w-0 rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                />
+                <input
+                  aria-label={`Plural for term ${index + 1}`}
+                  value={row.plural}
+                  placeholder="Plural"
+                  onChange={(event) => setRows(attrs.rows.map((current) => (
+                    current.id === row.id ? { ...current, plural: event.target.value } : current
+                  )))}
+                  className="min-w-0 rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                />
+              </div>
+              <ContentItemActions
+                label={`term ${index + 1}`}
+                canDelete={attrs.rows.length > 1}
+                canMoveUp={index > 0}
+                canMoveDown={index < attrs.rows.length - 1}
+                onDelete={() => setRows(attrs.rows.filter(({ id }) => id !== row.id))}
+                onMoveUp={() => setRows(moveItem(attrs.rows, index, -1))}
+                onMoveDown={() => setRows(moveItem(attrs.rows, index, 1))}
+              />
+            </ContentItemGrid>
+          </ContentCard>
+        ))}
+      </div>
+      <button
+        type="button"
+        disabled={attrs.rows.length >= ARTICLE_PLURAL_ROWS_PER_PAGE}
+        onClick={() => setRows([...attrs.rows, {
+          id: `article-plural-${Date.now()}`,
+          term: '',
+          article: null,
+          plural: '',
+        }])}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <PlusSquare className="size-4" /> Add term
       </button>
     </>
   );
@@ -6677,6 +6813,7 @@ export function BlockContentEditorModal({
             {block.type === 'timeMatching' && <TimeMatchingEditor attrs={attrs as unknown as TimeMatchingAttrs} block={block} editor={editor} />}
             {block.type === 'mcm' && <MCMEditor attrs={attrs as unknown as MCMAttrs} block={block} editor={editor} />}
             {block.type === 'mch' && <MCHEditor attrs={attrs as unknown as MCHAttrs} block={block} editor={editor} />}
+            {block.type === 'articlePlural' && <ArticlePluralEditor attrs={attrs as unknown as ArticlePluralAttrs} block={block} editor={editor} />}
             {block.type === 'trueFalse' && <TrueFalseEditor attrs={attrs as unknown as TrueFalseAttrs} block={block} editor={editor} />}
             {block.type === 'familyKinship' && <FamilyKinshipEditor attrs={attrs as unknown as FamilyKinshipAttrs} block={block} editor={editor} />}
             {block.type === 'fillInTheBlank' && <FillInTheBlankEditor attrs={attrs as unknown as FillInTheBlankAttrs} block={block} editor={editor} />}

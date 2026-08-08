@@ -72,10 +72,24 @@ function buildNumberingDecorations(
       ordinal,
       brand.instructionNumberFormat,
     );
+    const hasAdditionalArticlePluralInstruction = (
+      node.type.name === 'articlePlural'
+      && Array.isArray(node.attrs.rows)
+      && node.attrs.rows.length < 22
+    );
+    const additionalLabel = hasAdditionalArticlePluralInstruction
+      ? formatInstructionNumber(ordinal + 1, brand.instructionNumberFormat)
+      : null;
     decorations.push(Decoration.node(pos, pos + node.nodeSize, {
       'data-custom-block-ordinal': String(ordinal),
-      style: `--custom-block-instruction-label: "${label}"`,
+      style: [
+        `--custom-block-instruction-label: "${label}"`,
+        additionalLabel
+          ? `--article-plural-additional-instruction-label: "${additionalLabel}"`
+          : '',
+      ].filter(Boolean).join(';'),
     }));
+    if (hasAdditionalArticlePluralInstruction) ordinal += 1;
     return false;
   });
 

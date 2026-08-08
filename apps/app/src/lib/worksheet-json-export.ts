@@ -7,6 +7,7 @@ import type { GlossaryTermsAttrs } from '@/components/editor/glossary-terms-node
 import type { FillInTheBlankAttrs } from '@/components/editor/fill-in-the-blank-node';
 import type { DialogueAttrs } from '@/components/editor/dialogue-node';
 import type { MCMAttrs } from '@/components/editor/mcm-node';
+import type { ArticlePluralAttrs } from '@/components/editor/article-plural-node';
 import type { TrueFalseAttrs } from '@/components/editor/true-false-node';
 import type { MatchingPairsAttrs } from '@/components/editor/matching-pairs-node';
 import type { TimeMatchingAttrs } from '@/components/editor/time-matching-node';
@@ -53,6 +54,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'fillInTheBlank',
   'dialogue',
   'mcm',
+  'articlePlural',
   'mcq',
   'trueFalse',
   'matchingPairs',
@@ -278,6 +280,21 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
             correct: option.correct,
           })),
         })),
+      };
+    }
+    case 'articlePlural': {
+      const { rows, order, shuffleSeed } = attrs as ArticlePluralAttrs;
+      return {
+        type: 'articlePlural',
+        instruction: 'Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.',
+        rows: rows.map(({ id, term, article, plural }) => ({
+          id,
+          term,
+          article,
+          plural,
+        })),
+        order,
+        shuffleSeed,
       };
     }
     case 'trueFalse': {

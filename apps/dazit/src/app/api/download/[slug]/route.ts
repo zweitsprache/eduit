@@ -15,8 +15,11 @@ export async function GET(
   if (!token) return new Response('Dazit Blob is not configured.', { status: 503 });
 
   const worksheet = await worksheetBySlug((await params).slug);
-  if (!worksheet?.blobPath) return new Response('PDF not found.', { status: 404 });
-  const result = await get(worksheet.blobPath, {
+  if (!worksheet) return new Response('PDF not found.', { status: 404 });
+  const isAnswerKey = new URL(request.url).searchParams.get('type') === 'answer-key';
+  const blobPath = isAnswerKey ? worksheet.answerKeyBlobPath : worksheet.blobPath;
+  if (!blobPath) return new Response('PDF not found.', { status: 404 });
+  const result = await get(blobPath, {
     access: 'private',
     token,
     // Republishing overwrites the same path, so a cached read would serve the
@@ -36,7 +39,7 @@ export async function GET(
   return new Response(result.stream, {
     headers: {
       'Cache-Control': 'private, max-age=0, must-revalidate',
-      'Content-Disposition': `attachment; filename="${worksheet.slug}.pdf"`,
+      'Content-Disposition': `attachment; filename="${worksheet.slug}${isAnswerKey ? '-solution-key' : ''}.pdf"`,
       'Content-Length': String(result.blob.size),
       'Content-Type': result.blob.contentType || 'application/pdf',
       ETag: result.blob.etag,

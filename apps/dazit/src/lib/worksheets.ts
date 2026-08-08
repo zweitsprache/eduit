@@ -34,7 +34,9 @@ export type Worksheet = {
   color: 'lavender' | 'peach' | 'blue' | 'blue-light' | 'green' | 'green-light' | 'orange' | 'orange-light' | 'mint' | 'yellow' | 'pink';
   tags: string[];
   pdfUrl?: string;
+  answerKeyPdfUrl?: string;
   blobPath?: string;
+  answerKeyBlobPath?: string;
   thumbnailPaths?: string[];
   thumbnailUrls?: string[];
   publishedAt?: string;
@@ -127,7 +129,7 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
     language: rowLanguage(row.context),
     difficulty: rowDifficulty(row.level),
     downloads: String(row.downloads || 0),
-    hasAnswerKey: Boolean(row.showSolutions),
+    hasAnswerKey: Boolean(row.hasAnswerKey),
     size: formatSize(row.sizeBytes),
     format: rowFormat(row.documentSize),
     added: Number.isNaN(publishedAt.getTime())
@@ -147,7 +149,9 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
               : 'lavender',
     tags: Array.isArray(row.tags) ? row.tags : [],
     pdfUrl: `/api/download/${encodeURIComponent(row.slug)}`,
+    answerKeyPdfUrl: row.answerKeyPdfPath ? `/api/download/${encodeURIComponent(row.slug)}?type=answer-key` : undefined,
     blobPath: row.pdfPath,
+    answerKeyBlobPath: row.answerKeyPdfPath || undefined,
     thumbnailPaths: row.thumbnailPaths || [],
     thumbnailUrls: row.worksheetId
       ? (row.thumbnailPaths || []).map(

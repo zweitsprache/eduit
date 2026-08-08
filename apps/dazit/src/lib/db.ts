@@ -32,7 +32,8 @@ export type DazitPublicationRow = {
   actionCompetencyContributionHtml: string | null;
   actionField: string | null;
   downloads: number;
-  showSolutions: boolean;
+  hasAnswerKey: boolean;
+  answerKeyPdfPath: string | null;
   documentSize: string;
   context: Record<string, unknown> | null;
 };
@@ -52,7 +53,8 @@ export type DazitPublicationCardRow = {
   tags: string[];
   level: string | null;
   downloads: number;
-  showSolutions: boolean;
+  hasAnswerKey: boolean;
+  answerKeyPdfPath: string | null;
   documentSize: string;
   context: null;
 };
@@ -201,6 +203,7 @@ export async function getPublishedWorksheetsFromDb() {
       p.title,
       p.document_type as "documentType",
       p.pdf_path as "pdfPath",
+      p.answer_key_pdf_path as "answerKeyPdfPath",
       p.thumbnail_paths as "thumbnailPaths",
       p.page_count as "pageCount",
       p.size_bytes as "sizeBytes",
@@ -216,7 +219,7 @@ export async function getPublishedWorksheetsFromDb() {
       p.action_competency_contribution_html as "actionCompetencyContributionHtml",
       p.action_field as "actionField",
       p.download_count::int as downloads,
-      w.show_solutions as "showSolutions",
+      coalesce(p.has_answer_key, w.show_solutions, false) as "hasAnswerKey",
       w.document_size as "documentSize",
       w.context
     from dazit_publications p
@@ -236,6 +239,7 @@ export async function getPublishedWorksheetCardsFromDb() {
       p.title,
       p.document_type as "documentType",
       p.pdf_path as "pdfPath",
+      p.answer_key_pdf_path as "answerKeyPdfPath",
       case when jsonb_typeof(p.thumbnail_paths) = 'array' and jsonb_array_length(p.thumbnail_paths) > 0
         then jsonb_build_array(p.thumbnail_paths->0) else '[]'::jsonb end as "thumbnailPaths",
       p.page_count as "pageCount",
@@ -246,7 +250,7 @@ export async function getPublishedWorksheetCardsFromDb() {
       p.tags,
       p.level,
       p.download_count::int as downloads,
-      w.show_solutions as "showSolutions",
+      coalesce(p.has_answer_key, w.show_solutions, false) as "hasAnswerKey",
       w.document_size as "documentSize",
       null as context
     from dazit_publications p

@@ -195,12 +195,14 @@ export function BlockRows({
 export function BlockRow({
   index,
   children,
+  className,
 }: {
   index: number;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="custom-block__row">
+    <div className={cx('custom-block__row', className)}>
       <span className="custom-block__row-index">
         {String(index + 1).padStart(2, '0')}
       </span>

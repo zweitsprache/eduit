@@ -151,6 +151,15 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
     insert: (editor) => editor.chain().focus().insertMCH().run(),
   },
   {
+    type: 'articlePlural',
+    label: 'Artikel- und Pluraltraining',
+    description: 'German nouns with fixed article choices and a plural writing line.',
+    category: 'Assessment',
+    keywords: ['artikel', 'plural', 'der', 'das', 'die', 'nomen'],
+    Icon: Rows01,
+    insert: (editor) => editor.chain().focus().insertArticlePlural().run(),
+  },
+  {
     type: 'matchingPairs',
     label: 'Matching pairs',
     description: 'Two independent lists whose items are matched as pairs.',

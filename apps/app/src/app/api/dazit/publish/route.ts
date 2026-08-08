@@ -36,6 +36,7 @@ type PublishMetadata = {
 type PublicationSnapshot = {
   worksheetId: string;
   pdfPath: string;
+  answerKeyPdfPath: string | null;
   thumbnailPaths: string[];
   sizeBytes: number;
   descriptionHtml: string | null;
@@ -563,6 +564,7 @@ export async function POST(request: Request) {
       select
         worksheet_id as "worksheetId",
         pdf_path as "pdfPath",
+        answer_key_pdf_path as "answerKeyPdfPath",
         thumbnail_paths as "thumbnailPaths",
         size_bytes as "sizeBytes",
         description_html as "descriptionHtml",
@@ -579,6 +581,7 @@ export async function POST(request: Request) {
     ` as Array<{
       worksheetId: string;
       pdfPath: string;
+      answerKeyPdfPath: string | null;
       thumbnailPaths: string[];
       sizeBytes: number;
       descriptionHtml: string | null;
@@ -625,6 +628,9 @@ export async function POST(request: Request) {
     const pdfPath = mode === 'metadata-only'
       ? publicationRows[0].pdfPath
       : `worksheets/${metadata.worksheetId}/${metadata.slug}.pdf`;
+    const answerKeyPdfPath = mode === 'metadata-only'
+      ? publicationRows[0].answerKeyPdfPath
+      : (metadata.hasAnswerKey ? `worksheets/${metadata.worksheetId}/${metadata.slug}-solution-key.pdf` : null);
     if (mode !== 'metadata-only') {
       await put(pdfPath, pdf, {
         access: 'private',
@@ -633,6 +639,18 @@ export async function POST(request: Request) {
         contentType: 'application/pdf',
         token,
       });
+    }
+    if (mode !== 'metadata-only' && metadata.hasAnswerKey && answerKeyPdfPath) {
+      const solutionKeyPdf = formData.get('solutionKeyPdf');
+      if (solutionKeyPdf instanceof File && solutionKeyPdf.type === 'application/pdf') {
+        await put(answerKeyPdfPath, solutionKeyPdf, {
+          access: 'private',
+          addRandomSuffix: false,
+          allowOverwrite: true,
+          contentType: 'application/pdf',
+          token,
+        });
+      }
     }
     const thumbnailPaths = mode === 'metadata-only'
       ? publicationRows[0].thumbnailPaths
@@ -684,6 +702,7 @@ export async function POST(request: Request) {
           ...existingManifest,
           ...metadata,
           pdfPath,
+          answerKeyPdfPath,
           thumbnailPaths,
           sizeBytes,
           downloads: existingManifest.downloads ?? 0,
@@ -725,7 +744,9 @@ export async function POST(request: Request) {
         slug,
         title,
         document_type,
+        has_answer_key,
         pdf_path,
+        answer_key_pdf_path,
         thumbnail_paths,
         page_count,
         size_bytes,
@@ -747,7 +768,9 @@ export async function POST(request: Request) {
         ${metadata.slug},
         ${metadata.title},
         ${metadata.documentType},
+        ${metadata.hasAnswerKey},
         ${pdfPath},
+        ${answerKeyPdfPath},
         ${JSON.stringify(thumbnailPaths)}::jsonb,
         ${metadata.pages},
         ${sizeBytes},
@@ -769,7 +792,9 @@ export async function POST(request: Request) {
         slug = excluded.slug,
         title = excluded.title,
         document_type = excluded.document_type,
+        has_answer_key = excluded.has_answer_key,
         pdf_path = excluded.pdf_path,
+        answer_key_pdf_path = excluded.answer_key_pdf_path,
         thumbnail_paths = excluded.thumbnail_paths,
         page_count = excluded.page_count,
         size_bytes = excluded.size_bytes,
@@ -792,7 +817,9 @@ export async function POST(request: Request) {
         set slug = ${metadata.slug},
             title = ${metadata.title},
             document_type = ${metadata.documentType},
+            has_answer_key = ${metadata.hasAnswerKey},
             pdf_path = ${pdfPath},
+            answer_key_pdf_path = ${answerKeyPdfPath},
             thumbnail_paths = ${JSON.stringify(thumbnailPaths)}::jsonb,
             page_count = ${metadata.pages},
             size_bytes = ${sizeBytes},
@@ -807,7 +834,9 @@ export async function POST(request: Request) {
     } else {
       await sql`
         update dazit_publications
-        set pdf_path = ${pdfPath},
+        set has_answer_key = ${metadata.hasAnswerKey},
+            pdf_path = ${pdfPath},
+            answer_key_pdf_path = ${answerKeyPdfPath},
             thumbnail_paths = ${JSON.stringify(thumbnailPaths)}::jsonb,
             page_count = ${metadata.pages},
             size_bytes = ${pdf.size},
