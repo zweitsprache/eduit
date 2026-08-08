@@ -19,6 +19,7 @@ export type Worksheet = {
     | 'Merkblatt'
     | 'Verbtabelle'
     | 'Deklinationstabelle'
+    | 'Kommunikationskarten'
     | 'Lernkarten'
     | 'Domino'
     | 'Dialog'
@@ -102,6 +103,7 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
     'Merkblatt',
     'Verbtabelle',
     'Deklinationstabelle',
+    'Kommunikationskarten',
     'Lernkarten',
     'Domino',
     'Dialog',

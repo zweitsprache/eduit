@@ -10,6 +10,7 @@ import type { MCMAttrs } from '@/components/editor/mcm-node';
 import type { TrueFalseAttrs } from '@/components/editor/true-false-node';
 import type { MatchingPairsAttrs } from '@/components/editor/matching-pairs-node';
 import type { TimeMatchingAttrs } from '@/components/editor/time-matching-node';
+import type { CommunicationCardsAttrs } from '@/components/editor/communication-cards-node';
 import type { LearningCardsAttrs } from '@/components/editor/learning-cards-node';
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
 import type { WordGridAttrs } from '@/components/editor/word-grid-node';
@@ -56,6 +57,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'trueFalse',
   'matchingPairs',
   'timeMatching',
+  'communicationCards',
   'wordGrid',
   'learningCards',
   'domino',
@@ -339,6 +341,39 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         answerStyle,
       };
     }
+    case 'communicationCards': {
+      const {
+        title,
+        textSize,
+        items,
+      } = attrs as CommunicationCardsAttrs;
+      return {
+        type: 'communicationCards',
+        title,
+        format: 'a4-landscape',
+        sidedness: 'single',
+        textSize,
+        items: items.map(({
+          id,
+          pairTitle,
+          situation,
+          task,
+          intro,
+          listType,
+          listItems,
+          content,
+        }) => ({
+          id,
+          pairTitle,
+          situation,
+          task,
+          intro,
+          listType,
+          listItems,
+          content,
+        })),
+      };
+    }
     case 'wordGrid': {
       const {
         instruction, columns, rows, rowHeight, showWordList,
@@ -466,6 +501,7 @@ export function worksheetJsonFromDoc(
   // list, separated by page breaks, and the node's filterTransaction keeps anything
   // else out. Collapse it back into the single block the import expands again.
   let learningCardsSeen = false;
+  let communicationCardsSeen = false;
 
   let dominoSeen = false;
 
@@ -485,6 +521,13 @@ export function worksheetJsonFromDoc(
       return;
     }
     if (learningCardsSeen && node.type.name === 'pageBreak') return;
+    if (node.type.name === 'communicationCards') {
+      if (communicationCardsSeen) return;
+      communicationCardsSeen = true;
+      blocks.push(blockJson(node)!);
+      return;
+    }
+    if (communicationCardsSeen && node.type.name === 'pageBreak') return;
     if (node.type.name === 'domino') {
       // Multi-page dominoes are stored as multiple nodes separated by page breaks.
       // Only the first node carries the canonical block in the export.

@@ -8,9 +8,13 @@ import { AuthProvider } from '@/components/auth-provider';
 export const metadata: Metadata = {
   metadataBase: dazitSiteUrl(),
   icons: {
-    icon: '/dazit_icon_orange.svg',
-    shortcut: '/dazit_icon_orange.svg',
-    apple: '/dazit_icon_orange.svg',
+    icon: [
+      { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
+      { url: '/favicon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/dazit_icon_orange.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: ['/favicon-48x48.png'],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   title: {
     default: 'DaZ Arbeitsblätter zum Ausdrucken',

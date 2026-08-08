@@ -32,6 +32,15 @@ export type CustomBlockDefinition = {
 
 export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
   {
+    type: 'communicationCards',
+    label: 'Communication Cards',
+    description: 'Single-sided DIN A4 landscape communication cards in a 4-up row layout.',
+    category: 'Layout',
+    keywords: ['communication', 'cards', 'a4', 'landscape', 'single-sided', 'print'],
+    Icon: Grid01,
+    insert: (editor) => editor.chain().focus().insertCommunicationCards().run(),
+  },
+  {
     type: 'learningCards',
     label: 'Learning cards',
     description: 'Print-ready DIN A8 cards in exclusive 3 × 3 duplex sheets.',

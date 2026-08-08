@@ -149,6 +149,9 @@ import {
   type SuccessCriterion,
 } from '@/components/editor/learning-objective-node';
 import {
+  CommunicationCards,
+} from '@/components/editor/communication-cards-node';
+import {
   DEFAULT_LEARNING_CARDS_ATTRS,
   LearningCards,
 } from '@/components/editor/learning-cards-node';
@@ -406,6 +409,7 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'glossaryTerms',
   'frayerModel',
   'learningObjective',
+  'communicationCards',
   'learningCards',
   'dialogue',
   'rewriteSentences',
@@ -1129,6 +1133,12 @@ const DOC_SIZES: { id: string; label: string; format: () => PageFormatSpec }[] =
   { id: 'letter-landscape', label: 'US Letter Landscape', format: () => documentFormat(PAGE_FORMATS.Letter, 'landscape') },
 ];
 
+const documentSizeForContent = (contentHtml: string, fallback: string) => (
+  contentHtml.includes('data-type="communication-cards"')
+    ? 'a4-landscape'
+    : fallback
+);
+
 const DAZIT_PDF_FORMAT_BY_DOC_SIZE: Record<string, string> = {
   'a4-portrait': 'PDF · A4 druckfertig',
   'a4-landscape': 'PDF · A4 druckfertig',
@@ -1245,6 +1255,7 @@ const DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE: Record<WorksheetContext['worksheetT
   'fact-sheet': 'Merkblatt',
   'verb-table': 'Verbtabelle',
   'declension-table': 'Deklinationstabelle',
+  'communication-cards': 'Kommunikationskarten',
   'learning-cards': 'Lernkarten',
   domino: 'Domino',
 };
@@ -1343,6 +1354,10 @@ export default function EditorPage() {
   const [allowDescriptionOverride, setAllowDescriptionOverride] = useState(false);
   const [exportingBlockPNG, setExportingBlockPNG] = useState(false);
   const [jsonCopied, setJsonCopied] = useState(false);
+  const [jsonImportDialogOpen, setJsonImportDialogOpen] = useState(false);
+  const [jsonImportText, setJsonImportText] = useState('');
+  const [jsonImportError, setJsonImportError] = useState<string | null>(null);
+  const [importingJson, setImportingJson] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [blockExportError, setBlockExportError] = useState<string | null>(null);
@@ -1432,6 +1447,7 @@ export default function EditorPage() {
       GlossaryTerms,
       FrayerModel,
       LearningObjective,
+      CommunicationCards,
       LearningCards,
       CustomHeading,
       Dialogue,
@@ -1754,6 +1770,30 @@ export default function EditorPage() {
       let found = false;
       currentEditor.state.doc.forEach((node) => {
         if (node.type.name === 'learningCards') found = true;
+      });
+      return found;
+    },
+  });
+
+  const containsCommunicationCards = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor) return false;
+      let found = false;
+      currentEditor.state.doc.forEach((node) => {
+        if (node.type.name === 'communicationCards') found = true;
+      });
+      return found;
+    },
+  });
+
+  const containsDomino = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor) return false;
+      let found = false;
+      currentEditor.state.doc.forEach((node) => {
+        if (node.type.name === 'domino') found = true;
       });
       return found;
     },
@@ -2181,6 +2221,13 @@ export default function EditorPage() {
 
   useEffect(() => {
     if (!editor) return;
+    if (!containsCommunicationCards) return;
+    if (docSize === 'a4-landscape') return;
+    handleDocSize('a4-landscape');
+  }, [containsCommunicationCards, docSize, editor]);
+
+  useEffect(() => {
+    if (!editor) return;
     if (brandProfileId && !selectedBrandProfile) return;
     const editorElement = editor.view.dom;
     // Eduit supplies the structural defaults; profiles override brand tokens.
@@ -2536,9 +2583,14 @@ export default function EditorPage() {
         const storedDocSize = localStorage.getItem(
           worksheetDocSizeStorageKey(result.worksheet.id),
         );
-        const nextDocSize = DOC_SIZES.some(({ id }) => id === storedDocSize)
+        const storedOrSavedDocSize = storedDocSize
+          && DOC_SIZES.some(({ id }) => id === storedDocSize)
           ? storedDocSize
           : result.worksheet.documentSize;
+        const nextDocSize = documentSizeForContent(
+          result.worksheet.contentHtml,
+          storedOrSavedDocSize,
+        );
         if (!nextDocSize) {
           throw new Error('Could not load worksheet.');
         }
@@ -2559,11 +2611,11 @@ export default function EditorPage() {
           result.worksheet.context?.worksheetType as WorksheetContext['worksheetType'] | undefined
         ) ?? 'worksheet';
         setDazitDocumentType(DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE[loadedWorksheetType]);
+        const size = DOC_SIZES.find(({ id }) => id === nextDocSize);
+        if (size) editor.commands.setPageFormat(size.format());
         if (existingWorksheetId) {
           editor.commands.setContent(result.worksheet.contentHtml || '');
         }
-        const size = DOC_SIZES.find(({ id }) => id === nextDocSize);
-        if (size) editor.commands.setPageFormat(size.format());
         setSaved(true);
         const publicationResponse = await fetch(
           `/api/dazit/status?worksheetId=${encodeURIComponent(result.worksheet.id)}`,
@@ -3900,6 +3952,12 @@ export default function EditorPage() {
         : new URLSearchParams(window.location.search).get('automation');
       const isAutomationPublish = automationMode === 'batch-publish'
         || automationMode === 'batch-full-publish';
+      const isCommunicationCardsWorksheet = documentContext.worksheetType === 'communication-cards'
+        || containsCommunicationCards;
+      const isLearningCardsWorksheet = documentContext.worksheetType === 'learning-cards'
+        || containsLearningCards;
+      const isDominoWorksheet = documentContext.worksheetType === 'domino'
+        || containsDomino;
       const metadata = {
         worksheetId: id,
         slug: `${slugBase}-${id.slice(0, 8)}`,
@@ -3912,8 +3970,12 @@ export default function EditorPage() {
         ),
         subject,
         grade: documentContext.learnerStage || level,
-        documentType: containsLearningCards
-          ? 'Lernkarten'
+        documentType: isCommunicationCardsWorksheet
+          ? 'Kommunikationskarten'
+          : isLearningCardsWorksheet
+            ? 'Lernkarten'
+            : isDominoWorksheet
+              ? 'Domino'
           : isAutomationPublish
             ? contextDocumentType
             : (dazitDocumentType || contextDocumentType),
@@ -4071,6 +4133,88 @@ export default function EditorPage() {
     jsonCopiedTimerRef.current = setTimeout(() => setJsonCopied(false), 2500);
   };
 
+  const importWorksheetJson = async () => {
+    if (!editor || !worksheetIdRef.current) return;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(jsonImportText);
+    } catch {
+      setJsonImportError('Invalid JSON.');
+      return;
+    }
+
+    setImportingJson(true);
+    setJsonImportError(null);
+    setExportError(null);
+    setPublishSuccess(false);
+
+    try {
+      const response = await fetch('/api/worksheets/import-json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: worksheetIdRef.current,
+          data: parsed,
+        }),
+      });
+      const result = await response.json().catch(() => null) as {
+        worksheet?: {
+          id: string;
+          title: string;
+          contentHtml: string;
+          documentSize: string;
+          showSolutions: boolean;
+          brandProfileId: string | null;
+          folderId: string | null;
+          context: WorksheetContext;
+        };
+        error?: string;
+      } | null;
+      if (!response.ok || !result?.worksheet) {
+        throw new Error(result?.error ?? 'Worksheet JSON import failed.');
+      }
+
+      const next = result.worksheet;
+      const nextDocSize = documentSizeForContent(next.contentHtml, next.documentSize);
+      setWorksheetTitle(next.title);
+      setDocSize(nextDocSize);
+      localStorage.setItem(DOC_SIZE_STORAGE_KEY, nextDocSize);
+      localStorage.setItem(
+        worksheetDocSizeStorageKey(next.id),
+        nextDocSize,
+      );
+      setBrandProfileId(next.brandProfileId);
+      setWorksheetFolderId(next.folderId);
+      setShowSolutions(next.showSolutions);
+      setDocumentContext({
+        ...EMPTY_WORKSHEET_CONTEXT,
+        ...next.context,
+      });
+      const loadedWorksheetType = (
+        next.context?.worksheetType as WorksheetContext['worksheetType'] | undefined
+      ) ?? 'worksheet';
+      setDazitDocumentType(DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE[loadedWorksheetType]);
+      setPublicationStatus((status) => status === 'current' ? 'outdated' : status);
+      const size = DOC_SIZES.find(({ id }) => id === nextDocSize);
+      if (size) editor.commands.setPageFormat(size.format());
+      editor.commands.setContent(next.contentHtml || '');
+      setSaved(true);
+      localStorage.setItem(STORAGE_KEY, next.contentHtml || '');
+      setJsonImportDialogOpen(false);
+      setJsonImportText('');
+      setJsonImportError(null);
+      setExportError('JSON imported.');
+      setPublishSuccess(true);
+    } catch (error) {
+      setJsonImportError(error instanceof Error
+        ? error.message
+        : 'Worksheet JSON import failed.');
+    } finally {
+      setImportingJson(false);
+    }
+  };
+
   const duplicateCurrentWorksheet = async () => {
     if (!worksheetIdRef.current || duplicatingWorksheet) return;
     setDuplicatingWorksheet(true);
@@ -4223,11 +4367,11 @@ export default function EditorPage() {
     <div className="editor-app flex h-screen flex-col overflow-hidden bg-secondary text-primary">
 
       {/* Top header (sticky) */}
-      <header className="editor-topbar relative flex h-16 shrink-0 items-center justify-between border-b border-secondary bg-primary px-4 lg:px-6">
+      <header className="editor-topbar grid h-16 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 border-b border-secondary bg-primary px-4 lg:px-6">
         <div className="flex items-center gap-3">
           <EduitLogo className="h-6 w-auto" />
         </div>
-        <div className="pointer-events-none absolute inset-y-0 right-0 left-0 flex items-center justify-center md:left-64 lg:right-72">
+        <div className="flex min-w-0 items-center justify-center px-2">
           <input
             aria-label="Worksheet title"
             maxLength={200}
@@ -4243,10 +4387,10 @@ export default function EditorPage() {
             onKeyDown={(event) => {
               if (event.key === 'Enter') event.currentTarget.blur();
             }}
-            className="pointer-events-auto w-full max-w-80 rounded-md border border-transparent bg-transparent px-2 py-1 text-center text-sm font-semibold text-secondary outline-none transition hover:border-primary focus:border-brand focus:bg-primary focus:ring-2 focus:ring-brand/20"
+            className="w-full max-w-80 min-w-0 rounded-md border border-transparent bg-transparent px-2 py-1 text-center text-sm font-semibold text-secondary outline-none transition hover:border-primary focus:border-brand focus:bg-primary focus:ring-2 focus:ring-brand/20"
           />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-end gap-3">
           <span className="text-xs text-quaternary">
             {saved ? t('editor.allChangesSaved') : t('editor.saving')}
           </span>
@@ -4263,6 +4407,20 @@ export default function EditorPage() {
             {duplicatingWorksheet
               ? `${t('documents.duplicate')}…`
               : t('documents.duplicate')}
+          </Button>
+          <Button
+            color="secondary"
+            size="md"
+            isDisabled={!worksheetId || importingJson}
+            iconLeading={importingJson
+              ? <Loading01 className="size-4.5 animate-spin" />
+              : <FileUp className="size-4.5" />}
+            onPress={() => {
+              setJsonImportError(null);
+              setJsonImportDialogOpen(true);
+            }}
+          >
+            {importingJson ? 'Importing…' : 'Import JSON'}
           </Button>
           <Button
             color="secondary"
@@ -4301,12 +4459,21 @@ export default function EditorPage() {
               editor?.state.doc.descendants((node) => {
                 if (node.type.name === 'learningCards') containsLearningCards = true;
               });
+              let containsCommunicationCards = false;
+              editor?.state.doc.descendants((node) => {
+                if (node.type.name === 'communicationCards') containsCommunicationCards = true;
+              });
               let containsDomino = false;
               editor?.state.doc.descendants((node) => {
                 if (node.type.name === 'domino') containsDomino = true;
               });
-              if (containsLearningCards) setDazitDocumentType('Lernkarten');
-              else if (containsDomino) setDazitDocumentType('Domino');
+              if (documentContext.worksheetType === 'communication-cards' || containsCommunicationCards) {
+                setDazitDocumentType('Kommunikationskarten');
+              } else if (documentContext.worksheetType === 'learning-cards' || containsLearningCards) {
+                setDazitDocumentType('Lernkarten');
+              } else if (documentContext.worksheetType === 'domino' || containsDomino) {
+                setDazitDocumentType('Domino');
+              }
               setRepublishScope(
                 publicationStatus === 'unpublished' ? 'full' : 'pdf-only',
               );
@@ -8188,6 +8355,7 @@ export default function EditorPage() {
                     <option value="fact-sheet">Merkblatt</option>
                     <option value="verb-table">Verbtabelle</option>
                     <option value="declension-table">Deklinationstabelle</option>
+                    <option value="communication-cards">Kommunikationskarten</option>
                     <option value="learning-cards">Lernkarten</option>
                     <option value="domino">Domino</option>
                   </select>
@@ -8603,6 +8771,7 @@ export default function EditorPage() {
                     { value: 'Merkblatt', label: 'Merkblatt' },
                     { value: 'Verbtabelle', label: 'Verbtabelle' },
                     { value: 'Deklinationstabelle', label: 'Deklinationstabelle' },
+                    { value: 'Kommunikationskarten', label: 'Kommunikationskarten' },
                     { value: 'Lernkarten', label: 'Lernkarten' },
                     { value: 'Domino', label: 'Domino' },
                   ]}
@@ -8647,6 +8816,66 @@ export default function EditorPage() {
                 }}
               >
                 {publishingPDF ? 'Publishing…' : 'Veröffentlichen'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {jsonImportDialogOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !importingJson) {
+              setJsonImportDialogOpen(false);
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="json-import-title"
+            className="w-full max-w-3xl rounded-xl border border-secondary bg-primary p-6 shadow-xl"
+          >
+            <h2 id="json-import-title" className="text-lg font-semibold text-primary">
+              Import JSON
+            </h2>
+            <p className="mt-1 text-sm text-tertiary">
+              Replace the current worksheet with a single worksheet from JSON.
+            </p>
+            <textarea
+              aria-label="Worksheet JSON import"
+              className="mt-4 min-h-[24rem] w-full resize-y rounded-md border border-primary bg-primary px-3 py-3 font-mono text-xs leading-5 text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              onChange={(event) => {
+                setJsonImportText(event.target.value);
+                setJsonImportError(null);
+              }}
+              placeholder={"Paste worksheet JSON here"}
+              spellCheck={false}
+              value={jsonImportText}
+            />
+            {jsonImportError && (
+              <p className="mt-2 text-sm text-error-primary" role="alert">
+                {jsonImportError}
+              </p>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <Button
+                color="secondary"
+                size="md"
+                isDisabled={importingJson}
+                onPress={() => setJsonImportDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                color="primary"
+                size="md"
+                isDisabled={importingJson || !jsonImportText.trim()}
+                iconLeading={importingJson ? <Loading01 className="size-4.5 animate-spin" /> : undefined}
+                onPress={() => void importWorksheetJson()}
+              >
+                {importingJson ? 'Importing…' : 'Import JSON'}
               </Button>
             </div>
           </div>

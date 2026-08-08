@@ -136,6 +136,7 @@ export function DocumentContextFields({
           <option value="fact-sheet">Merkblatt</option>
           <option value="verb-table">Verbtabelle</option>
           <option value="declension-table">Deklinationstabelle</option>
+          <option value="communication-cards">Kommunikationskarten</option>
           <option value="learning-cards">Lernkarten</option>
           <option value="domino">Domino</option>
         </select>

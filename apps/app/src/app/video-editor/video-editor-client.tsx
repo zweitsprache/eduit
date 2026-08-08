@@ -14,7 +14,6 @@ const AVAILABLE_THEMES = [
     color: '#3E8AF5',
   },
 ] as const;
-
 export function VideoEditorClient() {
   const renderer = useMemo(() => new HttpRenderer('/api/latest/ssr', {
     type: 'ssr',

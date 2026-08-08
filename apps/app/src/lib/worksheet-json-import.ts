@@ -145,6 +145,29 @@ const trueFalseSchema = z.object({
   showFirstAsExample: z.boolean().default(false),
 });
 
+// Mirrors CARDS_PER_GROUP in components/editor/communication-cards-node.tsx.
+const COMMUNICATION_CARDS_PER_GROUP = 4;
+
+const communicationCardSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  pairTitle: z.string().max(500).default(''),
+  situation: z.string().max(5000).default(''),
+  task: z.string().max(5000).default(''),
+  intro: z.string().max(5000).default(''),
+  listType: z.enum(['informationen', 'sprechhilfen']).default('informationen'),
+  listItems: z.string().max(5000).default(''),
+  content: z.string().max(5000).default(''),
+});
+
+const communicationCardsSchema = z.object({
+  type: z.literal('communicationCards'),
+  title: z.string().trim().max(200).default('Communication Cards'),
+  format: z.literal('a4-landscape').default('a4-landscape'),
+  sidedness: z.literal('single').default('single'),
+  textSize: z.enum(['xs', 's', 'm', 'l', 'xl']).default('m'),
+  items: z.array(communicationCardSchema).min(1).max(400),
+});
+
 // Mirrors CARDS_PER_GROUP in components/editor/learning-cards-node.tsx.
 const LEARNING_CARDS_PER_GROUP = 9;
 
@@ -359,6 +382,7 @@ export const generatedWorksheetSchema = z.object({
     trueFalseSchema,
     matchingPairsSchema,
     timeMatchingSchema,
+    communicationCardsSchema,
     learningCardsSchema,
     richTextSchema,
     wordGridSchema,
@@ -375,6 +399,12 @@ export const generatedWorksheetSchema = z.object({
   return cards === 0 || (cards === 1 && value.blocks.length === 1);
 }, {
   message: 'A learningCards block must be the only block of its worksheet.',
+  path: ['blocks'],
+}).refine((value) => {
+  const cards = value.blocks.filter((block) => block.type === 'communicationCards').length;
+  return cards === 0 || (cards === 1 && value.blocks.length === 1);
+}, {
+  message: 'A communicationCards block must be the only block of its worksheet.',
   path: ['blocks'],
 });
 
@@ -506,6 +536,24 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
         `<div data-title="${escapeAttribute(block.title)}" data-format="a8-landscape" data-sidedness="${block.sidedness}" data-front-text-size="${block.frontTextSize}" data-back-text-size="${block.backTextSize}" data-items="${encodedItems}" data-group-index="${groupIndex}" data-sheet-side="${sheetSide}" data-type="learning-cards"></div>`
       ))
     )).flat();
+    return sheets.join('<div data-restart-pagination="false" data-type="pageBreak"></div>');
+  }
+  if (block.type === 'communicationCards') {
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `communication-card-${index + 1}`,
+      pairTitle: item.pairTitle,
+      situation: item.situation,
+      task: item.task,
+      intro: item.intro,
+      listType: item.listType,
+      listItems: item.listItems,
+      content: item.content,
+    }));
+    const groupCount = Math.ceil(items.length / COMMUNICATION_CARDS_PER_GROUP);
+    const encodedItems = escapeAttribute(encodeURIComponent(JSON.stringify(items)));
+    const sheets = Array.from({ length: groupCount }, (_, groupIndex) => (
+      `<div data-title="${escapeAttribute(block.title)}" data-format="a4-landscape" data-sidedness="single" data-text-size="${block.textSize}" data-items="${encodedItems}" data-group-index="${groupIndex}" data-type="communication-cards"></div>`
+    ));
     return sheets.join('<div data-restart-pagination="false" data-type="pageBreak"></div>');
   }
   if (block.type === 'timeMatching') {

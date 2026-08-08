@@ -493,6 +493,45 @@ const defaultTemplates = [
  
     ],
   },
+  {
+    id: "eduit-verbteile-full-composition",
+    name: "Verbteile - Full Composition",
+    description:
+      "Complete Stamm + Endung composition as one timeline template using the Verbteile animation renderer.",
+    createdAt: "2026-08-07T00:00:00.000Z",
+    updatedAt: "2026-08-07T00:00:00.000Z",
+    createdBy: {
+      name: "EDUIT",
+      avatar: "",
+    },
+    category: "Education",
+    tags: ["German", "Grammar", "A1-A2", "Puzzle", "Composition"],
+    duration: 1260,
+    aspectRatio: "16:9",
+    thumbnail: "/Video%20animations%20with%20safe%20zones/assets/logo-dazit.svg",
+    overlays: [
+      {
+        id: 910001,
+        left: 0,
+        top: 0,
+        width: 1920,
+        height: 1080,
+        durationInFrames: 1260,
+        from: 0,
+        rotation: 0,
+        row: 0,
+        isDragging: false,
+        type: "sticker",
+        content: "dazit-verbteile-stamm-endung",
+        category: "Default",
+        styles: {
+          opacity: 1,
+          zIndex: 1,
+          transform: "none",
+        },
+      },
+    ],
+  },
 ];
 
 /**

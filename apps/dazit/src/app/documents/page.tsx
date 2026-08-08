@@ -20,7 +20,7 @@ const clusterLinks = [
   { href: '/documents?type=Deklinationstabelle', label: 'DaZ Deklinationstabellen PDF' },
 ];
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 function decodeValue(value?: string) {
   if (!value) return '';

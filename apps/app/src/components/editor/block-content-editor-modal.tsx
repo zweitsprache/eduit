@@ -98,6 +98,9 @@ import type {
   SuccessCriterion,
 } from '@/components/editor/learning-objective-node';
 import type {
+  CommunicationCardsAttrs,
+} from '@/components/editor/communication-cards-node';
+import type {
   LearningCardsAttrs,
   LearningCardTextSize,
 } from '@/components/editor/learning-cards-node';
@@ -210,6 +213,7 @@ export type ContentEditorBlock = {
     | 'glossaryTerms'
     | 'frayerModel'
     | 'learningObjective'
+    | 'communicationCards'
     | 'learningCards'
     | 'dialogue'
     | 'rewriteSentences'
@@ -240,6 +244,7 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   glossaryTerms: 'Glossary terms content',
   frayerModel: 'Frayer model content',
   learningObjective: 'Learning objective content',
+  communicationCards: 'Communication Cards',
   learningCards: 'Learning cards',
   dialogue: 'Dialogue content',
   rewriteSentences: 'Rewrite sentences content',
@@ -615,6 +620,614 @@ function LearningCardsEditor({
   );
 }
 
+function CommunicationCardsEditor({
+  attrs,
+  block,
+  editor,
+  groupIndex,
+  onGroupIndexChange,
+  selectedCardId,
+  onSelectedCardIdChange,
+}: {
+  attrs: CommunicationCardsAttrs;
+  block: ContentEditorBlock & { type: 'communicationCards' };
+  editor: Editor;
+  groupIndex: number;
+  onGroupIndexChange: (index: number) => void;
+  selectedCardId: string | null;
+  onSelectedCardIdChange: (id: string | null) => void;
+}) {
+  const textSizeOptions: LearningCardTextSize[] = ['xs', 's', 'm', 'l', 'xl'];
+  const [activeTab, setActiveTab] = useState<'edit' | 'import'>('edit');
+  const [importJson, setImportJson] = useState('');
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const updateCommunicationCards = (patch: Partial<CommunicationCardsAttrs>) => {
+    editor.chain().command(({ tr }) => {
+      const next = {
+        ...attrs,
+        ...patch,
+        sidedness: 'single' as const,
+        format: 'a4-landscape' as const,
+      };
+      const cardType = tr.doc.type.schema.nodes.communicationCards;
+      const pageBreakType = tr.doc.type.schema.nodes.pageBreak;
+      if (!cardType) return false;
+      const groupCount = Math.max(1, Math.ceil(next.items.length / 4));
+      const sheets = Array.from({ length: groupCount }, (_, nextGroupIndex) => cardType.create({
+        ...next,
+        groupIndex: nextGroupIndex,
+      }));
+      const documentNodes = sheets.flatMap((sheet, index) => (
+        index < sheets.length - 1 && pageBreakType
+          ? [sheet, pageBreakType.create()]
+          : [sheet]
+      ));
+      tr.replaceWith(0, tr.doc.content.size, documentNodes);
+      return true;
+    }).run();
+  };
+
+  const groupCount = Math.max(1, Math.ceil(attrs.items.length / 4));
+  const groupStart = groupIndex * 4;
+  const groupItems = attrs.items.slice(groupStart, groupStart + 4);
+
+  const updateCard = (id: string, value: string) => updateCommunicationCards({
+    items: attrs.items.map((item) => (
+      item.id === id ? { ...item, content: value } : item
+    )),
+  });
+
+  const importCommunicationCardsJson = () => {
+    try {
+      const parsed = JSON.parse(importJson) as unknown;
+      const source = Array.isArray(parsed)
+        ? { items: parsed }
+        : parsed;
+      if (!source || typeof source !== 'object' || !('items' in source)) {
+        throw new Error('JSON must contain an items array.');
+      }
+      const rawItems = (source as { items?: unknown }).items;
+      if (!Array.isArray(rawItems) || rawItems.length === 0) {
+        throw new Error('The items array must contain at least one card.');
+      }
+      const items = rawItems.map((item, index) => {
+        if (!item || typeof item !== 'object') {
+          throw new Error(`Card ${index + 1} must be an object.`);
+        }
+        const candidate = item as Record<string, unknown>;
+        const content = typeof candidate.content === 'string'
+          ? candidate.content
+          : (typeof candidate.front === 'string' ? candidate.front : null);
+        const listType = candidate.listType === 'sprechhilfen'
+          ? 'sprechhilfen' as const
+          : 'informationen' as const;
+        if (content === null) {
+          throw new Error(`Card ${index + 1} requires a string content value.`);
+        }
+        return {
+          id: typeof candidate.id === 'string' && candidate.id.trim()
+            ? candidate.id
+            : `communication-card-import-${Date.now()}-${index}`,
+          pairTitle: typeof candidate.pairTitle === 'string'
+            ? htmlToInlineFormatting(candidate.pairTitle)
+            : (typeof candidate.cardTitle === 'string'
+              ? htmlToInlineFormatting(candidate.cardTitle)
+              : ''),
+          situation: typeof candidate.situation === 'string'
+            ? htmlToInlineFormatting(candidate.situation)
+            : '',
+          task: typeof candidate.task === 'string'
+            ? htmlToInlineFormatting(candidate.task)
+            : '',
+          intro: typeof candidate.intro === 'string'
+            ? htmlToInlineFormatting(candidate.intro)
+            : '',
+          listType,
+          listItems: typeof candidate.listItems === 'string'
+            ? htmlToInlineFormatting(candidate.listItems)
+            : (typeof candidate.items === 'string'
+              ? htmlToInlineFormatting(candidate.items)
+              : ''),
+          content: htmlToInlineFormatting(content),
+        };
+      });
+      const imported = source as Record<string, unknown>;
+      const textSize = imported.textSize;
+      const importedGlobalCardTitle = typeof imported.cardTitle === 'string'
+        ? htmlToInlineFormatting(imported.cardTitle)
+        : '';
+      updateCommunicationCards({
+        title: typeof imported.title === 'string' ? imported.title : attrs.title,
+        format: 'a4-landscape',
+        sidedness: 'single',
+        textSize: textSize === 'xs'
+          || textSize === 's'
+          || textSize === 'm'
+          || textSize === 'l'
+          || textSize === 'xl'
+          ? textSize
+          : attrs.textSize,
+        items: items.map((item) => (
+          item.pairTitle.trim() || !importedGlobalCardTitle
+            ? item
+            : { ...item, pairTitle: importedGlobalCardTitle }
+        )),
+      });
+      onGroupIndexChange(0);
+      onSelectedCardIdChange(null);
+      setImportError(null);
+      setActiveTab('edit');
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Invalid JSON.');
+    }
+  };
+
+  return (
+    <>
+      <div className="mb-6 grid grid-cols-2 rounded-lg bg-secondary p-1">
+        {([
+          ['edit', 'Edit'],
+          ['import', 'Import JSON'],
+        ] as const).map(([value, label]) => (
+          <button
+            className={activeTab === value
+              ? 'rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary shadow-sm'
+              : 'rounded-md px-3 py-2 text-sm font-semibold text-quaternary hover:text-secondary'}
+            key={value}
+            onClick={() => {
+              setActiveTab(value);
+              setImportError(null);
+            }}
+            type="button"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'import' ? (
+        <div>
+          <ContentFieldLabel>Communication Cards JSON</ContentFieldLabel>
+          <textarea
+            aria-label="Communication Cards JSON"
+            className="mt-2 min-h-[28rem] w-full resize-y rounded-md border border-primary bg-primary p-3 font-mono text-xs leading-5 text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            onChange={(event) => {
+              setImportJson(event.target.value);
+              setImportError(null);
+            }}
+            placeholder={'{\n  "title": "Communication Cards",\n  "format": "a4-landscape",\n  "sidedness": "single",\n  "textSize": "m",\n  "items": [\n    {\n      "id": "card-1",\n      "pairTitle": "Im Restaurant",\n      "situation": "...",\n      "task": "...",\n      "intro": "...",\n      "listType": "informationen",\n      "listItems": "...",\n      "content": "..."\n    }\n  ]\n}'}
+            spellCheck={false}
+            value={importJson}
+          />
+          {importError && (
+            <p className="mt-2 text-xs text-error-primary" role="alert">
+              {importError}
+            </p>
+          )}
+          <button
+            className="mt-4 flex w-full items-center justify-center rounded-lg bg-brand-solid px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-solid_hover disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!importJson.trim()}
+            onClick={importCommunicationCardsJson}
+            type="button"
+          >
+            Import cards
+          </button>
+        </div>
+      ) : (
+      <>
+        <ContentFieldLabel>Title</ContentFieldLabel>
+        <input
+          aria-label="Communication cards title"
+          className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          onChange={(event) => updateCommunicationCards({ title: event.target.value })}
+          type="text"
+          value={attrs.title}
+        />
+
+        <div className="mt-5">
+          <ContentFieldLabel>Format</ContentFieldLabel>
+          <select
+            aria-label="Communication card format"
+            className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            onChange={() => undefined}
+            value={attrs.format}
+          >
+            <option value="a4-landscape">DIN A4 Landscape — 4 cards per page</option>
+          </select>
+        </div>
+
+        <div className="mt-5">
+          <ContentFieldLabel>Printing</ContentFieldLabel>
+          <select
+            aria-label="Communication cards printing mode"
+            className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            onChange={() => undefined}
+            value={attrs.sidedness}
+          >
+            <option value="single">Single sided</option>
+          </select>
+        </div>
+
+        <ContentSectionHeader>Text size</ContentSectionHeader>
+        <div className="mt-1 flex gap-2">
+          {textSizeOptions.map((size) => (
+            <button
+              key={`communication-cards-text-${size}`}
+              type="button"
+              onClick={() => updateCommunicationCards({ textSize: size })}
+              className={[
+                'flex-1 rounded-lg border py-2 text-xs font-semibold transition',
+                attrs.textSize === size
+                  ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                  : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+              ].join(' ')}
+            >
+              {size.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-6 rounded-lg border border-secondary bg-secondary p-4">
+          <ContentFieldLabel>Page</ContentFieldLabel>
+          <select
+            aria-label="Communication cards page group"
+            className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            onChange={(event) => {
+              onGroupIndexChange(Number(event.target.value));
+              onSelectedCardIdChange(null);
+            }}
+            value={Math.min(groupIndex, groupCount - 1)}
+          >
+            {Array.from({ length: groupCount }, (_, index) => (
+              <option key={index} value={index}>
+                Page {index + 1} · cards {index * 4 + 1}–{Math.min((index + 1) * 4, attrs.items.length)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mt-6 space-y-4">
+          {Array.from({ length: Math.ceil(groupItems.length / 2) }, (_, pairOffset) => {
+            const first = groupItems[pairOffset * 2] ?? null;
+            const second = groupItems[pairOffset * 2 + 1] ?? null;
+            const globalPairIndex = Math.floor((groupStart + pairOffset * 2) / 2);
+            const labelA = `${globalPairIndex + 1}A`;
+            const labelB = `${globalPairIndex + 1}B`;
+
+            if (!first) return null;
+
+            return (
+              <div
+                className={selectedCardId === first.id || selectedCardId === second?.id
+                  ? 'rounded-xl outline-2 outline-offset-2 outline-brand'
+                  : ''}
+                key={`${first.id}-${second?.id ?? 'missing'}`}
+                onClick={() => onSelectedCardIdChange(first.id)}
+                onFocusCapture={() => onSelectedCardIdChange(first.id)}
+              >
+                <ContentCard>
+                  <ContentSectionHeader>
+                    Pair {labelA} / {labelB}
+                  </ContentSectionHeader>
+                  <div className="mt-3">
+                    <ContentFieldLabel>Pair title (H2 on both cards)</ContentFieldLabel>
+                    <input
+                      aria-label={`Pair ${labelA}/${labelB} title`}
+                      className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        updateCommunicationCards({
+                          items: attrs.items.map((item) => (
+                            item.id === first.id || item.id === second?.id
+                              ? { ...item, pairTitle: value }
+                              : item
+                          )),
+                        });
+                        onSelectedCardIdChange(first.id);
+                      }}
+                      placeholder={`e.g. Pair ${labelA}/${labelB} title`}
+                      type="text"
+                      value={first.pairTitle || second?.pairTitle || ''}
+                    />
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div>
+                      <ContentFieldLabel>Card {labelA} situation</ContentFieldLabel>
+                      <InlineFormattedInput
+                        ariaLabel={`Card ${labelA} situation`}
+                        className="mt-2 min-h-20 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                        multiline
+                        onChange={(value) => {
+                          updateCommunicationCards({
+                            items: attrs.items.map((item) => (
+                              item.id === first.id ? { ...item, situation: value } : item
+                            )),
+                          });
+                          onSelectedCardIdChange(first.id);
+                        }}
+                        placeholder={`Card ${labelA} situation`}
+                        value={first.situation}
+                      />
+
+                      <ContentFieldLabel>Card {labelA} task</ContentFieldLabel>
+                      <InlineFormattedInput
+                        ariaLabel={`Card ${labelA} task`}
+                        className="mt-2 min-h-20 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                        multiline
+                        onChange={(value) => {
+                          updateCommunicationCards({
+                            items: attrs.items.map((item) => (
+                              item.id === first.id ? { ...item, task: value } : item
+                            )),
+                          });
+                          onSelectedCardIdChange(first.id);
+                        }}
+                        placeholder={`Card ${labelA} task`}
+                        value={first.task}
+                      />
+
+                      <ContentFieldLabel>Card {labelA} intro</ContentFieldLabel>
+                      <InlineFormattedInput
+                        ariaLabel={`Card ${labelA} intro`}
+                        className="mt-2 min-h-20 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                        multiline
+                        onChange={(value) => {
+                          updateCommunicationCards({
+                            items: attrs.items.map((item) => (
+                              item.id === first.id ? { ...item, intro: value } : item
+                            )),
+                          });
+                          onSelectedCardIdChange(first.id);
+                        }}
+                        placeholder={`Card ${labelA} intro`}
+                        value={first.intro}
+                      />
+
+                      <ContentFieldLabel>Card {labelA} list type</ContentFieldLabel>
+                      <select
+                        aria-label={`Card ${labelA} list type`}
+                        className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                        onChange={(event) => {
+                          updateCommunicationCards({
+                            items: attrs.items.map((item) => (
+                              item.id === first.id
+                                ? {
+                                  ...item,
+                                  listType: event.target.value === 'sprechhilfen'
+                                    ? 'sprechhilfen'
+                                    : 'informationen',
+                                }
+                                : item
+                            )),
+                          });
+                          onSelectedCardIdChange(first.id);
+                        }}
+                        value={first.listType}
+                      >
+                        <option value="informationen">Informationen</option>
+                        <option value="sprechhilfen">Sprechhilfen</option>
+                      </select>
+
+                      <ContentFieldLabel>Card {labelA} items</ContentFieldLabel>
+                      <InlineFormattedInput
+                        ariaLabel={`Card ${labelA} items`}
+                        className="mt-2 min-h-24 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                        multiline
+                        onChange={(value) => {
+                          updateCommunicationCards({
+                            items: attrs.items.map((item) => (
+                              item.id === first.id ? { ...item, listItems: value } : item
+                            )),
+                          });
+                          onSelectedCardIdChange(first.id);
+                        }}
+                        placeholder={`Card ${labelA} items (one per line)`}
+                        value={first.listItems}
+                      />
+
+                      <ContentFieldLabel>Card {labelA} content</ContentFieldLabel>
+                      <InlineFormattedInput
+                        ariaLabel={`Card ${labelA} content`}
+                        className="mt-2 min-h-20 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                        multiline
+                        onChange={(value) => {
+                          updateCard(first.id, value);
+                          onSelectedCardIdChange(first.id);
+                        }}
+                        placeholder={`Card ${labelA} content`}
+                        value={first.content}
+                      />
+                    </div>
+                    <div>
+                      <ContentFieldLabel>Card {labelB} situation</ContentFieldLabel>
+                      {second ? (
+                        <InlineFormattedInput
+                          ariaLabel={`Card ${labelB} situation`}
+                          className="mt-2 min-h-20 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                          multiline
+                          onChange={(value) => {
+                            updateCommunicationCards({
+                              items: attrs.items.map((item) => (
+                                item.id === second.id ? { ...item, situation: value } : item
+                              )),
+                            });
+                            onSelectedCardIdChange(second.id);
+                          }}
+                          placeholder={`Card ${labelB} situation`}
+                          value={second.situation}
+                        />
+                      ) : (
+                        <div className="mt-2 rounded-md border border-dashed border-secondary p-3 text-xs text-tertiary">
+                          Missing card {labelB}. Add a new pair to continue.
+                        </div>
+                      )}
+
+                      <ContentFieldLabel>Card {labelB} task</ContentFieldLabel>
+                      {second ? (
+                        <InlineFormattedInput
+                          ariaLabel={`Card ${labelB} task`}
+                          className="mt-2 min-h-20 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                          multiline
+                          onChange={(value) => {
+                            updateCommunicationCards({
+                              items: attrs.items.map((item) => (
+                                item.id === second.id ? { ...item, task: value } : item
+                              )),
+                            });
+                            onSelectedCardIdChange(second.id);
+                          }}
+                          placeholder={`Card ${labelB} task`}
+                          value={second.task}
+                        />
+                      ) : (
+                        <div className="mt-2 rounded-md border border-dashed border-secondary p-3 text-xs text-tertiary">
+                          Missing card {labelB}. Add a new pair to continue.
+                        </div>
+                      )}
+
+                      <ContentFieldLabel>Card {labelB} intro</ContentFieldLabel>
+                      {second ? (
+                        <InlineFormattedInput
+                          ariaLabel={`Card ${labelB} intro`}
+                          className="mt-2 min-h-20 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                          multiline
+                          onChange={(value) => {
+                            updateCommunicationCards({
+                              items: attrs.items.map((item) => (
+                                item.id === second.id ? { ...item, intro: value } : item
+                              )),
+                            });
+                            onSelectedCardIdChange(second.id);
+                          }}
+                          placeholder={`Card ${labelB} intro`}
+                          value={second.intro}
+                        />
+                      ) : (
+                        <div className="mt-2 rounded-md border border-dashed border-secondary p-3 text-xs text-tertiary">
+                          Missing card {labelB}. Add a new pair to continue.
+                        </div>
+                      )}
+
+                      <ContentFieldLabel>Card {labelB} list type</ContentFieldLabel>
+                      {second ? (
+                        <select
+                          aria-label={`Card ${labelB} list type`}
+                          className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                          onChange={(event) => {
+                            updateCommunicationCards({
+                              items: attrs.items.map((item) => (
+                                item.id === second.id
+                                  ? {
+                                    ...item,
+                                    listType: event.target.value === 'sprechhilfen'
+                                      ? 'sprechhilfen'
+                                      : 'informationen',
+                                  }
+                                  : item
+                              )),
+                            });
+                            onSelectedCardIdChange(second.id);
+                          }}
+                          value={second.listType}
+                        >
+                          <option value="informationen">Informationen</option>
+                          <option value="sprechhilfen">Sprechhilfen</option>
+                        </select>
+                      ) : (
+                        <div className="mt-2 rounded-md border border-dashed border-secondary p-3 text-xs text-tertiary">
+                          Missing card {labelB}. Add a new pair to continue.
+                        </div>
+                      )}
+
+                      <ContentFieldLabel>Card {labelB} items</ContentFieldLabel>
+                      {second ? (
+                        <InlineFormattedInput
+                          ariaLabel={`Card ${labelB} items`}
+                          className="mt-2 min-h-24 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                          multiline
+                          onChange={(value) => {
+                            updateCommunicationCards({
+                              items: attrs.items.map((item) => (
+                                item.id === second.id ? { ...item, listItems: value } : item
+                              )),
+                            });
+                            onSelectedCardIdChange(second.id);
+                          }}
+                          placeholder={`Card ${labelB} items (one per line)`}
+                          value={second.listItems}
+                        />
+                      ) : (
+                        <div className="mt-2 rounded-md border border-dashed border-secondary p-3 text-xs text-tertiary">
+                          Missing card {labelB}. Add a new pair to continue.
+                        </div>
+                      )}
+
+                      <ContentFieldLabel>Card {labelB} content</ContentFieldLabel>
+                      {second ? (
+                        <InlineFormattedInput
+                          ariaLabel={`Card ${labelB} content`}
+                          className="mt-2 min-h-20 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                          multiline
+                          onChange={(value) => {
+                            updateCard(second.id, value);
+                            onSelectedCardIdChange(second.id);
+                          }}
+                          placeholder={`Card ${labelB} content`}
+                          value={second.content}
+                        />
+                      ) : (
+                        <div className="mt-2 rounded-md border border-dashed border-secondary p-3 text-xs text-tertiary">
+                          Missing card {labelB}. Add a new pair to continue.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </ContentCard>
+              </div>
+            );
+          })}
+        </div>
+
+        <ContentAddButton
+          onClick={() => {
+            const nextIndex = attrs.items.length;
+            const stamp = Date.now();
+            const idA = `communication-card-${stamp}-a`;
+            const idB = `communication-card-${stamp}-b`;
+            updateCommunicationCards({
+              items: [...attrs.items, {
+                id: idA,
+                pairTitle: '',
+                situation: '',
+                task: '',
+                intro: '',
+                listType: 'informationen',
+                listItems: '',
+                content: '',
+              }, {
+                id: idB,
+                pairTitle: '',
+                situation: '',
+                task: '',
+                intro: '',
+                listType: 'informationen',
+                listItems: '',
+                content: '',
+              }],
+            });
+            onGroupIndexChange(Math.floor(nextIndex / 4));
+            onSelectedCardIdChange(idA);
+          }}
+        >
+          Add pair
+        </ContentAddButton>
+      </>
+      )}
+    </>
+  );
+}
+
 function InstructionOverrideEditor({
   attrs,
   block,
@@ -895,19 +1508,56 @@ function Preview({
   editor,
   learningCardsGroupIndex = 0,
   learningCardsSelectedCardId = null,
+  communicationCardsGroupIndex = 0,
+  communicationCardsSelectedCardId = null,
 }: {
   attrs: Record<string, unknown>;
   block: ContentEditorBlock;
   editor: Editor;
   learningCardsGroupIndex?: number;
   learningCardsSelectedCardId?: string | null;
+  communicationCardsGroupIndex?: number;
+  communicationCardsSelectedCardId?: string | null;
 }) {
   const previewRef = useRef<HTMLDivElement>(null);
   const learningCardsFrontRef = useRef<HTMLDivElement>(null);
   const learningCardsBackRef = useRef<HTMLDivElement>(null);
+  const communicationCardsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (block.type === 'learningCards') {
+    if (block.type === 'learningCards' || block.type === 'communicationCards') {
+      if (block.type === 'communicationCards') {
+        let sheetPos: number | null = null;
+        editor.state.doc.forEach((node, pos) => {
+          if (
+            node.type.name === 'communicationCards'
+            && Number(node.attrs.groupIndex) === communicationCardsGroupIndex
+          ) {
+            sheetPos = pos;
+          }
+        });
+        const frame = requestAnimationFrame(() => {
+          const target = communicationCardsRef.current;
+          if (!target) return;
+          target.replaceChildren();
+          if (sheetPos === null) return;
+          const nodeDom = editor.view.nodeDOM(sheetPos);
+          if (!(nodeDom instanceof HTMLElement)) return;
+          const clone = nodeDom.cloneNode(true) as HTMLElement;
+          clone.classList.remove('ProseMirror-selectednode', 'custom-block--selected');
+          clone.style.setProperty('margin', '0', 'important');
+          clone.style.setProperty(
+            'font-family',
+            window.getComputedStyle(nodeDom).fontFamily,
+            'important',
+          );
+          clone.style.setProperty('transform', 'scale(0.3)');
+          clone.style.setProperty('transform-origin', 'top left');
+          target.appendChild(clone);
+        });
+        return () => cancelAnimationFrame(frame);
+      }
+
       let frontPos: number | null = null;
       let backPos: number | null = null;
       editor.state.doc.forEach((node, pos) => {
@@ -963,10 +1613,17 @@ function Preview({
       cancelAnimationFrame(outerFrame);
       cancelAnimationFrame(innerFrame);
     };
-  }, [attrs, block.pos, block.type, editor, learningCardsGroupIndex]);
+  }, [
+    attrs,
+    block.pos,
+    block.type,
+    communicationCardsGroupIndex,
+    editor,
+    learningCardsGroupIndex,
+  ]);
 
   useEffect(() => {
-    if (block.type === 'learningCards') return;
+    if (block.type === 'learningCards' || block.type === 'communicationCards') return;
     const preview = previewRef.current;
     if (!preview) return;
     const source = editor.view.dom;
@@ -1052,6 +1709,55 @@ function Preview({
             </div>
           </div>
         ))}
+      </div>
+    );
+  }
+
+  if (block.type === 'communicationCards') {
+    const communicationCardsAttrs = attrs as unknown as CommunicationCardsAttrs;
+    const selectedCard = communicationCardsAttrs.items.find(
+      ({ id }) => id === communicationCardsSelectedCardId,
+    );
+    if (selectedCard) {
+      const profileFont = editor.view.dom.style.getPropertyValue(
+        '--custom-block-font-family',
+      );
+      return (
+        <div
+          className="sticky top-0 mx-auto flex max-w-2xl flex-col gap-6"
+          style={{ fontFamily: profileFont || undefined }}
+        >
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-quaternary">
+              Card
+            </p>
+            <div className="flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-lg border border-secondary bg-white p-8 text-center text-secondary shadow-sm">
+              <div className="flex w-full flex-col gap-3">
+                {selectedCard.situation.trim() && (
+                  <div className="rounded-md border border-secondary bg-secondary px-3 py-2 text-left text-sm text-secondary">
+                    <InlineFormattedText text={selectedCard.situation} />
+                  </div>
+                )}
+                {selectedCard.task.trim() && (
+                  <div className="rounded-md border border-secondary bg-secondary px-3 py-2 text-left text-sm text-secondary">
+                    <InlineFormattedText text={selectedCard.task} />
+                  </div>
+                )}
+                <LearningCardContent fallback="Card content" text={selectedCard.content} />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="sticky top-0">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-quaternary">
+          Page Preview
+        </p>
+        <div className="h-[360px] overflow-hidden rounded-lg border border-secondary bg-white p-3">
+          <div ref={communicationCardsRef} />
+        </div>
       </div>
     );
   }
@@ -5901,6 +6607,9 @@ export function BlockContentEditorModal({
   const [learningCardsGroupIndex, setLearningCardsGroupIndex] = useState(0);
   const [learningCardsSelectedCardId, setLearningCardsSelectedCardId] =
     useState<string | null>(null);
+  const [communicationCardsGroupIndex, setCommunicationCardsGroupIndex] = useState(0);
+  const [communicationCardsSelectedCardId, setCommunicationCardsSelectedCardId] =
+    useState<string | null>(null);
   const attrs = useEditorState({
     editor,
     selector: ({ editor: currentEditor }) => {
@@ -5913,10 +6622,18 @@ export function BlockContentEditorModal({
   });
 
   useEffect(() => {
-    if (!block || block.type !== 'learningCards') return;
+    if (!block || (block.type !== 'learningCards' && block.type !== 'communicationCards')) {
+      return;
+    }
     const node = editor.state.doc.nodeAt(block.pos);
-    setLearningCardsGroupIndex(Number(node?.attrs.groupIndex) || 0);
-    setLearningCardsSelectedCardId(null);
+    const nextGroupIndex = Number(node?.attrs.groupIndex) || 0;
+    if (block.type === 'learningCards') {
+      setLearningCardsGroupIndex(nextGroupIndex);
+      setLearningCardsSelectedCardId(null);
+    } else {
+      setCommunicationCardsGroupIndex(nextGroupIndex);
+      setCommunicationCardsSelectedCardId(null);
+    }
   }, [block, editor]);
 
   useEffect(() => {
@@ -5966,6 +6683,7 @@ export function BlockContentEditorModal({
             {block.type === 'glossaryTerms' && <GlossaryTermsEditor attrs={attrs as unknown as GlossaryTermsAttrs} block={block} editor={editor} />}
             {block.type === 'frayerModel' && <FrayerModelEditor attrs={attrs as unknown as FrayerModelAttrs} block={block} editor={editor} />}
             {block.type === 'learningObjective' && <LearningObjectiveEditor attrs={attrs as unknown as LearningObjectiveAttrs} block={block} editor={editor} />}
+            {block.type === 'communicationCards' && <CommunicationCardsEditor attrs={attrs as unknown as CommunicationCardsAttrs} block={block as ContentEditorBlock & { type: 'communicationCards' }} editor={editor} groupIndex={communicationCardsGroupIndex} onGroupIndexChange={setCommunicationCardsGroupIndex} selectedCardId={communicationCardsSelectedCardId} onSelectedCardIdChange={setCommunicationCardsSelectedCardId} />}
             {block.type === 'learningCards' && <LearningCardsEditor attrs={attrs as unknown as LearningCardsAttrs} block={block as ContentEditorBlock & { type: 'learningCards' }} editor={editor} groupIndex={learningCardsGroupIndex} onGroupIndexChange={setLearningCardsGroupIndex} selectedCardId={learningCardsSelectedCardId} onSelectedCardIdChange={setLearningCardsSelectedCardId} />}
             {block.type === 'dialogue' && <DialogueEditor attrs={attrs as unknown as DialogueAttrs} block={block} editor={editor} />}
             {block.type === 'rewriteSentences' && <RewriteSentencesEditor attrs={attrs as unknown as RewriteSentencesAttrs} block={block} editor={editor} />}
@@ -5983,7 +6701,7 @@ export function BlockContentEditorModal({
             {block.type === 'domino' && <DominoEditor attrs={attrs as unknown as DominoAttrs} block={block} editor={editor} />}
           </div>
           <div className="overflow-y-auto bg-primary p-6">
-            <Preview attrs={attrs} block={block} editor={editor} learningCardsGroupIndex={learningCardsGroupIndex} learningCardsSelectedCardId={learningCardsSelectedCardId} />
+            <Preview attrs={attrs} block={block} editor={editor} learningCardsGroupIndex={learningCardsGroupIndex} learningCardsSelectedCardId={learningCardsSelectedCardId} communicationCardsGroupIndex={communicationCardsGroupIndex} communicationCardsSelectedCardId={communicationCardsSelectedCardId} />
           </div>
         </div>
         <footer className="flex h-16 shrink-0 items-center justify-end border-t border-secondary px-6">

@@ -5,6 +5,7 @@ export type DazitPublicationDocumentType =
   | 'Merkblatt'
   | 'Verbtabelle'
   | 'Deklinationstabelle'
+  | 'Kommunikationskarten'
   | 'Lernkarten'
   | 'Domino'
   | 'Dialog'

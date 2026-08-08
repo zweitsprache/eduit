@@ -107,7 +107,7 @@ export function InsertBlockPalette({
       onStartVocabularyOne(workflowInsertAt);
       return;
     }
-    if (block.type === 'learningCards') {
+    if (block.type === 'learningCards' || block.type === 'communicationCards') {
       if (!block.insert(editor)) return;
       const nextRecent = [
         block.type,

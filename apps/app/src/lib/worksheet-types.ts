@@ -17,6 +17,7 @@ export type WorksheetContext = {
     | 'fact-sheet'
     | 'verb-table'
     | 'declension-table'
+    | 'communication-cards'
     | 'learning-cards'
     | 'domino';
   sourceProfileId: string | null;

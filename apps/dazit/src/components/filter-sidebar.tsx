@@ -5,6 +5,7 @@ const worksheetTypes = [
   'Merkblatt',
   'Verbtabelle',
   'Deklinationstabelle',
+  'Kommunikationskarten',
   'Lernkarten',
   'Domino',
   'Dialog',

@@ -114,6 +114,8 @@ ${CONTENT_PRIVACY_AND_BRAND_RULES}`;
       ? 'Fact sheet'
       : context.worksheetType === 'declension-table'
         ? 'Declension table'
+        : context.worksheetType === 'communication-cards'
+          ? 'Communication cards'
         : context.worksheetType === 'learning-cards'
           ? 'Learning cards'
           : context.worksheetType === 'domino'
