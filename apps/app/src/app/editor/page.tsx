@@ -4006,11 +4006,9 @@ export default function EditorPage() {
       if (hasAnswerKey) {
         formData.set('solutionKeyPdf', solutionKeyPdf, `${metadata.slug}-solution-key.pdf`);
       }
-      formData.set(
-        'mode',
-        modeOverride
-          ?? (publicationStatus === 'unpublished' ? 'full' : republishScope),
-      );
+      const publishMode = modeOverride
+        ?? (publicationStatus === 'unpublished' ? 'full' : republishScope);
+      formData.set('mode', publishMode);
       formData.set(
         'allowDescriptionOverride',
         String(
@@ -4026,6 +4024,16 @@ export default function EditorPage() {
           `page-${index + 1}.webp`,
         );
       });
+      if (publishMode === 'full') {
+        const { json: worksheetJson } = worksheetJsonFromDoc(editor.state.doc, {
+          title: worksheetTitle,
+          documentSize: docSize,
+          showSolutions,
+          brandProfileId,
+          context: documentContext,
+        });
+        formData.set('worksheetJson', worksheetJson);
+      }
       formData.set('metadata', JSON.stringify(metadata));
       const response = await fetch('/api/dazit/publish', { method: 'POST', body: formData });
       const result = await response.json().catch(() => null) as {

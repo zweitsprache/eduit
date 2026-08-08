@@ -410,6 +410,18 @@ button { color: inherit; }
   align-items: center;
   justify-content: center;
 }
+.card-actions .card-download[data-variant="answer-key"] {
+  border: 0;
+  background: #2c6638;
+  color: #fff;
+  box-shadow: none;
+}
+.card-actions .card-download[data-variant="answer-key"]:hover {
+  border: 0;
+  background: #2c6638;
+  color: #fff;
+  box-shadow: none;
+}
 .card-actions .card-download svg { width: 16px; height: 16px; }
 .card-actions button, .card-actions .card-details, .card-actions a:last-child, .detail-actions button, .detail-actions a {
   border: 1px solid #b7b8c0; border-radius: 6px; background: #fff; padding: 8px 13px; font-weight: 800; cursor: pointer;
@@ -724,6 +736,18 @@ button { color: inherit; }
 .detail-actions button svg, .detail-actions a svg { width: 20px; }
 .detail-actions .download-primary { border-color: var(--orange); background: var(--orange); color: #fff; }
 .detail-actions .download-primary:hover { background: #aa5500; color: #fff; }
+.detail-actions .download-primary[data-variant="answer-key"] {
+  border: 0;
+  background: #2c6638;
+  color: #fff;
+  box-shadow: none;
+}
+.detail-actions .download-primary[data-variant="answer-key"]:hover {
+  border: 0;
+  background: #2c6638;
+  color: #fff;
+  box-shadow: none;
+}
 .metadata-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; border-top: 1px solid var(--line); }
 .metadata-grid div { display: flex; min-width: 0; justify-content: space-between; gap: 20px; padding: 13px 0; border-bottom: 1px solid var(--line); }
 .metadata-grid div:nth-child(odd) { margin-right: 22px; }

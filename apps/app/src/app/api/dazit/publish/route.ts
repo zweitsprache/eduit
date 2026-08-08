@@ -8,6 +8,10 @@ import { updateWorksheet } from '@/lib/worksheets';
 import { sql } from '@/lib/neon';
 import { dazitMetadataModel } from '@/lib/ai';
 import { germanProgressionDetectionReference } from '@/lib/german-language-progression';
+import {
+  worksheetSemanticManifestFromJson,
+  type WorksheetSemanticManifest,
+} from '@/lib/worksheet-semantic-manifest';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -48,6 +52,7 @@ type PublicationSnapshot = {
   languageCompetencies: string[];
   actionCompetencyContributionHtml: string | null;
   actionField: string | null;
+  publishedRevision: number;
 };
 
 const PUBLICATION_LEVELS = ['A1.1', 'A1.2', 'A2.1', 'A2.2', 'B1.1', 'B1.2'] as const;
@@ -278,9 +283,16 @@ function normalizeDescriptionQuotationMarks(
 async function generateDescription(
   pdf: File,
   metadata: PublishMetadata,
+  worksheetManifest: WorksheetSemanticManifest | null,
   allowTerminologyOverride = false,
 ) {
   const pdfText = await extractPdfText(pdf);
+  const worksheetManifestJson = worksheetManifest
+    ? JSON.stringify(worksheetManifest, null, 2)
+    : '';
+  const worksheetManifestPrompt = worksheetManifestJson.length > 120_000
+    ? `${worksheetManifestJson.slice(0, 120_000)}\n[Weitere Inhaltsdetails gekürzt]`
+    : worksheetManifestJson;
   const listValidationViolations = (description: z.infer<typeof descriptionSchema>) => {
     const generatedText = JSON.stringify({
       excerpt: description.excerpt,
@@ -337,6 +349,14 @@ keine Dokumentanalyse. Beschreibe direkt, was sprachlich behandelt und geübt
 wird. Priorisiere Grammatik, Wortschatz, sprachliche Strukturen, Lernziel,
 Aufgabenformat und eine knappe Einsatzmöglichkeit im DaZ-Kurs.
 
+Wenn eine semantische Arbeitsblattstruktur im Benutzerauftrag enthalten ist,
+ist sie die verbindliche Quelle für logische Aufgaben, Aufgabengrenzen,
+Instruktionen, Inhalte und Anzahl der Einträge. Das PDF dient dann nur als
+ergänzender Beleg für sichtbare Formulierungen und Darstellungsvarianten.
+Erfinde aufgrund von Seiten-, Tabellen- oder Layoutgrenzen niemals zusätzliche
+Aufgaben, die in der semantischen Struktur nicht als eigene logische Aufgabe
+aufgeführt sind.
+
 Ignoriere rein technische oder gestalterische Elemente vollständig: Druck- und
 Duplexhinweise, Spiegelung an langer oder kurzer Seite, Schneide- und Falzlinien,
 Seitenzahlen, Seitenumbrüche, Ränder, Logos, Kopf- und Fusszeilen sowie
@@ -353,6 +373,16 @@ präzise den erkennbaren Unterschied. Bezeichne eine Fassung mit Wortbank als
 stärker unterstützt und eine identische Fassung ohne Wortbank als
 anspruchsvoller beziehungsweise weniger gestützt. Behaupte keine Unterschiede,
 die auf den Seiten nicht sichtbar sind.
+
+Behandle Fortsetzungen derselben Aufgabe über mehrere Seiten oder Tabellenblöcke
+niemals als separate Aufgaben. Dies gilt insbesondere für Artikel- und
+Pluraltraining: Wenn die Nummerierung der Nomen über einen nachfolgenden Block
+hinweg weiterläuft, ist dieser Block eine technische Fortsetzung derselben
+Übung, auch wenn Spaltenüberschriften wiederholt werden. Zähle und beschreibe
+alle solchen Fortsetzungsblöcke gemeinsam als genau eine Aufgabe. Ein
+abschliessender Bereich «Suchen Sie weitere Nomen / Substantive zum Thema.» ist
+eine ergänzende Teilaufgabe innerhalb dieses Artikel- und Pluraltrainings und
+keine weitere eigenständige Hauptaufgabe.
 
 Verbindliche DaZ-Terminologie:
 - Dazit richtet sich ausschliesslich an DaZ-Kurse für Erwachsene in der
@@ -381,6 +411,20 @@ Verbindliche DaZ-Terminologie:
           type: 'text',
           text: `Titel: ${metadata.title}
 Dokumenttyp: ${metadata.documentType}
+
+${worksheetManifest
+  ? `Verbindliche semantische Arbeitsblattstruktur:
+${worksheetManifestPrompt}
+
+Regeln zur Struktur:
+- logicalTasks enthält die logischen Aufgaben des Materials.
+- logicalTaskCount: 1 bedeutet genau eine Aufgabe, unabhängig von physicalBlockCount.
+- physicalBlockCount bezeichnet ausschliesslich technische Fortsetzungsblöcke.
+- hasOwnEntrySubtask bezeichnet eine ergänzende Teilaufgabe innerhalb derselben Aufgabe.
+- Zähle niemals PDF-Seiten oder Fortsetzungsblöcke als zusätzliche Aufgaben.`
+  : `Für dieses ältere Material ist keine semantische Arbeitsblattstruktur verfügbar.
+Leite die Struktur vorsichtig aus dem PDF ab und fasse sichtbare Fortsetzungen
+mit durchlaufender Nummerierung als eine Aufgabe zusammen.`}
 
 ${metadata.documentType === 'Lernkarten'
   ? `Verbindliche Regel für diesen Dokumenttyp:
@@ -523,6 +567,8 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const pdf = formData.get('pdf');
     const metadataValue = formData.get('metadata');
+    const worksheetJsonValue = formData.get('worksheetJson');
+    const worksheetManifestValue = formData.get('worksheetSemanticManifest');
     const requestedMode = formData.get('mode');
     const mode = requestedMode === 'pdf-only'
       || requestedMode === 'worksheet-settings-only'
@@ -541,6 +587,23 @@ export async function POST(request: Request) {
     const thumbnails = formData.getAll('thumbnails')
       .filter((value): value is File => value instanceof File);
     const metadata = JSON.parse(metadataValue) as PublishMetadata;
+    if (typeof worksheetJsonValue === 'string' && worksheetJsonValue.length > 4_000_000) {
+      return NextResponse.json({ error: 'Worksheet JSON exceeds the 4 MB limit.' }, { status: 413 });
+    }
+    if (typeof worksheetManifestValue === 'string' && worksheetManifestValue.length > 500_000) {
+      return NextResponse.json({ error: 'Worksheet semantic manifest is too large.' }, { status: 413 });
+    }
+    const worksheetManifest = typeof worksheetJsonValue === 'string'
+      ? worksheetSemanticManifestFromJson(worksheetJsonValue)
+      : typeof worksheetManifestValue === 'string'
+        ? worksheetSemanticManifestFromJson(worksheetManifestValue)
+        : null;
+    if (mode === 'full' && (typeof worksheetJsonValue !== 'string' || !worksheetManifest)) {
+      return NextResponse.json(
+        { error: 'Valid worksheet JSON is required for full publishing.' },
+        { status: 400 },
+      );
+    }
     if (!metadata.worksheetId || !metadata.slug || !metadata.title) {
       return NextResponse.json({ error: 'Invalid worksheet metadata.' }, { status: 400 });
     }
@@ -575,7 +638,8 @@ export async function POST(request: Request) {
         action_competencies as "actionCompetencies",
         language_competencies as "languageCompetencies",
         action_competency_contribution_html as "actionCompetencyContributionHtml",
-        action_field as "actionField"
+        action_field as "actionField",
+        published_revision as "publishedRevision"
       from dazit_publications
       where worksheet_id = ${metadata.worksheetId}
     ` as Array<{
@@ -593,6 +657,7 @@ export async function POST(request: Request) {
       languageCompetencies: string[];
       actionCompetencyContributionHtml: string | null;
       actionField: string | null;
+      publishedRevision: string | number;
     }>;
     if (mode !== 'full' && !publicationRows[0]) {
       return NextResponse.json(
@@ -601,13 +666,16 @@ export async function POST(request: Request) {
       );
     }
     const allowDescriptionOverride = formData.get('allowDescriptionOverride') === 'true';
-    const generatedDescription = mode === 'full'
-      ? await generateDescription(pdf, metadata, allowDescriptionOverride)
+    const generatedDescription = mode === 'full' || mode === 'metadata-only'
+      ? await generateDescription(pdf, metadata, worksheetManifest, allowDescriptionOverride)
       : null;
     const description = generatedDescription
       ? applyWorksheetSettingOverrides(generatedDescription, metadata)
       : null;
     const existingPublication = publicationRows[0] as PublicationSnapshot | undefined;
+    const effectivePublishedRevision = mode === 'metadata-only' && existingPublication
+      ? Number(existingPublication.publishedRevision)
+      : sourceRevision;
     const worksheetSettingsOverride = existingPublication
       ? {
         level: normalizePublicationLevel(metadata.languageLevel) ?? existingPublication.level,
@@ -692,6 +760,8 @@ export async function POST(request: Request) {
         searchSnippet: description.searchSnippet,
         tags: description.tags,
         level: description.level,
+        worksheetSemanticManifest: worksheetManifest
+          ?? existingManifest.worksheetSemanticManifest,
       actionCompetencies: description.actionCompetencies,
       languageCompetencies: description.languageCompetencies,
       actionField: description.actionField,
@@ -784,7 +854,7 @@ export async function POST(request: Request) {
         ${description.actionCompetencyContributionHtml},
         ${description.actionField},
         3,
-        ${sourceRevision},
+        ${effectivePublishedRevision},
         now(),
         now()
       )
@@ -855,7 +925,7 @@ export async function POST(request: Request) {
     ` as Array<{ sourceRevision: string | number }>;
     return NextResponse.json({
       worksheet: manifest,
-      publicationStatus: Number(latestRevisionRows[0]?.sourceRevision) === sourceRevision
+      publicationStatus: Number(latestRevisionRows[0]?.sourceRevision) === effectivePublishedRevision
         ? 'current'
         : 'outdated',
     });

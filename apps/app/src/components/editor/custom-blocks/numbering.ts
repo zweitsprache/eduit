@@ -67,18 +67,28 @@ function buildNumberingDecorations(
     if (!isCustomBlock(node)) return true;
     if (node.attrs.showInstruction === false) return false;
 
-    ordinal += 1;
-    const label = formatInstructionNumber(
-      ordinal,
-      brand.instructionNumberFormat,
+    const isArticlePluralContinuation = (
+      node.type.name === 'articlePlural'
+      && node.attrs.continuation === true
     );
     const hasAdditionalArticlePluralInstruction = (
       node.type.name === 'articlePlural'
       && Array.isArray(node.attrs.rows)
-      && node.attrs.rows.length < 22
+      && node.attrs.rows.length <= 19
     );
+    if (isArticlePluralContinuation && !hasAdditionalArticlePluralInstruction) return false;
+
+    if (!isArticlePluralContinuation) ordinal += 1;
+    const label = formatInstructionNumber(
+      ordinal,
+      brand.instructionNumberFormat,
+    );
+    if (isArticlePluralContinuation) ordinal += 1;
     const additionalLabel = hasAdditionalArticlePluralInstruction
-      ? formatInstructionNumber(ordinal + 1, brand.instructionNumberFormat)
+      ? formatInstructionNumber(
+        isArticlePluralContinuation ? ordinal : ordinal + 1,
+        brand.instructionNumberFormat,
+      )
       : null;
     decorations.push(Decoration.node(pos, pos + node.nodeSize, {
       'data-custom-block-ordinal': String(ordinal),
@@ -89,7 +99,7 @@ function buildNumberingDecorations(
           : '',
       ].filter(Boolean).join(';'),
     }));
-    if (hasAdditionalArticlePluralInstruction) ordinal += 1;
+    if (hasAdditionalArticlePluralInstruction && !isArticlePluralContinuation) ordinal += 1;
     return false;
   });
 

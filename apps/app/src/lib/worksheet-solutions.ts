@@ -56,9 +56,11 @@ function hasMeaningfulArticlePluralAnswers(rows: unknown): boolean {
   return rows.some((row) => {
     if (!row || typeof row !== 'object') return false;
     const candidate = row as Record<string, unknown>;
+    const articles = Array.isArray(candidate.articles) ? candidate.articles : [];
     const article = candidate.article;
     const plural = asString(candidate.plural);
-    return article === 'der' || article === 'das' || article === 'die'
+    return articles.some((value) => value === 'der' || value === 'das' || value === 'die')
+      || article === 'der' || article === 'das' || article === 'die'
       || Boolean(plural && plural.length > 0);
   });
 }

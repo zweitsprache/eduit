@@ -20,7 +20,7 @@ export type ArticlePluralOrder = 'alphabetical' | 'shuffle';
 export type ArticlePluralRow = {
   id: string;
   term: string;
-  article: GermanArticle | null;
+  articles: GermanArticle[];
   plural: string;
 };
 
@@ -28,6 +28,8 @@ export type ArticlePluralAttrs = {
   rows: ArticlePluralRow[];
   order: ArticlePluralOrder;
   shuffleSeed: number;
+  continuation: boolean;
+  rowNumberOffset: number;
 };
 
 export const ARTICLE_PLURAL_ROWS_PER_PAGE = 22;
@@ -37,13 +39,23 @@ const ARTICLE_PLURAL_INSTRUCTION =
 
 export const ARTICLE_OPTIONS: GermanArticle[] = ['der', 'das', 'die'];
 export const DEFAULT_ARTICLE_PLURAL_ROWS: ArticlePluralRow[] = [
-  { id: 'article-plural-1', term: 'Apfel', article: 'der', plural: 'Äpfel' },
-  { id: 'article-plural-2', term: 'Buch', article: 'das', plural: 'Bücher' },
-  { id: 'article-plural-3', term: 'Lampe', article: 'die', plural: 'Lampen' },
+  { id: 'article-plural-1', term: 'Apfel', articles: ['der'], plural: 'Äpfel' },
+  { id: 'article-plural-2', term: 'Buch', articles: ['das'], plural: 'Bücher' },
+  { id: 'article-plural-3', term: 'Lampe', articles: ['die'], plural: 'Lampen' },
 ];
 
 function defaultRows() {
   return DEFAULT_ARTICLE_PLURAL_ROWS.map((row) => ({ ...row }));
+}
+
+export function chunkArticlePluralRows(rows: ArticlePluralRow[]) {
+  return Array.from(
+    { length: Math.ceil(rows.length / ARTICLE_PLURAL_ROWS_PER_PAGE) },
+    (_, index) => rows.slice(
+      index * ARTICLE_PLURAL_ROWS_PER_PAGE,
+      (index + 1) * ARTICLE_PLURAL_ROWS_PER_PAGE,
+    ),
+  );
 }
 
 function parseRows(value: string | null): ArticlePluralRow[] {
@@ -53,10 +65,13 @@ function parseRows(value: string | null): ArticlePluralRow[] {
     if (!Array.isArray(parsed)) return defaultRows();
     const rows = parsed.flatMap((row, index): ArticlePluralRow[] => {
       if (typeof row?.term !== 'string') return [];
+      const storedArticles = Array.isArray(row.articles)
+        ? row.articles
+        : [row.article];
       return [{
         id: typeof row.id === 'string' ? row.id : `article-plural-${index + 1}`,
         term: row.term,
-        article: ARTICLE_OPTIONS.includes(row.article) ? row.article : null,
+        articles: ARTICLE_OPTIONS.filter((article) => storedArticles.includes(article)),
         plural: typeof row.plural === 'string' ? row.plural : '',
       }];
     });
@@ -112,6 +127,7 @@ function ArticlePluralNodeView({ node, selected }: NodeViewProps) {
   const rows = orderedArticlePluralRows(attrs.rows, attrs.order, attrs.shuffleSeed)
     .slice(0, ARTICLE_PLURAL_ROWS_PER_PAGE);
   const emptyRowCount = ARTICLE_PLURAL_ROWS_PER_PAGE - rows.length;
+  const showAdditionalSection = emptyRowCount >= 3;
 
   return (
     <CustomBlockRoot selected={selected} className="article-plural-node">
@@ -122,9 +138,11 @@ function ArticlePluralNodeView({ node, selected }: NodeViewProps) {
           preserveAspectRatio="none"
           ref={solutionsRef}
         />
-        <BlockInstruction>
-          {ARTICLE_PLURAL_INSTRUCTION}
-        </BlockInstruction>
+        {!attrs.continuation && (
+          <BlockInstruction>
+            {ARTICLE_PLURAL_INSTRUCTION}
+          </BlockInstruction>
+        )}
         <div className="article-plural-node__header">
           <span aria-hidden="true" className="article-plural-node__index-spacer" />
           <div className="article-plural-node__articles">
@@ -135,18 +153,21 @@ function ArticlePluralNodeView({ node, selected }: NodeViewProps) {
         </div>
         <BlockRows>
           {rows.map((row, rowIndex) => (
-            <BlockRow index={rowIndex} key={row.id}>
+            <BlockRow index={attrs.rowNumberOffset + rowIndex} key={row.id}>
               <div className="article-plural-node__articles">
                 {ARTICLE_OPTIONS.map((article) => (
                   <BlockChoiceIndicator
                     checked={false}
                     key={article}
-                    solutionKey={row.article === article ? `${row.id}:${article}` : undefined}
+                    solutionKey={row.articles.includes(article) ? `${row.id}:${article}` : undefined}
                   />
                 ))}
               </div>
               <div className="article-plural-node__term">
-                <InlineFormattedText text={row.term} fallback={`Term ${rowIndex + 1}`} />
+                <InlineFormattedText
+                  text={row.term}
+                  fallback={`Term ${attrs.rowNumberOffset + rowIndex + 1}`}
+                />
               </div>
               <div className="article-plural-node__plural-answer">
                 <span>die</span>
@@ -158,7 +179,7 @@ function ArticlePluralNodeView({ node, selected }: NodeViewProps) {
             </BlockRow>
           ))}
         </BlockRows>
-        {emptyRowCount > 0 && (
+        {showAdditionalSection && (
           <section className="article-plural-node__additional-section">
             <BlockInstruction>
               Suchen Sie weitere Nomen / Substantive zum Thema.
@@ -241,6 +262,22 @@ export const ArticlePlural = Node.create({
           'data-article-plural-shuffle-seed': String(attributes.shuffleSeed),
         }),
       },
+      continuation: {
+        default: false,
+        parseHTML: (element) => element.getAttribute('data-article-plural-continuation') === 'true',
+        renderHTML: (attributes) => ({
+          'data-article-plural-continuation': String(attributes.continuation),
+        }),
+      },
+      rowNumberOffset: {
+        default: 0,
+        parseHTML: (element) => (
+          Number(element.getAttribute('data-article-plural-row-number-offset')) || 0
+        ),
+        renderHTML: (attributes) => ({
+          'data-article-plural-row-number-offset': String(attributes.rowNumberOffset),
+        }),
+      },
     };
   },
 
@@ -260,14 +297,27 @@ export const ArticlePlural = Node.create({
     return {
       insertArticlePlural:
         (attrs = {}) =>
-        ({ commands }) => commands.insertContent({
-          type: this.name,
-          attrs: {
-            rows: (attrs.rows ?? defaultRows()).slice(0, ARTICLE_PLURAL_ROWS_PER_PAGE),
-            order: attrs.order ?? 'alphabetical',
-            shuffleSeed: attrs.shuffleSeed ?? 0,
-          },
-        }),
+        ({ commands }) => {
+          const order = attrs.order ?? 'alphabetical';
+          const shuffleSeed = attrs.shuffleSeed ?? 0;
+          const sourceRows = attrs.rows ?? defaultRows();
+          const rows = order === 'alphabetical'
+            ? orderedArticlePluralRows(sourceRows, order, shuffleSeed)
+            : sourceRows;
+          return commands.insertContent(
+            chunkArticlePluralRows(rows).map((chunk, index) => ({
+            type: this.name,
+            attrs: {
+              rows: chunk,
+              order,
+              shuffleSeed,
+              continuation: attrs.continuation === true || index > 0,
+              rowNumberOffset: (attrs.rowNumberOffset ?? 0)
+                + index * ARTICLE_PLURAL_ROWS_PER_PAGE,
+            },
+          })),
+          );
+        },
     };
   },
 });

@@ -249,15 +249,16 @@ export default async function WorksheetDetailPage({ params }: Props) {
                   className="download-primary"
                   downloadUrl={worksheet.pdfUrl}
                 >
-                  <Download01 /> PDF herunterladen
+                  <Download01 /> {worksheet.documentType}
                 </DownloadAuthGate>
                 {worksheet.hasAnswerKey && (
                   <DownloadAuthGate
                     canDownload={isAuthenticated}
                     className="download-primary"
+                    dataVariant="answer-key"
                     downloadUrl={worksheet.answerKeyPdfUrl ?? worksheet.pdfUrl}
                   >
-                    <Download01 /> Lösungsblatt herunterladen
+                    <Download01 /> Lösungsblatt
                   </DownloadAuthGate>
                 )}
                 {canAdminister && <button><Plus /> Zur Sammlung</button>}

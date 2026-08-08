@@ -91,18 +91,26 @@ export function DownloadAuthGate({
   canDownload,
   className,
   downloadUrl,
+  dataVariant,
   children,
 }: {
   canDownload: boolean;
   className?: string;
   downloadUrl?: string | null;
+  dataVariant?: string;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
 
   if (canDownload && downloadUrl) {
     return (
-      <a className={className} href={downloadUrl} rel="noreferrer" target="_blank">
+      <a
+        className={className}
+        data-variant={dataVariant}
+        href={downloadUrl}
+        rel="noreferrer"
+        target="_blank"
+      >
         {children}
       </a>
     );
@@ -112,6 +120,7 @@ export function DownloadAuthGate({
     <>
       <button
         className={className}
+        data-variant={dataVariant}
         onClick={() => setOpen(true)}
         type="button"
       >

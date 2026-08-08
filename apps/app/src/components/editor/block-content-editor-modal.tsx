@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/core';
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { useEditorState } from '@tiptap/react';
 import { createPortal } from 'react-dom';
 import {
@@ -66,6 +67,8 @@ import type {
 import {
   ARTICLE_OPTIONS,
   ARTICLE_PLURAL_ROWS_PER_PAGE,
+  chunkArticlePluralRows,
+  orderedArticlePluralRows,
   type ArticlePluralAttrs,
   type ArticlePluralRow,
 } from '@/components/editor/article-plural-node';
@@ -281,6 +284,91 @@ function updateAttrs(
     Object.entries(patch).forEach(([key, value]) => {
       tr.setNodeAttribute(block.pos, key, value);
     });
+    return true;
+  }).run();
+}
+
+type ArticlePluralGroup = {
+  from: number;
+  to: number;
+  nodes: ProseMirrorNode[];
+};
+
+function getArticlePluralGroup(doc: ProseMirrorNode, blockPos: number): ArticlePluralGroup | null {
+  const children: Array<{ node: ProseMirrorNode; pos: number }> = [];
+  doc.forEach((node, pos) => children.push({ node, pos }));
+  const selectedIndex = children.findIndex(({ pos }) => pos === blockPos);
+  if (selectedIndex < 0 || children[selectedIndex].node.type.name !== 'articlePlural') return null;
+
+  let firstIndex = selectedIndex;
+  while (
+    firstIndex > 0
+    && children[firstIndex].node.attrs.continuation === true
+    && children[firstIndex - 1].node.type.name === 'articlePlural'
+  ) {
+    firstIndex -= 1;
+  }
+
+  let lastIndex = selectedIndex;
+  while (
+    lastIndex + 1 < children.length
+    && children[lastIndex + 1].node.type.name === 'articlePlural'
+    && children[lastIndex + 1].node.attrs.continuation === true
+  ) {
+    lastIndex += 1;
+  }
+
+  return {
+    from: children[firstIndex].pos,
+    to: children[lastIndex].pos + children[lastIndex].node.nodeSize,
+    nodes: children.slice(firstIndex, lastIndex + 1).map(({ node }) => node),
+  };
+}
+
+function getArticlePluralGroupAttrs(
+  doc: ProseMirrorNode,
+  blockPos: number,
+): ArticlePluralAttrs | null {
+  const group = getArticlePluralGroup(doc, blockPos);
+  if (!group) return null;
+  const attrs = group.nodes[0].attrs as ArticlePluralAttrs;
+  const rows = group.nodes.flatMap((node) => (
+    (node.attrs as ArticlePluralAttrs).rows
+  ));
+  return {
+    ...attrs,
+    rows: attrs.order === 'alphabetical'
+      ? orderedArticlePluralRows(rows, attrs.order, attrs.shuffleSeed)
+      : rows,
+  };
+}
+
+function updateArticlePluralGroup(
+  editor: Editor,
+  block: ContentEditorBlock,
+  patch: Partial<ArticlePluralAttrs>,
+) {
+  editor.chain().command(({ tr }) => {
+    const group = getArticlePluralGroup(tr.doc, block.pos);
+    if (!group) return false;
+    const currentAttrs = getArticlePluralGroupAttrs(tr.doc, block.pos);
+    if (!currentAttrs) return false;
+    const nextAttrs = { ...currentAttrs, ...patch };
+    const rows = nextAttrs.order === 'alphabetical'
+      ? orderedArticlePluralRows(nextAttrs.rows, nextAttrs.order, nextAttrs.shuffleSeed)
+      : nextAttrs.rows;
+    const chunks = chunkArticlePluralRows(rows);
+    const nodeType = group.nodes[0].type;
+    const nodes = chunks.map((chunk, index) => nodeType.create({
+      ...group.nodes[0].attrs,
+      rows: chunk,
+      order: nextAttrs.order,
+      shuffleSeed: nextAttrs.shuffleSeed,
+      continuation: nextAttrs.continuation || index > 0,
+      rowNumberOffset: nextAttrs.rowNumberOffset
+        + index * ARTICLE_PLURAL_ROWS_PER_PAGE,
+    }));
+    tr.replaceWith(group.from, group.to, nodes);
     return true;
   }).run();
 }
@@ -3043,7 +3131,11 @@ function ArticlePluralEditor({
   block: ContentEditorBlock;
   editor: Editor;
 }) {
-  const setRows = (rows: ArticlePluralRow[]) => updateAttrs(editor, block, { rows });
+  const setRows = (rows: ArticlePluralRow[]) => updateArticlePluralGroup(
+    editor,
+    block,
+    { rows },
+  );
   return (
     <>
       <ContentSectionHeader>Row order</ContentSectionHeader>
@@ -3053,7 +3145,7 @@ function ArticlePluralEditor({
             type="button"
             key={order}
             aria-pressed={attrs.order === order}
-            onClick={() => updateAttrs(editor, block, { order })}
+            onClick={() => updateArticlePluralGroup(editor, block, { order })}
             className={`rounded-md border px-3 py-2 text-sm font-semibold ${
               attrs.order === order
                 ? 'border-brand bg-brand-primary_alt text-brand-secondary'
@@ -3067,7 +3159,9 @@ function ArticlePluralEditor({
       {attrs.order === 'shuffle' && (
         <button
           type="button"
-          onClick={() => updateAttrs(editor, block, { shuffleSeed: attrs.shuffleSeed + 1 })}
+          onClick={() => updateArticlePluralGroup(editor, block, {
+            shuffleSeed: attrs.shuffleSeed + 1,
+          })}
           className="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover"
         >
           <RotateCcw className="size-4" /> Reshuffle
@@ -3083,20 +3177,43 @@ function ArticlePluralEditor({
               <span className="rounded bg-primary px-2 py-1 text-[10px] font-bold text-secondary">
                 {String(index + 1).padStart(2, '0')}
               </span>
-              <div className="grid min-w-0 grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)] gap-2">
-                <select
-                  aria-label={`Article for term ${index + 1}`}
-                  value={row.article ?? ''}
-                  onChange={(event) => setRows(attrs.rows.map((current) => (
-                    current.id === row.id
-                      ? { ...current, article: event.target.value as ArticlePluralRow['article'] }
-                      : current
-                  )))}
-                  className="rounded-md border border-primary bg-primary px-2 py-1.5 text-sm text-secondary"
+              <div className="grid min-w-0 grid-cols-[7.5rem_minmax(0,1fr)_minmax(0,1fr)] gap-2">
+                <div
+                  className="grid grid-cols-3 gap-1"
+                  role="group"
+                  aria-label={`Articles for term ${index + 1}`}
                 >
-                  <option value="">–</option>
-                  {ARTICLE_OPTIONS.map((article) => <option key={article}>{article}</option>)}
-                </select>
+                  {ARTICLE_OPTIONS.map((article) => {
+                    const selected = row.articles.includes(article);
+                    return (
+                      <button
+                        type="button"
+                        key={article}
+                        aria-pressed={selected}
+                        aria-label={`${article}, term ${index + 1}`}
+                        onClick={() => setRows(attrs.rows.map((current) => (
+                          current.id === row.id
+                            ? {
+                              ...current,
+                              articles: ARTICLE_OPTIONS.filter((option) => (
+                                option === article
+                                  ? !selected
+                                  : current.articles.includes(option)
+                              )),
+                            }
+                            : current
+                        )))}
+                        className={`rounded-md border px-1 py-1.5 text-xs font-semibold ${
+                          selected
+                            ? 'border-brand bg-brand-primary_alt text-brand-secondary'
+                            : 'border-primary text-secondary hover:bg-primary_hover'
+                        }`}
+                      >
+                        {article}
+                      </button>
+                    );
+                  })}
+                </div>
                 <input
                   aria-label={`Term ${index + 1}`}
                   value={row.term}
@@ -3131,11 +3248,11 @@ function ArticlePluralEditor({
       </div>
       <button
         type="button"
-        disabled={attrs.rows.length >= ARTICLE_PLURAL_ROWS_PER_PAGE}
+        disabled={attrs.rows.length >= 1000}
         onClick={() => setRows([...attrs.rows, {
           id: `article-plural-${Date.now()}`,
           term: '',
-          article: null,
+          articles: [],
           plural: '',
         }])}
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover disabled:cursor-not-allowed disabled:opacity-40"
@@ -6746,12 +6863,30 @@ export function BlockContentEditorModal({
   const [communicationCardsGroupIndex, setCommunicationCardsGroupIndex] = useState(0);
   const [communicationCardsSelectedCardId, setCommunicationCardsSelectedCardId] =
     useState<string | null>(null);
+  const articlePluralAnchorRef = useRef<{ sourcePos: number; anchorPos: number } | null>(null);
+  if (block?.type === 'articlePlural') {
+    if (articlePluralAnchorRef.current?.sourcePos !== block.pos) {
+      const group = getArticlePluralGroup(editor.state.doc, block.pos);
+      articlePluralAnchorRef.current = {
+        sourcePos: block.pos,
+        anchorPos: group?.from ?? block.pos,
+      };
+    }
+  } else {
+    articlePluralAnchorRef.current = null;
+  }
+  const effectiveBlock = block?.type === 'articlePlural'
+    ? { ...block, pos: articlePluralAnchorRef.current?.anchorPos ?? block.pos }
+    : block;
   const attrs = useEditorState({
     editor,
     selector: ({ editor: currentEditor }) => {
-      if (!block) return null;
-      const node = currentEditor.state.doc.nodeAt(block.pos);
-      return node?.type.name === block.type
+      if (!effectiveBlock) return null;
+      if (effectiveBlock.type === 'articlePlural') {
+        return getArticlePluralGroupAttrs(currentEditor.state.doc, effectiveBlock.pos);
+      }
+      const node = currentEditor.state.doc.nodeAt(effectiveBlock.pos);
+      return node?.type.name === effectiveBlock.type
         ? node.attrs as Record<string, unknown>
         : null;
     },
@@ -6813,7 +6948,7 @@ export function BlockContentEditorModal({
             {block.type === 'timeMatching' && <TimeMatchingEditor attrs={attrs as unknown as TimeMatchingAttrs} block={block} editor={editor} />}
             {block.type === 'mcm' && <MCMEditor attrs={attrs as unknown as MCMAttrs} block={block} editor={editor} />}
             {block.type === 'mch' && <MCHEditor attrs={attrs as unknown as MCHAttrs} block={block} editor={editor} />}
-            {block.type === 'articlePlural' && <ArticlePluralEditor attrs={attrs as unknown as ArticlePluralAttrs} block={block} editor={editor} />}
+            {block.type === 'articlePlural' && <ArticlePluralEditor attrs={attrs as unknown as ArticlePluralAttrs} block={effectiveBlock as ContentEditorBlock} editor={editor} />}
             {block.type === 'trueFalse' && <TrueFalseEditor attrs={attrs as unknown as TrueFalseAttrs} block={block} editor={editor} />}
             {block.type === 'familyKinship' && <FamilyKinshipEditor attrs={attrs as unknown as FamilyKinshipAttrs} block={block} editor={editor} />}
             {block.type === 'fillInTheBlank' && <FillInTheBlankEditor attrs={attrs as unknown as FillInTheBlankAttrs} block={block} editor={editor} />}
@@ -6838,7 +6973,7 @@ export function BlockContentEditorModal({
             {block.type === 'domino' && <DominoEditor attrs={attrs as unknown as DominoAttrs} block={block} editor={editor} />}
           </div>
           <div className="overflow-y-auto bg-primary p-6">
-            <Preview attrs={attrs} block={block} editor={editor} learningCardsGroupIndex={learningCardsGroupIndex} learningCardsSelectedCardId={learningCardsSelectedCardId} communicationCardsGroupIndex={communicationCardsGroupIndex} communicationCardsSelectedCardId={communicationCardsSelectedCardId} />
+            <Preview attrs={attrs} block={effectiveBlock as ContentEditorBlock} editor={editor} learningCardsGroupIndex={learningCardsGroupIndex} learningCardsSelectedCardId={learningCardsSelectedCardId} communicationCardsGroupIndex={communicationCardsGroupIndex} communicationCardsSelectedCardId={communicationCardsSelectedCardId} />
           </div>
         </div>
         <footer className="flex h-16 shrink-0 items-center justify-end border-t border-secondary px-6">

@@ -127,21 +127,31 @@ const mcmSchema = z.object({
   hideStatement: z.boolean().default(false),
 });
 
+const germanArticleSchema = z.enum(['der', 'das', 'die']);
+
 const articlePluralRowSchema = z.object({
   id: z.string().trim().min(1).max(100).optional(),
   term: z.string().trim().max(2000),
-  article: z.enum(['der', 'das', 'die']).nullable().default(null),
+  articles: z.array(germanArticleSchema).max(3).optional(),
+  article: germanArticleSchema.nullable().optional(),
   plural: z.string().trim().max(2000).default(''),
-});
+}).transform(({ article, articles, ...row }) => ({
+  ...row,
+  articles: (['der', 'das', 'die'] as const).filter((option) => (
+    articles?.includes(option) || article === option
+  )),
+}));
 
 const articlePluralSchema = z.object({
   type: z.literal('articlePlural'),
   instruction: z.literal(
     'Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.',
   ).default('Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.'),
-  rows: z.array(articlePluralRowSchema).min(1).max(22),
+  rows: z.array(articlePluralRowSchema).min(1).max(1000),
   order: z.enum(['alphabetical', 'shuffle']).default('alphabetical'),
   shuffleSeed: z.number().int().min(0).max(1_000_000).default(0),
+  continuation: z.boolean().default(false),
+  rowNumberOffset: z.number().int().min(0).max(1_000_000).default(0),
 });
 
 const trueFalseRowSchema = z.object({
@@ -522,10 +532,20 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     const rows = block.rows.map((row, index) => ({
       id: row.id ?? `article-plural-${index + 1}`,
       term: row.term,
-      article: row.article,
+      articles: row.articles,
       plural: row.plural,
-    }));
-    return `<div data-article-plural-rows="${escapeAttribute(encodeURIComponent(JSON.stringify(rows)))}" data-article-plural-order="${block.order}" data-article-plural-shuffle-seed="${block.shuffleSeed}" data-type="article-plural"></div>`;
+    })).sort((left, right) => (
+      block.order === 'alphabetical'
+        ? left.term.localeCompare(right.term, 'de', { sensitivity: 'base' })
+        : 0
+    ));
+    const chunks = Array.from(
+      { length: Math.ceil(rows.length / 22) },
+      (_, index) => rows.slice(index * 22, (index + 1) * 22),
+    );
+    return chunks.map((chunk, index) => (
+      `<div data-article-plural-rows="${escapeAttribute(encodeURIComponent(JSON.stringify(chunk)))}" data-article-plural-order="${block.order}" data-article-plural-shuffle-seed="${block.shuffleSeed}" data-article-plural-continuation="${block.continuation || index > 0}" data-article-plural-row-number-offset="${block.rowNumberOffset + index * 22}" data-type="article-plural"></div>`
+    )).join('');
   }
   if (block.type === 'trueFalse') {
     const rows = block.rows.map((row, index) => ({

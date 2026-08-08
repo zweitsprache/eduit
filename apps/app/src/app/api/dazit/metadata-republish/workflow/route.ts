@@ -48,6 +48,12 @@ export const { POST } = serve<WorkflowPayload>(async (context) => {
     const formData = new FormData();
     formData.set('mode', 'metadata-only');
     formData.set('metadata', JSON.stringify({ ...metadata, worksheetId }));
+    if (metadata.worksheetSemanticManifest) {
+      formData.set(
+        'worksheetSemanticManifest',
+        JSON.stringify(metadata.worksheetSemanticManifest),
+      );
+    }
     formData.set(
       'pdf',
       new File([await new Response(pdfBlob.stream).arrayBuffer()], 'worksheet.pdf', {

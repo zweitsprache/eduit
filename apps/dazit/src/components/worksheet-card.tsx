@@ -65,16 +65,17 @@ export function WorksheetCard({
           <Link className="card-details" href={`/documents/${worksheet.slug}`}>Details</Link>
           <DownloadAuthGate className="card-download" canDownload={canDownload} downloadUrl={worksheet.pdfUrl}>
             <Download01 aria-hidden="true" />
-            <span className="sr-only">Download</span>
+            <span className="sr-only">{worksheet.documentType}</span>
           </DownloadAuthGate>
           {worksheet.hasAnswerKey && (
             <DownloadAuthGate
               className="card-download"
+              dataVariant="answer-key"
               canDownload={canDownload}
               downloadUrl={worksheet.answerKeyPdfUrl ?? worksheet.pdfUrl}
             >
               <span aria-hidden="true">Lös</span>
-              <span className="sr-only">Lösungsblatt herunterladen</span>
+              <span className="sr-only">Lösungsblatt</span>
             </DownloadAuthGate>
           )}
         </div>
