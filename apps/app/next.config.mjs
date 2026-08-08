@@ -21,7 +21,13 @@ const nextConfig = {
       '../../node_modules/playwright-core/**',
     ],
   },
-  serverExternalPackages: ['playwright-core', '@sparticuz/chromium'],
+  serverExternalPackages: [
+    'playwright-core',
+    '@sparticuz/chromium',
+    '@remotion/bundler',
+    '@remotion/renderer',
+    'esbuild',
+  ],
   transpilePackages: ['@eduit/ui'],
 };
 
