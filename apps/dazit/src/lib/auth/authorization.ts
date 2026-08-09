@@ -19,7 +19,10 @@ export async function getCurrentDazitUser(): Promise<DazitUser | null> {
     from neon_auth."user"
     where id = ${session.user.id}
   ` as Array<{ role: string | null }>;
-  const roles = (rows[0]?.role ?? 'user').split(',').map((role) => role.trim());
+  const persistedUser = rows[0];
+  if (!persistedUser) return null;
+
+  const roles = (persistedUser.role ?? 'user').split(',').map((role) => role.trim());
 
   return {
     id: session.user.id,
