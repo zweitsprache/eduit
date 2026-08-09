@@ -6,15 +6,24 @@ const authPaths = new Set([
   'email-otp',
   'forgot-password',
   'reset-password',
+  'oauth-error',
   'callback',
   'sign-out',
 ]);
 
 export default async function AuthenticationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ path: string }>;
+  searchParams: Promise<{ error?: string | string[] }>;
 }) {
   const { path } = await params;
-  return <AuthPage path={authPaths.has(path) ? path : 'sign-in'} />;
+  const { error } = await searchParams;
+  return (
+    <AuthPage
+      errorCode={typeof error === 'string' ? error : undefined}
+      path={authPaths.has(path) ? path : 'sign-in'}
+    />
+  );
 }

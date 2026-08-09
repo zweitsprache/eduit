@@ -261,6 +261,27 @@ button { color: inherit; }
   height: 22px;
   flex: 0 0 22px;
 }
+.registration-method-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  margin-bottom: 22px;
+}
+.registration-method-heading .registration-google-mark { margin-top: 3px; }
+.registration-method-heading h2 { margin: 0 0 5px; font-size: 22px; letter-spacing: 0; }
+.registration-method-heading p { margin: 0; color: #696d7d; font-size: 14px; line-height: 1.45; }
+.registration-google-consent .registration-checkbox:first-child { margin-top: 3px; }
+.registration-method-back {
+  justify-self: center;
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
+  color: #8d3e00;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.registration-method-back:disabled { cursor: not-allowed; opacity: .55; }
 .registration-divider {
   display: flex;
   align-items: center;
@@ -419,6 +440,36 @@ button { color: inherit; }
   cursor: pointer;
 }
 .registration-verification-resend span { color: #8a8d99; }
+.oauth-status {
+  display: grid;
+  justify-items: center;
+  gap: 20px;
+  padding: 30px 24px;
+  color: #2f3348;
+  text-align: center;
+}
+.oauth-status > img { width: 48px; height: 48px; }
+.oauth-status h1 { margin: 0 0 7px; font-size: 24px; letter-spacing: 0; }
+.oauth-status p { max-width: 400px; margin: 0; color: #696d7d; font-size: 14px; line-height: 1.5; }
+.oauth-status-primary {
+  display: flex;
+  width: min(100%, 360px);
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--orange);
+  color: #fff;
+  font-weight: 800;
+}
+.oauth-status-primary:hover { background: #b35a00; }
+.oauth-status-secondary { color: #8d3e00; font-size: 14px; font-weight: 800; }
+.oauth-status > [data-slot="card"] {
+  width: auto;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
 .email-otp-request {
   display: grid;
   gap: 14px;

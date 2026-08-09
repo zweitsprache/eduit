@@ -1,6 +1,7 @@
 import { AuthView } from '@neondatabase/auth/react/ui';
 import { AuthSurface } from '@/components/auth-surface';
 import { ForgotPasswordForm } from '@/components/forgot-password-form';
+import { OAuthError } from '@/components/oauth-error';
 import { ResetPasswordForm } from '@/components/reset-password-form';
 
 function AuthCard({ children }: { children: React.ReactNode }) {
@@ -11,7 +12,7 @@ function AuthCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function AuthPage({ path }: { path: string }) {
+export function AuthPage({ errorCode, path }: { errorCode?: string; path: string }) {
   if (path === 'reset-password') {
     return (
       <main className="auth-page">
@@ -32,6 +33,31 @@ export function AuthPage({ path }: { path: string }) {
     return (
       <main className="auth-page">
         <AuthCard><AuthSurface initialMode={path} /></AuthCard>
+      </main>
+    );
+  }
+
+  if (path === 'oauth-error') {
+    return (
+      <main className="auth-page">
+        <AuthCard><OAuthError errorCode={errorCode} /></AuthCard>
+      </main>
+    );
+  }
+
+  if (path === 'callback') {
+    return (
+      <main className="auth-page">
+        <AuthCard>
+          <section className="oauth-status" role="status">
+            <img alt="DaZit" src="/dazit_icon_orange.svg" />
+            <div>
+              <h1>Anmeldung wird abgeschlossen</h1>
+              <p>Einen Moment bitte.</p>
+            </div>
+            <AuthView pathname="callback" />
+          </section>
+        </AuthCard>
       </main>
     );
   }

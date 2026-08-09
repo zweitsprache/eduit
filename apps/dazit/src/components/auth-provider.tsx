@@ -44,7 +44,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         oneTap={false}
         passkey={false}
         redirectTo="/auth/continue"
-        social={{ providers: ['google'] }}
+        social={{
+          providers: ['google'],
+          signIn: (params) => authClient.signIn.social({
+            ...params,
+            errorCallbackURL: `${window.location.origin}/auth/oauth-error`,
+          }),
+        }}
       >
         {children}
       </AuthUIProvider>

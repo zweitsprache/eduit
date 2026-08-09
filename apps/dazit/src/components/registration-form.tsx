@@ -25,6 +25,7 @@ export function RegistrationForm() {
   const [password, setPassword] = useState('');
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
+  const [registrationMethod, setRegistrationMethod] = useState<'email' | 'google'>('email');
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -64,6 +65,7 @@ export function RegistrationForm() {
       await authClient.signIn.social({
         provider: 'google',
         callbackURL: `${window.location.origin}/auth/continue`,
+        errorCallbackURL: `${window.location.origin}/auth/oauth-error`,
         fetchOptions: { throw: true },
       });
     } catch (registerError) {
@@ -161,12 +163,73 @@ export function RegistrationForm() {
     );
   }
 
+  if (registrationMethod === 'google') {
+    return (
+      <div className="registration-form registration-google-consent">
+        <div className="registration-method-heading">
+          <GoogleIcon />
+          <div>
+            <h2>Mit Google registrieren</h2>
+            <p>Bestätigen Sie Ihre Auswahl, bevor Sie zu Google weitergeleitet werden.</p>
+          </div>
+        </div>
+        <form onSubmit={(event) => {
+          event.preventDefault();
+          void registerWithGoogle();
+        }}>
+          <label className="registration-checkbox">
+            <input
+              checked={termsAccepted}
+              name="termsAccepted"
+              onChange={(event) => setTermsAccepted(event.target.checked)}
+              required
+              type="checkbox"
+            />
+            <span>
+              Ich akzeptiere die{' '}
+              <Link href="/lizenz-und-nutzungsrecht" target="_blank">AGB</Link>
+              {' '}und die{' '}
+              <Link href="/datenschutzerklaerung" target="_blank">Datenschutzerklärung</Link>.
+            </span>
+          </label>
+          <label className="registration-checkbox">
+            <input
+              checked={newsletter}
+              name="newsletter"
+              onChange={(event) => setNewsletter(event.target.checked)}
+              type="checkbox"
+            />
+            <span>Ich möchte über Neuigkeiten auf DaZit informiert werden.</span>
+          </label>
+          {error && <p className="registration-error" role="alert">{error}</p>}
+          <button className="registration-submit" disabled={busy || !termsAccepted} type="submit">
+            {busy ? 'Weiterleitung zu Google...' : 'Mit Google fortfahren'}
+          </button>
+          <button
+            className="registration-method-back"
+            disabled={busy}
+            onClick={() => {
+              setRegistrationMethod('email');
+              setError(null);
+            }}
+            type="button"
+          >
+            Mit E-Mail registrieren
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="registration-form">
       <button
         className="registration-google"
         disabled={busy}
-        onClick={registerWithGoogle}
+        onClick={() => {
+          setRegistrationMethod('google');
+          setError(null);
+        }}
         type="button"
       >
         <GoogleIcon />
