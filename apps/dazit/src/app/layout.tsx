@@ -18,14 +18,14 @@ export const metadata: Metadata = {
   },
   title: {
     default: 'DaZ Arbeitsblätter zum Ausdrucken',
-    template: '%s · dazit',
+    template: '%s · DaZit',
   },
   description: 'Druckfertige DaZ Arbeitsblätter, Dialoge, Lernkarten und Tabellen für A1 bis B1. Sofort einsetzbar im Unterricht.',
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     locale: 'de_CH',
-    siteName: 'dazit',
+    siteName: 'DaZit',
     title: 'DaZ Arbeitsblätter zum Ausdrucken',
     description: 'Druckfertige DaZ Arbeitsblätter, Dialoge, Lernkarten und Tabellen für A1 bis B1. Sofort einsetzbar im Unterricht.',
     url: '/',

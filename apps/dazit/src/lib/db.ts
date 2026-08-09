@@ -50,8 +50,12 @@ export type DazitPublicationCardRow = {
   publishedAt: string;
   updatedAt: string;
   excerpt: string | null;
+  searchSnippet: string | null;
   tags: string[];
   level: string | null;
+  actionCompetencies: string[];
+  languageCompetencies: string[];
+  actionField: string | null;
   downloads: number;
   hasAnswerKey: boolean;
   answerKeyPdfPath: string | null;
@@ -247,8 +251,12 @@ export async function getPublishedWorksheetCardsFromDb() {
       p.published_at as "publishedAt",
       p.updated_at as "updatedAt",
       p.excerpt,
+      p.search_snippet as "searchSnippet",
       p.tags,
       p.level,
+      p.action_competencies as "actionCompetencies",
+      p.language_competencies as "languageCompetencies",
+      p.action_field as "actionField",
       p.download_count::int as downloads,
       coalesce(p.has_answer_key, w.show_solutions, false) as "hasAnswerKey",
       w.document_size as "documentSize",

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Download01, File02, Loading01, Trash01 } from '@untitledui/icons';
-import { Files } from 'lucide-react';
+import { ArrowDownToLine, Files, TextAlignJustify } from 'lucide-react';
 import type { Worksheet } from '@/lib/worksheets';
 import { DownloadAuthGate } from '@/components/download-auth-gate';
 
@@ -25,7 +25,8 @@ export function WorksheetCard({
           {Boolean(worksheet.relationships?.length) && (
             <span className="related-badge">Arbeitsblatt-Reihe</span>
           )}
-          {worksheet.hasAnswerKey && <span className="answer-key">✓ Mit Lösungsblatt</span>}
+          {worksheet.hasAnswerKey && <span className="answer-key">Lösungsblatt</span>}
+          <time className="card-created-date" dateTime={worksheet.publishedAt}>{worksheet.added}</time>
         </div>
         <h2><Link href={`/documents/${worksheet.slug}`}>{worksheet.title}</Link></h2>
         <Link
@@ -50,34 +51,43 @@ export function WorksheetCard({
             <span><Files aria-hidden="true" /> {worksheet.pages}</span>
             <span><Download01 aria-hidden="true" /> {worksheet.downloads}</span>
           </div>
-          {onDelete && (
-            <button
-              aria-label={`${worksheet.title} löschen`}
-              className="card-delete"
-              disabled={deleting}
-              onClick={() => onDelete(worksheet)}
-              title="Veröffentlichung löschen"
-              type="button"
+          <div className="card-action-buttons">
+            {onDelete && (
+              <button
+                aria-label={`${worksheet.title} löschen`}
+                className="card-delete"
+                disabled={deleting}
+                onClick={() => onDelete(worksheet)}
+                title="Veröffentlichung löschen"
+                type="button"
+              >
+                {deleting ? <Loading01 aria-hidden="true" /> : <Trash01 aria-hidden="true" />}
+              </button>
+            )}
+            <Link
+              aria-label={`${worksheet.title}: Details`}
+              className="card-details"
+              href={`/documents/${worksheet.slug}`}
+              title="Details"
             >
-              {deleting ? <Loading01 aria-hidden="true" /> : <Trash01 aria-hidden="true" />}
-            </button>
-          )}
-          <Link className="card-details" href={`/documents/${worksheet.slug}`}>Details</Link>
-          <DownloadAuthGate className="card-download" canDownload={canDownload} downloadUrl={worksheet.pdfUrl}>
-            <Download01 aria-hidden="true" />
-            <span className="sr-only">{worksheet.documentType}</span>
-          </DownloadAuthGate>
-          {worksheet.hasAnswerKey && (
-            <DownloadAuthGate
-              className="card-download"
-              dataVariant="answer-key"
-              canDownload={canDownload}
-              downloadUrl={worksheet.answerKeyPdfUrl ?? worksheet.pdfUrl}
-            >
-              <span aria-hidden="true">Lös</span>
-              <span className="sr-only">Lösungsblatt</span>
+              <TextAlignJustify aria-hidden="true" />
+            </Link>
+            <DownloadAuthGate className="card-download" canDownload={canDownload} downloadUrl={worksheet.pdfUrl}>
+              <Download01 aria-hidden="true" />
+              <span className="sr-only">{worksheet.documentType} herunterladen</span>
             </DownloadAuthGate>
-          )}
+            {worksheet.hasAnswerKey && (
+              <DownloadAuthGate
+                className="card-download"
+                dataVariant="answer-key"
+                canDownload={canDownload}
+                downloadUrl={worksheet.answerKeyPdfUrl ?? worksheet.pdfUrl}
+              >
+                <ArrowDownToLine aria-hidden="true" />
+                <span className="sr-only">Lösungsblatt herunterladen</span>
+              </DownloadAuthGate>
+            )}
+          </div>
         </div>
       </div>
     </article>

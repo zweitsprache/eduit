@@ -3,26 +3,30 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { FilterLines, SearchLg } from '@untitledui/icons';
-import { User } from 'lucide-react';
+import { LogOut, Settings, User } from 'lucide-react';
+import { authClient } from '@/lib/auth/client';
 
 export function SiteHeader({
   active = 'library',
-  canAdminister = false,
   search = false,
 }: {
   active?: 'home' | 'library';
-  canAdminister?: boolean;
   search?: boolean;
 }) {
+  const { data: session } = authClient.useSession();
+
+  async function signOut() {
+    await authClient.signOut();
+    window.location.assign('/');
+  }
+
   return (
     <header className={`site-header${search ? '' : ' site-header--simple'}`}>
       <Link className="brand" href="/" aria-label="dazit Bibliothek">
-        <Image src="/dazit.svg" alt="dazit" width={124} height={48} priority />
+        <Image src="/dazit.svg" alt="DaZit" width={124} height={48} priority />
       </Link>
       <nav aria-label="Hauptnavigation">
         <Link className={active === 'library' ? 'active' : undefined} href="/documents">Bibliothek</Link>
-        {canAdminister && <a href="#sammlungen">Sammlungen</a>}
-        {canAdminister && <a href="#my-dazit">My dazit</a>}
       </nav>
       {search && (
         <label className="header-search">
@@ -31,9 +35,36 @@ export function SiteHeader({
           <input placeholder="Titel oder Stichwort suchen …" />
         </label>
       )}
-      <Link className="avatar" href="/auth/sign-in" aria-label="Admin anmelden">
-        <User aria-hidden="true" />
-      </Link>
+      {session?.user ? (
+        <div className="account-menu">
+          <button
+            aria-label={`Konto von ${session.user.email} öffnen`}
+            className="avatar"
+            popoverTarget="dazit-account-menu"
+            type="button"
+          >
+            <User aria-hidden="true" />
+          </button>
+          <div className="account-popover" id="dazit-account-menu" popover="auto">
+            <strong>{session.user.name || session.user.email}</strong>
+            <span>{session.user.email}</span>
+            <Link className="account-popover-link" href="/account">
+              <Settings aria-hidden="true" /> Kontoeinstellungen
+            </Link>
+            <button onClick={signOut} type="button">
+              <LogOut aria-hidden="true" /> Abmelden
+            </button>
+          </div>
+        </div>
+      ) : (
+        <Link
+          aria-label="Anmelden oder registrieren"
+          className="avatar"
+          href="/auth/sign-in"
+        >
+          <User aria-hidden="true" />
+        </Link>
+      )}
       {search && (
         <button
           aria-controls="mobile-filters"

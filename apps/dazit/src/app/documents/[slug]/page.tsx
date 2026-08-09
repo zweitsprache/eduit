@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       type: 'article',
       locale: 'de_CH',
-      siteName: 'dazit',
+      siteName: 'DaZit',
       title: detailTitle,
       description: detailDescription,
       url: pathname,
@@ -153,7 +153,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
         : undefined,
       provider: {
         '@type': 'Organization',
-        name: 'dazit',
+        name: 'DaZit',
         url: absoluteDazitUrl('/'),
       },
       audience: {
@@ -201,7 +201,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
         }}
         type="application/ld+json"
       />
-      <SiteHeader active="library" canAdminister={canAdminister} />
+      <SiteHeader active="library" />
       <nav className="breadcrumbs" aria-label="Breadcrumb">
         <Link href="/">Bibliothek</Link><span>›</span>
         <Link href="/">{worksheet.subject}</Link><span>›</span>

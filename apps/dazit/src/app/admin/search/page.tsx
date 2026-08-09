@@ -10,7 +10,7 @@ export default async function SearchDashboard() {
   if (!user?.isAdmin) redirect('/auth/sign-in');
   const stats = await getDazitSearchStats();
   return <>
-    <SiteHeader active="library" canAdminister />
+    <SiteHeader active="library" />
     <main className="legal-shell">
       <h1>Suchanfragen</h1>
       <p className="lead">Anonyme Suchanfragen der letzten 12 Monate.</p>

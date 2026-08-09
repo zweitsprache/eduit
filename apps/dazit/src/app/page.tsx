@@ -1,10 +1,24 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Copy01, File02, Grid01 } from '@untitledui/icons';
+import { Copy01, File02 } from '@untitledui/icons';
+import { Baby, BookOpen, Brain, CloudSunRain, Cpu, HandHelping, HardHat, HeartPulse, House, ListCheck, MessagesSquare, Salad, Share2, ShoppingBasket, SquareSplitHorizontal, Stamp, TableCellsSplit, TramFront, UserSearch, UsersRound } from 'lucide-react';
 import { SiteHeader } from '@/components/site-header';
 import { WorksheetCard } from '@/components/worksheet-card';
 import { CountUp } from '@/components/count-up';
 import { getCurrentDazitUser } from '@/lib/auth/authorization';
+
+function MosqueIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" className={className} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+      <path d="M12.268 2a2 2 0 003.465 2" />
+      <path d="M14 5 L14 8" />
+      <path d="M16 22v-3a2 2 0 00-4 0v3" />
+      <path d="M21 13c-.662-1.497-1.666-2.753-2.9-3.63C16.825 8.47 15.422 8 14 8s-2.826.47-4.1 1.37C8.668 10.248 7.663 11.504 7 13z" />
+      <path d="M3 9h4" />
+      <path d="M7 22V6a5 5 0 00-2-4 5 5 0 00-2 4v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+    </svg>
+  );
+}
 import { getHomepageStats, getWorksheetCards } from '@/lib/worksheets';
 import { SearchTrackingForm } from '@/components/search-tracking-form';
 import { absoluteDazitUrl } from '@/lib/site-url';
@@ -26,6 +40,29 @@ const levels = [
   ['B1.2', 'home-level-orange'],
 ] as const;
 
+const topics = [
+  'Deutschkurs',
+  'Gesundheit',
+  'Sicherheit und Notfälle',
+  'Familie und Partnerschaft',
+  'Kinder und Schule',
+  'Soziales Netzwerk',
+  'Beratung und Unterstützung',
+  'Einkaufen',
+  'Ernährung',
+  'Wohnen',
+  'Mobilität',
+  'Finanzen und Versicherungen',
+  'Behörden',
+  'Freizeit und Hobbys',
+  'Kultur und Identität',
+  'Arbeit',
+  'Arbeitssuche',
+  'Umwelt und Klima',
+  'Technologie',
+  'Weiterbildung',
+] as const;
+
 export default async function HomePage() {
   const [homepageStats, newest, currentUser] = await Promise.all([
     getHomepageStats(),
@@ -40,7 +77,7 @@ export default async function HomePage() {
       '@type': 'WebSite',
       '@id': absoluteDazitUrl('/#website'),
       url: absoluteDazitUrl('/'),
-      name: 'dazit',
+      name: 'DaZit',
       inLanguage: 'de-CH',
       potentialAction: {
         '@type': 'SearchAction',
@@ -52,7 +89,7 @@ export default async function HomePage() {
       '@context': 'https://schema.org',
       '@type': 'Organization',
       '@id': absoluteDazitUrl('/#organization'),
-      name: 'dazit',
+      name: 'DaZit',
       url: absoluteDazitUrl('/'),
       email: 'daz@dazit.io',
     },
@@ -90,12 +127,12 @@ export default async function HomePage() {
         }}
         type="application/ld+json"
       />
-      <SiteHeader active="home" canAdminister={Boolean(currentUser?.isAdmin)} />
+      <SiteHeader active="home" />
       <main className="home-page">
         <section className="home-hero">
           <span className="hero-beta-ribbon">Public Beta</span>
           <div className="home-hero-content">
-            <span className="home-hero-badge">Suchen · Downloaden · Nutzen</span>
+            <span className="home-hero-badge">DaZ-Ressourcen von zweitsprache.ch</span>
             <h1>
               <CountUp value={total} /> Arbeits- und Merkblätter,<br />
               Spiele und Kartensets für<br />
@@ -138,42 +175,83 @@ export default async function HomePage() {
             <div className="home-type-grid">
               <Link className="home-type-card" href="/documents?type=Arbeitsblatt">
                 <File02 aria-hidden="true" />
-                <span><strong>Arbeits- und Merkblätter</strong><small>Übungsseiten und Übersichten für den DaZ-Kurs</small><b>{(typeCounts.Arbeitsblatt || 0) + (typeCounts.Merkblatt || 0)} Dokumente ›</b></span>
+                <span><strong>Arbeits- und Merkblätter</strong><small>Grammatik und Wortschatz üben und nachschlagen</small><b>{typeCounts.Arbeitsblatt || 0} Dokumente ›</b></span>
               </Link>
               <Link className="home-type-card" href="/documents?type=Verbtabelle">
-                <Grid01 aria-hidden="true" />
-                <span><strong>Verbtabellen</strong><small>Konjugationen kompakt und übersichtlich darstellen</small><b>{typeCounts.Verbtabelle || 0} Dokumente ›</b></span>
+                <TableCellsSplit aria-hidden="true" />
+                <span><strong>Verbtabellen</strong><small>Konjugationen kompakt nachschlagen und trainieren</small><b>{typeCounts.Verbtabelle || 0} Dokumente ›</b></span>
               </Link>
-              <Link className="home-type-card" href="/documents?type=Deklinationstabelle">
-                <Copy01 aria-hidden="true" />
-                <span><strong>Deklinationstabellen</strong><small>Formen und Strukturen zum Nachschlagen und Üben</small><b>{typeCounts.Deklinationstabelle || 0} Dokumente ›</b></span>
+              <Link className="home-type-card" href="/documents?type=Domino">
+                <SquareSplitHorizontal aria-hidden="true" />
+                <span><strong>Dominos</strong><small>Wortschatz und Grammatik spielerisch festigen</small><b>{typeCounts.Domino || 0} Dokumente ›</b></span>
               </Link>
               <Link className="home-type-card" href="/documents?type=Lernkarten">
                 <Copy01 aria-hidden="true" />
-                <span><strong>Lernkarten</strong><small>Karten zum Ausschneiden und beidseitigen Drucken</small><b>{typeCounts.Lernkarten || 0} Dokumente ›</b></span>
+                <span><strong>Lernkarten</strong><small>Wortschatz selbstständig und in Partnerarbeit trainieren</small><b>{typeCounts.Lernkarten || 0} Dokumente ›</b></span>
               </Link>
               <Link className="home-type-card" href="/documents?type=Dialog">
-                <File02 aria-hidden="true" />
-                <span><strong>Dialoge</strong><small>Gespräche zum Hören, Lesen und Nachspielen</small><b>{typeCounts.Dialog || 0} Dokumente ›</b></span>
+                <MessagesSquare aria-hidden="true" />
+                <span><strong>Dialoge</strong><small>Gespräche lesen und nachspielen</small><b>{typeCounts.Dialog || 0} Dokumente ›</b></span>
               </Link>
               <Link className="home-type-card" href="/documents?type=Leseverstehen">
-                <File02 aria-hidden="true" />
-                <span><strong>Leseverstehen</strong><small>Texte mit Aufgaben zum Leseverstehen</small><b>{typeCounts.Leseverstehen || 0} Dokumente ›</b></span>
+                <ListCheck aria-hidden="true" />
+                <span><strong>Leseverstehen</strong><small>Texte lesen und Verständnis überprüfen</small><b>{typeCounts.Leseverstehen || 0} Dokumente ›</b></span>
               </Link>
             </div>
           </section>
 
           <section className="home-section home-new">
-            <div className="home-section-heading">
-              <h2>Diese Woche neu</h2>
-              <Link href="/documents">Alle neuen Dokumente ›</Link>
-            </div>
             <div className="home-new-grid">
               {newest.map((worksheet) => (
                 <WorksheetCard canDownload={isAuthenticated} key={worksheet.slug} worksheet={worksheet} />
               ))}
             </div>
             <Link className="home-new-mobile-link" href="/documents">Alle neuen Dokumente</Link>
+          </section>
+
+          <section className="home-section home-topics">
+            <div className="home-topic-grid">
+              {topics.map((topic, index) => (
+                <div className="home-topic-card" key={topic}>
+                  {topic === 'Deutschkurs'
+                    ? <BookOpen aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                    : topic === 'Gesundheit'
+                      ? <HeartPulse aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                      : topic === 'Sicherheit und Notfälle'
+                        ? <HardHat aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                        : topic === 'Familie und Partnerschaft'
+                          ? <UsersRound aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                          : topic === 'Kinder und Schule'
+                            ? <Baby aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                            : topic === 'Soziales Netzwerk'
+                              ? <Share2 aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                              : topic === 'Beratung und Unterstützung'
+                                ? <HandHelping aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                                : topic === 'Einkaufen'
+                                  ? <ShoppingBasket aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                                  : topic === 'Ernährung'
+                                    ? <Salad aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                                    : topic === 'Wohnen'
+                                      ? <House aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                                      : topic === 'Mobilität'
+                                        ? <TramFront aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                                        : topic === 'Behörden'
+                                          ? <Stamp aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                                          : topic === 'Arbeitssuche'
+                                            ? <UserSearch aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                                            : topic === 'Kultur und Identität'
+                                              ? <MosqueIcon className="home-topic-icon" />
+                                              : topic === 'Umwelt und Klima'
+                                                ? <CloudSunRain aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                                                : topic === 'Technologie'
+                                                  ? <Cpu aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                                                  : topic === 'Weiterbildung'
+                                                    ? <Brain aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                                                    : <span aria-hidden="true" className="home-topic-icon-placeholder" />}
+                  <strong>{topic}</strong>
+                </div>
+              ))}
+            </div>
           </section>
         </div>
       </main>

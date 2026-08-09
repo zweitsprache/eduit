@@ -4,11 +4,8 @@ const authPaths = new Set([
   'sign-in',
   'sign-up',
   'email-otp',
-  'magic-link',
   'forgot-password',
-  'recover-account',
   'reset-password',
-  'two-factor',
   'callback',
   'sign-out',
 ]);

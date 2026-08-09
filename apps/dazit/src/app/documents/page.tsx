@@ -94,7 +94,7 @@ export async function generateMetadata({
       url: canonicalPath,
       type: 'website',
       locale: 'de_CH',
-      siteName: 'dazit',
+      siteName: 'DaZit',
     },
     twitter: {
       card: 'summary_large_image',
@@ -154,7 +154,7 @@ export default async function LibraryPage({
       '@context': 'https://schema.org',
       '@type': 'ItemList',
       '@id': absoluteDazitUrl('/documents#itemlist'),
-      name: 'dazit Bibliothek',
+      name: 'DaZit Bibliothek',
       itemListOrder: 'https://schema.org/ItemListUnordered',
       numberOfItems: worksheets.length,
       itemListElement: worksheets.slice(0, 100).map((worksheet, index) => ({
@@ -173,7 +173,7 @@ export default async function LibraryPage({
         }}
         type="application/ld+json"
       />
-      <SiteHeader active="library" canAdminister={Boolean(currentUser?.isAdmin)} search />
+      <SiteHeader active="library" search />
       <div className="subject-bar" aria-label="Themen">
         <strong>Themen</strong>
         {clusterLinks.map((item) => (

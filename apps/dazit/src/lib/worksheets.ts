@@ -158,7 +158,7 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
         (_, index) => `/api/thumbnail/${encodeURIComponent(row.worksheetId)}/${index + 1}?v=${row.updatedAt ? new Date(row.updatedAt).getTime() : 0}`,
       )
       : [],
-    publishedAt: row.publishedAt,
+    publishedAt: Number.isNaN(publishedAt.getTime()) ? undefined : publishedAt.toISOString(),
     worksheetId: row.worksheetId,
   };
 }
@@ -183,7 +183,15 @@ function publishedWorksheet(row: DazitPublicationRow): Worksheet | null {
 }
 
 function publishedWorksheetCard(row: DazitPublicationCardRow): Worksheet | null {
-  return baseWorksheet(row);
+  const base = baseWorksheet(row);
+  if (!base) return null;
+  return {
+    ...base,
+    searchSnippet: row.searchSnippet || undefined,
+    actionCompetencies: Array.isArray(row.actionCompetencies) ? row.actionCompetencies : [],
+    languageCompetencies: Array.isArray(row.languageCompetencies) ? row.languageCompetencies : [],
+    actionField: row.actionField || undefined,
+  };
 }
 
 async function loadWorksheetCards() {

@@ -1,18 +1,21 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { XClose } from '@untitledui/icons';
-import { AuthView } from '@neondatabase/auth/react/ui';
+import { AuthSurface } from '@/components/auth-surface';
+import { savePendingDownload } from '@/lib/pending-download';
 
 function AuthRequiredModal({
+  error,
   open,
   onClose,
 }: {
+  error?: string | null;
   open: boolean;
   onClose: () => void;
 }) {
-  const [mode, setMode] = useState<'sign-in' | 'email-otp'>('sign-in');
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -20,11 +23,14 @@ function AuthRequiredModal({
       if (event.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onEscape);
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
     return () => window.removeEventListener('keydown', onEscape);
   }, [onClose, open]);
 
   useEffect(() => {
-    if (open) setMode('sign-in');
+    if (!open) document.body.style.overflow = '';
+    return () => { document.body.style.overflow = ''; };
   }, [open]);
 
   if (!open || typeof document === 'undefined') return null;
@@ -40,47 +46,24 @@ function AuthRequiredModal({
     >
       <section className="auth-required-modal" aria-modal="true">
         <header className="auth-required-modal-header">
-          <h2>PDF herunterladen</h2>
+          <img alt="DaZit" src="/dazit_icon_orange.svg" />
           <button
             aria-label="Modal schließen"
             className="auth-required-modal-close"
             onClick={onClose}
+            ref={closeButtonRef}
             type="button"
           >
             <XClose aria-hidden="true" />
           </button>
         </header>
-        <p className="auth-required-modal-copy">
-          Bitte melde dich an oder registriere dich, um dieses Dokument herunterzuladen.
-        </p>
-        <div className="auth-required-modal-switch">
-          <button
-            className={mode === 'sign-in' ? 'is-active' : ''}
-            onClick={() => setMode('sign-in')}
-            type="button"
-          >
-            Anmelden
-          </button>
-          <button
-            className={mode === 'email-otp' ? 'is-active' : ''}
-            onClick={() => setMode('email-otp')}
-            type="button"
-          >
-            Registrieren
-          </button>
-        </div>
-        <div className="auth-required-modal-view">
-          <AuthView
-            classNames={{
-              footer: 'auth-required-modal-hide',
-              footerLink: 'auth-required-modal-hide',
-              form: {
-                secondaryButton: 'auth-required-modal-hide',
-              },
-            }}
-            view={mode === 'email-otp' ? 'EMAIL_OTP' : 'SIGN_IN'}
-          />
-        </div>
+        {error ? (
+          <p className="auth-required-modal-error" role="alert">{error}</p>
+        ) : (
+          <div className="auth-required-modal-view">
+            <AuthSurface showLogo={false} />
+          </div>
+        )}
       </section>
     </div>,
     document.body,
@@ -101,19 +84,59 @@ export function DownloadAuthGate({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
-  if (canDownload && downloadUrl) {
-    return (
-      <a
-        className={className}
-        data-variant={dataVariant}
-        href={downloadUrl}
-        rel="noreferrer"
-        target="_blank"
-      >
-        {children}
-      </a>
-    );
+  const closeModal = () => {
+    setOpen(false);
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  };
+
+  const startDownload = async () => {
+    if (!downloadUrl) return;
+    setError(null);
+    if (!canDownload) {
+      savePendingDownload(downloadUrl);
+      setOpen(true);
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const response = await fetch(downloadUrl);
+      if (response.status === 401) {
+        savePendingDownload(downloadUrl);
+        setOpen(true);
+        return;
+      }
+      if (response.status === 429) {
+        const payload = await response.json().catch(() => null) as { resetsAt?: string } | null;
+        const reset = payload?.resetsAt
+          ? new Intl.DateTimeFormat('de-CH', { hour: '2-digit', minute: '2-digit' })
+            .format(new Date(payload.resetsAt))
+          : 'Mitternacht';
+        setError(`Deine drei kostenlosen Downloads sind heute aufgebraucht. Neue Downloads sind ab ${reset} verfügbar.`);
+        setOpen(true);
+        return;
+      }
+      if (!response.ok) throw new Error('Das PDF konnte nicht heruntergeladen werden.');
+
+      const blobUrl = URL.createObjectURL(await response.blob());
+      const anchor = document.createElement('a');
+      anchor.href = blobUrl;
+      anchor.download = response.headers.get('content-disposition')
+        ?.match(/filename="([^"]+)"/)?.[1] ?? 'dazit.pdf';
+      anchor.click();
+      URL.revokeObjectURL(blobUrl);
+    } catch (downloadError) {
+      setError(downloadError instanceof Error
+        ? downloadError.message
+        : 'Das PDF konnte nicht heruntergeladen werden.');
+      setOpen(true);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -121,12 +144,14 @@ export function DownloadAuthGate({
       <button
         className={className}
         data-variant={dataVariant}
-        onClick={() => setOpen(true)}
+        disabled={busy || !downloadUrl}
+        onClick={startDownload}
+        ref={triggerRef}
         type="button"
       >
         {children}
       </button>
-      <AuthRequiredModal open={open} onClose={() => setOpen(false)} />
+      <AuthRequiredModal error={error} open={open} onClose={closeModal} />
     </>
   );
 }

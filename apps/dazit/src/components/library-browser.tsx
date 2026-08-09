@@ -7,6 +7,63 @@ import { WorksheetCard } from '@/components/worksheet-card';
 import type { Worksheet } from '@/lib/worksheets';
 import { trackSearch } from '@/components/search-tracking-form';
 
+type SortMode = 'relevance' | 'newest' | 'popular' | 'title';
+
+function normalizeSearchText(value: string) {
+  return value
+    .toLocaleLowerCase('de-CH')
+    .replaceAll('ä', 'ae')
+    .replaceAll('ö', 'oe')
+    .replaceAll('ü', 'ue')
+    .replaceAll('ß', 'ss')
+    .replaceAll('ae', 'a')
+    .replaceAll('oe', 'o')
+    .replaceAll('ue', 'u')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function worksheetSearchScore(worksheet: Worksheet, query: string) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return 0;
+
+  const terms = normalizedQuery.split(/\s+/);
+  const title = normalizeSearchText(worksheet.title);
+  const tags = normalizeSearchText(worksheet.tags.join(' '));
+  const actionField = normalizeSearchText(worksheet.actionField || '');
+  const metadata = normalizeSearchText([
+    worksheet.documentType,
+    worksheet.level,
+    worksheet.language,
+    ...worksheet.actionCompetencies || [],
+    ...worksheet.languageCompetencies || [],
+  ].filter(Boolean).join(' '));
+  const supportingText = normalizeSearchText([
+    worksheet.description,
+    worksheet.searchSnippet,
+  ].filter(Boolean).join(' '));
+  const searchableText = [title, tags, actionField, metadata, supportingText].join(' ');
+
+  if (!terms.every((term) => searchableText.includes(term))) return null;
+
+  let score = 0;
+  if (title === normalizedQuery) score += 1000;
+  else if (title.startsWith(normalizedQuery)) score += 600;
+  else if (title.includes(normalizedQuery)) score += 400;
+  if (tags.split(' ').includes(normalizedQuery)) score += 300;
+  if (actionField === normalizedQuery) score += 300;
+  for (const term of terms) {
+    if (title.includes(term)) score += 80;
+    if (tags.includes(term)) score += 45;
+    if (actionField.includes(term)) score += 45;
+    if (metadata.includes(term)) score += 25;
+    if (supportingText.includes(term)) score += 10;
+  }
+  return score;
+}
+
 export function LibraryBrowser({
   canAdminister = false,
   isAuthenticated = false,
@@ -31,6 +88,7 @@ export function LibraryBrowser({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
+  const [sortMode, setSortMode] = useState<SortMode>(initialQuery ? 'relevance' : 'newest');
 
   useEffect(() => {
     setSelectedTypes(initialTypes);
@@ -74,24 +132,32 @@ export function LibraryBrowser({
     }),
     {},
   ), [libraryWorksheets]);
-  const normalizedQuery = initialQuery.trim().toLocaleLowerCase('de-CH');
-  const visibleWorksheets = libraryWorksheets.filter((worksheet) => (
-    (!selectedTypes.length || selectedTypes.includes(worksheet.documentType))
-    && (!selectedLevels.length || (
-      worksheet.level ? selectedLevels.includes(worksheet.level) : false
+  const visibleWorksheets = libraryWorksheets
+    .map((worksheet, index) => ({
+      index,
+      score: worksheetSearchScore(worksheet, initialQuery),
+      worksheet,
+    }))
+    .filter(({ score, worksheet }) => (
+      score !== null
+      && (!selectedTypes.length || selectedTypes.includes(worksheet.documentType))
+      && (!selectedLevels.length || (
+        worksheet.level ? selectedLevels.includes(worksheet.level) : false
+      ))
+      && (!selectedActionCompetencies.length || selectedActionCompetencies.some(
+        (competency) => worksheet.actionCompetencies?.includes(competency),
+      ))
+      && (!selectedLanguageCompetencies.length || selectedLanguageCompetencies.some(
+        (competency) => worksheet.languageCompetencies?.includes(competency),
+      ))
     ))
-    && (!selectedActionCompetencies.length || selectedActionCompetencies.some(
-      (competency) => worksheet.actionCompetencies?.includes(competency),
-    ))
-    && (!selectedLanguageCompetencies.length || selectedLanguageCompetencies.some(
-      (competency) => worksheet.languageCompetencies?.includes(competency),
-    ))
-    && (!normalizedQuery || [
-      worksheet.title,
-      worksheet.description,
-      ...worksheet.tags,
-    ].join(' ').toLocaleLowerCase('de-CH').includes(normalizedQuery))
-  ));
+    .sort((left, right) => {
+      if (sortMode === 'relevance') return (right.score || 0) - (left.score || 0) || left.index - right.index;
+      if (sortMode === 'popular') return Number(right.worksheet.downloads) - Number(left.worksheet.downloads) || left.index - right.index;
+      if (sortMode === 'title') return left.worksheet.title.localeCompare(right.worksheet.title, 'de-CH');
+      return left.index - right.index;
+    })
+    .map(({ worksheet }) => worksheet);
   const pageCount = Math.max(1, Math.ceil(visibleWorksheets.length / pageSize));
   const activePage = Math.min(currentPage, pageCount);
   const paginatedWorksheets = visibleWorksheets.slice(
@@ -188,12 +254,10 @@ export function LibraryBrowser({
         <form action="/documents" className="mobile-search documents-search" method="get" onSubmit={(event) => {
           const form = event.currentTarget;
           const query = String(new FormData(form).get('q') || '');
-          const normalized = query.trim().toLocaleLowerCase('de-CH');
           const resultCount = libraryWorksheets.filter((worksheet) => (
             (!selectedTypes.length || selectedTypes.includes(worksheet.documentType))
             && (!selectedLevels.length || (worksheet.level ? selectedLevels.includes(worksheet.level) : false))
-            && (!normalized || [worksheet.title, worksheet.description, ...worksheet.tags]
-              .join(' ').toLocaleLowerCase('de-CH').includes(normalized))
+            && worksheetSearchScore(worksheet, query) !== null
           )).length;
           trackSearch(query, resultCount, {
             levels: selectedLevels,
@@ -206,7 +270,12 @@ export function LibraryBrowser({
         <div className="results-toolbar">
           <strong>{visibleWorksheets.length} Ergebnisse</strong>
           <div>
-            <select aria-label="Sortierung" defaultValue="newest">
+            <select
+              aria-label="Sortierung"
+              onChange={(event) => { setSortMode(event.target.value as SortMode); setCurrentPage(1); }}
+              value={sortMode}
+            >
+              <option value="relevance">Relevanteste zuerst</option>
               <option value="newest">Neueste zuerst</option>
               <option value="popular">Beliebteste zuerst</option>
               <option value="title">Titel A–Z</option>
