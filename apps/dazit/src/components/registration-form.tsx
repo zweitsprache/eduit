@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { authClient } from '@/lib/auth/client';
 import { savePendingRegistration } from '@/lib/pending-registration';
 import { EmailOtpForm } from '@/components/email-otp-form';
 import { PasswordStrengthMeter } from '@/components/password-strength-meter';
+
+const PENDING_VERIFICATION_EMAIL_KEY = 'dazit.pendingVerificationEmail';
 
 function GoogleIcon() {
   return (
@@ -26,6 +28,11 @@ export function RegistrationForm() {
   const [password, setPassword] = useState('');
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
   const [registrationMethod, setRegistrationMethod] = useState<'email' | 'google'>('email');
+
+  useEffect(() => {
+    const pendingEmail = window.sessionStorage.getItem(PENDING_VERIFICATION_EMAIL_KEY);
+    if (pendingEmail) setVerificationEmail(pendingEmail);
+  }, []);
 
   async function registerWithGoogle() {
     setError(null);
@@ -90,6 +97,7 @@ export function RegistrationForm() {
       if (result.token) {
         window.location.assign('/auth/continue');
       } else {
+        window.sessionStorage.setItem(PENDING_VERIFICATION_EMAIL_KEY, email);
         setVerificationEmail(email);
       }
     } catch (registerError) {
@@ -105,7 +113,9 @@ export function RegistrationForm() {
     return (
       <EmailOtpForm
         initialEmail={verificationEmail}
+        onVerified={() => window.sessionStorage.removeItem(PENDING_VERIFICATION_EMAIL_KEY)}
         onUseDifferentEmail={() => {
+          window.sessionStorage.removeItem(PENDING_VERIFICATION_EMAIL_KEY);
           setVerificationEmail(null);
           setError(null);
         }}

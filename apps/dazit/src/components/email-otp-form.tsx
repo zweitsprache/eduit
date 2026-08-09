@@ -12,10 +12,12 @@ function errorMessage(error: unknown, fallback: string) {
 
 export function EmailOtpForm({
   initialEmail = '',
+  onVerified,
   onUseDifferentEmail,
   purpose = 'sign-in',
 }: {
   initialEmail?: string;
+  onVerified?: () => void;
   onUseDifferentEmail?: () => void;
   purpose?: 'sign-in' | 'email-verification';
 }) {
@@ -72,6 +74,7 @@ export function EmailOtpForm({
           otp: code,
           fetchOptions: { throw: true },
         });
+        onVerified?.();
         window.location.assign(result.token ? '/auth/continue' : '/auth/sign-in');
       } else {
         await authClient.signIn.emailOtp({
