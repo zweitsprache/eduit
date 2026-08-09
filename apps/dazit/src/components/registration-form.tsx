@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { authClient } from '@/lib/auth/client';
 import { savePendingRegistration } from '@/lib/pending-registration';
+import { EmailOtpForm } from '@/components/email-otp-form';
 import { PasswordStrengthMeter } from '@/components/password-strength-meter';
 
 function GoogleIcon() {
@@ -24,34 +25,7 @@ export function RegistrationForm() {
   const [newsletter, setNewsletter] = useState(false);
   const [password, setPassword] = useState('');
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
-  const [resendIn, setResendIn] = useState(0);
   const [registrationMethod, setRegistrationMethod] = useState<'email' | 'google'>('email');
-
-  useEffect(() => {
-    if (resendIn <= 0) return;
-    const timer = window.setInterval(() => setResendIn((value) => Math.max(0, value - 1)), 1000);
-    return () => window.clearInterval(timer);
-  }, [resendIn]);
-
-  async function resendVerification() {
-    if (!verificationEmail || busy || resendIn > 0) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await authClient.sendVerificationEmail({
-        email: verificationEmail,
-        callbackURL: `${window.location.origin}/auth/continue`,
-        fetchOptions: { throw: true },
-      });
-      setResendIn(45);
-    } catch (resendError) {
-      setError(resendError instanceof Error
-        ? resendError.message
-        : 'Die Bestätigungs-E-Mail konnte nicht gesendet werden.');
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function registerWithGoogle() {
     setError(null);
@@ -117,7 +91,6 @@ export function RegistrationForm() {
         window.location.assign('/auth/continue');
       } else {
         setVerificationEmail(email);
-        setResendIn(45);
       }
     } catch (registerError) {
       setError(registerError instanceof Error
@@ -130,36 +103,14 @@ export function RegistrationForm() {
 
   if (verificationEmail) {
     return (
-      <section className="registration-verification" role="status">
-        <div>
-          <h2>E-Mail bestätigen</h2>
-          <p>
-            Wir haben Ihnen einen Bestätigungslink an <strong>{verificationEmail}</strong> geschickt.
-            Öffnen Sie den Link, um Ihre Registrierung abzuschliessen.
-          </p>
-        </div>
-        {error && <p className="registration-error" role="alert">{error}</p>}
-        <p className="registration-verification-resend">
-          Keine E-Mail erhalten?{' '}
-          {resendIn > 0 ? (
-            <span>Erneut senden in {resendIn} s</span>
-          ) : (
-            <button disabled={busy} onClick={() => void resendVerification()} type="button">
-              Erneut senden
-            </button>
-          )}
-        </p>
-        <button
-          className="email-otp-change"
-          onClick={() => {
-            setVerificationEmail(null);
-            setError(null);
-          }}
-          type="button"
-        >
-          Andere E-Mail-Adresse verwenden
-        </button>
-      </section>
+      <EmailOtpForm
+        initialEmail={verificationEmail}
+        onUseDifferentEmail={() => {
+          setVerificationEmail(null);
+          setError(null);
+        }}
+        purpose="email-verification"
+      />
     );
   }
 

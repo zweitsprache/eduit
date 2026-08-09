@@ -10,9 +10,17 @@ function errorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-export function EmailOtpForm() {
+export function EmailOtpForm({
+  initialEmail = '',
+  onUseDifferentEmail,
+  purpose = 'sign-in',
+}: {
+  initialEmail?: string;
+  onUseDifferentEmail?: () => void;
+  purpose?: 'sign-in' | 'email-verification';
+}) {
   const [email, setEmail] = useState('');
-  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(initialEmail || null);
   const [digits, setDigits] = useState(() => Array(CODE_LENGTH).fill('') as string[]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +39,7 @@ export function EmailOtpForm() {
     try {
       await authClient.emailOtp.sendVerificationOtp({
         email: targetEmail,
-        type: 'sign-in',
+        type: purpose,
         fetchOptions: { throw: true },
       });
       setSentTo(targetEmail);
@@ -58,12 +66,21 @@ export function EmailOtpForm() {
     setBusy(true);
     setError(null);
     try {
-      await authClient.signIn.emailOtp({
-        email: sentTo,
-        otp: code,
-        fetchOptions: { throw: true },
-      });
-      window.location.assign('/auth/continue');
+      if (purpose === 'email-verification') {
+        const result = await authClient.emailOtp.verifyEmail({
+          email: sentTo,
+          otp: code,
+          fetchOptions: { throw: true },
+        });
+        window.location.assign(result.token ? '/auth/continue' : '/auth/sign-in');
+      } else {
+        await authClient.signIn.emailOtp({
+          email: sentTo,
+          otp: code,
+          fetchOptions: { throw: true },
+        });
+        window.location.assign('/auth/continue');
+      }
     } catch (verifyError) {
       setError(errorMessage(verifyError, 'Der Code ist ungültig oder abgelaufen.'));
       setDigits(Array(CODE_LENGTH).fill(''));
@@ -125,8 +142,11 @@ export function EmailOtpForm() {
   return (
     <section className="email-otp-verification">
       <div>
-        <h2>Code gesendet</h2>
-        <p>Wir haben Ihnen einen 6-stelligen Code an <strong>{sentTo}</strong> geschickt. Er gilt 10 Minuten.</p>
+        <h2>{purpose === 'email-verification' ? 'E-Mail bestätigen' : 'Code gesendet'}</h2>
+        <p>
+          Wir haben Ihnen einen 6-stelligen Code an <strong>{sentTo}</strong> geschickt.
+          {purpose === 'email-verification' ? ' Geben Sie ihn ein, um Ihre Registrierung abzuschliessen.' : ''}
+        </p>
       </div>
       <div aria-label="Sechsstelliger Anmeldecode" className="email-otp-code" role="group">
         {digits.map((digit, index) => (
@@ -155,7 +175,9 @@ export function EmailOtpForm() {
         onClick={() => void verifyCode()}
         type="button"
       >
-        {busy ? 'Code wird geprüft...' : 'Mit Code anmelden'}
+        {busy
+          ? 'Code wird geprüft...'
+          : purpose === 'email-verification' ? 'E-Mail bestätigen' : 'Mit Code anmelden'}
       </button>
       <p className="email-otp-resend">
         Keine E-Mail erhalten?{' '}
@@ -171,7 +193,14 @@ export function EmailOtpForm() {
           </button>
         )}
       </p>
-      <button className="email-otp-change" onClick={() => setSentTo(null)} type="button">
+      <button
+        className="email-otp-change"
+        onClick={() => {
+          if (onUseDifferentEmail) onUseDifferentEmail();
+          else setSentTo(null);
+        }}
+        type="button"
+      >
         Andere E-Mail-Adresse verwenden
       </button>
     </section>
