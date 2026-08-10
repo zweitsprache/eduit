@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { authClient } from '@/lib/auth/client';
+import { authErrorMessage } from '@/lib/auth/error-message';
 import { savePendingRegistration } from '@/lib/pending-registration';
 import { EmailOtpForm } from '@/components/email-otp-form';
 import { PasswordStrengthMeter } from '@/components/password-strength-meter';
@@ -20,7 +21,11 @@ function GoogleIcon() {
   );
 }
 
-export function RegistrationForm() {
+export function RegistrationForm({
+  onVerificationChange,
+}: {
+  onVerificationChange?: (isVerifying: boolean) => void;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -31,13 +36,16 @@ export function RegistrationForm() {
 
   useEffect(() => {
     const pendingEmail = window.sessionStorage.getItem(PENDING_VERIFICATION_EMAIL_KEY);
-    if (pendingEmail) setVerificationEmail(pendingEmail);
-  }, []);
+    if (pendingEmail) {
+      setVerificationEmail(pendingEmail);
+      onVerificationChange?.(true);
+    }
+  }, [onVerificationChange]);
 
   async function registerWithGoogle() {
     setError(null);
     if (!termsAccepted) {
-      setError('Bitte akzeptiere die Nutzungsbedingungen und die Datenschutzerklärung.');
+      setError('Bitte akzeptieren Sie die Nutzungsbedingungen und die Datenschutzerklärung.');
       return;
     }
     savePendingRegistration({ newsletter });
@@ -50,9 +58,10 @@ export function RegistrationForm() {
         fetchOptions: { throw: true },
       });
     } catch (registerError) {
-      setError(registerError instanceof Error
-        ? registerError.message
-        : 'Google-Registrierung fehlgeschlagen.');
+      setError(authErrorMessage(
+        registerError,
+        'Die Registrierung mit Google konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.',
+      ));
       setBusy(false);
     }
   }
@@ -68,7 +77,7 @@ export function RegistrationForm() {
 
     setError(null);
     if (!firstName || !lastName) {
-      setError('Bitte gib deinen Vor- und Nachnamen ein.');
+      setError('Bitte geben Sie Ihren Vor- und Nachnamen ein.');
       return;
     }
     if (password.length < 8) {
@@ -80,7 +89,7 @@ export function RegistrationForm() {
       return;
     }
     if (!termsAccepted) {
-      setError('Bitte akzeptiere die Nutzungsbedingungen und die Datenschutzerklärung.');
+      setError('Bitte akzeptieren Sie die Nutzungsbedingungen und die Datenschutzerklärung.');
       return;
     }
 
@@ -99,11 +108,10 @@ export function RegistrationForm() {
       } else {
         window.sessionStorage.setItem(PENDING_VERIFICATION_EMAIL_KEY, email);
         setVerificationEmail(email);
+        onVerificationChange?.(true);
       }
     } catch (registerError) {
-      setError(registerError instanceof Error
-        ? registerError.message
-        : 'Das Konto konnte nicht erstellt werden.');
+      setError(authErrorMessage(registerError, 'Das Konto konnte nicht erstellt werden. Bitte versuchen Sie es erneut.'));
     } finally {
       setBusy(false);
     }
@@ -118,6 +126,7 @@ export function RegistrationForm() {
           window.sessionStorage.removeItem(PENDING_VERIFICATION_EMAIL_KEY);
           setVerificationEmail(null);
           setError(null);
+          onVerificationChange?.(false);
         }}
         purpose="email-verification"
       />

@@ -22,6 +22,7 @@ export function AuthSurface({
   showLogo?: boolean;
 }) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
+  const [isVerifyingRegistration, setIsVerifyingRegistration] = useState(false);
   const accountMode = mode === 'sign-up' ? 'sign-up' : 'sign-in';
 
   return (
@@ -37,28 +38,30 @@ export function AuthSurface({
       }}
     >
       {showLogo && <img alt="DaZit" className="auth-surface-logo" src="/dazit_icon_orange.svg" />}
-      <div aria-label="Anmeldemethode" className="auth-surface-tabs" role="tablist">
-        <button
-          aria-selected={accountMode === 'sign-in'}
-          className={accountMode === 'sign-in' ? 'is-active' : ''}
-          onClick={() => setMode('sign-in')}
-          role="tab"
-          type="button"
-        >
-          Anmelden
-        </button>
-        <button
-          aria-selected={mode === 'sign-up'}
-          className={mode === 'sign-up' ? 'is-active' : ''}
-          onClick={() => setMode('sign-up')}
-          role="tab"
-          type="button"
-        >
-          Registrieren
-        </button>
-      </div>
+      {!isVerifyingRegistration && (
+        <div aria-label="Anmeldemethode" className="auth-surface-tabs" role="tablist">
+          <button
+            aria-selected={accountMode === 'sign-in'}
+            className={accountMode === 'sign-in' ? 'is-active' : ''}
+            onClick={() => setMode('sign-in')}
+            role="tab"
+            type="button"
+          >
+            Anmelden
+          </button>
+          <button
+            aria-selected={mode === 'sign-up'}
+            className={mode === 'sign-up' ? 'is-active' : ''}
+            onClick={() => setMode('sign-up')}
+            role="tab"
+            type="button"
+          >
+            Registrieren
+          </button>
+        </div>
+      )}
       {mode === 'sign-up' ? (
-        <RegistrationForm />
+        <RegistrationForm onVerificationChange={setIsVerifyingRegistration} />
       ) : mode === 'email-otp' ? (
         <EmailOtpForm />
       ) : mode === 'forgot-password' ? (
@@ -79,7 +82,7 @@ export function AuthSurface({
       )}
       {accountMode === 'sign-in' && mode !== 'forgot-password' && (
         <p className="auth-surface-code-switch">
-          {mode === 'email-otp' ? 'Lieber mit Passwort?' : 'Lieber ohne Passwort?'}{' '}
+          {mode === 'email-otp' ? 'Möchten Sie Ihr Passwort verwenden?' : 'Möchten Sie sich ohne Passwort anmelden?'}{' '}
           <button
             onClick={() => setMode(mode === 'email-otp' ? 'sign-in' : 'email-otp')}
             type="button"

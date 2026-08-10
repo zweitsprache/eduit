@@ -2,13 +2,10 @@
 
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { authClient } from '@/lib/auth/client';
+import { authErrorMessage } from '@/lib/auth/error-message';
 
 const CODE_LENGTH = 6;
 const RESEND_DELAY = 45;
-
-function errorMessage(error: unknown, fallback: string) {
-  return error instanceof Error && error.message ? error.message : fallback;
-}
 
 export function EmailOtpForm({
   initialEmail = '',
@@ -49,7 +46,7 @@ export function EmailOtpForm({
       setResendIn(RESEND_DELAY);
       window.setTimeout(() => inputs.current[0]?.focus(), 0);
     } catch (sendError) {
-      setError(errorMessage(sendError, 'Der Code konnte nicht gesendet werden.'));
+      setError(authErrorMessage(sendError, 'Der Code konnte nicht gesendet werden. Bitte versuchen Sie es erneut.'));
     } finally {
       setBusy(false);
     }
@@ -85,7 +82,7 @@ export function EmailOtpForm({
         window.location.assign('/auth/continue');
       }
     } catch (verifyError) {
-      setError(errorMessage(verifyError, 'Der Code ist ungültig oder abgelaufen.'));
+      setError(authErrorMessage(verifyError, 'Der Code konnte nicht geprüft werden. Bitte versuchen Sie es erneut.'));
       setDigits(Array(CODE_LENGTH).fill(''));
       window.setTimeout(() => inputs.current[0]?.focus(), 0);
     } finally {
@@ -122,7 +119,7 @@ export function EmailOtpForm({
   if (!sentTo) {
     return (
       <form className="email-otp-request" onSubmit={requestCode}>
-        <p>Gib deine E-Mail-Adresse ein. Wir senden dir einen sechsstelligen Anmeldecode.</p>
+        <p>Geben Sie Ihre E-Mail-Adresse ein. Wir senden Ihnen einen sechsstelligen Anmeldecode.</p>
         <label className="registration-field">
           <input
             autoComplete="email"

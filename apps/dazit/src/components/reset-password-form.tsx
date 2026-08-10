@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { authClient } from '@/lib/auth/client';
+import { authErrorMessage } from '@/lib/auth/error-message';
 import { PasswordStrengthMeter } from '@/components/password-strength-meter';
 
 function errorMessage(error: unknown) {
-  return error instanceof Error && error.message
-    ? error.message
-    : 'Das Passwort konnte nicht geändert werden. Bitte fordern Sie einen neuen Link an.';
+  return authErrorMessage(
+    error,
+    'Das Passwort konnte nicht geändert werden. Bitte fordern Sie einen neuen Link an.',
+  );
 }
 
 export function ResetPasswordForm() {

@@ -4,11 +4,10 @@ import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { authClient } from '@/lib/auth/client';
+import { authErrorMessage } from '@/lib/auth/error-message';
 
 function errorMessage(error: unknown) {
-  return error instanceof Error && error.message
-    ? error.message
-    : 'Der Link konnte nicht gesendet werden. Bitte versuchen Sie es erneut.';
+  return authErrorMessage(error, 'Der Link konnte nicht gesendet werden. Bitte versuchen Sie es erneut.');
 }
 
 export function ForgotPasswordForm({ onBack }: { onBack?: () => void }) {

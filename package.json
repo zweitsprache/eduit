@@ -15,6 +15,8 @@
     "build:app": "npm run build --workspace=@eduit/app",
     "build:marketing": "npm run build --workspace=@eduit/marketing",
     "build:dazit": "npm run build --workspace=@eduit/dazit",
-    "lint": "npm run lint --workspaces --if-present"
+    "lint": "npm run lint --workspaces --if-present",
+    "pdf:remove-footer-name:test": "node scripts/remove-pdf-footer-name.mjs --test",
+    "pdf:remove-footer-name:apply": "node scripts/remove-pdf-footer-name.mjs --apply --confirm-all-published-pdfs"
   }
 }

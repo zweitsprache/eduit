@@ -2,10 +2,11 @@
 
 import { FormEvent, useState } from 'react';
 import { authClient } from '@/lib/auth/client';
+import { authErrorMessage } from '@/lib/auth/error-message';
 import { PasswordStrengthMeter } from '@/components/password-strength-meter';
 
 function messageFrom(error: unknown, fallback: string) {
-  return error instanceof Error && error.message ? error.message : fallback;
+  return authErrorMessage(error, fallback);
 }
 
 export function AccountSettings({ email, initialName }: { email: string; initialName: string }) {

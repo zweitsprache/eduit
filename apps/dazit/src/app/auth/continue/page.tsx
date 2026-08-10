@@ -27,7 +27,7 @@ export default function AuthContinuePage() {
         URL.revokeObjectURL(blobUrl);
         window.location.replace(pending.returnTo);
       }).catch(() => {
-        setMessage('Der Download konnte nicht gestartet werden. Du wirst zur Bibliothek zurückgebracht.');
+        setMessage('Der Download konnte nicht gestartet werden. Sie werden zur Bibliothek zurückgebracht.');
         window.setTimeout(() => window.location.replace(pending.returnTo), 1800);
       });
     })();

@@ -116,7 +116,7 @@ export function DownloadAuthGate({
           ? new Intl.DateTimeFormat('de-CH', { hour: '2-digit', minute: '2-digit' })
             .format(new Date(payload.resetsAt))
           : 'Mitternacht';
-        setError(`Deine drei kostenlosen Downloads sind heute aufgebraucht. Neue Downloads sind ab ${reset} verfügbar.`);
+        setError(`Ihre drei kostenlosen Downloads sind heute aufgebraucht. Neue Downloads sind ab ${reset} verfügbar.`);
         setOpen(true);
         return;
       }
@@ -129,10 +129,8 @@ export function DownloadAuthGate({
         ?.match(/filename="([^"]+)"/)?.[1] ?? 'dazit.pdf';
       anchor.click();
       URL.revokeObjectURL(blobUrl);
-    } catch (downloadError) {
-      setError(downloadError instanceof Error
-        ? downloadError.message
-        : 'Das PDF konnte nicht heruntergeladen werden.');
+    } catch {
+      setError('Das PDF konnte nicht heruntergeladen werden. Bitte versuchen Sie es erneut.');
       setOpen(true);
     } finally {
       setBusy(false);

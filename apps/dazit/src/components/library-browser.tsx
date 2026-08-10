@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Grid01, List, SearchLg, XClose } from '@untitledui/icons';
+import { Download01, Grid01, List, SearchLg, XClose } from '@untitledui/icons';
 import { FilterSidebar } from '@/components/filter-sidebar';
 import { WorksheetCard } from '@/components/worksheet-card';
 import type { Worksheet } from '@/lib/worksheets';
@@ -89,6 +89,7 @@ export function LibraryBrowser({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
   const [sortMode, setSortMode] = useState<SortMode>(initialQuery ? 'relevance' : 'newest');
+  const [downloadingResults, setDownloadingResults] = useState(false);
 
   useEffect(() => {
     setSelectedTypes(initialTypes);
@@ -208,6 +209,29 @@ export function LibraryBrowser({
     }
   };
 
+  const downloadResults = async () => {
+    setDownloadingResults(true);
+    try {
+      const response = await fetch('/api/admin/download-results', {
+        body: JSON.stringify({ slugs: visibleWorksheets.map(({ slug }) => slug) }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Download fehlgeschlagen.');
+      const blobUrl = URL.createObjectURL(await response.blob());
+      const anchor = document.createElement('a');
+      anchor.href = blobUrl;
+      anchor.download = response.headers.get('content-disposition')
+        ?.match(/filename="([^"]+)"/)?.[1] ?? 'dazit-suchergebnisse.zip';
+      anchor.click();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.alert('Die ZIP-Datei konnte nicht erstellt werden. Bitte versuchen Sie es erneut.');
+    } finally {
+      setDownloadingResults(false);
+    }
+  };
+
   return (
     <main className="library-layout">
       <button
@@ -270,6 +294,18 @@ export function LibraryBrowser({
         <div className="results-toolbar">
           <strong>{visibleWorksheets.length} Ergebnisse</strong>
           <div>
+            {canAdminister && (
+              <button
+                className="download-results-button"
+                disabled={downloadingResults || visibleWorksheets.length === 0}
+                onClick={downloadResults}
+                title="Alle Suchergebnisse als ZIP herunterladen"
+                type="button"
+              >
+                <Download01 aria-hidden="true" />
+                <span>{downloadingResults ? 'ZIP wird erstellt …' : 'Alle PDFs'}</span>
+              </button>
+            )}
             <select
               aria-label="Sortierung"
               onChange={(event) => { setSortMode(event.target.value as SortMode); setCurrentPage(1); }}

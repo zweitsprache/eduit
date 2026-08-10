@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FilterLines, SearchLg } from '@untitledui/icons';
@@ -14,6 +15,9 @@ export function SiteHeader({
   search?: boolean;
 }) {
   const { data: session } = authClient.useSession();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   async function signOut() {
     await authClient.signOut();
@@ -35,7 +39,7 @@ export function SiteHeader({
           <input placeholder="Titel oder Stichwort suchen …" />
         </label>
       )}
-      {session?.user ? (
+      {mounted && session?.user ? (
         <div className="account-menu">
           <button
             aria-label={`Konto von ${session.user.email} öffnen`}
