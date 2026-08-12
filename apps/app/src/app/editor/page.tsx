@@ -38,6 +38,7 @@ import {
   TextAlignStart,
   FileUp,
   WandSparkles,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/base/buttons/button';
 import { SearchSelect, Select } from '@/components/base/select/select';
@@ -139,6 +140,12 @@ import {
   type GlossaryTermsAttrs,
   type GlossaryTermWidth,
 } from '@/components/editor/glossary-terms-node';
+import {
+  ORIGINAL_VIEW_LANGUAGE,
+  TRANSLATION_LANGUAGE_OPTIONS,
+  translationLanguageLabel,
+  WorksheetViewLanguageProvider,
+} from '@/components/editor/worksheet-view-language';
 import {
   FrayerModel,
   type FrayerModelAttrs,
@@ -1199,6 +1206,10 @@ const CONTENT_LANGUAGE_OPTIONS = [
   ['en', 'Englisch · en'],
 ] as const;
 
+function contentLanguageLabel(code: string) {
+  return CONTENT_LANGUAGE_OPTIONS.find(([value]) => value === code)?.[1] ?? code;
+}
+
 const LANGUAGE_PROFICIENCY_OPTIONS = [
   'A1.1',
   'A1.2',
@@ -1291,6 +1302,8 @@ export default function EditorPage() {
   const [documentContext, setDocumentContext] = useState<WorksheetContext>({
     ...EMPTY_WORKSHEET_CONTEXT,
   });
+  const [viewLanguage, setViewLanguage] = useState<string>(ORIGINAL_VIEW_LANGUAGE);
+  const [translatingGlossary, setTranslatingGlossary] = useState(false);
   const contextPdfInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadingContextPdf, setUploadingContextPdf] = useState(false);
   const [contextPdfError, setContextPdfError] = useState('');
@@ -2503,6 +2516,15 @@ export default function EditorPage() {
   }, [documentContext.worksheetLanguage, editor]);
 
   useEffect(() => {
+    if (
+      viewLanguage !== ORIGINAL_VIEW_LANGUAGE
+      && !documentContext.translationLanguages.includes(viewLanguage)
+    ) {
+      setViewLanguage(ORIGINAL_VIEW_LANGUAGE);
+    }
+  }, [documentContext.translationLanguages, viewLanguage]);
+
+  useEffect(() => {
     const loadContextProfiles = async () => {
       try {
         const response = await fetch('/api/context-profiles', {
@@ -2788,6 +2810,70 @@ export default function EditorPage() {
         example: 'Example',
       },
     ]);
+  };
+
+  const updateGlossaryDefinitionTranslation = (
+    id: string,
+    language: string,
+    value: string,
+  ) => {
+    if (!selectedGlossaryTermsAttrs) return;
+    const term = selectedGlossaryTermsAttrs.terms.find((entry) => entry.id === id);
+    if (!term) return;
+    updateGlossaryTerm(id, {
+      definitionTranslations: {
+        ...term.definitionTranslations,
+        [language]: value,
+      },
+    });
+  };
+
+  const autoTranslateGlossary = async () => {
+    if (
+      !selectedGlossaryTermsAttrs
+      || viewLanguage === ORIGINAL_VIEW_LANGUAGE
+      || translatingGlossary
+    ) {
+      return;
+    }
+    const language = viewLanguage;
+    setTranslatingGlossary(true);
+    try {
+      const response = await fetch('/api/ai/translate-glossary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetLanguage: language,
+          terms: selectedGlossaryTermsAttrs.terms.map(({ id, definition }) => ({
+            id,
+            definition,
+          })),
+          context: documentContext,
+        }),
+      });
+      if (!response.ok) return;
+      const result = await response.json() as {
+        translations?: { id: string; definition: string }[];
+      };
+      const translationById = new Map(
+        (result.translations ?? []).map((entry) => [entry.id, entry.definition]),
+      );
+      updateGlossaryTerms(
+        selectedGlossaryTermsAttrs.terms.map((term) => {
+          const translated = translationById.get(term.id);
+          if (translated == null) return term;
+          return {
+            ...term,
+            definitionTranslations: {
+              ...term.definitionTranslations,
+              [language]: translated,
+            },
+          };
+        }),
+      );
+    } finally {
+      setTranslatingGlossary(false);
+    }
   };
 
   const updateFrayerQuadrant = (
@@ -4596,7 +4682,9 @@ export default function EditorPage() {
               editor.commands.blur();
             }}
           >
-            <EditorContent editor={editor} className="editor-content mx-auto w-fit" />
+            <WorksheetViewLanguageProvider value={viewLanguage}>
+              <EditorContent editor={editor} className="editor-content mx-auto w-fit" />
+            </WorksheetViewLanguageProvider>
           </div>
         </main>
 
@@ -7393,6 +7481,47 @@ export default function EditorPage() {
                 <span className="rounded bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-brand-secondary">Glossary</span>
               </div>
 
+              <div className="mt-4 rounded-lg border border-secondary bg-secondary p-3">
+                <p className="text-xs font-semibold text-tertiary">Übersetzung</p>
+                {documentContext.translationLanguages.length === 0 ? (
+                  <p className="mt-1 text-xs text-quaternary">
+                    Füge zuerst rechts unter «Übersetzungen» eine Sprache hinzu.
+                  </p>
+                ) : (
+                  <>
+                    <label htmlFor="glossary-view-language" className="mt-2 block text-xs text-quaternary">
+                      Sprache
+                    </label>
+                    <select
+                      id="glossary-view-language"
+                      value={viewLanguage}
+                      onChange={(event) => setViewLanguage(event.target.value)}
+                      className="mt-1 w-full rounded-md border border-primary bg-primary px-2.5 py-2 text-sm font-medium text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                    >
+                      <option value={ORIGINAL_VIEW_LANGUAGE}>Original</option>
+                      {documentContext.translationLanguages.map((code) => (
+                        <option key={code} value={code}>{translationLanguageLabel(code)}</option>
+                      ))}
+                    </select>
+                    {viewLanguage !== ORIGINAL_VIEW_LANGUAGE && (
+                      <>
+                        <p className="mt-2 text-xs text-quaternary">
+                          Nur die Definitionen werden übersetzt. Begriff und Beispiel bleiben unverändert.
+                        </p>
+                        <button
+                          type="button"
+                          disabled={translatingGlossary}
+                          onClick={() => void autoTranslateGlossary()}
+                          className="mt-2 w-full rounded-md bg-brand-solid px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-solid_hover disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {translatingGlossary ? 'Wird übersetzt…' : 'Definitionen automatisch übersetzen'}
+                        </button>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+
               <div className="mt-4 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold text-tertiary">Show instruction</p>
@@ -7541,12 +7670,14 @@ export default function EditorPage() {
                         value={item.term}
                         onChange={(event) => updateGlossaryTerm(item.id, { term: event.target.value })}
                         placeholder={GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[0]}
-                        className="min-w-0 flex-1 rounded-md border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                        disabled={viewLanguage !== ORIGINAL_VIEW_LANGUAGE}
+                        className="min-w-0 flex-1 rounded-md border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand disabled:cursor-not-allowed disabled:opacity-50"
                       />
                       <button
                         type="button"
                         aria-label={`Delete glossary term ${itemIndex + 1}`}
-                        disabled={selectedGlossaryTermsAttrs.terms.length <= 1}
+                        disabled={selectedGlossaryTermsAttrs.terms.length <= 1
+                          || viewLanguage !== ORIGINAL_VIEW_LANGUAGE}
                         onClick={() => updateGlossaryTerms(
                           selectedGlossaryTermsAttrs.terms.filter(({ id }) => id !== item.id),
                         )}
@@ -7558,9 +7689,19 @@ export default function EditorPage() {
                     <textarea
                       aria-label={`${GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[1]} ${itemIndex + 1}`}
                       rows={2}
-                      value={item.definition}
-                      onChange={(event) => updateGlossaryTerm(item.id, { definition: event.target.value })}
-                      placeholder={GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[1]}
+                      value={viewLanguage === ORIGINAL_VIEW_LANGUAGE
+                        ? item.definition
+                        : item.definitionTranslations?.[viewLanguage] ?? ''}
+                      onChange={(event) => (viewLanguage === ORIGINAL_VIEW_LANGUAGE
+                        ? updateGlossaryTerm(item.id, { definition: event.target.value })
+                        : updateGlossaryDefinitionTranslation(
+                          item.id,
+                          viewLanguage,
+                          event.target.value,
+                        ))}
+                      placeholder={viewLanguage === ORIGINAL_VIEW_LANGUAGE
+                        ? GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[1]
+                        : item.definition || GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[1]}
                       className="mt-2 ml-7 w-[calc(100%_-_1.75rem)] resize-y rounded-md border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
                     />
                     {glossaryColumnWidths(selectedGlossaryTermsAttrs).hasExample && <textarea
@@ -7569,7 +7710,8 @@ export default function EditorPage() {
                       value={item.example}
                       onChange={(event) => updateGlossaryTerm(item.id, { example: event.target.value })}
                       placeholder={GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[2]}
-                      className="mt-2 ml-7 w-[calc(100%_-_1.75rem)] resize-y rounded-md border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                      disabled={viewLanguage !== ORIGINAL_VIEW_LANGUAGE}
+                      className="mt-2 ml-7 w-[calc(100%_-_1.75rem)] resize-y rounded-md border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand disabled:cursor-not-allowed disabled:opacity-50"
                     />}
                   </div>
                 ))}
@@ -7578,7 +7720,8 @@ export default function EditorPage() {
               <button
                 type="button"
                 onClick={addGlossaryTerm}
-                className="mt-3 w-full rounded-lg border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+                disabled={viewLanguage !== ORIGINAL_VIEW_LANGUAGE}
+                className="mt-3 w-full rounded-lg border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover disabled:cursor-not-allowed disabled:opacity-40"
               >
                 + Add glossary term
               </button>
@@ -8641,6 +8784,75 @@ export default function EditorPage() {
           </div>
 
           <div className="border-t border-secondary pt-5">
+            <p className="text-xs font-semibold text-quaternary">Übersetzungen</p>
+            <p className="mt-1 text-xs text-tertiary">
+              Sprachen gelten für das ganze Dokument. Übersetzbare Felder werden
+              in der gewählten Ansichtssprache angezeigt.
+            </p>
+            {documentContext.translationLanguages.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {documentContext.translationLanguages.map((code) => (
+                  <span
+                    className="flex items-center gap-1 rounded-full border border-primary bg-secondary py-0.5 pr-1 pl-2.5 text-xs font-medium text-secondary"
+                    key={code}
+                  >
+                    {translationLanguageLabel(code)}
+                    <button
+                      type="button"
+                      aria-label={`${translationLanguageLabel(code)} entfernen`}
+                      onClick={() => updateDocumentContext({
+                        translationLanguages: documentContext.translationLanguages
+                          .filter((value) => value !== code),
+                      })}
+                      className="flex size-4 items-center justify-center rounded-full text-quaternary transition hover:bg-primary_hover hover:text-error-primary"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="mt-3">
+              <SearchSelect
+                ariaLabel="Sprache zum Übersetzen hinzufügen"
+                placeholder="Sprache hinzufügen…"
+                value=""
+                options={TRANSLATION_LANGUAGE_OPTIONS
+                  .filter(([code]) => !documentContext.translationLanguages.includes(code))
+                  .map(([value, label]) => ({ value, label }))}
+                onChange={(code) => {
+                  if (!code) return;
+                  updateDocumentContext({
+                    translationLanguages: [
+                      ...documentContext.translationLanguages,
+                      code,
+                    ],
+                  });
+                }}
+              />
+            </div>
+            {documentContext.translationLanguages.length > 0 && (
+              <label
+                htmlFor="view-language"
+                className="mt-4 block text-xs font-semibold text-tertiary"
+              >
+                Ansichtssprache
+                <select
+                  id="view-language"
+                  value={viewLanguage}
+                  onChange={(event) => setViewLanguage(event.target.value)}
+                  className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-medium text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
+                >
+                  <option value={ORIGINAL_VIEW_LANGUAGE}>Original</option>
+                  {documentContext.translationLanguages.map((code) => (
+                    <option key={code} value={code}>{translationLanguageLabel(code)}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+
+          <div className="border-t border-secondary pt-5">
             <p className="text-xs font-semibold text-quaternary">Status</p>
             <div className="mt-3 flex items-center gap-2 text-sm text-tertiary">
               <span className="size-2 rounded-full bg-fg-success-primary" />
@@ -9117,6 +9329,10 @@ export default function EditorPage() {
         block={contentEditorBlock}
         editor={editor}
         onClose={() => setContentEditorBlock(null)}
+        translationLanguages={documentContext.translationLanguages}
+        viewLanguage={viewLanguage}
+        onViewLanguageChange={setViewLanguage}
+        worksheetContext={documentContext}
       />
       <LearningCardsAIModal
         onClose={() => setLearningCardsAIBlock(null)}

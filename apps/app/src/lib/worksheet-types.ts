@@ -28,6 +28,8 @@ export type WorksheetContext = {
   ageMin: number | null;
   ageMax: number | null;
   contentLanguage: string;
+  // Document-level list of translation target language codes (e.g. ['fr', 'en']).
+  translationLanguages: string[];
   country: string;
   localLevel: string;
   curriculum: string;
@@ -52,6 +54,7 @@ export const EMPTY_WORKSHEET_CONTEXT: WorksheetContext = {
   ageMin: null,
   ageMax: null,
   contentLanguage: 'de-CH',
+  translationLanguages: [],
   country: '',
   localLevel: '',
   curriculum: '',

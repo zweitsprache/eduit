@@ -86,6 +86,13 @@ function mapRow(row: WorksheetRow): Worksheet {
           languageCompetencies: string[];
         }).languageCompetencies)
         : EMPTY_WORKSHEET_CONTEXT.languageCompetencies,
+      translationLanguages: Array.isArray((row.context as WorksheetContext & {
+        translationLanguages?: unknown;
+      })?.translationLanguages)
+        ? ((row.context as WorksheetContext & {
+          translationLanguages: string[];
+        }).translationLanguages).filter((code): code is string => typeof code === 'string')
+        : EMPTY_WORKSHEET_CONTEXT.translationLanguages,
     },
     status: row.status,
     hasPreview: row.has_preview,
@@ -264,6 +271,13 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
       ageMin: age('ageMin'),
       ageMax: age('ageMax'),
       contentLanguage: text('contentLanguage', 100),
+      translationLanguages: Array.isArray(context.translationLanguages)
+        ? context.translationLanguages
+          .filter((value): value is string => typeof value === 'string')
+          .map((value) => value.trim().slice(0, 20))
+          .filter(Boolean)
+          .slice(0, 20)
+        : EMPTY_WORKSHEET_CONTEXT.translationLanguages,
       country: text('country', 100),
       localLevel: text('localLevel', 150),
       curriculum: text('curriculum', 250),

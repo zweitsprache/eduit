@@ -98,6 +98,11 @@ import {
   type GlossaryTermsAttrs,
   type GlossaryTermWidth,
 } from '@/components/editor/glossary-terms-node';
+import {
+  ORIGINAL_VIEW_LANGUAGE,
+  translationLanguageLabel,
+} from '@/components/editor/worksheet-view-language';
+import type { WorksheetContext } from '@/lib/worksheet-types';
 import type {
   FrayerModelAttrs,
   FrayerQuadrant,
@@ -3805,10 +3810,18 @@ function GlossaryTermsEditor({
   attrs,
   block,
   editor,
+  translationLanguages = [],
+  viewLanguage = ORIGINAL_VIEW_LANGUAGE,
+  onViewLanguageChange,
+  worksheetContext,
 }: {
   attrs: GlossaryTermsAttrs;
   block: ContentEditorBlock;
   editor: Editor;
+  translationLanguages?: string[];
+  viewLanguage?: string;
+  onViewLanguageChange?: (language: string) => void;
+  worksheetContext?: WorksheetContext;
 }) {
   const setTerms = (terms: GlossaryTerm[]) => updateAttrs(editor, block, { terms });
   const updateTerm = (id: string, patch: Partial<GlossaryTerm>) => setTerms(
@@ -3816,6 +3829,75 @@ function GlossaryTermsEditor({
   );
   const [csvImportText, setCsvImportText] = useState('');
   const [csvImportError, setCsvImportError] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
+  const hasTranslationLanguages = translationLanguages.length > 0;
+  const activeLanguage = viewLanguage !== ORIGINAL_VIEW_LANGUAGE
+    && translationLanguages.includes(viewLanguage)
+    ? viewLanguage
+    : ORIGINAL_VIEW_LANGUAGE;
+  const isTranslationMode = activeLanguage !== ORIGINAL_VIEW_LANGUAGE;
+  const setDefinitionTranslation = (id: string, language: string, value: string) => {
+    setTerms(attrs.terms.map((term) => {
+      if (term.id !== id) return term;
+      const nextTranslations = { ...(term.definitionTranslations ?? {}) };
+      if (value.trim()) {
+        nextTranslations[language] = value;
+      } else {
+        delete nextTranslations[language];
+      }
+      return { ...term, definitionTranslations: nextTranslations };
+    }));
+  };
+  const autoTranslateDefinitions = async () => {
+    if (!isTranslationMode) return;
+    const terms = attrs.terms
+      .filter((term) => term.definition.trim())
+      .map((term) => ({ id: term.id, definition: term.definition }));
+    if (!terms.length) {
+      setTranslateError('Es gibt keine Definitionen zum Übersetzen.');
+      return;
+    }
+    setTranslating(true);
+    setTranslateError(null);
+    try {
+      const response = await fetch('/api/ai/translate-glossary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetLanguage: activeLanguage,
+          terms,
+          context: worksheetContext ?? null,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Übersetzung fehlgeschlagen.');
+      }
+      const data = await response.json() as {
+        translations?: { id: string; definition: string }[];
+      };
+      const byId = new Map(
+        (data.translations ?? []).map((entry) => [entry.id, entry.definition]),
+      );
+      setTerms(attrs.terms.map((term) => {
+        const translated = byId.get(term.id);
+        if (translated === undefined) return term;
+        const nextTranslations = { ...(term.definitionTranslations ?? {}) };
+        if (translated.trim()) {
+          nextTranslations[activeLanguage] = translated;
+        } else {
+          delete nextTranslations[activeLanguage];
+        }
+        return { ...term, definitionTranslations: nextTranslations };
+      }));
+    } catch (error) {
+      setTranslateError(
+        error instanceof Error ? error.message : 'Übersetzung fehlgeschlagen.',
+      );
+    } finally {
+      setTranslating(false);
+    }
+  };
   const presetConfig = GLOSSARY_PRESETS[attrs.preset];
   const { hasExample, hasAdditionalColumn } = glossaryColumnWidths(attrs);
   const headers = glossaryHeaders(attrs);
@@ -3878,6 +3960,55 @@ function GlossaryTermsEditor({
 
   return (
     <>
+      <div className="rounded-xl border border-secondary bg-secondary p-4">
+        <ContentSectionHeader>Übersetzung</ContentSectionHeader>
+        {hasTranslationLanguages ? (
+          <>
+            <p className="mt-2 text-xs leading-5 text-secondary">
+              Wähle eine Sprache, um die Definitionen zu übersetzen. Begriff und
+              Beispiel bleiben in der Originalsprache.
+            </p>
+            <select
+              aria-label="Übersetzungssprache"
+              value={activeLanguage}
+              onChange={(event) => onViewLanguageChange?.(event.target.value)}
+              className="mt-3 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            >
+              <option value={ORIGINAL_VIEW_LANGUAGE}>Original</option>
+              {translationLanguages.map((language) => (
+                <option value={language} key={language}>
+                  {translationLanguageLabel(language)}
+                </option>
+              ))}
+            </select>
+            {isTranslationMode && (
+              <>
+                <button
+                  type="button"
+                  disabled={translating}
+                  onClick={autoTranslateDefinitions}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-brand-solid px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-solid_hover disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <BookOpen className="size-4" />
+                  {translating
+                    ? 'Übersetze …'
+                    : `Definitionen automatisch übersetzen (${translationLanguageLabel(activeLanguage)})`}
+                </button>
+                {translateError && (
+                  <p className="mt-2 text-xs text-error-primary" role="alert">
+                    {translateError}
+                  </p>
+                )}
+              </>
+            )}
+          </>
+        ) : (
+          <p className="mt-2 text-xs leading-5 text-secondary">
+            Füge zuerst in den Dokumenteinstellungen unter «Übersetzungen» eine
+            Sprache hinzu, um Definitionen zu übersetzen.
+          </p>
+        )}
+      </div>
       <ContentSwitch
         label="Show instruction"
         isSelected={attrs.showInstruction}
@@ -4046,7 +4177,7 @@ function GlossaryTermsEditor({
           )}
           <button
             type="button"
-            disabled={!csvImportText.trim()}
+            disabled={!csvImportText.trim() || isTranslationMode}
             onClick={importGlossaryCsv}
             className="flex w-full items-center justify-center rounded-lg bg-brand-solid px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-solid_hover disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -4057,6 +4188,12 @@ function GlossaryTermsEditor({
       <ContentSectionHeader count={`${attrs.terms.length} terms`}>
         Glossary entries
       </ContentSectionHeader>
+      {isTranslationMode && (
+        <p className="mt-2 text-xs leading-5 text-secondary">
+          Übersetzungsmodus: {translationLanguageLabel(activeLanguage)}. Nur die
+          Definition kann bearbeitet werden.
+        </p>
+      )}
       <div className="mt-3 space-y-2">
         {attrs.terms.map((term, index) => (
           <ContentCard key={term.id}>
@@ -4067,48 +4204,55 @@ function GlossaryTermsEditor({
               <input
                 aria-label={`${headers[0]} ${index + 1}`}
                 value={term.term}
+                disabled={isTranslationMode}
                 onChange={(event) => updateTerm(term.id, { term: event.target.value })}
                 placeholder={headers[0]}
-                className="w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                className="w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand disabled:cursor-not-allowed disabled:opacity-60"
               />
               <ContentItemActions
                 label={`term ${index + 1}`}
-                canDelete={attrs.terms.length > 1}
-                canMoveUp={index > 0}
-                canMoveDown={index < attrs.terms.length - 1}
+                canDelete={!isTranslationMode && attrs.terms.length > 1}
+                canMoveUp={!isTranslationMode && index > 0}
+                canMoveDown={!isTranslationMode && index < attrs.terms.length - 1}
                 onDelete={() => setTerms(attrs.terms.filter(({ id }) => id !== term.id))}
                 onMoveUp={() => setTerms(moveItem(attrs.terms, index, -1))}
                 onMoveDown={() => setTerms(moveItem(attrs.terms, index, 1))}
               />
               <textarea
-                aria-label={`${headers[1]} ${index + 1}`}
+                aria-label={isTranslationMode
+                  ? `${headers[1]} ${index + 1} – ${translationLanguageLabel(activeLanguage)}`
+                  : `${headers[1]} ${index + 1}`}
                 rows={2}
-                value={term.definition}
-                onChange={(event) => updateTerm(term.id, {
-                  definition: event.target.value,
-                })}
-                placeholder={headers[1]}
+                value={isTranslationMode
+                  ? (term.definitionTranslations?.[activeLanguage] ?? '')
+                  : term.definition}
+                onChange={(event) => (isTranslationMode
+                  ? setDefinitionTranslation(term.id, activeLanguage, event.target.value)
+                  : updateTerm(term.id, { definition: event.target.value }))}
+                placeholder={isTranslationMode ? term.definition : headers[1]}
                 className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
               />
               {hasAdditionalColumn && <textarea
                 aria-label={`${headers[2]} ${index + 1}`}
                 rows={2}
                 value={term.additional ?? ''}
+                disabled={isTranslationMode}
                 onChange={(event) => updateTerm(term.id, {
                   additional: event.target.value,
                 })}
                 placeholder={headers[2]}
-                className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand disabled:cursor-not-allowed disabled:opacity-60"
               />}
               {hasExample && <textarea
                 aria-label={`${headers[hasAdditionalColumn ? 3 : 2]} ${index + 1}`}
                 rows={2}
                 value={term.example}
+                disabled={isTranslationMode}
                 onChange={(event) => updateTerm(term.id, {
                   example: event.target.value,
                 })}
                 placeholder={headers[hasAdditionalColumn ? 3 : 2]}
-                className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand disabled:cursor-not-allowed disabled:opacity-60"
               />}
             </ContentItemGrid>
           </ContentCard>
@@ -4116,6 +4260,7 @@ function GlossaryTermsEditor({
       </div>
       <button
         type="button"
+        disabled={isTranslationMode}
         onClick={() => setTerms([...attrs.terms, {
           id: `term-${Date.now()}`,
           term: `Term ${attrs.terms.length + 1}`,
@@ -4123,7 +4268,7 @@ function GlossaryTermsEditor({
           additional: 'Additional',
           example: 'Example',
         }])}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover disabled:cursor-not-allowed disabled:opacity-40"
       >
         <PlusSquare className="size-4" /> Add term
       </button>
@@ -6852,10 +6997,18 @@ export function BlockContentEditorModal({
   block,
   editor,
   onClose,
+  translationLanguages = [],
+  viewLanguage = ORIGINAL_VIEW_LANGUAGE,
+  onViewLanguageChange,
+  worksheetContext,
 }: {
   block: ContentEditorBlock | null;
   editor: Editor;
   onClose: () => void;
+  translationLanguages?: string[];
+  viewLanguage?: string;
+  onViewLanguageChange?: (language: string) => void;
+  worksheetContext?: WorksheetContext;
 }) {
   const [learningCardsGroupIndex, setLearningCardsGroupIndex] = useState(0);
   const [learningCardsSelectedCardId, setLearningCardsSelectedCardId] =
@@ -6952,7 +7105,7 @@ export function BlockContentEditorModal({
             {block.type === 'trueFalse' && <TrueFalseEditor attrs={attrs as unknown as TrueFalseAttrs} block={block} editor={editor} />}
             {block.type === 'familyKinship' && <FamilyKinshipEditor attrs={attrs as unknown as FamilyKinshipAttrs} block={block} editor={editor} />}
             {block.type === 'fillInTheBlank' && <FillInTheBlankEditor attrs={attrs as unknown as FillInTheBlankAttrs} block={block} editor={editor} />}
-            {block.type === 'glossaryTerms' && <GlossaryTermsEditor attrs={attrs as unknown as GlossaryTermsAttrs} block={block} editor={editor} />}
+            {block.type === 'glossaryTerms' && <GlossaryTermsEditor attrs={attrs as unknown as GlossaryTermsAttrs} block={block} editor={editor} translationLanguages={translationLanguages} viewLanguage={viewLanguage} onViewLanguageChange={onViewLanguageChange} worksheetContext={worksheetContext} />}
             {block.type === 'frayerModel' && <FrayerModelEditor attrs={attrs as unknown as FrayerModelAttrs} block={block} editor={editor} />}
             {block.type === 'learningObjective' && <LearningObjectiveEditor attrs={attrs as unknown as LearningObjectiveAttrs} block={block} editor={editor} />}
             {block.type === 'communicationCards' && <CommunicationCardsEditor attrs={attrs as unknown as CommunicationCardsAttrs} block={block as ContentEditorBlock & { type: 'communicationCards' }} editor={editor} groupIndex={communicationCardsGroupIndex} onGroupIndexChange={setCommunicationCardsGroupIndex} selectedCardId={communicationCardsSelectedCardId} onSelectedCardIdChange={setCommunicationCardsSelectedCardId} />}

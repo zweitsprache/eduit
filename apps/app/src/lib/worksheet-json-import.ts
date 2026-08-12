@@ -376,6 +376,7 @@ const contextSchema = z.object({
   ageMin: z.number().int().min(0).max(120).nullable().default(null),
   ageMax: z.number().int().min(0).max(120).nullable().default(null),
   contentLanguage: z.string().max(100).default('de-CH'),
+  translationLanguages: z.array(z.string().max(20)).max(20).default([]),
   country: z.string().max(100).default(''),
   localLevel: z.string().max(150).default(''),
   curriculum: z.string().max(250).default(''),

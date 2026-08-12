@@ -9,6 +9,10 @@ import {
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
 import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/instructions';
+import {
+  resolveTranslatedText,
+  useWorksheetViewLanguage,
+} from '@/components/editor/worksheet-view-language';
 
 export const GLOSSARY_COLUMN_WIDTHS = [10, 15, 20, 25, 33, 50, 66] as const;
 export type GlossaryTermWidth = typeof GLOSSARY_COLUMN_WIDTHS[number];
@@ -32,6 +36,8 @@ export type GlossaryTerm = {
   definition: string;
   additional: string;
   example: string;
+  // Per-language translated definitions, keyed by document-level language code.
+  definitionTranslations?: Record<string, string>;
 };
 
 export type GlossaryHeaderLabels = string[];
@@ -134,6 +140,13 @@ function defaultTerms(): GlossaryTerm[] {
   return DEFAULT_GLOSSARY_TERMS.map((term) => ({ ...term }));
 }
 
+function parseDefinitionTranslations(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter((entry): entry is [string, string] => typeof entry[1] === 'string');
+  return entries.length ? Object.fromEntries(entries) : undefined;
+}
+
 function parseTerms(value: string | null): GlossaryTerm[] {
   if (!value) return defaultTerms();
 
@@ -148,6 +161,7 @@ function parseTerms(value: string | null): GlossaryTerm[] {
         definition: typeof term.definition === 'string' ? term.definition : '',
         additional: typeof term.additional === 'string' ? term.additional : '',
         example: typeof term.example === 'string' ? term.example : '',
+        definitionTranslations: parseDefinitionTranslations(term.definitionTranslations),
       }];
     });
     return parsed.length ? parsed : defaultTerms();
@@ -172,6 +186,7 @@ function parsePreset(value: string | null): GlossaryPreset {
 function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
   const attrs = node.attrs as GlossaryTermsAttrs;
   const { terms } = attrs;
+  const viewLanguage = useWorksheetViewLanguage();
   const headers = glossaryHeaders(attrs);
   const {
     hasAdditionalColumn,
@@ -189,7 +204,9 @@ function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
       </span>
       <span className="glossary-terms-node__columns">
         <span className="glossary-terms-node__cell" style={columnStyle(0)}>{item.term}</span>
-        <span className="glossary-terms-node__cell" style={columnStyle(1)}>{item.definition}</span>
+        <span className="glossary-terms-node__cell" style={columnStyle(1)}>
+          {resolveTranslatedText(item.definition, item.definitionTranslations, viewLanguage)}
+        </span>
         {hasAdditionalColumn && (
           <span className="glossary-terms-node__cell" style={columnStyle(2)}>
             {item.additional}
