@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "worksheets": [
+    {
+      "title": "Schritte plus Neu 3 | L6 Schritt D | Kursangebote verstehen",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 6 Schule und Ausbildung, Schritt D",
+        "languageCompetencies": ["Weiterbildungsangebote verstehen", "ein passendes Angebot auswählen"],
+        "learnerContext": "Erwachsene Lernende lesen Kursangebote einer Volkshochschule und wählen ein passendes Angebot aus."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Kursangebot Frühling", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p><strong>A Velofahren für Frauen – für Anfängerinnen</strong><br />Sie sind noch nie auf einem Velo gesessen und wollen gern Velofahren lernen? 15 Termine, Mo bis Fr, 9.00–11.15 Uhr. Beginn: 8. März. 5–7 Teilnehmerinnen.</p><p><strong>C Einführung in den PC</strong><br />Lernen Sie den sicheren Umgang mit «Word»: schreiben, speichern, drucken, dazu die Arbeit mit E-Mail-Programmen. 4 Termine, Mo, 17.45–19.00 Uhr. Beginn: 1. März. 7–12 Teilnehmende.</p><p><strong>E Integrationskurs Standard: Deutsch für Migrantinnen und Migranten</strong><br />Sind Sie mindestens 22 Jahre alt und neu in der Schweiz? Sie erweitern Ihre Deutschkenntnisse und erhalten Informationen über den Alltag in der Schweiz. Kursdauer: 2 Semester, 4-mal pro Woche.</p><p><strong>F Vortrag Bewerbungstraining</strong><br />Wie bewirbt man sich richtig? Wie formuliert man das Bewerbungsschreiben? Unsere Expertin zeigt Ihnen die besten Tipps. 2 Termine, Sa/So, 5./6. Juni, 9.00–14.00 Uhr. 7–20 Teilnehmende.</p><p><strong>G Fit in Englisch!</strong><br />Lesen, Hören, Sprechen, Schreiben für Kinder ab der 4. Klasse. 10 Termine, Do, 14.30–15.45 Uhr. Beginn: 19. Februar. 8–12 Teilnehmende.</p><p><strong>J Erste-Hilfe-Kurs</strong><br />Ihr Kind hat sich verletzt. Es blutet stark. Was tun? Wir zeigen Ihnen die richtigen Handgriffe in Notsituationen. 5 Termine, Di, 9.00–11.30 Uhr. Beginn: 17. Februar. 7–12 Teilnehmende.</p>"
+        },
+        {
+          "type": "matchingPairs",
+          "instruction": "Welcher Kurs passt zu welcher Person? Ordnen Sie zu.",
+          "answerStyle": "writingLines",
+          "shuffleRight": true,
+          "shuffleSeed": 4,
+          "showFirstAsExample": true,
+          "pairs": [
+            { "id": "pair-1", "left": "Frau Berisha möchte ihre Tochter beim Englischlernen unterstützen.", "right": "Kurs G" },
+            { "id": "pair-2", "left": "Herr Silva sucht eine neue Stelle und schreibt bald Bewerbungen.", "right": "Kurs F" },
+            { "id": "pair-3", "left": "Frau Nguyen ist seit zwei Monaten in der Schweiz und spricht wenig Deutsch.", "right": "Kurs E" },
+            { "id": "pair-4", "left": "Herr Meier möchte endlich lernen, wie man am Computer Briefe schreibt.", "right": "Kurs C" },
+            { "id": "pair-5", "left": "Frau Kovac hat kleine Kinder und möchte im Notfall richtig helfen können.", "right": "Kurs J" },
+            { "id": "pair-6", "left": "Frau Aydin ist als Kind nie Velo gefahren und möchte es jetzt lernen.", "right": "Kurs A" }
+          ]
+        },
+        { "type": "heading", "text": "Details verstehen", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "trueFalse",
+          "instruction": "Was ist richtig, was ist falsch?",
+          "trueLabel": "richtig",
+          "falseLabel": "falsch",
+          "showFirstAsExample": true,
+          "rows": [
+            { "id": "d-1", "text": "Der Velokurs findet am Vormittag statt.", "correctValue": "true" },
+            { "id": "d-2", "text": "Der Computerkurs C beginnt im Februar.", "correctValue": "false" },
+            { "id": "d-3", "text": "Am Integrationskurs kann man erst ab 22 Jahren teilnehmen.", "correctValue": "true" },
+            { "id": "d-4", "text": "Das Bewerbungstraining dauert eine ganze Woche.", "correctValue": "false" },
+            { "id": "d-5", "text": "Der Englischkurs ist für Kinder ab der 4. Klasse.", "correctValue": "true" },
+            { "id": "d-6", "text": "Der Erste-Hilfe-Kurs hat fünf Termine.", "correctValue": "true" },
+            { "id": "d-7", "text": "Am Velokurs können 20 Personen teilnehmen.", "correctValue": "false" }
+          ]
+        },
+        {
+          "type": "richText",
+          "html": "<p><strong>Und Sie?</strong> Welches Angebot interessiert Sie? Warum? Schreiben Sie drei bis vier Sätze.</p><p><em>Beispiel:</em> Mich interessiert der Kurs F, weil ich bald eine Bewerbung schreiben muss. Der Kurs ist am Wochenende. Das passt gut, weil ich unter der Woche arbeite.</p>"
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L6 Schritt D | Beratung und Anmeldung",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 6 Schule und Ausbildung, Schritt D",
+        "languageCompetencies": ["ein Beratungsgespräch führen", "sich für einen Kurs anmelden"],
+        "learnerContext": "Erwachsene Lernende üben ein Beratungsgespräch an der Volkshochschule und die Anmeldung zu einem Kurs."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Beratungsgespräch an der Volkshochschule", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "dialogue",
+          "instruction": "Ergänzen Sie das Gespräch und spielen Sie es zu zweit.",
+          "context": "Herr Diallo möchte sich für ein Bewerbungstraining anmelden.",
+          "speakerNames": { "1": "Beraterin", "2": "Herr Diallo", "3": "", "4": "" },
+          "showSpeakerNames": true,
+          "items": [
+            { "speaker": 1, "text": "Guten Tag, wie kann ich Ihnen helfen?" },
+            { "speaker": 2, "text": "Guten Tag. Ich {{blank:interessiere}} mich für ein Bewerbungstraining." },
+            { "speaker": 1, "text": "Unser nächstes Bewerbungstraining ist am 5. Juni. Das ist ein Samstag. Haben Sie da Zeit?" },
+            { "speaker": 2, "text": "Ah, am Wochenende. Das passt sehr gut. Was {{blank:kostet}} denn der Kurs?" },
+            { "speaker": 1, "text": "210 Franken für den ganzen Tag." },
+            { "speaker": 2, "text": "Ich möchte den Kurs machen. Wann und wo kann ich mich denn dafür {{blank:anmelden}}?" },
+            { "speaker": 1, "text": "Das können Sie jetzt gleich hier machen. Sie müssen nur dieses {{blank:Formular}} ausfüllen." },
+            { "speaker": 2, "text": "Gut, das fülle ich gleich aus. Hier, bitte." },
+            { "speaker": 1, "text": "Danke. Haben Sie noch {{blank:Fragen}}?" },
+            { "speaker": 2, "text": "Nein, jetzt ist alles klar. Vielen Dank und auf Wiedersehen." },
+            { "speaker": 1, "text": "Ich danke Ihnen und wünsche Ihnen viel Erfolg im Kurs." }
+          ]
+        },
+        { "type": "heading", "text": "Wörter aus der Kurswerbung", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "matchingPairs",
+          "instruction": "Ordnen Sie zu.",
+          "answerStyle": "writingLines",
+          "shuffleRight": true,
+          "shuffleSeed": 6,
+          "showFirstAsExample": true,
+          "pairs": [
+            { "id": "mp-1", "left": "der Migrant", "right": "neuer Bewohner in einem Land" },
+            { "id": "mp-2", "left": "etwas präsentieren", "right": "anderen Menschen etwas vorstellen" },
+            { "id": "mp-3", "left": "der Beginn", "right": "der Anfang" },
+            { "id": "mp-4", "left": "sich bewerben", "right": "bei einer Firma eine Stelle suchen" },
+            { "id": "mp-5", "left": "der Experte", "right": "diese Person weiss sehr viel über ein Thema" },
+            { "id": "mp-6", "left": "die Teilnahme", "right": "das Mitmachen bei einem Kurs" }
+          ]
+        },
+        { "type": "heading", "text": "Zwei Kursanzeigen ergänzen", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Ergänzen Sie die beiden Anzeigen.",
+          "items": [
+            "Fit in Deutsch für Pflegehelferinnen und Pflegehelfer: Sie sind {{blank:Migrantin}} oder Migrant und möchten die Ausbildung «Pflegehelfer/-in SRK» machen?",
+            "Wir bieten spezielle Deutschkurse zur {{blank:Vorbereitung}} auf den Lehrgang an.",
+            "8 x 4 Stunden, immer samstags, 8–12 Uhr. {{blank:Beginn}} des Kurses: 16. März.",
+            "Erste Hilfe: Ein Kind ist hingefallen, hat sich {{blank:verletzt}} und sein Knie {{blank:blutet}} stark? Was tun?",
+            "Die Teilnahme ist nur mit Anmeldung {{blank:möglich}}.",
+            "Anmeldung und {{blank:Beratung}} immer montags von 17 bis 19 Uhr."
+          ],
+          "showWordBank": true,
+          "distractors": ["Anfang", "Experte"],
+          "widthFactor": 1.5,
+          "showFirstAsExample": true
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L6 Schritt D | Lernkarten",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "learning-cards",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 6 Schule und Ausbildung, Schritt D"
+      },
+      "blocks": [
+        {
+          "type": "learningCards",
+          "title": "L6 Schritt D | Weiterbildung und Anmeldung",
+          "sidedness": "double",
+          "frontTextSize": "m",
+          "backTextSize": "s",
+          "items": [
+            { "front": "die Weiterbildung, -en", "back": "ein Kurs nach der Ausbildung, um mehr zu lernen" },
+            { "front": "das Kursangebot, -e", "back": "die Liste mit allen Kursen" },
+            { "front": "der Termin, -e", "back": "der einzelne Kurstag oder die vereinbarte Zeit" },
+            { "front": "der Beginn", "back": "der Anfang: Beginn des Kurses ist der 16. März." },
+            { "front": "die Teilnahme", "back": "das Mitmachen: Die Teilnahme ist kostenlos." },
+            { "front": "die Teilnehmerin, -nen", "back": "die Person, die am Kurs mitmacht" },
+            { "front": "sich anmelden", "back": "sagen, dass man mitmachen möchte" },
+            { "front": "das Formular, -e", "back": "ein Blatt, das man ausfüllen muss" },
+            { "front": "ausfüllen", "back": "in ein Formular alles hineinschreiben" },
+            { "front": "die Beratung, -en", "back": "ein Gespräch mit Informationen und Tipps" },
+            { "front": "sich bewerben", "back": "bei einer Firma eine Stelle suchen" },
+            { "front": "das Bewerbungsschreiben, -", "back": "der Brief an eine Firma, wenn man eine Stelle möchte" },
+            { "front": "das Vorstellungsgespräch, -e", "back": "das Gespräch mit der Firma vor der Anstellung" },
+            { "front": "der Experte, -n", "back": "eine Person, die sehr viel über ein Thema weiss" },
+            { "front": "präsentieren", "back": "anderen Menschen etwas vorstellen" },
+            { "front": "der Migrant, -en", "back": "ein neuer Bewohner in einem Land" },
+            { "front": "sich verletzen", "back": "sich wehtun, zum Beispiel beim Hinfallen" },
+            { "front": "bluten", "back": "Blut verlieren" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -2,6 +2,7 @@
 
 import { useRef } from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
+import { Plugin, type EditorState } from '@tiptap/pm/state';
 import { ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 import {
   BlockChoiceIndicator,
@@ -136,6 +137,7 @@ function MCQNodeView({ node, selected }: NodeViewProps) {
     instruction,
     blockQuestion,
     columns,
+    questionNumber,
     shuffleAnswers,
     showInstruction,
   } = node.attrs as MCQAttrs;
@@ -171,7 +173,12 @@ function MCQNodeView({ node, selected }: NodeViewProps) {
             <div className="mcq-node__question" key={mcqQuestion.id}>
               {questions.length > 1 && (
                 <p className="mcq-node__question-number">
-                  <strong>Frage {questionIndex + 1}</strong>
+                  <strong>Frage {questionNumber ?? (questionIndex + 1)}</strong>
+                </p>
+              )}
+              {questions.length === 1 && questionNumber !== null && (
+                <p className="mcq-node__question-number">
+                  <strong>Frage {questionNumber}</strong>
                 </p>
               )}
               <BlockQuestion>
@@ -320,6 +327,68 @@ export const MCQ = Node.create({
 
   addNodeView() {
     return ReactNodeViewRenderer(MCQNodeView);
+  },
+
+  addProseMirrorPlugins() {
+    const buildSplitTransaction = (state: EditorState) => {
+      const replacements: Array<{
+        from: number;
+        questions: MCQQuestion[];
+        to: number;
+        attrs: MCQAttrs;
+      }> = [];
+
+      state.doc.forEach((node, pos) => {
+        if (node.type.name !== this.name) return;
+        const attrs = node.attrs as MCQAttrs;
+        const questions = getMCQQuestions(attrs);
+        if (questions.length <= 1) return;
+        replacements.push({
+          from: pos,
+          to: pos + node.nodeSize,
+          attrs,
+          questions,
+        });
+      });
+
+      if (!replacements.length) return null;
+
+      const tr = state.tr;
+      replacements.reverse().forEach(({ from, to, attrs, questions }) => {
+        const nodes = questions.map((question, index) => this.type.create({
+          ...attrs,
+          question: question.question,
+          options: question.options,
+          answerMode: question.answerMode,
+          questions: [question],
+          questionNumber: index + 1,
+          showInstruction: index === 0 ? attrs.showInstruction : false,
+          blockQuestion: index === 0 ? attrs.blockQuestion : '',
+        }));
+        tr.replaceWith(from, to, nodes);
+      });
+
+      return tr;
+    };
+
+    return [
+      new Plugin({
+        appendTransaction: (transactions, _oldState, newState) => {
+          if (!transactions.some((transaction) => transaction.docChanged)) {
+            return null;
+          }
+
+          return buildSplitTransaction(newState);
+        },
+        view: (view) => {
+          const tr = buildSplitTransaction(view.state);
+          if (tr) {
+            view.dispatch(tr.setMeta('addToHistory', false));
+          }
+          return {};
+        },
+      }),
+    ];
   },
 
   addCommands() {

@@ -1,0 +1,2029 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "worksheets": {
+      "minItems": 1,
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/__schema0"
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "worksheets"
+  ],
+  "$defs": {
+    "__schema0": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "documentSize": {
+          "$ref": "#/$defs/__schema2"
+        },
+        "showSolutions": {
+          "$ref": "#/$defs/__schema3"
+        },
+        "status": {
+          "$ref": "#/$defs/__schema4"
+        },
+        "brandProfileId": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "folderId": {
+          "$ref": "#/$defs/__schema6"
+        },
+        "sourceWorksheetId": {
+          "$ref": "#/$defs/__schema7"
+        },
+        "context": {
+          "$ref": "#/$defs/__schema8"
+        },
+        "blocks": {
+          "$ref": "#/$defs/__schema13"
+        }
+      }
+    },
+    "__schema1": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "__schema2": {
+      "default": "a4-portrait",
+      "type": "string",
+      "enum": [
+        "a4-portrait",
+        "a4-landscape",
+        "a5-landscape",
+        "letter-portrait",
+        "letter-landscape"
+      ]
+    },
+    "__schema3": {
+      "default": false,
+      "type": "boolean"
+    },
+    "__schema4": {
+      "default": "draft",
+      "type": "string",
+      "enum": [
+        "draft",
+        "published"
+      ]
+    },
+    "__schema5": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "__schema6": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "__schema7": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "__schema8": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "worksheetLanguage": {
+          "default": "de-formal",
+          "type": "string",
+          "enum": [
+            "en",
+            "de-formal",
+            "de-informal"
+          ]
+        },
+        "worksheetType": {
+          "default": "worksheet",
+          "type": "string",
+          "enum": [
+            "worksheet",
+            "fact-sheet",
+            "verb-table",
+            "declension-table",
+            "learning-cards",
+            "domino"
+          ]
+        },
+        "sourceProfileId": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subject": {
+          "default": "daz",
+          "type": "string",
+          "maxLength": 100
+        },
+        "customSubject": {
+          "default": "",
+          "type": "string",
+          "maxLength": 150
+        },
+        "learnerStage": {
+          "default": "professional-training",
+          "type": "string",
+          "maxLength": 100
+        },
+        "ageGroups": {
+          "default": [
+            "adults"
+          ],
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema9"
+          }
+        },
+        "ageMin": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ageMax": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 120
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "contentLanguage": {
+          "default": "de-CH",
+          "type": "string",
+          "maxLength": 100
+        },
+        "translationLanguages": {
+          "default": [],
+          "maxItems": 20,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema10"
+          }
+        },
+        "country": {
+          "default": "",
+          "type": "string",
+          "maxLength": 100
+        },
+        "localLevel": {
+          "default": "",
+          "type": "string",
+          "maxLength": 150
+        },
+        "curriculum": {
+          "default": "",
+          "type": "string",
+          "maxLength": 250
+        },
+        "languageLevel": {
+          "default": "",
+          "type": "string",
+          "maxLength": 100
+        },
+        "actionField": {
+          "default": "",
+          "type": "string",
+          "maxLength": 100
+        },
+        "actionCompetencies": {
+          "default": [],
+          "maxItems": 10,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema11"
+          }
+        },
+        "languageCompetencies": {
+          "default": [],
+          "maxItems": 10,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema12"
+          }
+        },
+        "learnerContext": {
+          "default": "",
+          "type": "string",
+          "maxLength": 1000
+        },
+        "contextPdfName": {
+          "default": "",
+          "type": "string",
+          "maxLength": 250
+        },
+        "contextPdfText": {
+          "default": "",
+          "type": "string",
+          "maxLength": 1000000
+        },
+        "contextPdfPageCount": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "__schema9": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "__schema10": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "__schema11": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "__schema12": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "__schema13": {
+      "maxItems": 1000,
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/__schema14"
+      }
+    },
+    "__schema14": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "heading"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "level": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "numbered": {
+              "default": false,
+              "type": "boolean"
+            },
+            "gapAfter": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3
+            },
+            "restartInstructionNumbering": {
+              "default": true,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "text",
+            "level"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "glossary"
+            },
+            "preset": {
+              "default": "default",
+              "type": "string",
+              "enum": [
+                "default",
+                "verbs",
+                "nouns",
+                "adjectives"
+              ]
+            },
+            "showInstruction": {
+              "default": false,
+              "type": "boolean"
+            },
+            "showColumnHeaders": {
+              "default": true,
+              "type": "boolean"
+            },
+            "showExample": {
+              "default": true,
+              "type": "boolean"
+            },
+            "showAdditionalColumn": {
+              "default": false,
+              "type": "boolean"
+            },
+            "instruction": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "headerLabels": {
+              "default": [],
+              "maxItems": 4,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema15"
+              }
+            },
+            "termWidth": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "10",
+                    "15",
+                    "20",
+                    "25",
+                    "33",
+                    "50",
+                    "66"
+                  ]
+                },
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              ]
+            },
+            "definitionWidth": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "10",
+                    "15",
+                    "20",
+                    "25",
+                    "33",
+                    "50",
+                    "66"
+                  ]
+                },
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              ]
+            },
+            "additionalWidth": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "10",
+                    "15",
+                    "20",
+                    "25",
+                    "33",
+                    "50",
+                    "66"
+                  ]
+                },
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              ]
+            },
+            "entries": {
+              "minItems": 1,
+              "maxItems": 500,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema16"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "entries"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "fillInTheBlank"
+            },
+            "instruction": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "title": {
+              "default": "",
+              "type": "string",
+              "maxLength": 500
+            },
+            "items": {
+              "minItems": 1,
+              "maxItems": 500,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema17"
+              }
+            },
+            "distractors": {
+              "default": [],
+              "maxItems": 500,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema18"
+              }
+            },
+            "widthFactor": {
+              "default": 1,
+              "type": "number",
+              "minimum": 0.5,
+              "maximum": 5
+            },
+            "hideBlankNumbers": {
+              "default": false,
+              "type": "boolean"
+            },
+            "hideItemNumbers": {
+              "default": false,
+              "type": "boolean"
+            },
+            "showLineNumbers": {
+              "default": false,
+              "type": "boolean"
+            },
+            "showWordBank": {
+              "default": false,
+              "type": "boolean"
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "instruction",
+            "items"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "pageBreak"
+            },
+            "restartPagination": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "dialogue"
+            },
+            "instruction": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "context": {
+              "default": "",
+              "type": "string",
+              "maxLength": 2000
+            },
+            "speakerNames": {
+              "type": "object",
+              "properties": {
+                "1": {
+                  "default": "Speaker 1",
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "2": {
+                  "default": "Speaker 2",
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "3": {
+                  "default": "Speaker 3",
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "4": {
+                  "default": "Speaker 4",
+                  "type": "string",
+                  "maxLength": 100
+                }
+              }
+            },
+            "showSpeakerNames": {
+              "default": false,
+              "type": "boolean"
+            },
+            "showOriginal": {
+              "default": false,
+              "type": "boolean"
+            },
+            "showWordBank": {
+              "default": false,
+              "type": "boolean"
+            },
+            "hideBlankNumbers": {
+              "default": false,
+              "type": "boolean"
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            },
+            "items": {
+              "minItems": 2,
+              "maxItems": 500,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema19"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "instruction",
+            "speakerNames",
+            "items"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "mcq"
+            },
+            "instruction": {
+              "default": "Choose the correct answer.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "blockQuestion": {
+              "default": "",
+              "type": "string",
+              "maxLength": 2000
+            },
+            "questions": {
+              "minItems": 1,
+              "maxItems": 50,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema20"
+              }
+            },
+            "columns": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3
+            },
+            "shuffleAnswers": {
+              "default": false,
+              "type": "boolean"
+            },
+            "showInstruction": {
+              "default": true,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "questions"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "mcm"
+            },
+            "instruction": {
+              "default": "Choose the correct answer for each row.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "question": {
+              "default": "",
+              "type": "string",
+              "maxLength": 2000
+            },
+            "rows": {
+              "minItems": 1,
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema22"
+              }
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            },
+            "hideStatement": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "rows"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "articlePlural"
+            },
+            "instruction": {
+              "default": "Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.",
+              "type": "string",
+              "const": "Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform."
+            },
+            "rows": {
+              "minItems": 1,
+              "maxItems": 1000,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema24"
+              }
+            },
+            "order": {
+              "default": "alphabetical",
+              "type": "string",
+              "enum": [
+                "alphabetical",
+                "shuffle"
+              ]
+            },
+            "shuffleSeed": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            "continuation": {
+              "default": false,
+              "type": "boolean"
+            },
+            "rowNumberOffset": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            }
+          },
+          "required": [
+            "type",
+            "rows"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "trueFalse"
+            },
+            "instruction": {
+              "default": "Mark each statement as true or false.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "question": {
+              "default": "",
+              "type": "string",
+              "maxLength": 2000
+            },
+            "trueLabel": {
+              "default": "True",
+              "type": "string",
+              "maxLength": 100
+            },
+            "falseLabel": {
+              "default": "False",
+              "type": "string",
+              "maxLength": 100
+            },
+            "showNa": {
+              "default": false,
+              "type": "boolean"
+            },
+            "naLabel": {
+              "default": "N/A",
+              "type": "string",
+              "maxLength": 100
+            },
+            "rows": {
+              "minItems": 1,
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema26"
+              }
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "rows"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "matchingPairs"
+            },
+            "instruction": {
+              "default": "Match the items on the left with the items on the right.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "question": {
+              "default": "",
+              "type": "string",
+              "maxLength": 2000
+            },
+            "pairs": {
+              "minItems": 2,
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema27"
+              }
+            },
+            "rightOrder": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              }
+            },
+            "shuffleLeft": {
+              "default": false,
+              "type": "boolean"
+            },
+            "shuffleRight": {
+              "default": false,
+              "type": "boolean"
+            },
+            "shuffleSeed": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "showWordBank": {
+              "default": false,
+              "type": "boolean"
+            },
+            "shuffleWordBank": {
+              "default": false,
+              "type": "boolean"
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            },
+            "answerStyle": {
+              "default": "checkboxes",
+              "type": "string",
+              "enum": [
+                "checkboxes",
+                "writingLines"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "pairs"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "timeMatching"
+            },
+            "instruction": {
+              "default": "Verbinden Sie die passenden Uhrzeiten.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "leftRepresentation": {
+              "default": "analog",
+              "type": "string",
+              "enum": [
+                "analog",
+                "digital",
+                "official",
+                "informal"
+              ]
+            },
+            "rightRepresentation": {
+              "default": "digital",
+              "type": "string",
+              "enum": [
+                "analog",
+                "digital",
+                "official",
+                "informal"
+              ]
+            },
+            "times": {
+              "minItems": 2,
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema28"
+              }
+            },
+            "rightOrder": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              }
+            },
+            "allowedMinutes": {
+              "default": [
+                0,
+                5,
+                10,
+                15,
+                20,
+                25,
+                30,
+                35,
+                40,
+                45,
+                50,
+                55
+              ],
+              "maxItems": 60,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema29"
+              }
+            },
+            "rangeStart": {
+              "default": "00:00",
+              "type": "string",
+              "pattern": "^\\d{2}:\\d{2}$"
+            },
+            "rangeEnd": {
+              "default": "23:59",
+              "type": "string",
+              "pattern": "^\\d{2}:\\d{2}$"
+            },
+            "shuffleLeft": {
+              "default": false,
+              "type": "boolean"
+            },
+            "shuffleRight": {
+              "default": true,
+              "type": "boolean"
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            },
+            "answerStyle": {
+              "default": "checkboxes",
+              "type": "string",
+              "enum": [
+                "checkboxes",
+                "writingLines"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "times"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "communicationCards"
+            },
+            "title": {
+              "default": "Communication Cards",
+              "type": "string",
+              "maxLength": 200
+            },
+            "format": {
+              "default": "a4-landscape",
+              "type": "string",
+              "const": "a4-landscape"
+            },
+            "sidedness": {
+              "default": "single",
+              "type": "string",
+              "const": "single"
+            },
+            "textSize": {
+              "default": "m",
+              "type": "string",
+              "enum": [
+                "xs",
+                "s",
+                "m",
+                "l",
+                "xl"
+              ]
+            },
+            "items": {
+              "minItems": 1,
+              "maxItems": 400,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema30"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "learningCards"
+            },
+            "title": {
+              "default": "Learning cards",
+              "type": "string",
+              "maxLength": 200
+            },
+            "sidedness": {
+              "default": "double",
+              "type": "string",
+              "enum": [
+                "single",
+                "double"
+              ]
+            },
+            "frontTextSize": {
+              "default": "m",
+              "type": "string",
+              "enum": [
+                "xs",
+                "s",
+                "m",
+                "l",
+                "xl"
+              ]
+            },
+            "backTextSize": {
+              "default": "m",
+              "type": "string",
+              "enum": [
+                "xs",
+                "s",
+                "m",
+                "l",
+                "xl"
+              ]
+            },
+            "items": {
+              "minItems": 1,
+              "maxItems": 450,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema31"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "richText"
+            },
+            "html": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100000
+            }
+          },
+          "required": [
+            "type",
+            "html"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "wordGrid"
+            },
+            "instruction": {
+              "default": "Find the words in the grid.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "columns": {
+              "default": 10,
+              "type": "integer",
+              "minimum": 3,
+              "maximum": 20
+            },
+            "rows": {
+              "default": 10,
+              "type": "integer",
+              "minimum": 3,
+              "maximum": 20
+            },
+            "rowHeight": {
+              "default": 1,
+              "type": "number",
+              "minimum": 0.5,
+              "maximum": 2
+            },
+            "showWordList": {
+              "default": true,
+              "type": "boolean"
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            },
+            "directions": {
+              "default": {
+                "leftToRight": true,
+                "rightToLeft": false,
+                "topToBottom": true,
+                "bottomToTop": false,
+                "northWestToSouthEast": false,
+                "southWestToNorthEast": false,
+                "northEastToSouthWest": false,
+                "southEastToNorthWest": false
+              },
+              "type": "object",
+              "properties": {
+                "leftToRight": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "rightToLeft": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "topToBottom": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "bottomToTop": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "northWestToSouthEast": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "southWestToNorthEast": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "northEastToSouthWest": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "southEastToNorthWest": {
+                  "default": false,
+                  "type": "boolean"
+                }
+              }
+            },
+            "words": {
+              "minItems": 1,
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema32"
+              }
+            },
+            "generation": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            }
+          },
+          "required": [
+            "type",
+            "words"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "domino"
+            },
+            "pairs": {
+              "minItems": 1,
+              "maxItems": 500,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema33"
+              }
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            },
+            "oddTextSize": {
+              "$ref": "#/$defs/__schema34"
+            },
+            "evenTextSize": {
+              "$ref": "#/$defs/__schema34"
+            },
+            "leftRepresentation": {
+              "$ref": "#/$defs/__schema35"
+            },
+            "rightRepresentation": {
+              "$ref": "#/$defs/__schema35"
+            }
+          },
+          "required": [
+            "type",
+            "pairs"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "germanVerbTable"
+            },
+            "tableStyle": {
+              "default": "extended",
+              "type": "string",
+              "enum": [
+                "extended",
+                "compact",
+                "multiple"
+              ]
+            },
+            "tense": {
+              "default": "present",
+              "type": "string",
+              "enum": [
+                "present",
+                "preterite"
+              ]
+            },
+            "groupId": {
+              "default": "",
+              "type": "string",
+              "maxLength": 120
+            },
+            "groupIndex": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "groupSize": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "hideInfinitiveBadge": {
+              "default": false,
+              "type": "boolean"
+            },
+            "showInfinitiveHeading": {
+              "default": false,
+              "type": "boolean"
+            },
+            "infinitiveHeadingText": {
+              "default": "",
+              "type": "string",
+              "maxLength": 200
+            },
+            "leftVerb": {
+              "default": "sein",
+              "type": "string",
+              "maxLength": 200
+            },
+            "leftForms": {
+              "$ref": "#/$defs/__schema36"
+            },
+            "leftAuxiliary": {
+              "default": "sein",
+              "type": "string",
+              "maxLength": 100
+            },
+            "leftParticiple": {
+              "default": "gewesen",
+              "type": "string",
+              "maxLength": 200
+            },
+            "comparisonAuxiliary": {
+              "default": "haben",
+              "type": "string",
+              "enum": [
+                "haben",
+                "sein"
+              ]
+            },
+            "separablePrefix": {
+              "default": "",
+              "type": "string",
+              "maxLength": 80
+            },
+            "rightVerb": {
+              "default": "haben",
+              "type": "string",
+              "maxLength": 200
+            },
+            "forms": {
+              "$ref": "#/$defs/__schema36"
+            },
+            "rightAuxiliary": {
+              "default": "haben",
+              "type": "string",
+              "maxLength": 100
+            },
+            "rightParticiple": {
+              "default": "gehabt",
+              "type": "string",
+              "maxLength": 200
+            },
+            "multipleVerbCount": {
+              "default": 5,
+              "anyOf": [
+                {
+                  "type": "number",
+                  "const": 4
+                },
+                {
+                  "type": "number",
+                  "const": 5
+                }
+              ]
+            },
+            "multipleBadgeStyle": {
+              "default": "light",
+              "type": "string",
+              "enum": [
+                "light",
+                "dark"
+              ]
+            },
+            "multipleVerbs": {
+              "minItems": 1,
+              "maxItems": 20,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema37"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "leftForms",
+            "forms",
+            "multipleVerbs"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "worksheetTable"
+            },
+            "instruction": {
+              "default": "Complete the table.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "showInstruction": {
+              "default": true,
+              "type": "boolean"
+            },
+            "columns": {
+              "minItems": 1,
+              "maxItems": 6,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema38"
+              }
+            },
+            "rows": {
+              "minItems": 1,
+              "maxItems": 1000,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema39"
+              }
+            },
+            "showHeader": {
+              "default": false,
+              "type": "boolean"
+            },
+            "hideBlankNumbers": {
+              "default": false,
+              "type": "boolean"
+            },
+            "blankWidthFactor": {
+              "default": 1,
+              "type": "number",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "columns",
+            "rows"
+          ]
+        }
+      ]
+    },
+    "__schema15": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "__schema16": {
+      "type": "object",
+      "properties": {
+        "term": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "definition": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "additional": {
+          "type": "string",
+          "maxLength": 3000
+        },
+        "example": {
+          "type": "string",
+          "maxLength": 3000
+        }
+      },
+      "required": [
+        "term",
+        "definition"
+      ]
+    },
+    "__schema17": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 5000
+    },
+    "__schema18": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "__schema19": {
+      "type": "object",
+      "properties": {
+        "speaker": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        }
+      },
+      "required": [
+        "speaker",
+        "text"
+      ]
+    },
+    "__schema20": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "options": {
+          "minItems": 2,
+          "maxItems": 10,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema21"
+          }
+        },
+        "answerMode": {
+          "default": "single",
+          "type": "string",
+          "enum": [
+            "single",
+            "multiple"
+          ]
+        }
+      },
+      "required": [
+        "question",
+        "options"
+      ]
+    },
+    "__schema21": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "correct": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "text"
+      ]
+    },
+    "__schema22": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "options": {
+          "minItems": 1,
+          "maxItems": 3,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema23"
+          }
+        }
+      },
+      "required": [
+        "text",
+        "options"
+      ]
+    },
+    "__schema23": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "correct": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "text"
+      ]
+    },
+    "__schema24": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "term": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "articles": {
+          "maxItems": 3,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema25"
+          }
+        },
+        "article": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/__schema25"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plural": {
+          "default": "",
+          "type": "string",
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "term"
+      ]
+    },
+    "__schema25": {
+      "type": "string",
+      "enum": [
+        "der",
+        "das",
+        "die"
+      ]
+    },
+    "__schema26": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "correctValue": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "true",
+                "false",
+                "na"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "text"
+      ]
+    },
+    "__schema27": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "left": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "right": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "left",
+        "right"
+      ]
+    },
+    "__schema28": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "hour": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 23
+        },
+        "minute": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 59
+        }
+      },
+      "required": [
+        "hour",
+        "minute"
+      ]
+    },
+    "__schema29": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 59
+    },
+    "__schema30": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "pairTitle": {
+          "default": "",
+          "type": "string",
+          "maxLength": 500
+        },
+        "situation": {
+          "default": "",
+          "type": "string",
+          "maxLength": 5000
+        },
+        "task": {
+          "default": "",
+          "type": "string",
+          "maxLength": 5000
+        },
+        "intro": {
+          "default": "",
+          "type": "string",
+          "maxLength": 5000
+        },
+        "listType": {
+          "default": "informationen",
+          "type": "string",
+          "enum": [
+            "informationen",
+            "sprechhilfen"
+          ]
+        },
+        "listItems": {
+          "default": "",
+          "type": "string",
+          "maxLength": 5000
+        },
+        "content": {
+          "default": "",
+          "type": "string",
+          "maxLength": 5000
+        }
+      }
+    },
+    "__schema31": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "front": {
+          "default": "",
+          "type": "string",
+          "maxLength": 5000
+        },
+        "back": {
+          "default": "",
+          "type": "string",
+          "maxLength": 5000
+        }
+      }
+    },
+    "__schema32": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "__schema33": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "left": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "right": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "left",
+        "right"
+      ]
+    },
+    "__schema34": {
+      "default": "m",
+      "type": "string",
+      "enum": [
+        "xs",
+        "s",
+        "m",
+        "l",
+        "xl"
+      ]
+    },
+    "__schema35": {
+      "default": "text",
+      "type": "string",
+      "enum": [
+        "analog",
+        "digital",
+        "official",
+        "informal",
+        "text"
+      ]
+    },
+    "__schema36": {
+      "type": "object",
+      "properties": {
+        "ich": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        },
+        "du": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        },
+        "formalSingular": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        },
+        "thirdSingular": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        },
+        "wir": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        },
+        "ihr": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        },
+        "formalPlural": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        },
+        "thirdPlural": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        },
+        "preteriteIch": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    },
+    "__schema37": {
+      "type": "object",
+      "properties": {
+        "verb": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        },
+        "forms": {
+          "$ref": "#/$defs/__schema36"
+        },
+        "separablePrefix": {
+          "default": "",
+          "type": "string",
+          "maxLength": 80
+        }
+      },
+      "required": [
+        "forms"
+      ]
+    },
+    "__schema38": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "label": {
+          "default": "",
+          "type": "string",
+          "maxLength": 500
+        },
+        "span": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 24
+        },
+        "align": {
+          "default": "left",
+          "type": "string",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ]
+        },
+        "useTabularNums": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "span"
+      ]
+    },
+    "__schema39": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "isHeader": {
+          "default": false,
+          "type": "boolean"
+        },
+        "cells": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 5000
+          }
+        }
+      },
+      "required": [
+        "id",
+        "cells"
+      ]
+    }
+  },
+  "$id": "https://eduit.app/schemas/worksheet-generation-v1.json",
+  "title": "EduIT worksheet generation envelope",
+  "description": "Canonical version 1 payload for external AI systems creating EduIT worksheets."
+}

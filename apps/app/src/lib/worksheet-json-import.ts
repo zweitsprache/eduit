@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EMPTY_WORKSHEET_CONTEXT, type WorksheetPatch } from '@/lib/worksheet-types';
+import { EMPTY_WORKSHEET_CONTEXT, type WorksheetPatch } from './worksheet-types';
 
 const headingSchema = z.object({
   type: z.literal('heading'),
@@ -60,6 +60,32 @@ const richTextSchema = z.object({
 const pageBreakSchema = z.object({
   type: z.literal('pageBreak'),
   restartPagination: z.boolean().default(false),
+});
+
+const worksheetTableColumnSchema = z.object({
+  id: z.string().trim().min(1).max(100),
+  label: z.string().max(500).default(''),
+  span: z.number().min(0.5).max(24),
+  align: z.enum(['left', 'center', 'right']).default('left'),
+  useTabularNums: z.boolean().default(false),
+});
+
+const worksheetTableRowSchema = z.object({
+  id: z.string().trim().min(1).max(100),
+  isHeader: z.boolean().default(false),
+  cells: z.record(z.string(), z.string().max(5000)),
+});
+
+const worksheetTableSchema = z.object({
+  type: z.literal('worksheetTable'),
+  instruction: z.string().max(1000).default('Complete the table.'),
+  showInstruction: z.boolean().default(true),
+  columns: z.array(worksheetTableColumnSchema).min(1).max(6),
+  rows: z.array(worksheetTableRowSchema).min(1).max(1000),
+  showHeader: z.boolean().default(false),
+  hideBlankNumbers: z.boolean().default(false),
+  blankWidthFactor: z.number().min(1).max(5).default(1),
+  showFirstAsExample: z.boolean().default(false),
 });
 
 const dialogueSchema = z.object({
@@ -207,7 +233,7 @@ const learningCardSchema = z.object({
 const learningCardsSchema = z.object({
   type: z.literal('learningCards'),
   title: z.string().trim().max(200).default('Learning cards'),
-  sidedness: z.enum(['single', 'double']).default('double'),
+  sidedness: z.enum(['single', 'double', 'single-solution']).default('double'),
   frontTextSize: z.enum(['xs', 's', 'm', 'l', 'xl']).default('m'),
   backTextSize: z.enum(['xs', 's', 'm', 'l', 'xl']).default('m'),
   items: z.array(learningCardSchema).min(1).max(450),
@@ -417,6 +443,7 @@ export const generatedWorksheetSchema = z.object({
     wordGridSchema,
     dominoSchema,
     germanVerbTableSchema,
+    worksheetTableSchema,
   ])).max(1000).default([]),
 }).refine((value) => Boolean(value.sourceWorksheetId) || value.blocks.length >= 1, {
   message: 'Provide blocks or a sourceWorksheetId.',
@@ -435,6 +462,11 @@ export const generatedWorksheetSchema = z.object({
 }, {
   message: 'A communicationCards block must be the only block of its worksheet.',
   path: ['blocks'],
+});
+
+export const generatedWorksheetEnvelopeSchema = z.object({
+  schemaVersion: z.literal(1),
+  worksheets: z.array(generatedWorksheetSchema).min(1).max(100),
 });
 
 function shuffled<T>(values: T[]) {
@@ -472,6 +504,11 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     // The node stores its markup URI-encoded; encodeURIComponent also escapes the
     // characters that would break out of the attribute.
     return `<div data-rich-text-html="${encodeURIComponent(block.html)}" data-type="rich-text"></div>`;
+  }
+  if (block.type === 'worksheetTable') {
+    const columns = escapeAttribute(encodeURIComponent(JSON.stringify(block.columns)));
+    const rows = escapeAttribute(encodeURIComponent(JSON.stringify(block.rows)));
+    return `<div data-type="worksheet-table" data-worksheet-table-instruction="${escapeAttribute(block.instruction)}" data-worksheet-table-show-instruction="${block.showInstruction}" data-worksheet-table-columns="${columns}" data-worksheet-table-rows="${rows}" data-worksheet-table-show-header="${block.showHeader}" data-worksheet-table-hide-blank-numbers="${block.hideBlankNumbers}" data-worksheet-table-blank-width="${block.blankWidthFactor}" data-worksheet-table-show-first-example="${block.showFirstAsExample}"></div>`;
   }
   if (block.type === 'wordGrid') {
     const { leftToRight, ...otherDirections } = block.directions;
@@ -581,10 +618,19 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     const encodedItems = escapeAttribute(encodeURIComponent(JSON.stringify(items)));
     const sheets = Array.from({ length: groupCount }, (_, groupIndex) => (
       sides.map((sheetSide) => (
-        `<div data-title="${escapeAttribute(block.title)}" data-format="a8-landscape" data-sidedness="${block.sidedness}" data-front-text-size="${block.frontTextSize}" data-back-text-size="${block.backTextSize}" data-items="${encodedItems}" data-group-index="${groupIndex}" data-sheet-side="${sheetSide}" data-type="learning-cards"></div>`
+        `<div data-title="${escapeAttribute(block.title)}" data-format="a8-landscape" data-sidedness="${block.sidedness}" data-front-text-size="${block.frontTextSize}" data-back-text-size="${block.backTextSize}" data-items="${encodedItems}" data-group-index="${groupIndex}" data-sheet-side="${sheetSide}" data-solution-sheet-index="0" data-solution-sheet-count="1" data-solution-start-index="0" data-solution-end-index="0" data-type="learning-cards"></div>`
       ))
     )).flat();
-    return sheets.join('<div data-restart-pagination="false" data-type="pageBreak"></div>');
+    const cardBreak = '<div data-restart-pagination="false" data-type="pageBreak"></div>';
+    let html = sheets.join(cardBreak);
+    if (block.sidedness === 'single-solution') {
+      // The break before the solution key restarts page numbering so the
+      // solution section is numbered on its own. The editor's measurement pass
+      // splits this single solution sheet into page-sized sheets on load.
+      const solutionSheet = `<div data-title="${escapeAttribute(block.title)}" data-format="a8-landscape" data-sidedness="single-solution" data-front-text-size="${block.frontTextSize}" data-back-text-size="${block.backTextSize}" data-items="${encodedItems}" data-group-index="${groupCount}" data-sheet-side="solutions" data-solution-sheet-index="0" data-solution-sheet-count="1" data-solution-start-index="0" data-solution-end-index="0" data-type="learning-cards"></div>`;
+      html += `<div data-restart-pagination="true" data-type="pageBreak"></div>${solutionSheet}`;
+    }
+    return html;
   }
   if (block.type === 'communicationCards') {
     const items = block.items.map((item, index) => ({
@@ -663,6 +709,35 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     ? ` data-block-instruction="${escapeAttribute(block.instruction)}"`
     : '';
   return `<div data-glossary-terms="${escapeAttribute(encodeURIComponent(JSON.stringify(terms)))}" data-glossary-term-width="${widths.term}" data-glossary-definition-width="${widths.definition}" data-glossary-additional-width="${additionalWidth}" data-glossary-preset="${block.preset}" data-glossary-header-labels="${escapeAttribute(encodeURIComponent(JSON.stringify(headerLabels)))}" data-glossary-show-instruction="${block.showInstruction}" data-glossary-show-column-headers="${block.showColumnHeaders}" data-glossary-show-example="${block.showExample}" data-glossary-show-additional-column="${block.showAdditionalColumn}"${instruction} data-type="glossary-terms"></div>`;
+}
+
+function extractSingleWorksheetValue(value: unknown) {
+  const container = value as {
+    worksheet?: unknown;
+    worksheets?: unknown;
+  };
+  const rawWorksheets = Array.isArray(container?.worksheets)
+    ? container.worksheets
+    : container?.worksheet
+      ? [container.worksheet]
+      : [value];
+  if (rawWorksheets.length !== 1) {
+    throw new Error('Provide exactly 1 worksheet.');
+  }
+  return rawWorksheets[0];
+}
+
+/**
+ * Parses generated worksheet JSON and returns only block HTML.
+ * Worksheet-level settings (title, size, context, brand, folder, status) are ignored.
+ */
+export function worksheetBlocksHtmlFromGeneratedJson(value: unknown) {
+  const worksheetValue = extractSingleWorksheetValue(value);
+  const input = generatedWorksheetSchema.parse(worksheetValue);
+  if (input.sourceWorksheetId) {
+    throw new Error('sourceWorksheetId is not supported for block insertion imports.');
+  }
+  return input.blocks.map(blockHtml).join('');
 }
 
 export function worksheetPatchFromGeneratedJson(

@@ -1,6 +1,12 @@
 "use client";
 
-import { Fragment, type CSSProperties } from 'react';
+import {
+  Fragment,
+  type CSSProperties,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+} from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 import {
@@ -22,6 +28,7 @@ export type WorksheetTableColumn = {
   label: string;
   span: number;
   align: 'left' | 'center' | 'right';
+  useTabularNums?: boolean;
 };
 
 export type WorksheetTableRow = {
@@ -32,6 +39,7 @@ export type WorksheetTableRow = {
 
 export type WorksheetTableAttrs = {
   instruction: string;
+  showInstruction: boolean;
   columns: WorksheetTableColumn[];
   rows: WorksheetTableRow[];
   showHeader: boolean;
@@ -41,8 +49,20 @@ export type WorksheetTableAttrs = {
 };
 
 export const DEFAULT_WORKSHEET_TABLE_COLUMNS: WorksheetTableColumn[] = [
-  { id: 'table-column-1', label: 'Term', span: 4, align: 'left' },
-  { id: 'table-column-2', label: 'Definition', span: 8, align: 'left' },
+  {
+    id: 'table-column-1',
+    label: 'Term',
+    span: 8,
+    align: 'left',
+    useTabularNums: false,
+  },
+  {
+    id: 'table-column-2',
+    label: 'Definition',
+    span: 16,
+    align: 'left',
+    useTabularNums: false,
+  },
 ];
 
 export const DEFAULT_WORKSHEET_TABLE_ROWS: WorksheetTableRow[] = [
@@ -89,24 +109,24 @@ function columnSpan(column: WorksheetTableColumn) {
     (column as WorksheetTableColumn & { width?: number }).width,
   );
   const span = Number(column.span);
+  const clampSpan = (value: number) => Math.max(0.5, Math.min(24, value));
   if (Number.isFinite(span)) {
-    return Math.max(1, Math.min(12, Math.round(span)));
+    return clampSpan(Math.round(span * 2) / 2);
   }
   if (Number.isFinite(legacyWidth)) {
-    return Math.max(1, Math.min(12, Math.round(legacyWidth * 0.12)));
+    return clampSpan(Math.round((legacyWidth * 0.24) * 2) / 2);
   }
   return 1;
 }
 
 function normalizedSpans(columns: WorksheetTableColumn[]) {
   if (!columns.length) return [];
+  const totalUnits = 48;
   const weights = columns.map(columnSpan);
   const total = weights.reduce((sum, span) => sum + span, 0);
-  if (total === 12) return weights;
-
-  const quotas = weights.map((span) => (span / total) * 12);
+  const quotas = weights.map((span) => (span / total) * totalUnits);
   const spans = quotas.map((quota) => Math.max(1, Math.floor(quota)));
-  let difference = 12 - spans.reduce((sum, span) => sum + span, 0);
+  let difference = totalUnits - spans.reduce((sum, span) => sum + span, 0);
 
   while (difference > 0) {
     const candidates = quotas
@@ -145,16 +165,17 @@ function parseColumns(value: string | null): WorksheetTableColumn[] {
               : `table-column-${index + 1}`,
             label: column.label,
             span: Number.isFinite(Number(column.span))
-              ? Math.max(1, Math.min(12, Math.round(Number(column.span))))
+              ? Math.max(0.5, Math.min(24, Math.round(Number(column.span) * 2) / 2))
               : Number.isFinite(Number(column.width))
                 ? Math.max(
-                    1,
-                    Math.min(12, Math.round(Number(column.width) * 0.12)),
+                    0.5,
+                    Math.min(24, Math.round((Number(column.width) * 0.24) * 2) / 2),
                   )
                 : 1,
             align: column.align === 'center' || column.align === 'right'
               ? column.align
               : 'left',
+            useTabularNums: column.useTabularNums === true,
           }]
         : []
     ));
@@ -248,8 +269,9 @@ function TableCellContent({
 }
 
 function WorksheetTableNodeView({ node, selected }: NodeViewProps) {
+  const frameRef = useRef<HTMLDivElement>(null);
   const attrs = node.attrs as WorksheetTableAttrs;
-  const spans = normalizedSpans(attrs.columns);
+  const spanUnits = normalizedSpans(attrs.columns);
   const hasRowHeaders = attrs.rows.some((row) => row.isHeader);
   const displayedRows: WorksheetTableRow[] = hasRowHeaders || !attrs.showHeader
     ? attrs.rows
@@ -282,50 +304,201 @@ function WorksheetTableNodeView({ node, selected }: NodeViewProps) {
     }),
   }));
 
+  const markPageEndingRows = useCallback(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const rows = Array.from(frame.querySelectorAll<HTMLElement>(
+      '.worksheet-table-node__header, .worksheet-table-node__row',
+    ));
+    rows.forEach((row) => row.removeAttribute('data-page-last'));
+    if (!rows.length) return;
+
+    const editor = frame.closest('.ProseMirror');
+    const headers = editor
+      ? Array.from(editor.querySelectorAll<HTMLElement>('.tiptap-page-header'))
+      : [];
+    const footers = editor
+      ? Array.from(editor.querySelectorAll<HTMLElement>('.tiptap-page-footer'))
+      : [];
+    const pageAreas = headers.flatMap((header, index) => {
+      const footer = footers[index];
+      if (!footer) return [];
+      const top = header.getBoundingClientRect().bottom;
+      const bottom = footer.getBoundingClientRect().top;
+      return bottom > top ? [{ top, bottom }] : [];
+    });
+
+    if (!pageAreas.length) {
+      rows.at(-1)?.setAttribute('data-page-last', 'true');
+      return;
+    }
+
+    pageAreas.forEach((area) => {
+      const candidates = rows.flatMap((row) => {
+        const rect = row.getBoundingClientRect();
+        const intersection = Math.max(
+          0,
+          Math.min(rect.bottom, area.bottom) - Math.max(rect.top, area.top),
+        );
+        return intersection > 0 && rect.top < area.bottom
+          ? [{ row, bottom: rect.bottom, intersection }]
+          : [];
+      });
+      const lastCandidate = candidates.sort((left, right) => (
+        right.bottom - left.bottom
+        || right.intersection - left.intersection
+      ))[0];
+      lastCandidate?.row.setAttribute('data-page-last', 'true');
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const editor = frame.closest('.ProseMirror');
+    let animationFrame = requestAnimationFrame(markPageEndingRows);
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(markPageEndingRows);
+    };
+    const resizeObserver = new ResizeObserver(scheduleMeasure);
+    resizeObserver.observe(frame);
+    const mutationObserver = editor
+      ? new MutationObserver((mutations) => {
+        const onlyPageLastChanges = mutations.every((mutation) => (
+          mutation.type === 'attributes'
+          && mutation.attributeName === 'data-page-last'
+        ));
+        if (!onlyPageLastChanges) scheduleMeasure();
+      })
+      : null;
+    mutationObserver?.observe(editor!, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+    });
+    window.addEventListener('resize', scheduleMeasure);
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      resizeObserver.disconnect();
+      mutationObserver?.disconnect();
+      window.removeEventListener('resize', scheduleMeasure);
+    };
+  }, [markPageEndingRows, parsedRows.length]);
+
   return (
     <CustomBlockRoot selected={selected} className="worksheet-table-node">
-      <BlockInstruction>{attrs.instruction}</BlockInstruction>
+      {attrs.showInstruction && (
+        <BlockInstruction>{attrs.instruction}</BlockInstruction>
+      )}
       <div
         className="worksheet-table-node__frame"
+        ref={frameRef}
         role="table"
       >
         <div role="rowgroup">
-          {parsedRows.map(({ row, cells }) => (
-            <div
-              className={row.isHeader
-                ? 'worksheet-table-node__header'
-                : 'worksheet-table-node__row'}
-              key={row.id}
-              role="row"
-            >
-              {cells.map(({ columnId, parts }, columnIndex) => (
-                <div
-                  className={row.isHeader
-                    ? 'worksheet-table-node__header-cell'
-                    : 'worksheet-table-node__cell'}
-                  key={columnId}
-                  role={row.isHeader ? 'columnheader' : 'cell'}
-                  style={{
-                    gridColumn: `span ${spans[columnIndex]}`,
-                    textAlign: attrs.columns[columnIndex].align ?? 'left',
-                  }}
-                >
-                  {row.isHeader ? (
-                    <InlineFormattedText
-                      fallback={`Column ${columnIndex + 1}`}
-                      text={row.cells[columnId] ?? ''}
-                    />
-                  ) : (
-                    <TableCellContent
-                      hideBlankNumbers={attrs.hideBlankNumbers}
-                      parts={parts}
-                      showFirstAsExample={attrs.showFirstAsExample}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          ))}
+          {parsedRows.map(({ row, cells }) => {
+            const renderedCells: Array<{
+              key: string;
+              colSpan: number;
+              align: 'left' | 'center' | 'right';
+              useTabularNums: boolean;
+              headerText: string;
+              fallback: string;
+              parts: FillInTheBlankPart[];
+              isHeader: boolean;
+            }> = [];
+
+            for (let index = 0; index < attrs.columns.length; index += 1) {
+              const column = attrs.columns[index];
+              const cell = cells[index];
+              const headerText = row.cells[column.id] ?? '';
+              const headerTextTrimmed = headerText.trim();
+              const baseSpan = spanUnits[index] ?? 1;
+
+              if (row.isHeader && headerTextTrimmed.length > 0) {
+                let mergedSpan = baseSpan;
+                let mergeEnd = index;
+                for (
+                  let mergeIndex = index + 1;
+                  mergeIndex < attrs.columns.length;
+                  mergeIndex += 1
+                ) {
+                  const nextColumn = attrs.columns[mergeIndex];
+                  const nextHeaderText = (row.cells[nextColumn.id] ?? '').trim();
+                  if (nextHeaderText.length > 0) break;
+                  mergedSpan += spanUnits[mergeIndex] ?? 1;
+                  mergeEnd = mergeIndex;
+                }
+
+                renderedCells.push({
+                  key: `${row.id}-${column.id}`,
+                  colSpan: mergedSpan,
+                  align: column.align ?? 'left',
+                  useTabularNums: attrs.columns
+                    .slice(index, mergeEnd + 1)
+                    .some((mergedColumn) => mergedColumn.useTabularNums === true),
+                  headerText,
+                  fallback: `Column ${index + 1}`,
+                  parts: cell.parts,
+                  isHeader: true,
+                });
+
+                index = mergeEnd;
+                continue;
+              }
+
+              renderedCells.push({
+                key: `${row.id}-${column.id}`,
+                colSpan: baseSpan,
+                align: column.align ?? 'left',
+                useTabularNums: column.useTabularNums === true,
+                headerText,
+                fallback: `Column ${index + 1}`,
+                parts: cell.parts,
+                isHeader: row.isHeader,
+              });
+            }
+
+            return (
+              <div
+                className={row.isHeader
+                  ? 'worksheet-table-node__header'
+                  : 'worksheet-table-node__row'}
+                key={row.id}
+                role="row"
+              >
+                {renderedCells.map((cell) => (
+                  <div
+                    className={`${cell.isHeader
+                      ? 'worksheet-table-node__header-cell'
+                      : 'worksheet-table-node__cell'}${cell.useTabularNums
+                      ? ' worksheet-table-node__cell--tabular-nums'
+                      : ''}`}
+                    key={cell.key}
+                    role={cell.isHeader ? 'columnheader' : 'cell'}
+                    style={{
+                      gridColumn: `span ${cell.colSpan}`,
+                      textAlign: cell.align,
+                    }}
+                  >
+                    {cell.isHeader ? (
+                      <InlineFormattedText
+                        fallback={cell.fallback}
+                        text={cell.headerText}
+                      />
+                    ) : (
+                      <TableCellContent
+                        hideBlankNumbers={attrs.hideBlankNumbers}
+                        parts={cell.parts}
+                        showFirstAsExample={attrs.showFirstAsExample}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </div>
       </div>
     </CustomBlockRoot>
@@ -359,6 +532,17 @@ export const WorksheetTable = Node.create({
         ),
         renderHTML: (attributes) => ({
           'data-worksheet-table-instruction': attributes.instruction,
+        }),
+      },
+      showInstruction: {
+        default: true,
+        parseHTML: (element) => (
+          element.getAttribute('data-worksheet-table-show-instruction') !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-worksheet-table-show-instruction': String(
+            attributes.showInstruction,
+          ),
         }),
       },
       columns: {
@@ -452,6 +636,7 @@ export const WorksheetTable = Node.create({
             type: this.name,
             attrs: {
               instruction: attrs.instruction ?? 'Complete the table.',
+              showInstruction: attrs.showInstruction ?? true,
               columns: attrs.columns ?? defaultColumns(),
               rows: attrs.rows ?? defaultRows(),
               showHeader: attrs.showHeader ?? false,

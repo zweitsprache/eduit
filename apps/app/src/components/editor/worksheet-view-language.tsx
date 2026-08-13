@@ -86,3 +86,22 @@ export function resolveTranslatedText(
   const translated = translations?.[viewLanguage];
   return translated != null && translated.length ? translated : original;
 }
+
+const RTL_LANGUAGE_PREFIXES = new Set([
+  'ar',
+  'fa',
+  'he',
+  'ps',
+  'ur',
+  'ku',
+]);
+
+export function isRtlLanguage(language: string) {
+  if (!language || language === ORIGINAL_VIEW_LANGUAGE) return false;
+  const prefix = language.toLowerCase().split('-')[0];
+  return RTL_LANGUAGE_PREFIXES.has(prefix);
+}
+
+export function languageDirection(language: string): 'ltr' | 'rtl' {
+  return isRtlLanguage(language) ? 'rtl' : 'ltr';
+}

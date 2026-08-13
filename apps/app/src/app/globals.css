@@ -86,7 +86,7 @@
   pointer-events: none;
 }
 
-.tiptap[data-learning-cards-print] .tiptap-page-header::before {
+.tiptap[data-learning-cards-double] .tiptap-page-header::before {
   position: absolute;
   top: calc(var(--document-logo-top, 10mm) + 8px);
   left: 25mm;
@@ -100,7 +100,7 @@
   line-height: 1.35;
   white-space: nowrap;
   transform: translateY(-50%);
-  content: "für doppelseitigen Druck an kurzer Seite spiegeln";
+  content: "für doppelseitigen Druck an langer Seite spiegeln";
   pointer-events: none;
 }
 
@@ -173,10 +173,39 @@
 
 .editor-content .tiptap-page-break-node {
   position: relative;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  border-top: 1px dashed var(--color-border-primary);
+}
+
+.editor-content .tiptap-page-break-node--pages-mode {
+  position: relative;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
   border-top: 1px dashed var(--color-border-primary);
 }
 
 .editor-content .tiptap-page-break-node::before {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  padding-inline: 0.5rem;
+  background: var(--color-bg-primary);
+  color: var(--color-text-quaternary);
+  content: "Page break";
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  transform: translate(-50%, -50%);
+}
+
+.editor-content .tiptap-page-break-node--pages-mode::before {
   position: absolute;
   top: 0;
   left: 50%;

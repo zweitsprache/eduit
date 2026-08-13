@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "worksheets": [
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt A | Dativ als Objekt",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt A",
+        "languageCompetencies": ["Dativ als Objekt", "über Geschenkideen sprechen"],
+        "learnerContext": "Erwachsene Lernende lernen den Dativ als Personenobjekt bei Verben wie schenken, kaufen und backen."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Ich habe meinem Mann Gartenstühle gekauft.", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p>Viele Verben haben zwei Objekte: eine <strong>Person</strong> im Dativ (Wem?) und eine <strong>Sache</strong> im Akkusativ (Was?).</p><p>Ich schenke <strong>meinem Sohn</strong> (Wem?) <strong>einen Fussball</strong> (Was?).</p><p>Die Endungen im Dativ:</p><ul><li>der Mann → mein<strong>em</strong> Mann</li><li>das Kind → mein<strong>em</strong> Kind</li><li>die Nachbarin → mein<strong>er</strong> Nachbarin</li><li>die Freunde (Plural) → mein<strong>en</strong> Freunden</li></ul><p>Genauso: dein-, sein-, ihr-, unser-, euer-, Ihr-, ein-, kein-.</p><p>Diese Verben brauchen oft beide Objekte: <em>schenken, kaufen, backen, kochen, geben, zeigen, empfehlen, mitbringen, leihen</em>.</p>"
+        },
+        {
+          "type": "worksheetTable",
+          "instruction": "Ergänzen Sie die Endungen im Dativ.",
+          "showInstruction": true,
+          "showHeader": true,
+          "showFirstAsExample": true,
+          "blankWidthFactor": 1.5,
+          "columns": [
+            { "id": "wer", "label": "Wer?", "span": 4, "align": "left" },
+            { "id": "verb", "label": "Verb", "span": 5, "align": "left" },
+            { "id": "wem", "label": "Wem? (Person)", "span": 8, "align": "left" },
+            { "id": "was", "label": "Was? (Sache)", "span": 7, "align": "left" }
+          ],
+          "rows": [
+            { "id": "dt-1", "cells": { "wer": "Ich", "verb": "schenke", "wem": "meinem Sohn", "was": "einen Fussball." } },
+            { "id": "dt-2", "cells": { "wer": "Sie", "verb": "kauft", "wem": "ihr{{blank:em}} Kind", "was": "eine Jacke." } },
+            { "id": "dt-3", "cells": { "wer": "Wir", "verb": "backen", "wem": "unser{{blank:er}} Freundin", "was": "einen Kuchen." } },
+            { "id": "dt-4", "cells": { "wer": "Sie", "verb": "schenken", "wem": "ihr{{blank:en}} Grosseltern", "was": "Gartenstühle." } },
+            { "id": "dt-5", "cells": { "wer": "Ich", "verb": "koche", "wem": "mein{{blank:em}} Mann", "was": "eine Suppe." } },
+            { "id": "dt-6", "cells": { "wer": "Er", "verb": "zeigt", "wem": "sein{{blank:en}} Freunden", "was": "die Fotos." } }
+          ]
+        },
+        { "type": "heading", "text": "Endungen ergänzen", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Ergänzen Sie die Endung im Dativ.",
+          "items": [
+            "Kauft ihr eur{{blank:er}} Tochter ein Velo zu Weihnachten?",
+            "Die Farbe steht dein{{blank:er}} Schwester sehr gut, findest du nicht?",
+            "Geben Sie die Dokumente bitte ein{{blank:er}} Kollegin. Ich habe heute keine Zeit.",
+            "Ihr könnt doch eur{{blank:em}} Hauswart keine Weinflasche schenken!",
+            "Dieses Restaurant musst du dein{{blank:em}} Bruder empfehlen!",
+            "Schenken Sie Ihr{{blank:er}} Mitarbeiterin doch Konzertkarten.",
+            "Kaufen wir unser{{blank:em}} Lehrer zum Abschied ein Geschenk?",
+            "Ich backe mein{{blank:en}} Nachbarn einen Kuchen. Sie haben mir so oft geholfen."
+          ],
+          "widthFactor": 0.8,
+          "showFirstAsExample": true
+        },
+        { "type": "heading", "text": "Sätze schreiben", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Schreiben Sie Sätze. Die Person steht vor der Sache.",
+          "items": [
+            "kocht – Hans – eine Suppe – seinen Kindern → {{blank:Hans kocht seinen Kindern eine Suppe|4}}.",
+            "seiner Frau – Er – ein Parfum – kauft → {{blank:Er kauft seiner Frau ein Parfum|4}}.",
+            "du – die Pralines – mir – bitte – Gibst → {{blank:Gibst du mir bitte die Pralines|4}}?",
+            "bringt mit – Die Grossmutter – eine Puppe – Pia → {{blank:Die Grossmutter bringt Pia eine Puppe mit|4}}.",
+            "du – dein Velo – Kannst – leihen – mir → {{blank:Kannst du mir dein Velo leihen|4}}?",
+            "backe – meiner Nachbarin – Ich – einen Kuchen → {{blank:Ich backe meiner Nachbarin einen Kuchen|4}}."
+          ],
+          "showFirstAsExample": true
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt A | Geschenke und Personalpronomen",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt A",
+        "languageCompetencies": ["Personalpronomen im Dativ", "über Geschenkideen sprechen"],
+        "learnerContext": "Wiederholung der Personalpronomen im Dativ im Kontext von Geschenken und Festen."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Wem schenken Sie was?", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p>Statt der Person kann ein Pronomen stehen:</p><p>Christine schenkt <strong>ihren Eltern</strong> eine Espressomaschine. → Christine schenkt <strong>ihnen</strong> eine Espressomaschine.</p><p><strong>Wem?</strong> mir – dir – ihm / ihm / ihr – uns – euch – ihnen / Ihnen</p>"
+        },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Ergänzen Sie: mir – dir – ihm – ihr – uns – euch – ihnen – Ihnen.",
+          "items": [
+            "Grossmama hat bald Geburtstag und wir basteln {{blank:ihr}} ein Geschenk.",
+            "Sie schenkt {{blank:uns}} auch immer so schöne Sachen.",
+            "Hallo, David! Und, wie gefällt {{blank:dir}} mein Auto?",
+            "Grüezi, Herr Kunz! Gehört das Velo hier {{blank:Ihnen}}?",
+            "Wartet bitte einen Moment. Ich helfe {{blank:euch}} gleich.",
+            "Meine Eltern haben Hochzeitstag. Ich schenke {{blank:ihnen}} Blumen und Pralines.",
+            "Julia hat ein neues Kleid. Die Farbe steht {{blank:ihr}} total gut.",
+            "Für meinen Freund koche ich heute arabisch. Das schmeckt {{blank:ihm}} sicher.",
+            "Ich glaube, ich nehme die schwarze Hose. Die passt {{blank:mir}} besser."
+          ],
+          "widthFactor": 1,
+          "showFirstAsExample": true
+        },
+        { "type": "heading", "text": "Wünsche und Geschenke", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "matchingPairs",
+          "instruction": "Wer wünscht sich was? Ordnen Sie zu.",
+          "answerStyle": "writingLines",
+          "shuffleRight": true,
+          "shuffleSeed": 8,
+          "showFirstAsExample": true,
+          "pairs": [
+            { "id": "gp-1", "left": "Mein Vater trinkt jeden Morgen drei Tassen Kaffee.", "right": "eine Espressomaschine" },
+            { "id": "gp-2", "left": "Meine Schwester kocht sehr gern und probiert neue Rezepte.", "right": "ein Kochbuch" },
+            { "id": "gp-3", "left": "Mein Neffe spielt jeden Tag mit seinen Freunden im Park.", "right": "ein Fussball" },
+            { "id": "gp-4", "left": "Meine Freundin trägt gern Schmuck.", "right": "eine Kette" },
+            { "id": "gp-5", "left": "Meine Nachbarin geht gern ins Konzert.", "right": "Konzertkarten" },
+            { "id": "gp-6", "left": "Mein Grossvater grilliert im Sommer fast jeden Sonntag.", "right": "ein Grill" }
+          ]
+        },
+        { "type": "heading", "text": "Geschenke: Artikel und Plural", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "articlePlural",
+          "instruction": "Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.",
+          "order": "alphabetical",
+          "rows": [
+            { "id": "gap-1", "term": "Grill", "articles": ["der"], "plural": "Grills" },
+            { "id": "gap-2", "term": "Handcreme", "articles": ["die"], "plural": "Handcremes" },
+            { "id": "gap-3", "term": "Kette", "articles": ["die"], "plural": "Ketten" },
+            { "id": "gap-4", "term": "Kochbuch", "articles": ["das"], "plural": "Kochbücher" },
+            { "id": "gap-5", "term": "Konzertkarte", "articles": ["die"], "plural": "Konzertkarten" },
+            { "id": "gap-6", "term": "Mütze", "articles": ["die"], "plural": "Mützen" },
+            { "id": "gap-7", "term": "Parfum", "articles": ["das"], "plural": "Parfums" },
+            { "id": "gap-8", "term": "Puppe", "articles": ["die"], "plural": "Puppen" },
+            { "id": "gap-9", "term": "Rucksack", "articles": ["der"], "plural": "Rucksäcke" },
+            { "id": "gap-10", "term": "Gutschein", "articles": ["der"], "plural": "Gutscheine" }
+          ]
+        },
+        {
+          "type": "richText",
+          "html": "<p><strong>Spiel: Geschenke raten.</strong> Ordnen Sie jeder Person ein Geschenk zu und notieren Sie es. Fragen Sie dann Ihre Partnerin oder Ihren Partner: Wer hat zuerst alle Geschenke erraten?</p><p>Personen: die Tante | der Bruder | die Schwester | der Vater | die Mutter | der Grossvater</p><p><em>Beispiel:</em> Schenkst du deiner Mutter eine Handcreme? – Nein. Aber kaufst du ihr ein Parfum? – Ja.</p>"
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt A | Lernkarten",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "learning-cards",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt A"
+      },
+      "blocks": [
+        {
+          "type": "learningCards",
+          "title": "L7 Schritt A | Dativ und Geschenke",
+          "sidedness": "double",
+          "frontTextSize": "m",
+          "backTextSize": "s",
+          "items": [
+            { "front": "der Mann → Dativ", "back": "meinem Mann: Ich habe meinem Mann Gartenstühle gekauft." },
+            { "front": "das Kind → Dativ", "back": "meinem Kind: Ich kaufe meinem Kind einen Hund." },
+            { "front": "die Nachbarin → Dativ", "back": "meiner Nachbarin: Ich backe meiner Nachbarin einen Kuchen." },
+            { "front": "die Freunde (Plural) → Dativ", "back": "meinen Freunden: Ich schenke meinen Freunden ein Buch." },
+            { "front": "Wem? Personalpronomen", "back": "mir – dir – ihm / ihm / ihr – uns – euch – ihnen / Ihnen" },
+            { "front": "Reihenfolge: Person und Sache", "back": "Person (Dativ) vor Sache (Akkusativ): Ich schenke ihm ein Buch." },
+            { "front": "schenken", "back": "jemandem etwas geben, ohne Geld zu nehmen" },
+            { "front": "leihen", "back": "jemandem etwas geben, das er zurückgibt" },
+            { "front": "empfehlen", "back": "jemandem sagen, dass etwas gut ist" },
+            { "front": "mitbringen", "back": "etwas für jemanden mitnehmen" },
+            { "front": "der Gutschein, -e", "back": "ein Papier, mit dem man etwas aussuchen kann" },
+            { "front": "die Konzertkarte, -n", "back": "die Eintrittskarte für ein Konzert" },
+            { "front": "die Espressomaschine, -n", "back": "ein Gerät für starken Kaffee" },
+            { "front": "der Rucksack, -̈e", "back": "eine Tasche für den Rücken" },
+            { "front": "die Kette, -n", "back": "Schmuck für den Hals" },
+            { "front": "das Parfum, -s", "back": "eine Flüssigkeit mit gutem Duft" },
+            { "front": "die Mütze, -n", "back": "eine warme Kopfbedeckung" },
+            { "front": "das Nachbarschaftsfest, -e", "back": "ein Fest für alle Nachbarinnen und Nachbarn" }
+          ]
+        }
+      ]
+    }
+  ]
+}

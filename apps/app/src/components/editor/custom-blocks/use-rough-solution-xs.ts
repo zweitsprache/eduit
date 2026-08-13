@@ -16,6 +16,8 @@ export function useRoughSolutionXs(
   containerRef: RefObject<HTMLElement | null>,
 ) {
   const solutionsRef = useRef<SVGSVGElement>(null);
+  const drawFrameRef = useRef<number | null>(null);
+  const signatureRef = useRef('');
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -26,6 +28,45 @@ export function useRoughSolutionXs(
       const containerRect = container.getBoundingClientRect();
       if (!containerRect.width || !containerRect.height) return;
 
+      const showSolutions =
+        container.closest('.tiptap')?.getAttribute('data-show-solutions')
+        === 'true';
+      const targets = Array.from(container.querySelectorAll<HTMLElement>(
+        '[data-rough-solution-x="true"]',
+      ));
+      const hasVisibleExample = targets.some(
+        (target) => target.dataset.solutionKind === 'example',
+      );
+
+      const roundedWidth = containerRect.width.toFixed(2);
+      const roundedHeight = containerRect.height.toFixed(2);
+      const targetSignature = targets
+        .map((target) => {
+          const targetRect = target.getBoundingClientRect();
+          return [
+            target.dataset.solutionKey ?? '',
+            target.dataset.solutionKind ?? 'solution',
+            (targetRect.left - containerRect.left).toFixed(2),
+            (targetRect.top - containerRect.top).toFixed(2),
+            targetRect.width.toFixed(2),
+            targetRect.height.toFixed(2),
+          ].join(':');
+        })
+        .join('|');
+      const signature = [
+        roundedWidth,
+        roundedHeight,
+        showSolutions ? 'show' : 'hide',
+        targetSignature,
+      ].join('::');
+      if (signatureRef.current === signature) return;
+      signatureRef.current = signature;
+
+      if (!showSolutions && !hasVisibleExample) {
+        if (svg.firstChild) svg.replaceChildren();
+        return;
+      }
+
       svg.replaceChildren();
       svg.setAttribute(
         'viewBox',
@@ -33,9 +74,7 @@ export function useRoughSolutionXs(
       );
       const roughSvg = rough.svg(svg);
 
-      container.querySelectorAll<HTMLElement>(
-        '[data-rough-solution-x="true"]',
-      ).forEach((target) => {
+      targets.forEach((target) => {
         const targetRect = target.getBoundingClientRect();
         const inset = 4;
         const left = targetRect.left - containerRect.left + inset;
@@ -81,17 +120,49 @@ export function useRoughSolutionXs(
       });
     };
 
-    drawSolutions();
-    const resizeObserver = new ResizeObserver(drawSolutions);
+    const scheduleDraw = () => {
+      if (drawFrameRef.current !== null) return;
+      drawFrameRef.current = requestAnimationFrame(() => {
+        drawFrameRef.current = null;
+        drawSolutions();
+      });
+    };
+
+    scheduleDraw();
+    const resizeObserver = new ResizeObserver(scheduleDraw);
     resizeObserver.observe(container);
-    window.addEventListener('resize', drawSolutions);
-    void document.fonts.ready.then(drawSolutions);
+    window.addEventListener('resize', scheduleDraw);
+    void document.fonts.ready.then(scheduleDraw);
+
+    const mutationObserver = new MutationObserver(scheduleDraw);
+    mutationObserver.observe(container, {
+      attributes: true,
+      attributeFilter: [
+        'data-rough-solution-x',
+        'data-solution-kind',
+        'data-solution-key',
+      ],
+      childList: true,
+      subtree: true,
+    });
+    const tiptapRoot = container.closest('.tiptap');
+    if (tiptapRoot) {
+      mutationObserver.observe(tiptapRoot, {
+        attributes: true,
+        attributeFilter: ['data-show-solutions'],
+      });
+    }
 
     return () => {
+      if (drawFrameRef.current !== null) {
+        cancelAnimationFrame(drawFrameRef.current);
+        drawFrameRef.current = null;
+      }
+      mutationObserver.disconnect();
       resizeObserver.disconnect();
-      window.removeEventListener('resize', drawSolutions);
+      window.removeEventListener('resize', scheduleDraw);
     };
-  });
+  }, [containerRef]);
 
   return solutionsRef;
 }

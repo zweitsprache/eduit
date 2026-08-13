@@ -14,7 +14,7 @@ export const uiGerman: Record<string, string> = {
   '1 column': '1 Spalte',
   '2 columns': '2 Spalten',
   '3 columns': '3 Spalten',
-  '12-column grid': '12-Spalten-Raster',
+  '24-column grid': '24-Spalten-Raster',
   '. Add a width factor with': '. Ergänze einen Breitenfaktor mit',
   'Accent color': 'Akzentfarbe',
   Academic: 'Akademisch',

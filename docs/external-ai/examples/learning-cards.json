@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "worksheets": [
+    {
+      "title": "Lernkarten | Gesundheit",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "learning-cards",
+        "subject": "DaZ",
+        "contentLanguage": "de-CH",
+        "languageLevel": "A2"
+      },
+      "blocks": [
+        {
+          "type": "learningCards",
+          "title": "Gesundheit",
+          "sidedness": "double",
+          "frontTextSize": "m",
+          "backTextSize": "m",
+          "items": [
+            { "front": "die Kopfschmerzen", "back": "Schmerzen im Kopf" },
+            { "front": "die Tablette", "back": "ein Medikament in fester Form" },
+            { "front": "einnehmen", "back": "ein Medikament schlucken" },
+            { "front": "das Rezept", "back": "eine ärztliche Verordnung für ein Medikament" },
+            { "front": "die Apotheke", "back": "ein Geschäft für Medikamente" },
+            { "front": "die Nebenwirkung", "back": "eine unerwünschte Wirkung eines Medikaments" },
+            { "front": "nüchtern", "back": "ohne vorher gegessen zu haben" },
+            { "front": "die Dosierung", "back": "die vorgeschriebene Menge eines Medikaments" },
+            { "front": "zweimal täglich", "back": "zweimal an jedem Tag" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,367 @@
+{
+  "schemaVersion": 1,
+  "worksheets": [
+    {
+      "title": "Schritte plus Neu 3 | L6 Schritt C | Das Schulsystem in der Schweiz",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 6 Schule und Ausbildung, Schritt C",
+        "languageCompetencies": ["über das Schulsystem sprechen", "über die eigene Schulzeit sprechen"],
+        "learnerContext": "Erwachsene Lernende lernen das Schweizer Schulsystem kennen und sprechen über ihre eigene Schulzeit."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Schule in der Schweiz", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p>In der Schweiz hat jeder Kanton ein eigenes Schulsystem. So sieht der Weg meistens aus:</p><ol><li><strong>Kindergarten</strong> – das erste Jahr ist zum Teil freiwillig.</li><li><strong>Primarschule</strong> – alle Kinder gehen in die Primarschule.</li><li><strong>Sekundarschule</strong> – Kindergarten, Primarschule und Sekundarschule sind die obligatorische Schulzeit.</li><li>Danach: <strong>Gymnasium</strong> (Abschluss: Matura), <strong>Fachmittelschule</strong> oder <strong>Berufsschule und Lehre</strong> (duales System).</li><li>Später sind <strong>Höhere Fachschule</strong>, <strong>Fachschule</strong>, <strong>Universität</strong> und <strong>Hochschule</strong> möglich.</li></ol>"
+        },
+        {
+          "type": "trueFalse",
+          "instruction": "Schauen Sie das Schema an. Was ist richtig, was ist falsch?",
+          "trueLabel": "richtig",
+          "falseLabel": "falsch",
+          "showFirstAsExample": true,
+          "rows": [
+            { "id": "tf-1", "text": "Kinder müssen mindestens ein Jahr in den Kindergarten gehen.", "correctValue": "true" },
+            { "id": "tf-2", "text": "Alle Kinder müssen in die Primarschule gehen.", "correctValue": "true" },
+            { "id": "tf-3", "text": "Nach der Primarschule geht man direkt ins Gymnasium.", "correctValue": "false" },
+            { "id": "tf-4", "text": "Man kann nach der Primarschule oder nach der Sekundarschule ins Gymnasium gehen.", "correctValue": "true" },
+            { "id": "tf-5", "text": "Der Abschluss am Gymnasium heisst Matura.", "correctValue": "true" },
+            { "id": "tf-6", "text": "In der Lehre geht man auch in die Berufsschule.", "correctValue": "true" },
+            { "id": "tf-7", "text": "Jeder Kanton in der Schweiz hat genau das gleiche Schulsystem.", "correctValue": "false" }
+          ]
+        },
+        { "type": "heading", "text": "Schulen und Schulfächer", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "glossary",
+          "preset": "default",
+          "showInstruction": true,
+          "instruction": "Lesen Sie die Wörter und ergänzen Sie eigene Beispiele.",
+          "showColumnHeaders": true,
+          "showExample": true,
+          "headerLabels": ["Wort", "Erklärung", "Beispiel"],
+          "termWidth": "25",
+          "entries": [
+            { "term": "der Kindergarten, -̈", "definition": "die Schule für Kinder vor der Primarschule", "example": "Mein Sohn geht seit einem Jahr in den Kindergarten." },
+            { "term": "die Primarschule, -n", "definition": "die erste obligatorische Schule", "example": "In der Primarschule lernt man lesen und schreiben." },
+            { "term": "die Sekundarschule, -n", "definition": "die Schule nach der Primarschule", "example": "Nach der Primarschule bin ich in die Sekundarschule gegangen." },
+            { "term": "das Gymnasium, Gymnasien", "definition": "die Schule mit dem Abschluss Matura", "example": "Sie konnte ins Gymnasium wechseln." },
+            { "term": "die Matura", "definition": "der Abschluss am Gymnasium", "example": "Er hat die Matura mit guten Noten gemacht." },
+            { "term": "die Berufsschule, -n", "definition": "die Schule während der Lehre", "example": "Er geht einen Tag pro Woche in die Berufsschule." },
+            { "term": "die Lehre, -n", "definition": "die Ausbildung in einem Betrieb", "example": "Sie macht eine Lehre als Coiffeuse." },
+            { "term": "die Hochschule, -n", "definition": "eine Schule nach der Matura", "example": "Er studiert an einer Hochschule in Zürich." },
+            { "term": "obligatorisch", "definition": "man muss es machen", "example": "Die Primarschule ist obligatorisch." },
+            { "term": "das Lieblingsfach, -̈er", "definition": "das Fach, das man am liebsten hat", "example": "Mathematik war mein Lieblingsfach." }
+          ]
+        },
+        { "type": "heading", "text": "Meine Schulzeit", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "worksheetTable",
+          "instruction": "Ergänzen Sie den Fragebogen. Sprechen Sie dann mit Ihrer Partnerin oder Ihrem Partner.",
+          "showInstruction": true,
+          "showHeader": true,
+          "showFirstAsExample": true,
+          "columns": [
+            { "id": "frage", "label": "Frage", "span": 10, "align": "left" },
+            { "id": "ich", "label": "Ich", "span": 7, "align": "left" },
+            { "id": "partner", "label": "Meine Partnerin / Mein Partner", "span": 7, "align": "left" }
+          ],
+          "rows": [
+            { "id": "row-1", "cells": { "frage": "Wann sind Sie in die Schule gekommen?", "ich": "mit 5 Jahren", "partner": "mit 4 Jahren" } },
+            { "id": "row-2", "cells": { "frage": "Welche Fächer waren Ihre Lieblingsfächer? Warum?", "ich": "", "partner": "" } },
+            { "id": "row-3", "cells": { "frage": "Welche Fächer haben Ihnen nicht gefallen? Warum?", "ich": "", "partner": "" } },
+            { "id": "row-4", "cells": { "frage": "Wie waren Ihre Lehrerinnen und Lehrer?", "ich": "", "partner": "" } },
+            { "id": "row-5", "cells": { "frage": "Was mussten oder durften Sie im Unterricht machen?", "ich": "", "partner": "" } }
+          ]
+        },
+        {
+          "type": "richText",
+          "html": "<p>Redemittel für das Gespräch:</p><ul><li>Ich bin mit … in die Schule gekommen.</li><li>Mein Lieblingsfach war … / Meine Lieblingslehrerin war …</li><li>… hatte ich gern. / … hatte ich nicht gern.</li><li>Im Unterricht mussten wir … / durften wir …</li><li>Die Lehrer waren streng. / Die Lehrer waren toll.</li></ul>"
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L6 Schritt C | In der Schule eine Null, im Beruf ein Star",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 6 Schule und Ausbildung, Schritt C",
+        "languageCompetencies": ["einen Zeitungstext verstehen", "einen Berufsweg beschreiben"],
+        "learnerContext": "Lesetraining zu einem Zeitungsporträt über einen ungewöhnlichen Berufsweg."
+      },
+      "blocks": [
+        { "type": "heading", "text": "In der Schule eine Null – im Beruf ein Star", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p>«Roli, von dir habe ich nichts anderes erwartet», hat unser Deutschlehrer oft gesagt, wenn er mir wieder eine Prüfung mit einer schlechten Note zurückgegeben hat. Meine Schulzeit war einfach nur schrecklich», erzählt Roland Good.</p><p>Heute ist Roland Good ein gut bezahlter Industrie-Designer und arbeitet für einen grossen Automobilkonzern. «Mein Vater war sehr streng und wollte, dass ich die Matura mache und dann an die Universität gehe. Nur war ich in der Schule eine absolute Null. Nur das Fach Kunst hat mich wirklich interessiert, auch weil unsere Kunstlehrerin super war.</p><p>Mit 19 habe ich knapp die Matura geschafft, aber ich wollte nicht studieren. So habe ich eine Lehre als Gärtner begonnen. Aber die Berufsschule hat mir nicht gefallen und ich habe den Lehrabschluss nicht gemacht. Danach habe ich verschiedene Jobs gesucht: in der Küche von einem Restaurant und in einem grossen Autohaus. Das war ziemlich langweilig, aber ich hatte viele Ideen, was man an Autos schöner machen kann.</p><p>Mein Chef hat mir dann empfohlen, ein Studium in Produkt- und Industriedesign zu machen. Das war eine super Idee. Zum ersten Mal in meinem Leben hat mir Lernen richtig Spass gemacht und ich hatte nur gute Noten. Nach dem Studium habe ich in einer Designagentur als Praktikant gearbeitet und danach gleich eine Stelle in der Autoindustrie gefunden. Ich denke oft an meine wunderbare Kunstlehrerin.»</p>"
+        },
+        {
+          "type": "mcq",
+          "instruction": "Lesen Sie den Text und wählen Sie die richtige Antwort.",
+          "questions": [
+            {
+              "id": "q-1",
+              "question": "In der Schule …",
+              "answerMode": "single",
+              "options": [
+                { "id": "q1-a", "text": "wollte Roland die Matura machen.", "correct": false },
+                { "id": "q1-b", "text": "war Roland kein guter Schüler.", "correct": true },
+                { "id": "q1-c", "text": "hat Roland kein Fach besonders interessiert.", "correct": false }
+              ]
+            },
+            {
+              "id": "q-2",
+              "question": "Die Arbeit im Autohaus …",
+              "answerMode": "single",
+              "options": [
+                { "id": "q2-a", "text": "hat Roland sehr interessiert.", "correct": false },
+                { "id": "q2-b", "text": "hat Roland keinen Spass gemacht.", "correct": true },
+                { "id": "q2-c", "text": "war immer schön.", "correct": false }
+              ]
+            },
+            {
+              "id": "q-3",
+              "question": "Roland hat …",
+              "answerMode": "single",
+              "options": [
+                { "id": "q3-a", "text": "nach der Ausbildung wieder im Autohaus gearbeitet.", "correct": false },
+                { "id": "q3-b", "text": "die Matura gemacht und gleich danach studiert.", "correct": false },
+                { "id": "q3-c", "text": "nach dem Praktikum eine Stelle in der Autoindustrie gefunden.", "correct": true }
+              ]
+            },
+            {
+              "id": "q-4",
+              "question": "Wer hat Roland das Studium empfohlen?",
+              "answerMode": "single",
+              "options": [
+                { "id": "q4-a", "text": "sein Chef im Autohaus", "correct": true },
+                { "id": "q4-b", "text": "sein Vater", "correct": false },
+                { "id": "q4-c", "text": "seine Kunstlehrerin", "correct": false }
+              ]
+            }
+          ],
+          "columns": 1,
+          "showInstruction": true
+        },
+        { "type": "heading", "text": "Der Weg von Roland Good", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Ergänzen Sie den Lebensweg in der richtigen Reihenfolge.",
+          "items": [
+            "Zuerst war Roland in der Schule. Sein Lieblingsfach war {{blank:Kunst}}.",
+            "Mit 19 hat er knapp die {{blank:Matura}} geschafft.",
+            "Danach hat er eine {{blank:Lehre}} als Gärtner begonnen, aber den Abschluss nicht gemacht.",
+            "Er hat verschiedene {{blank:Jobs}} gesucht, zum Beispiel in einem Restaurant und in einem Autohaus.",
+            "Sein Chef hat ihm ein {{blank:Studium}} in Produkt- und Industriedesign empfohlen.",
+            "Nach dem Studium hat er als {{blank:Praktikant}} in einer Designagentur gearbeitet.",
+            "Heute arbeitet er als {{blank:Industrie-Designer}} für einen Automobilkonzern."
+          ],
+          "distractors": ["Berufsschule", "Universität"],
+          "showWordBank": true,
+          "widthFactor": 1.5,
+          "showFirstAsExample": true
+        },
+        {
+          "type": "richText",
+          "html": "<p><strong>Lerntipp:</strong> Lesen Sie zuerst den Text komplett. Beim zweiten Lesen suchen Sie die Antworten zu den Aufgaben.</p>"
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L6 Schritt C | Wortschatz Schule",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 6 Schule und Ausbildung, Schritt C",
+        "languageCompetencies": ["Wortfeld Schule und Schulfächer"]
+      },
+      "blocks": [
+        { "type": "heading", "text": "Wortschatz: Schule und Schulfächer", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "mcq",
+          "instruction": "Welches Wort passt nicht in die Reihe?",
+          "questions": [
+            {
+              "id": "odd-1",
+              "question": "die Physik – die Geschichte – die Chemie – die Biologie",
+              "answerMode": "single",
+              "options": [
+                { "id": "odd1-a", "text": "die Physik", "correct": false },
+                { "id": "odd1-b", "text": "die Geschichte", "correct": true },
+                { "id": "odd1-c", "text": "die Chemie", "correct": false },
+                { "id": "odd1-d", "text": "die Biologie", "correct": false }
+              ]
+            },
+            {
+              "id": "odd-2",
+              "question": "die Primarschule – das Gymnasium – die Lehre – die Sekundarschule",
+              "answerMode": "single",
+              "options": [
+                { "id": "odd2-a", "text": "die Primarschule", "correct": false },
+                { "id": "odd2-b", "text": "das Gymnasium", "correct": false },
+                { "id": "odd2-c", "text": "die Lehre", "correct": true },
+                { "id": "odd2-d", "text": "die Sekundarschule", "correct": false }
+              ]
+            },
+            {
+              "id": "odd-3",
+              "question": "das Zeugnis – die Abschlussprüfung – die Matura – der Vortrag",
+              "answerMode": "single",
+              "options": [
+                { "id": "odd3-a", "text": "das Zeugnis", "correct": false },
+                { "id": "odd3-b", "text": "die Abschlussprüfung", "correct": false },
+                { "id": "odd3-c", "text": "die Matura", "correct": false },
+                { "id": "odd3-d", "text": "der Vortrag", "correct": true }
+              ]
+            },
+            {
+              "id": "odd-4",
+              "question": "Ein Schüler ist: fleissig – intelligent – streng – faul",
+              "answerMode": "single",
+              "options": [
+                { "id": "odd4-a", "text": "fleissig", "correct": false },
+                { "id": "odd4-b", "text": "intelligent", "correct": false },
+                { "id": "odd4-c", "text": "streng", "correct": true },
+                { "id": "odd4-d", "text": "faul", "correct": false }
+              ]
+            },
+            {
+              "id": "odd-5",
+              "question": "die Berufsschule – die Universität – die Hochschule – das Studium",
+              "answerMode": "single",
+              "options": [
+                { "id": "odd5-a", "text": "die Berufsschule", "correct": false },
+                { "id": "odd5-b", "text": "die Universität", "correct": false },
+                { "id": "odd5-c", "text": "die Hochschule", "correct": false },
+                { "id": "odd5-d", "text": "das Studium", "correct": true }
+              ]
+            },
+            {
+              "id": "odd-6",
+              "question": "das Englisch – die Geografie – das Spanisch – das Italienisch",
+              "answerMode": "single",
+              "options": [
+                { "id": "odd6-a", "text": "das Englisch", "correct": false },
+                { "id": "odd6-b", "text": "die Geografie", "correct": true },
+                { "id": "odd6-c", "text": "das Spanisch", "correct": false },
+                { "id": "odd6-d", "text": "das Italienisch", "correct": false }
+              ]
+            }
+          ],
+          "columns": 1,
+          "showInstruction": true
+        },
+        { "type": "heading", "text": "Artikel und Plural", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "articlePlural",
+          "instruction": "Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.",
+          "order": "alphabetical",
+          "rows": [
+            { "id": "ap-1", "term": "Abschlussprüfung", "articles": ["die"], "plural": "Abschlussprüfungen" },
+            { "id": "ap-2", "term": "Fach", "articles": ["das"], "plural": "Fächer" },
+            { "id": "ap-3", "term": "Gymnasium", "articles": ["das"], "plural": "Gymnasien" },
+            { "id": "ap-4", "term": "Klasse", "articles": ["die"], "plural": "Klassen" },
+            { "id": "ap-5", "term": "Lehre", "articles": ["die"], "plural": "Lehren" },
+            { "id": "ap-6", "term": "Note", "articles": ["die"], "plural": "Noten" },
+            { "id": "ap-7", "term": "Praktikum", "articles": ["das"], "plural": "Praktika" },
+            { "id": "ap-8", "term": "Schüler", "articles": ["der"], "plural": "Schüler" },
+            { "id": "ap-9", "term": "Studium", "articles": ["das"], "plural": "Studien" },
+            { "id": "ap-10", "term": "Vortrag", "articles": ["der"], "plural": "Vorträge" },
+            { "id": "ap-11", "term": "Zeugnis", "articles": ["das"], "plural": "Zeugnisse" }
+          ]
+        },
+        { "type": "heading", "text": "Schulfächer suchen", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "wordGrid",
+          "instruction": "Suchen Sie die neun Schulfächer.",
+          "columns": 15,
+          "rows": 14,
+          "rowHeight": 1,
+          "showWordList": true,
+          "directions": {
+            "leftToRight": true,
+            "rightToLeft": false,
+            "topToBottom": true,
+            "bottomToTop": false,
+            "northWestToSouthEast": true,
+            "southWestToNorthEast": false,
+            "northEastToSouthWest": false,
+            "southEastToNorthWest": false
+          },
+          "words": ["DEUTSCH", "ENGLISCH", "MATHEMATIK", "BIOLOGIE", "CHEMIE", "PHYSIK", "GESCHICHTE", "MUSIK", "SPORT"],
+          "generation": 9
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L6 Schritt C | Lernkarten",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "learning-cards",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 6 Schule und Ausbildung, Schritt C"
+      },
+      "blocks": [
+        {
+          "type": "learningCards",
+          "title": "L6 Schritt C | Schule und Schulsystem",
+          "sidedness": "double",
+          "frontTextSize": "m",
+          "backTextSize": "s",
+          "items": [
+            { "front": "der Kindergarten, -̈", "back": "die Schule für Kinder vor der Primarschule" },
+            { "front": "die Primarschule, -n", "back": "die erste obligatorische Schule" },
+            { "front": "die Sekundarschule, -n", "back": "die Schule nach der Primarschule" },
+            { "front": "das Gymnasium, Gymnasien", "back": "die Schule mit dem Abschluss Matura" },
+            { "front": "die Matura", "back": "der Abschluss am Gymnasium" },
+            { "front": "die Fachmittelschule, -n", "back": "eine Schule zwischen Sekundarschule und Fachhochschule" },
+            { "front": "die Berufsschule, -n", "back": "die Schule während der Lehre" },
+            { "front": "die Lehre, -n", "back": "die Ausbildung in einem Betrieb (duales System)" },
+            { "front": "die Hochschule, -n", "back": "eine Schule nach der Matura" },
+            { "front": "obligatorisch", "back": "man muss es machen" },
+            { "front": "freiwillig", "back": "man kann es machen, man muss aber nicht" },
+            { "front": "die Abschlussprüfung, -en", "back": "die Prüfung am Ende einer Ausbildung" },
+            { "front": "das Praktikum, Praktika", "back": "eine kurze Arbeitszeit zum Lernen im Betrieb" },
+            { "front": "wechseln", "back": "von einer Schule in eine andere gehen" },
+            { "front": "bestehen", "back": "eine Prüfung mit Erfolg machen" },
+            { "front": "das Fach, -̈er", "back": "zum Beispiel Mathematik, Biologie oder Sport" },
+            { "front": "die Note, -n", "back": "die Bewertung einer Leistung, in der Schweiz 1 bis 6" },
+            { "front": "der Lehrabschluss, -̈e", "back": "das Ende der Lehre mit Zeugnis" }
+          ]
+        }
+      ]
+    }
+  ]
+}

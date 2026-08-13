@@ -10,6 +10,7 @@ import {
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
 import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/instructions';
 import {
+  ORIGINAL_VIEW_LANGUAGE,
   resolveTranslatedText,
   useWorksheetViewLanguage,
 } from '@/components/editor/worksheet-view-language';
@@ -183,6 +184,12 @@ function parsePreset(value: string | null): GlossaryPreset {
     : 'default';
 }
 
+function startsWithRtlScript(value: string) {
+  const text = value.trim();
+  if (!text) return false;
+  return /^[\u0590-\u05FF\u0600-\u08FF\uFB1D-\uFDFD\uFE70-\uFEFC]/.test(text);
+}
+
 function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
   const attrs = node.attrs as GlossaryTermsAttrs;
   const { terms } = attrs;
@@ -196,16 +203,33 @@ function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
   const columnStyle = (index: number) => ({
     width: `${columnWidths[index]}%`,
   }) as CSSProperties;
+  const definitionLang = viewLanguage === ORIGINAL_VIEW_LANGUAGE ? undefined : viewLanguage;
   const finalPairStart = Math.max(0, terms.length - 2);
-  const renderRow = (item: GlossaryTerm, index: number) => (
-    <div className="glossary-terms-node__row" key={item.id}>
+  const renderRow = (item: GlossaryTerm, index: number) => {
+    const renderedDefinition = resolveTranslatedText(
+      item.definition,
+      item.definitionTranslations,
+      viewLanguage,
+    );
+    const definitionIsRtl = startsWithRtlScript(renderedDefinition);
+    return (
+      <div className="glossary-terms-node__row" key={item.id}>
       <span className="custom-block__row-index">
         {String(index + 1).padStart(2, '0')}
       </span>
       <span className="glossary-terms-node__columns">
         <span className="glossary-terms-node__cell" style={columnStyle(0)}>{item.term}</span>
-        <span className="glossary-terms-node__cell" style={columnStyle(1)}>
-          {resolveTranslatedText(item.definition, item.definitionTranslations, viewLanguage)}
+        <span
+          className={[
+            'glossary-terms-node__cell',
+            'glossary-terms-node__cell--definition',
+            definitionIsRtl ? 'glossary-terms-node__cell--definition-rtl' : '',
+          ].filter(Boolean).join(' ')}
+          dir="auto"
+          lang={definitionLang}
+          style={columnStyle(1)}
+        >
+          {renderedDefinition}
         </span>
         {hasAdditionalColumn && (
           <span className="glossary-terms-node__cell" style={columnStyle(2)}>
@@ -219,7 +243,8 @@ function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
         )}
       </span>
     </div>
-  );
+    );
+  };
 
   return (
     <CustomBlockRoot selected={selected} className="glossary-terms-node">

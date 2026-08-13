@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "worksheets": [
+    {
+      "title": "In der Apotheke",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "learnerStage": "professional-training",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "learnerContext": "Erwachsene Lernende üben einen einfachen Einkauf in einer Apotheke."
+      },
+      "blocks": [
+        {
+          "type": "heading",
+          "text": "In der Apotheke",
+          "level": 1,
+          "numbered": false,
+          "gapAfter": 2
+        },
+        {
+          "type": "richText",
+          "html": "<p>Frau Keller hat seit gestern Kopfschmerzen. In der Apotheke fragt sie nach einem geeigneten Medikament. Die Apothekerin erklärt ihr die Anwendung.</p>"
+        },
+        {
+          "type": "glossary",
+          "preset": "default",
+          "showInstruction": false,
+          "showColumnHeaders": true,
+          "showExample": true,
+          "headerLabels": ["Wort", "Erklärung"],
+          "entries": [
+            {
+              "term": "die Kopfschmerzen",
+              "definition": "Schmerzen im Kopf",
+              "example": "Ich habe seit gestern Kopfschmerzen."
+            },
+            {
+              "term": "die Tablette",
+              "definition": "ein Medikament in fester Form",
+              "example": "Nehmen Sie eine Tablette."
+            },
+            {
+              "term": "einnehmen",
+              "definition": "ein Medikament schlucken",
+              "example": "Sie müssen das Medikament nach dem Essen einnehmen."
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Wortschatz üben",
+          "level": 2,
+          "numbered": true,
+          "gapAfter": 1
+        },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Ergänzen Sie die passenden Wörter.",
+          "items": [
+            "Frau Keller hat {{blank:Kopfschmerzen}}.",
+            "Die Apothekerin empfiehlt ihr ein {{blank:Medikament}}.",
+            "Sie soll zweimal täglich eine {{blank:Tablette}} einnehmen."
+          ],
+          "distractors": ["Rezept"],
+          "showWordBank": true,
+          "showFirstAsExample": true
+        },
+        {
+          "type": "heading",
+          "text": "Das Gespräch verstehen",
+          "level": 2,
+          "numbered": true,
+          "gapAfter": 1
+        },
+        {
+          "type": "mcq",
+          "instruction": "Wählen Sie die richtige Antwort.",
+          "blockQuestion": "Lesen Sie den Text und beantworten Sie die Fragen.",
+          "questions": [
+            {
+              "question": "Seit wann hat Frau Keller Kopfschmerzen?",
+              "answerMode": "single",
+              "options": [
+                { "text": "Seit gestern", "correct": true },
+                { "text": "Seit einer Woche", "correct": false },
+                { "text": "Seit einem Monat", "correct": false }
+              ]
+            },
+            {
+              "question": "Was erklärt die Apothekerin?",
+              "answerMode": "single",
+              "options": [
+                { "text": "Die Anwendung des Medikaments", "correct": true },
+                { "text": "Den Weg zum Spital", "correct": false },
+                { "text": "Die Öffnungszeiten", "correct": false }
+              ]
+            }
+          ],
+          "columns": 1,
+          "shuffleAnswers": false,
+          "showInstruction": true
+        },
+        {
+          "type": "dialogue",
+          "instruction": "Ergänzen Sie das Gespräch und lesen Sie es zu zweit.",
+          "context": "Eine Kundin lässt sich in der Apotheke beraten.",
+          "speakerNames": {
+            "1": "Kundin",
+            "2": "Apothekerin",
+            "3": "",
+            "4": ""
+          },
+          "showSpeakerNames": true,
+          "showOriginal": false,
+          "showWordBank": false,
+          "hideBlankNumbers": false,
+          "showFirstAsExample": false,
+          "items": [
+            { "speaker": 1, "text": "Guten Tag. Ich habe seit gestern {{blank:Kopfschmerzen}}." },
+            { "speaker": 2, "text": "Haben Sie auch Fieber?" },
+            { "speaker": 1, "text": "Nein, ich habe kein Fieber." },
+            { "speaker": 2, "text": "Dann empfehle ich Ihnen diese Tabletten." },
+            { "speaker": 1, "text": "Wie oft muss ich sie {{blank:einnehmen}}?" },
+            { "speaker": 2, "text": "Nehmen Sie zweimal täglich eine Tablette nach dem Essen." }
+          ]
+        }
+      ]
+    }
+  ]
+}

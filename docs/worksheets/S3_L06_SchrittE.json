@@ -1,0 +1,335 @@
+{
+  "schemaVersion": 1,
+  "worksheets": [
+    {
+      "title": "Schritte plus Neu 3 | L6 Schritt E | Golnar Aazami: Weg zur Ärztin",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 6 Schule und Ausbildung, Schritt E",
+        "languageCompetencies": ["einen biografischen Text verstehen", "einen Berufsweg beschreiben"],
+        "learnerContext": "Erwachsene Lernende lesen ein Porträt über den Weg einer jungen Ärztin und beschreiben Stationen eines Berufswegs."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Golnar Aazami – eine junge Ärztin", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p>Golnar Aazami wusste schon als Schülerin, dass sie Ärztin werden wollte. Mit 16 hat sie in den Ferien ein Schülerpraktikum in einem Spital gemacht. «Dort habe ich zum ersten Mal den Tagesablauf in einem Spital kennengelernt», sagt die 28-Jährige. «Das war super.»</p><p>Ihr Weg zur Ärztin war nicht einfach. Golnars Eltern sind vor 35 Jahren aus dem Iran in die Schweiz gekommen, beide haben nur acht Jahre eine Schule besucht. Ihr Vater ist Taxifahrer, ihre Mutter Arbeiterin in einer Fabrik. Dass Golnar eine gute Ausbildung macht, war ihnen immer wichtig. Nur helfen konnten sie nicht viel.</p><p>Zuerst ist Golnar in die Sekundarschule gegangen. Sie war eine fleissige Schülerin und hatte gute Zeugnisse. Nach der zweiten Klasse konnte sie ins Gymnasium wechseln. «Biologie und Chemie waren meine Lieblingsfächer.» Die Matura hat sie mit sehr guten Noten gemacht.</p><p>Nach der Matura hat sie den Test fürs Medizinstudium bestanden und sechs Jahre lang in Basel Medizin studiert. Das Studium war sehr schwer. «Ich musste sehr viel lernen, vor allem in den ersten zwei Jahren.» Freizeit hatte sie fast keine. An der Universität musste sie mehrere Praktika in Spitälern machen.</p><p>Jetzt ist sie mit dem Studium fertig und ist Assistenzärztin. Ihre Eltern sind sehr stolz auf sie. «Sie erzählen allen Leuten, dass ich studiert habe und Ärztin bin.»</p>"
+        },
+        {
+          "type": "mcq",
+          "instruction": "Lesen Sie den Text und wählen Sie die richtige Antwort.",
+          "questions": [
+            {
+              "id": "g-1",
+              "question": "Wann hat Golnar das erste Mal in einem Spital gearbeitet?",
+              "answerMode": "single",
+              "options": [
+                { "id": "g1-a", "text": "mit 16 Jahren, in einem Schülerpraktikum", "correct": true },
+                { "id": "g1-b", "text": "nach der Matura", "correct": false },
+                { "id": "g1-c", "text": "erst nach dem Studium", "correct": false }
+              ]
+            },
+            {
+              "id": "g-2",
+              "question": "Was machen ihre Eltern beruflich?",
+              "answerMode": "single",
+              "options": [
+                { "id": "g2-a", "text": "Beide arbeiten in einem Spital.", "correct": false },
+                { "id": "g2-b", "text": "Der Vater ist Taxifahrer, die Mutter Arbeiterin in einer Fabrik.", "correct": true },
+                { "id": "g2-c", "text": "Beide sind Lehrpersonen.", "correct": false }
+              ]
+            },
+            {
+              "id": "g-3",
+              "question": "Welche Fächer haben Golnar besonders gut gefallen?",
+              "answerMode": "single",
+              "options": [
+                { "id": "g3-a", "text": "Deutsch und Geschichte", "correct": false },
+                { "id": "g3-b", "text": "Musik und Sport", "correct": false },
+                { "id": "g3-c", "text": "Biologie und Chemie", "correct": true }
+              ]
+            },
+            {
+              "id": "g-4",
+              "question": "Wie lange hat das Medizinstudium gedauert?",
+              "answerMode": "single",
+              "options": [
+                { "id": "g4-a", "text": "zwei Jahre", "correct": false },
+                { "id": "g4-b", "text": "sechs Jahre", "correct": true },
+                { "id": "g4-c", "text": "acht Jahre", "correct": false }
+              ]
+            }
+          ],
+          "columns": 1,
+          "showInstruction": true
+        },
+        { "type": "heading", "text": "Die Stationen ordnen", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "worksheetTable",
+          "instruction": "Ergänzen Sie die Stationen im Berufsweg von Golnar.",
+          "showInstruction": true,
+          "showHeader": true,
+          "showFirstAsExample": true,
+          "blankWidthFactor": 2,
+          "columns": [
+            { "id": "station", "label": "Station", "span": 8, "align": "left" },
+            { "id": "wann", "label": "Wann?", "span": 6, "align": "left" },
+            { "id": "detail", "label": "Was ist passiert?", "span": 10, "align": "left" }
+          ],
+          "rows": [
+            { "id": "st-1", "cells": { "station": "Praktikum", "wann": "mit 16 Jahren", "detail": "Schülerpraktikum in einem Spital in den Ferien" } },
+            { "id": "st-2", "cells": { "station": "Schule", "wann": "nach der Primarschule", "detail": "zuerst {{blank:Sekundarschule|2}}, dann Wechsel ins Gymnasium" } },
+            { "id": "st-3", "cells": { "station": "Abschluss", "wann": "am Ende des Gymnasiums", "detail": "die {{blank:Matura}} mit sehr guten Noten" } },
+            { "id": "st-4", "cells": { "station": "{{blank:Studium}}", "wann": "sechs Jahre in Basel", "detail": "Medizin, mit mehreren Praktika in Spitälern" } },
+            { "id": "st-5", "cells": { "station": "Beruf", "wann": "heute", "detail": "Sie arbeitet als {{blank:Assistenzärztin|2}}." } }
+          ]
+        },
+        {
+          "type": "richText",
+          "html": "<p>Schreiben Sie mit Ihrer Partnerin oder Ihrem Partner zwei weitere Fragen zum Text und stellen Sie sie einem anderen Paar.</p>"
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L6 Schritt E | Vilhelm Konstantinov: Beruf und Anerkennung",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 6 Schule und Ausbildung, Schritt E",
+        "languageCompetencies": ["einen biografischen Text verstehen", "über Berufsanerkennung sprechen"],
+        "learnerContext": "Der Text zur Anerkennung einer Ausbildung im Ausland ist für viele Lernende direkt relevant."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Vilhelm Konstantinov – Elektrotechniker aus Bulgarien", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p>Elektrische Geräte haben Vilhelm Konstantinov schon immer interessiert. Als Kind hat er das Telefon seiner Eltern auseinandergeschraubt und wollte sehen, wie es funktioniert.</p><p>Nach der Schule war klar: Er möchte Elektroniker werden. Er hat eine Ausbildung bei der grössten Telekommunikationsfirma in Bulgarien gemacht. Sie hat vier Jahre gedauert. Er ist auch an eine Berufsschule gegangen und hat im dritten und vierten Lehrjahr schon im Lehrbetrieb an grossen Telefonanlagen gearbeitet.</p><p>Acht Jahre war er in der Firma. «Mein Beruf hat mir von Anfang an gefallen. Ich habe mit Technik zu tun, arbeite auch mit den Händen und habe oft Kontakt zu Kunden. Das ist toll.»</p><p>Vilhelm Konstantinov ist 30 Jahre alt und vor drei Jahren in die Schweiz gekommen. Seine Frau ist Schweizerin. Er hat sie in den Ferien am Schwarzen Meer kennengelernt. Der Anfang in der Schweiz war nicht einfach. Zuerst musste er Deutsch lernen und hat einen Sprachkurs besucht. Danach wollte er schnell wieder in seinem Beruf arbeiten. Dafür musste er aber seine Ausbildung in der Schweiz anerkennen lassen: Eine Behörde hat geprüft, ob seine Ausbildung in Bulgarien mit der in der Schweiz identisch ist. Das war kompliziert und hat lange gedauert. Doch es hat geklappt. Er hat noch eine Weiterbildung gemacht und arbeitet jetzt in einem grossen Mobilfunkunternehmen.</p>"
+        },
+        {
+          "type": "trueFalse",
+          "instruction": "Was ist richtig, was ist falsch?",
+          "trueLabel": "richtig",
+          "falseLabel": "falsch",
+          "showFirstAsExample": true,
+          "rows": [
+            { "id": "v-1", "text": "Vilhelm hat sich schon als Kind für Technik interessiert.", "correctValue": "true" },
+            { "id": "v-2", "text": "Seine Ausbildung in Bulgarien hat zwei Jahre gedauert.", "correctValue": "false" },
+            { "id": "v-3", "text": "Er hat acht Jahre in der Telekommunikationsfirma gearbeitet.", "correctValue": "true" },
+            { "id": "v-4", "text": "Er ist in die Schweiz gekommen, weil seine Frau Schweizerin ist.", "correctValue": "true" },
+            { "id": "v-5", "text": "In der Schweiz konnte er sofort wieder in seinem Beruf arbeiten.", "correctValue": "false" },
+            { "id": "v-6", "text": "Eine Behörde hat seine Ausbildung geprüft.", "correctValue": "true" },
+            { "id": "v-7", "text": "Heute arbeitet er in einem Spital.", "correctValue": "false" }
+          ]
+        },
+        { "type": "heading", "text": "Wörter im Kontext", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "mcq",
+          "instruction": "Was passt zusammen? Wählen Sie die richtige Verbindung.",
+          "questions": [
+            {
+              "id": "k-1",
+              "question": "einen Test …",
+              "answerMode": "single",
+              "options": [
+                { "id": "k1-a", "text": "bestehen", "correct": true },
+                { "id": "k1-b", "text": "kennenlernen", "correct": false }
+              ]
+            },
+            {
+              "id": "k-2",
+              "question": "einen Abschluss …",
+              "answerMode": "single",
+              "options": [
+                { "id": "k2-a", "text": "anerkennen lassen", "correct": true },
+                { "id": "k2-b", "text": "studieren", "correct": false }
+              ]
+            },
+            {
+              "id": "k-3",
+              "question": "eine Ausbildung …",
+              "answerMode": "single",
+              "options": [
+                { "id": "k3-a", "text": "prüfen lassen", "correct": true },
+                { "id": "k3-b", "text": "bluten", "correct": false }
+              ]
+            },
+            {
+              "id": "k-4",
+              "question": "den Tagesablauf …",
+              "answerMode": "single",
+              "options": [
+                { "id": "k4-a", "text": "kennenlernen", "correct": true },
+                { "id": "k4-b", "text": "bestehen", "correct": false }
+              ]
+            },
+            {
+              "id": "k-5",
+              "question": "an der Universität …",
+              "answerMode": "single",
+              "options": [
+                { "id": "k5-a", "text": "studieren", "correct": true },
+                { "id": "k5-b", "text": "anerkennen", "correct": false }
+              ]
+            }
+          ],
+          "columns": 2,
+          "showInstruction": true
+        },
+        { "type": "heading", "text": "Mein Weg", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Ergänzen Sie den Text über Vilhelm.",
+          "items": [
+            "Nach der Schule wollte Vilhelm {{blank:Elektroniker}} werden.",
+            "Seine {{blank:Ausbildung}} in Bulgarien hat vier Jahre gedauert.",
+            "Er ist auch an eine {{blank:Berufsschule}} gegangen.",
+            "In der Schweiz musste er zuerst einen {{blank:Sprachkurs}} besuchen.",
+            "Danach musste er seine Ausbildung {{blank:anerkennen}} lassen.",
+            "Am Schluss hat er noch eine {{blank:Weiterbildung}} gemacht.",
+            "Heute arbeitet er in einem grossen {{blank:Mobilfunkunternehmen}}."
+          ],
+          "widthFactor": 1.5,
+          "showFirstAsExample": true
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L6 Schritt E | Berufe raten",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 6 Schule und Ausbildung, Schritt E",
+        "languageCompetencies": ["Berufe beschreiben", "über den Traumberuf sprechen"]
+      },
+      "blocks": [
+        { "type": "heading", "text": "Was bin ich von Beruf?", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Lesen Sie und ergänzen Sie den Beruf.",
+          "items": [
+            "Ich helfe Menschen, die Schmerzen bei Bewegungen haben. Ich mache mit ihnen bestimmte Übungen. Ich bin {{blank:Physiotherapeut|2}} von Beruf.",
+            "Meine Arbeit beginnt morgens um drei Uhr. Wenn die Leute aufstehen, essen sie meine Produkte zum Frühstück. Ich bin {{blank:Bäcker|2}} von Beruf.",
+            "Ich arbeite in einer Autogarage und repariere Autos. Ich muss auch die Elektronik prüfen. Ich bin {{blank:Mechatroniker|2}} von Beruf.",
+            "Ich plane Häuser und zeichne am Computer. Danach schaue ich auf der Baustelle, ob alles stimmt. Ich bin {{blank:Architekt|2}} von Beruf.",
+            "Ich arbeite abends im Restaurant, bringe den Gästen das Essen und kassiere. Ich bin {{blank:Kellner|2}} von Beruf.",
+            "Ich stehe jeden Tag vor einer Klasse, erkläre neue Themen und korrigiere Prüfungen. Ich bin {{blank:Lehrer|2}} von Beruf."
+          ],
+          "showFirstAsExample": true
+        },
+        { "type": "heading", "text": "Berufe suchen", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "wordGrid",
+          "instruction": "Suchen Sie die acht Berufe.",
+          "columns": 16,
+          "rows": 14,
+          "rowHeight": 1,
+          "showWordList": true,
+          "directions": {
+            "leftToRight": true,
+            "rightToLeft": false,
+            "topToBottom": true,
+            "bottomToTop": false,
+            "northWestToSouthEast": true,
+            "southWestToNorthEast": false,
+            "northEastToSouthWest": false,
+            "southEastToNorthWest": false
+          },
+          "words": ["BAECKER", "ARCHITEKT", "KELLNER", "LEHRER", "AERZTIN", "SCHAUSPIELER", "MECHATRONIKER", "GAERTNER"],
+          "generation": 12
+        },
+        { "type": "heading", "text": "Mein Traumberuf", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "worksheetTable",
+          "instruction": "Machen Sie Notizen. Erzählen Sie dann in der Gruppe. Die anderen raten Ihren Traumberuf.",
+          "showInstruction": true,
+          "showHeader": true,
+          "showFirstAsExample": true,
+          "columns": [
+            { "id": "frage", "label": "Frage", "span": 10, "align": "left" },
+            { "id": "beispiel", "label": "Beispiel", "span": 7, "align": "left" },
+            { "id": "notizen", "label": "Meine Notizen", "span": 7, "align": "left" }
+          ],
+          "rows": [
+            { "id": "tb-1", "cells": { "frage": "Was ist Ihr Traumberuf?", "beispiel": "Bäcker", "notizen": "" } },
+            { "id": "tb-2", "cells": { "frage": "Was gefällt Ihnen daran?", "beispiel": "kreativ sein, im Team arbeiten", "notizen": "" } },
+            { "id": "tb-3", "cells": { "frage": "Was finden Sie nicht so gut?", "beispiel": "viel Stress, früh aufstehen", "notizen": "" } }
+          ]
+        },
+        {
+          "type": "richText",
+          "html": "<p><em>Beispielgespräch:</em></p><ul><li>In meinem Traumberuf muss man sehr kreativ sein. Das gefällt mir besonders.</li><li>Ist dein Traumberuf Schauspieler?</li><li>Nein. Leider hat man in meinem Traumberuf viel Stress und muss früh aufstehen.</li><li>Ist Bäcker dein Traumberuf?</li><li>Ja, genau.</li></ul>"
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L6 Schritt E | Lernkarten",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "learning-cards",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 6 Schule und Ausbildung, Schritt E"
+      },
+      "blocks": [
+        {
+          "type": "learningCards",
+          "title": "L6 Schritt E | Berufsweg und Berufe",
+          "sidedness": "double",
+          "frontTextSize": "m",
+          "backTextSize": "s",
+          "items": [
+            { "front": "der Berufsweg, -e", "back": "alle Stationen von der Schule bis zum Beruf" },
+            { "front": "der Werdegang", "back": "der berufliche Weg einer Person" },
+            { "front": "einen Test bestehen", "back": "einen Test mit Erfolg machen" },
+            { "front": "einen Abschluss anerkennen lassen", "back": "eine Behörde prüft einen ausländischen Abschluss" },
+            { "front": "die Behörde, -n", "back": "eine staatliche Stelle" },
+            { "front": "das Praktikum, Praktika", "back": "eine kurze Arbeitszeit zum Lernen im Betrieb" },
+            { "front": "der Lehrbetrieb, -e", "back": "die Firma, in der man die Lehre macht" },
+            { "front": "das Lehrjahr, -e", "back": "ein Jahr in der Lehre" },
+            { "front": "stolz sein auf", "back": "sich sehr über den Erfolg von jemandem freuen" },
+            { "front": "der Tagesablauf, -̈e", "back": "wie ein Tag organisiert ist" },
+            { "front": "die Assistenzärztin, -nen", "back": "eine Ärztin am Anfang der Berufszeit im Spital" },
+            { "front": "der Elektroniker, -", "back": "eine Fachperson für elektrische Geräte" },
+            { "front": "der Physiotherapeut, -en", "back": "hilft Menschen mit Schmerzen bei Bewegungen" },
+            { "front": "der Mechatroniker, -", "back": "repariert Autos und ihre Elektronik" },
+            { "front": "der Bäcker, -", "back": "macht Brot und Gebäck, beginnt früh am Morgen" },
+            { "front": "der Architekt, -en", "back": "plant Häuser und Gebäude" },
+            { "front": "der Traumberuf, -e", "back": "der Beruf, den man am liebsten hätte" },
+            { "front": "die Weiterbildung, -en", "back": "ein Kurs nach der Ausbildung, um mehr zu lernen" }
+          ]
+        }
+      ]
+    }
+  ]
+}

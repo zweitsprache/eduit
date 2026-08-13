@@ -1,0 +1,415 @@
+{
+  "schemaVersion": 1,
+  "worksheets": [
+    {
+      "title": "Warum? – Weil! Gründe nennen (A2)",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-informal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "actionField": "Alltag und Nachbarschaft",
+        "languageCompetencies": ["nach dem Grund fragen", "einen Grund nennen", "Nebensatz mit weil"],
+        "learnerContext": "Erwachsene Lernende auf Niveau A2 lernen den Nebensatz mit weil und begründen Aussagen aus ihrem Alltag."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Warum? – Weil!", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p>Mit <strong>warum</strong> fragen wir nach dem Grund. Mit <strong>weil</strong> nennen wir den Grund.</p><p><em>Warum nimmst du heute das Velo?</em> – <em>Weil das Wetter so schön <strong>ist</strong>.</em></p><p><strong>Merke:</strong> Nach <em>weil</em> steht ein Nebensatz. Das Verb steht ganz am <strong>Ende</strong>. Vor <em>weil</em> steht ein Komma.</p><ul><li>Ich nehme das Velo. Das Wetter ist schön. &rarr; Ich nehme das Velo, weil das Wetter schön <strong>ist</strong>.</li><li>Sie bleibt zu Hause. Sie ist krank. &rarr; Sie bleibt zu Hause, weil sie krank <strong>ist</strong>.</li></ul><p>Als kurze Antwort steht der weil-Satz auch allein: <em>Warum bist du müde?</em> – <em>Weil mein Sohn die ganze Nacht geweint hat.</em></p>"
+        },
+        { "type": "heading", "text": "Die Wortstellung", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "worksheetTable",
+          "instruction": "Ergänzen Sie die Tabelle. Das Verb steht am Ende.",
+          "showInstruction": true,
+          "showHeader": true,
+          "showFirstAsExample": true,
+          "blankWidthFactor": 1.5,
+          "columns": [
+            { "id": "hauptsatz", "label": "Hauptsatz", "span": 7, "align": "left" },
+            { "id": "konjunktion", "label": "Konjunktion", "span": 3, "align": "left" },
+            { "id": "mittelfeld", "label": "Mittelfeld", "span": 9, "align": "left" },
+            { "id": "verb", "label": "Verb am Ende", "span": 5, "align": "left" }
+          ],
+          "rows": [
+            { "id": "ws-1", "cells": { "hauptsatz": "Ich nehme das Velo,", "konjunktion": "weil", "mittelfeld": "das Wetter so schön", "verb": "ist." } },
+            { "id": "ws-2", "cells": { "hauptsatz": "Noura bleibt zu Hause,", "konjunktion": "weil", "mittelfeld": "sie Fieber", "verb": "{{blank:hat}}." } },
+            { "id": "ws-3", "cells": { "hauptsatz": "Wir gehen zu Fuss,", "konjunktion": "{{blank:weil}}", "mittelfeld": "der Bus erst in einer Stunde", "verb": "{{blank:fährt}}." } },
+            { "id": "ws-4", "cells": { "hauptsatz": "Tomasz ist müde,", "konjunktion": "weil", "mittelfeld": "{{blank:er sehr früh|2}}", "verb": "aufsteht." } },
+            { "id": "ws-5", "cells": { "hauptsatz": "Elif freut sich,", "konjunktion": "weil", "mittelfeld": "ihre Schwester zu Besuch", "verb": "{{blank:kommt}}." } },
+            { "id": "ws-6", "cells": { "hauptsatz": "Ich koche heute nicht,", "konjunktion": "{{blank:weil}}", "mittelfeld": "der Kühlschrank leer", "verb": "{{blank:ist}}." } }
+          ]
+        },
+        { "type": "heading", "text": "Frage und Grund", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "matchingPairs",
+          "instruction": "Ordnen Sie zu.",
+          "answerStyle": "writingLines",
+          "shuffleRight": true,
+          "shuffleSeed": 17,
+          "showFirstAsExample": true,
+          "pairs": [
+            { "id": "wp-1", "left": "Warum nimmst du heute den Zug?", "right": "Weil mein Auto in der Garage ist." },
+            { "id": "wp-2", "left": "Warum machst du das Fenster zu?", "right": "Weil es draussen so laut ist." },
+            { "id": "wp-3", "left": "Warum kommst du so spät?", "right": "Weil der Bus Verspätung hat." },
+            { "id": "wp-4", "left": "Warum lernst du Deutsch?", "right": "Weil ich hier eine Stelle suche." },
+            { "id": "wp-5", "left": "Warum isst du kein Fleisch?", "right": "Weil ich Vegetarierin bin." },
+            { "id": "wp-6", "left": "Warum bist du so nervös?", "right": "Weil ich morgen eine Prüfung habe." },
+            { "id": "wp-7", "left": "Warum wohnst du so weit ausserhalb?", "right": "Weil die Mieten im Zentrum zu hoch sind." }
+          ]
+        },
+        { "type": "heading", "text": "Sätze mit weil schreiben", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Verbinden Sie die beiden Sätze mit weil.",
+          "items": [
+            "Ich gehe früh ins Bett. Ich bin sehr müde. → Ich gehe früh ins Bett, weil {{blank:ich sehr müde bin|3}}.",
+            "Marco freut sich. Seine Nachbarn sind sehr nett. → Marco freut sich, weil {{blank:seine Nachbarn sehr nett sind|3}}.",
+            "Wir bleiben heute drinnen. Es regnet. → Wir bleiben heute drinnen, weil {{blank:es regnet|2}}.",
+            "Elif fährt ins Zentrum. Sie braucht neue Schuhe. → Elif fährt ins Zentrum, weil {{blank:sie neue Schuhe braucht|3}}.",
+            "Herr Bühler ist zufrieden. Seine Wohnung ist ruhig. → Herr Bühler ist zufrieden, weil {{blank:seine Wohnung ruhig ist|3}}.",
+            "Ich brauche kein Auto. Mein Arbeitsplatz ist in der Stadt. → Ich brauche kein Auto, weil {{blank:mein Arbeitsplatz in der Stadt ist|4}}.",
+            "Noura ist traurig. Ihre Familie lebt sehr weit weg. → Noura ist traurig, weil {{blank:ihre Familie sehr weit weg lebt|4}}."
+          ],
+          "showFirstAsExample": true
+        },
+        { "type": "heading", "text": "Welcher Satz ist richtig?", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "mcq",
+          "instruction": "Kreuzen Sie den richtigen Satz an.",
+          "questions": [
+            {
+              "id": "sw-1",
+              "question": "Grund: Der Laden ist schon zu.",
+              "answerMode": "single",
+              "options": [
+                { "id": "sw1-a", "text": "Ich kaufe morgen ein, weil der Laden schon zu ist.", "correct": true },
+                { "id": "sw1-b", "text": "Ich kaufe morgen ein, weil ist der Laden schon zu.", "correct": false }
+              ]
+            },
+            {
+              "id": "sw-2",
+              "question": "Grund: Sie hat heute frei.",
+              "answerMode": "single",
+              "options": [
+                { "id": "sw2-a", "text": "Sie schläft lange, weil hat sie heute frei.", "correct": false },
+                { "id": "sw2-b", "text": "Sie schläft lange, weil sie heute frei hat.", "correct": true }
+              ]
+            },
+            {
+              "id": "sw-3",
+              "question": "Grund: Die Kinder sind krank.",
+              "answerMode": "single",
+              "options": [
+                { "id": "sw3-a", "text": "Wir bleiben zu Hause weil die Kinder krank sind.", "correct": false },
+                { "id": "sw3-b", "text": "Wir bleiben zu Hause, weil die Kinder krank sind.", "correct": true }
+              ]
+            },
+            {
+              "id": "sw-4",
+              "question": "Grund: Er steht jeden Tag um fünf Uhr auf.",
+              "answerMode": "single",
+              "options": [
+                { "id": "sw4-a", "text": "Er ist immer müde, weil er jeden Tag um fünf Uhr aufsteht.", "correct": true },
+                { "id": "sw4-b", "text": "Er ist immer müde, weil er steht jeden Tag um fünf Uhr auf.", "correct": false }
+              ]
+            },
+            {
+              "id": "sw-5",
+              "question": "Grund: Ich kenne hier noch niemanden.",
+              "answerMode": "single",
+              "options": [
+                { "id": "sw5-a", "text": "Ich fühle mich allein, weil ich kenne hier noch niemanden.", "correct": false },
+                { "id": "sw5-b", "text": "Ich fühle mich allein, weil ich hier noch niemanden kenne.", "correct": true }
+              ]
+            }
+          ],
+          "columns": 1,
+          "showInstruction": true
+        }
+      ]
+    },
+    {
+      "title": "weil mit Perfekt und Modalverben (A2)",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-informal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "actionField": "Arbeit und Alltag",
+        "languageCompetencies": ["Nebensatz mit weil im Perfekt", "Nebensatz mit weil und Modalverb"],
+        "learnerContext": "Aufbaustufe zum Kausalsatz: Die Lernenden üben die Endstellung des konjugierten Verbs bei Perfekt und Modalverben."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Der Grund liegt in der Vergangenheit – oder in einer Pflicht", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p>Auch beim Perfekt und bei Modalverben steht im weil-Satz das <strong>konjugierte Verb ganz am Ende</strong>. Partizip oder Infinitiv stehen davor.</p><ul><li><strong>Präsens:</strong> Ich bin froh, weil ich eine Wohnung <strong>habe</strong>.</li><li><strong>Perfekt:</strong> Ich bin froh, weil ich eine Wohnung gefunden <strong>habe</strong>.</li><li><strong>Modalverb:</strong> Ich bin nervös, weil ich morgen umziehen <strong>muss</strong>.</li></ul><p>Trennbare Verben bleiben im Nebensatz zusammen: Er ruft an. &rarr; …, weil er <strong>anruft</strong>.</p>"
+        },
+        {
+          "type": "worksheetTable",
+          "instruction": "Vergleichen Sie und ergänzen Sie die fehlenden Formen.",
+          "showInstruction": true,
+          "showHeader": true,
+          "showFirstAsExample": true,
+          "blankWidthFactor": 2,
+          "columns": [
+            { "id": "form", "label": "Form", "span": 5, "align": "left" },
+            { "id": "hauptsatz", "label": "Zwei Hauptsätze", "span": 9, "align": "left" },
+            { "id": "nebensatz", "label": "Satz mit weil", "span": 10, "align": "left" }
+          ],
+          "rows": [
+            { "id": "pf-1", "cells": { "form": "Präsens", "hauptsatz": "Sie ist froh. Sie hat eine Wohnung.", "nebensatz": "Sie ist froh, weil sie eine Wohnung hat." } },
+            { "id": "pf-2", "cells": { "form": "Perfekt", "hauptsatz": "Sie ist froh. Sie hat eine Wohnung gefunden.", "nebensatz": "Sie ist froh, weil sie eine Wohnung {{blank:gefunden hat|2}}." } },
+            { "id": "pf-3", "cells": { "form": "Perfekt", "hauptsatz": "Er ist müde. Er ist spät ins Bett gegangen.", "nebensatz": "Er ist müde, weil er spät ins Bett {{blank:gegangen ist|2}}." } },
+            { "id": "pf-4", "cells": { "form": "Modalverb", "hauptsatz": "Wir gehen früh. Wir müssen morgen arbeiten.", "nebensatz": "Wir gehen früh, weil wir morgen {{blank:arbeiten müssen|2}}." } },
+            { "id": "pf-5", "cells": { "form": "Modalverb", "hauptsatz": "Sie lernt viel. Sie will die Prüfung bestehen.", "nebensatz": "Sie lernt viel, weil sie die Prüfung {{blank:bestehen will|2}}." } },
+            { "id": "pf-6", "cells": { "form": "trennbar", "hauptsatz": "Ich bleibe hier. Meine Schwester ruft gleich an.", "nebensatz": "Ich bleibe hier, weil meine Schwester gleich {{blank:anruft}}." } }
+          ]
+        },
+        { "type": "heading", "text": "Richtig oder falsch?", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "trueFalse",
+          "instruction": "Ist die Wortstellung richtig?",
+          "trueLabel": "richtig",
+          "falseLabel": "falsch",
+          "showFirstAsExample": true,
+          "rows": [
+            { "id": "rf-1", "text": "Ich freue mich, weil meine Familie nächste Woche kommt.", "correctValue": "true" },
+            { "id": "rf-2", "text": "Wir gehen früh ins Bett, weil wir müssen morgen früh aufstehen.", "correctValue": "false" },
+            { "id": "rf-3", "text": "Sie ist zufrieden, weil sie eine gute Stelle gefunden hat.", "correctValue": "true" },
+            { "id": "rf-4", "text": "Er kommt nicht mit, weil er ist noch im Büro.", "correctValue": "false" },
+            { "id": "rf-5", "text": "Sie lernt jeden Abend, weil sie in der Schweiz studieren will.", "correctValue": "true" },
+            { "id": "rf-6", "text": "Ich rufe später an, weil ich jetzt keine Zeit habe.", "correctValue": "true" },
+            { "id": "rf-7", "text": "Er ist traurig, weil hat seine Katze weggelaufen.", "correctValue": "false" },
+            { "id": "rf-8", "text": "Wir nehmen den Zug, weil wir kein Auto haben.", "correctValue": "true" }
+          ]
+        },
+        { "type": "heading", "text": "Umformen", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Schreiben Sie den zweiten Satz als weil-Satz.",
+          "items": [
+            "Sie hat keine Zeit. Sie muss heute noch lernen. → Sie hat keine Zeit, weil {{blank:sie heute noch lernen muss|4}}.",
+            "Er ist mit seiner Stelle zufrieden. Sein Team ist sehr nett. → Er ist mit seiner Stelle zufrieden, weil {{blank:sein Team sehr nett ist|3}}.",
+            "Sie schreibt jeden Tag eine Nachricht. Sie vermisst ihre Freundin sehr. → Sie schreibt jeden Tag eine Nachricht, weil {{blank:sie ihre Freundin sehr vermisst|4}}.",
+            "Ich bin glücklich. Ich habe endlich ein Zimmer gefunden. → Ich bin glücklich, weil {{blank:ich endlich ein Zimmer gefunden habe|4}}.",
+            "Wir fahren zum Bahnhof. Wir wollen unsere Gäste abholen. → Wir fahren zum Bahnhof, weil {{blank:wir unsere Gäste abholen wollen|4}}.",
+            "Er nimmt heute das Tram. Sein Velo ist kaputtgegangen. → Er nimmt heute das Tram, weil {{blank:sein Velo kaputtgegangen ist|3}}.",
+            "Sie kann nicht kommen. Sie ist gestern krank geworden. → Sie kann nicht kommen, weil {{blank:sie gestern krank geworden ist|4}}."
+          ],
+          "showFirstAsExample": true
+        }
+      ]
+    },
+    {
+      "title": "Gründe im Gespräch: fragen und begründen (A2)",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-informal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "actionField": "Nachbarschaft und Freizeit",
+        "languageCompetencies": ["nach dem Grund fragen", "Gefühle und Entscheidungen begründen"],
+        "learnerContext": "Sprechtraining: Die Lernenden fragen nach Gründen und begründen eigene Entscheidungen und Gefühle."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Gründe im Gespräch", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p><strong>Nach dem Grund fragen:</strong></p><ul><li>Warum …?</li><li>Und warum das?</li><li>Wieso denn?</li><li>Wie kommt das?</li></ul><p><strong>Einen Grund nennen:</strong></p><ul><li>Weil …</li><li>Ich mache das, weil …</li><li>Der Grund ist einfach: …</li><li>Das liegt daran, dass …</li></ul>"
+        },
+        {
+          "type": "dialogue",
+          "instruction": "Ergänzen Sie das Gespräch und lesen Sie es zu zweit.",
+          "context": "Zwei Nachbarinnen treffen sich in der Waschküche.",
+          "speakerNames": { "1": "Frau Zumstein", "2": "Noura", "3": "", "4": "" },
+          "showSpeakerNames": true,
+          "items": [
+            { "speaker": 1, "text": "Grüezi Noura. Sie sehen ja richtig müde aus. Ist alles in Ordnung?" },
+            { "speaker": 2, "text": "Ja, ja. Ich bin nur müde, {{blank:weil}} mein Sohn die ganze Nacht geweint hat." },
+            { "speaker": 1, "text": "Oh je. Und warum waschen Sie schon so früh?" },
+            { "speaker": 2, "text": "Weil ich um neun Uhr im Deutschkurs {{blank:sein muss|2}}." },
+            { "speaker": 1, "text": "Sie machen einen Deutschkurs? Wie schön. Und warum gerade jetzt?" },
+            { "speaker": 2, "text": "Weil ich hier eine Stelle {{blank:suche}}. Ohne Deutsch ist das schwierig." },
+            { "speaker": 1, "text": "Das verstehe ich gut. Übrigens: Kommen Sie am Samstag ans Quartierfest?" },
+            { "speaker": 2, "text": "Sehr gern, weil ich hier noch fast niemanden {{blank:kenne}}." },
+            { "speaker": 1, "text": "Dann bringe ich Ihnen meine Nachbarin mit. Sie ist auch neu hier." },
+            { "speaker": 2, "text": "Das ist lieb, {{blank:weil}} ich mich manchmal wirklich allein fühle." }
+          ]
+        },
+        { "type": "heading", "text": "Passt der Grund?", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "mcm",
+          "instruction": "Passt der Grund zur Aussage? Kreuzen Sie an.",
+          "showFirstAsExample": true,
+          "rows": [
+            {
+              "id": "gr-1",
+              "text": "Ich nehme heute den Zug, weil mein Auto in der Werkstatt ist.",
+              "options": [
+                { "id": "gr-1-ja", "text": "passt", "correct": true },
+                { "id": "gr-1-nein", "text": "passt nicht", "correct": false }
+              ]
+            },
+            {
+              "id": "gr-2",
+              "text": "Sie ist glücklich, weil sie ihren Schlüssel verloren hat.",
+              "options": [
+                { "id": "gr-2-ja", "text": "passt", "correct": false },
+                { "id": "gr-2-nein", "text": "passt nicht", "correct": true }
+              ]
+            },
+            {
+              "id": "gr-3",
+              "text": "Wir machen das Fenster zu, weil es draussen so laut ist.",
+              "options": [
+                { "id": "gr-3-ja", "text": "passt", "correct": true },
+                { "id": "gr-3-nein", "text": "passt nicht", "correct": false }
+              ]
+            },
+            {
+              "id": "gr-4",
+              "text": "Er kauft ein Velo, weil er kein Geld hat.",
+              "options": [
+                { "id": "gr-4-ja", "text": "passt", "correct": false },
+                { "id": "gr-4-nein", "text": "passt nicht", "correct": true }
+              ]
+            },
+            {
+              "id": "gr-5",
+              "text": "Sie geht zum Arzt, weil sie seit drei Tagen Fieber hat.",
+              "options": [
+                { "id": "gr-5-ja", "text": "passt", "correct": true },
+                { "id": "gr-5-nein", "text": "passt nicht", "correct": false }
+              ]
+            },
+            {
+              "id": "gr-6",
+              "text": "Ich bin nervös, weil ich sehr gut geschlafen habe.",
+              "options": [
+                { "id": "gr-6-ja", "text": "passt", "correct": false },
+                { "id": "gr-6-nein", "text": "passt nicht", "correct": true }
+              ]
+            },
+            {
+              "id": "gr-7",
+              "text": "Sie zieht um, weil ihre Wohnung zu klein geworden ist.",
+              "options": [
+                { "id": "gr-7-ja", "text": "passt", "correct": true },
+                { "id": "gr-7-nein", "text": "passt nicht", "correct": false }
+              ]
+            }
+          ]
+        },
+        { "type": "heading", "text": "Kettenspiel im Kurs", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "richText",
+          "html": "<p>Arbeiten Sie zu dritt. Eine Person stellt eine Warum-Frage, die anderen antworten so schnell wie möglich mit einem weil-Satz. Wer findet in drei Minuten die meisten Antworten?</p><p>Mögliche Fragen:</p><ul><li>Warum lernst du Deutsch?</li><li>Warum wohnst du in dieser Stadt?</li><li>Warum bist du heute zufrieden?</li><li>Warum stehst du am Wochenende früh auf?</li><li>Warum brauchst du (k)ein Auto?</li><li>Warum kochst du gern oder nicht gern?</li></ul><p>Schreiben Sie danach Ihre drei besten Antworten auf.</p>"
+        }
+      ]
+    },
+    {
+      "title": "Domino: Warum – Weil (A2)",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-informal",
+        "worksheetType": "domino",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "languageCompetencies": ["nach dem Grund fragen", "einen Grund nennen"]
+      },
+      "blocks": [
+        {
+          "type": "domino",
+          "showFirstAsExample": true,
+          "oddTextSize": "s",
+          "evenTextSize": "s",
+          "leftRepresentation": "text",
+          "rightRepresentation": "text",
+          "pairs": [
+            { "left": "START", "right": "Warum nimmst du heute den Zug?" },
+            { "left": "Weil mein Auto in der Werkstatt ist.", "right": "Warum bist du so müde?" },
+            { "left": "Weil ich letzte Nacht kaum geschlafen habe.", "right": "Warum lernst du Deutsch?" },
+            { "left": "Weil ich hier eine Stelle suche.", "right": "Warum kommst du nicht mit ins Kino?" },
+            { "left": "Weil ich morgen sehr früh aufstehen muss.", "right": "Warum machst du das Fenster zu?" },
+            { "left": "Weil es draussen so laut ist.", "right": "Warum ziehst du um?" },
+            { "left": "Weil meine Wohnung zu klein geworden ist.", "right": "Warum freust du dich so?" },
+            { "left": "Weil meine Schwester zu Besuch kommt.", "right": "Warum gehst du zum Arzt?" },
+            { "left": "Weil ich seit drei Tagen Fieber habe.", "right": "Warum kaufst du heute nicht ein?" },
+            { "left": "Weil die Läden schon zu sind.", "right": "ENDE" }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Lernkarten: Gründe nennen mit weil (A2)",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-informal",
+        "worksheetType": "learning-cards",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "languageCompetencies": ["Nebensatz mit weil", "Gründe nennen"]
+      },
+      "blocks": [
+        {
+          "type": "learningCards",
+          "title": "Kausalsätze mit weil",
+          "sidedness": "double",
+          "frontTextSize": "m",
+          "backTextSize": "s",
+          "items": [
+            { "front": "Wo steht das Verb im weil-Satz?", "back": "ganz am Ende: …, weil das Wetter schön ist." },
+            { "front": "Was steht vor weil?", "back": "ein Komma: Ich bleibe zu Hause, weil ich krank bin." },
+            { "front": "Wie fragt man nach dem Grund?", "back": "Warum …? / Wieso denn? / Wie kommt das?" },
+            { "front": "weil + Perfekt", "back": "…, weil ich eine Wohnung gefunden habe." },
+            { "front": "weil + sein im Perfekt", "back": "…, weil er spät ins Bett gegangen ist." },
+            { "front": "weil + Modalverb", "back": "…, weil ich morgen arbeiten muss." },
+            { "front": "weil + trennbares Verb", "back": "…, weil meine Schwester gleich anruft." },
+            { "front": "Kurzantwort auf eine Warum-Frage", "back": "Nur der weil-Satz: Weil der Bus Verspätung hat." },
+            { "front": "Ich bleibe zu Hause. Ich bin krank.", "back": "Ich bleibe zu Hause, weil ich krank bin." },
+            { "front": "Sie lernt viel. Sie will die Prüfung bestehen.", "back": "Sie lernt viel, weil sie die Prüfung bestehen will." },
+            { "front": "Wir gehen zu Fuss. Der Bus fährt erst später.", "back": "Wir gehen zu Fuss, weil der Bus erst später fährt." },
+            { "front": "Er ist traurig. Seine Familie lebt weit weg.", "back": "Er ist traurig, weil seine Familie weit weg lebt." },
+            { "front": "vermissen", "back": "jemanden nicht bei sich haben und traurig sein" },
+            { "front": "umziehen", "back": "in eine andere Wohnung gehen" },
+            { "front": "die Miete, -n", "back": "das Geld, das man jeden Monat für die Wohnung bezahlt" },
+            { "front": "die Verspätung, -en", "back": "der Bus oder Zug kommt zu spät" },
+            { "front": "sich allein fühlen", "back": "keine Menschen um sich haben und traurig sein" },
+            { "front": "zufrieden sein mit", "back": "etwas gut finden, so wie es ist" }
+          ]
+        }
+      ]
+    }
+  ]
+}

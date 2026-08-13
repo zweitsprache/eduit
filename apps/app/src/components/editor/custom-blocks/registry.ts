@@ -11,6 +11,7 @@ import {
   MessageChatSquare,
   Edit05,
   File02,
+  Code02,
   Grid01,
   Clipboard,
   Table,
@@ -31,6 +32,15 @@ export type CustomBlockDefinition = {
 };
 
 export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
+  {
+    type: 'jsonImport',
+    label: 'JSON Import',
+    description: 'Import worksheet blocks from JSON and insert them at this position.',
+    category: 'Import',
+    keywords: ['json', 'import', 'worksheet', 'blocks', 'insert'],
+    Icon: Code02,
+    insert: () => false,
+  },
   {
     type: 'communicationCards',
     label: 'Communication Cards',

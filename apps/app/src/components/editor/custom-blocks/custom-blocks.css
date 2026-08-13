@@ -110,6 +110,16 @@
   overflow: visible;
 }
 
+.learning-cards-node__sheet[data-side="solutions"] {
+  /* Solution pages are plain lists, not the centered card grid, so they use the
+     full printable page body instead of the 222 mm card-sheet box. The box is
+     content-driven (grows with the packed rows) with a 222 mm floor; the
+     measurement logic packs each atom to the real per-page capacity, so the box
+     never exceeds one page. overflow:hidden is a clipping safety net only. */
+  min-height: 222mm;
+  overflow: hidden;
+}
+
 .learning-cards-node__title {
   position: relative;
   z-index: 1;
@@ -119,9 +129,100 @@
   line-height: var(--brand-heading-1-line-height, 1.2);
 }
 
+.learning-cards-node__solution-key {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  break-inside: auto;
+  page-break-inside: auto;
+}
+
+.learning-cards-node__solution-key-title {
+  margin: 0 0 var(--custom-block-space-section) !important;
+  padding-left: 0;
+  font-size: var(--brand-heading-1-font-size, 2rem);
+  font-weight: var(--brand-heading-1-font-weight, 700);
+  line-height: var(--brand-heading-1-line-height, 1.2);
+}
+
+.learning-cards-node__solution-key-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding-inline-start: 0;
+  padding-left: 0;
+  padding-right: 0;
+  list-style: none;
+  font-size: 0.95rem;
+  line-height: 1.8;
+}
+
+/* Off-screen probe list used only to measure real row heights for pagination.
+   It must match the real list's box metrics but never affect layout or print. */
+.learning-cards-node__solution-key-list--measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.learning-cards-node__solution-key-item {
+  display: flex;
+  align-items: center;
+  min-height: var(--custom-block-row-height);
+  gap: var(--custom-block-inline-gap);
+  width: 100%;
+  margin-left: 0;
+  padding: var(--custom-block-row-padding-block) 0;
+  border-bottom: var(--custom-block-row-border-width) solid var(--custom-block-row-border-color);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.learning-cards-node__solution-badge {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: var(--custom-block-index-size);
+  height: var(--custom-block-index-size);
+  align-items: center;
+  justify-content: center;
+  padding-inline: 0;
+  border: 1px solid var(--color-border-primary);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: var(--custom-block-meta-font-size);
+  font-feature-settings: normal;
+  font-variant-numeric: normal;
+  line-height: 1;
+  text-align: center;
+}
+
+.learning-cards-node__solution-key-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.learning-cards-node__number {
+  position: absolute;
+  top: 4mm;
+  right: 4mm;
+  border-radius: 999px;
+}
+
+.learning-cards-node__card {
+  position: relative;
+}
+
 .learning-cards-node__rotated-grid {
   position: absolute;
-  /* Place the unrotated 222 × 156 mm box around the physical A4 center,
+  /* Place the unrotated 222 x 156 mm box around the physical A4 center,
      relative to the editor content origin, then rotate around that center. */
   top: calc(148.5mm - 25mm - 78mm);
   left: calc(105mm - 25mm - 111mm);
@@ -145,6 +246,23 @@
   overflow: hidden;
   padding: 5mm;
   text-align: center;
+  border: 0;
+}
+
+.learning-cards-node__rotated-grid[data-side="front"]
+  .learning-cards-node__card {
+  border-top: 0.1mm dashed color-mix(in srgb, currentColor 22%, transparent);
+  border-left: 0.1mm dashed color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.learning-cards-node__rotated-grid[data-side="front"]
+  .learning-cards-node__card:nth-child(3n) {
+  border-right: 0.1mm dashed color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.learning-cards-node__rotated-grid[data-side="front"]
+  .learning-cards-node__card:nth-child(n + 7) {
+  border-bottom: 0.1mm dashed color-mix(in srgb, currentColor 22%, transparent);
 }
 
 .learning-cards-node__content {
@@ -232,7 +350,8 @@
 }
 
 @media print {
-  .learning-cards-node__rotated-grid[data-side="front"]
+  .tiptap[data-learning-cards-double="true"]
+    .learning-cards-node__rotated-grid[data-side="front"]
     .learning-cards-node__card {
     border-color: transparent;
   }
@@ -3228,6 +3347,12 @@
   overflow-wrap: anywhere;
 }
 
+.glossary-terms-node__cell--definition-rtl {
+  text-align: right;
+  unicode-bidi: isolate;
+  padding-right: calc(var(--custom-block-inline-gap) * 2);
+}
+
 .heading-node {
   position: relative;
   display: flow-root;
@@ -3254,6 +3379,14 @@
 .tiptap > h3 {
   break-after: avoid;
   page-break-after: avoid;
+}
+
+/* Keep H3 subheadings attached to their first block (for example glossary).
+   If the pair does not fit, pagination should move both to the next page. */
+.tiptap > .heading-node--h3 + .custom-block,
+.tiptap > h3 + .custom-block {
+  break-before: avoid;
+  page-break-before: avoid;
 }
 
 .heading-node--numbered .heading-node__content::before {
@@ -4230,12 +4363,20 @@
 
 .worksheet-table-node__frame {
   margin-block-start: 0;
-  overflow: hidden;
-  border-top: var(--custom-block-row-border-width) solid
-    var(--custom-block-row-border-color);
-  border-left: var(--custom-block-row-border-width) solid
-    var(--custom-block-row-border-color);
-  border-radius: var(--custom-block-radius-control);
+  overflow: visible;
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+}
+
+.custom-block.worksheet-table-node {
+  display: block;
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+}
+
+.worksheet-table-node > .custom-block__instruction {
+  break-after: avoid-page;
+  page-break-after: avoid;
 }
 
 .frayer-model-node__frame {
@@ -4620,11 +4761,28 @@
   ) !important;
 }
 
+.worksheet-table-node__frame {
+  margin-block-start: 0;
+  overflow: visible;
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+}
+
 .worksheet-table-node__header,
 .worksheet-table-node__row {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-columns: repeat(48, minmax(0, 1fr));
   width: 100%;
+  border-top: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  break-inside: avoid-page;
+  page-break-inside: avoid;
+}
+
+.worksheet-table-node__header[data-page-last="true"],
+.worksheet-table-node__row[data-page-last="true"] {
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
 }
 
 .worksheet-table-node__header-cell,
@@ -4638,14 +4796,18 @@
     var(--custom-block-inline-gap);
   border-right: var(--custom-block-row-border-width) solid
     var(--custom-block-row-border-color);
-  border-bottom: var(--custom-block-row-border-width) solid
-    var(--custom-block-row-border-color);
   color: var(--color-text-primary);
   font-family: inherit;
   font-size: var(--custom-block-body-font-size);
   line-height: var(--custom-block-control-size);
   text-align: left;
   overflow-wrap: anywhere;
+}
+
+.worksheet-table-node__header-cell:first-child,
+.worksheet-table-node__cell:first-child {
+  border-left: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
 }
 
 .worksheet-table-node__header-cell {
@@ -4664,6 +4826,24 @@
   width: 100%;
   min-width: 0;
   white-space: pre-wrap;
+}
+
+.worksheet-table-node__cell .fill-in-the-blank-node__blank {
+  box-sizing: border-box;
+  width: min(
+    100%,
+    calc(
+      var(--custom-block-blank-min-width)
+      * var(--fill-blank-effective-width-factor)
+    )
+  );
+  min-width: 0;
+  max-width: 100%;
+  margin-inline: 0;
+}
+
+.worksheet-table-node__cell--tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 .tiptap[data-content-indentation="true"]

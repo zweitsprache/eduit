@@ -16,6 +16,7 @@
     "build:marketing": "npm run build --workspace=@eduit/marketing",
     "build:dazit": "npm run build --workspace=@eduit/dazit",
     "lint": "npm run lint --workspaces --if-present",
+    "docs:external-ai": "jiti scripts/generate-external-ai-worksheet-schema.ts",
     "pdf:remove-footer-name:test": "node scripts/remove-pdf-footer-name.mjs --test",
     "pdf:remove-footer-name:apply": "node scripts/remove-pdf-footer-name.mjs --apply --confirm-all-published-pdfs"
   }

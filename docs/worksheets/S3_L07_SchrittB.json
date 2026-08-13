@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 1,
+  "worksheets": [
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt B | Stellung der Objekte",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt B",
+        "languageCompetencies": ["Stellung der Objekte", "Bitten und Empfehlungen ausdrücken"],
+        "learnerContext": "Erwachsene Lernende lernen die Stellung von Dativ- und Akkusativobjekt, wenn ein Pronomen im Satz steht."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Ich kann es Ihnen nur empfehlen.", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p>Wenn die Sache ein Pronomen ist, ändert sich die Reihenfolge:</p><ul><li>Dimi empfiehlt <strong>Ernst Rupp</strong> <strong>das Tzatziki</strong>. (Person – Sache)</li><li>Dimi empfiehlt <strong>es</strong> <strong>ihm</strong>. (Sache – Person)</li></ul><p><strong>Regel:</strong> Das Pronomen steht immer zuerst. Stehen zwei Pronomen im Satz, kommt zuerst die Sache (Akkusativ), dann die Person (Dativ).</p><ul><li>Ich gebe <strong>dir</strong> die Schachtel. (nur die Person ist Pronomen)</li><li>Ich gebe <strong>sie</strong> meiner Kollegin. (nur die Sache ist Pronomen)</li><li>Ich gebe <strong>sie dir</strong>. (beides Pronomen: Sache vor Person)</li></ul><p>Die Sache steht als: <em>ihn</em> (der), <em>es</em> (das), <em>sie</em> (die, Plural).</p>"
+        },
+        {
+          "type": "worksheetTable",
+          "instruction": "Ergänzen Sie die Tabelle.",
+          "showInstruction": true,
+          "showHeader": true,
+          "showFirstAsExample": true,
+          "blankWidthFactor": 1.5,
+          "columns": [
+            { "id": "satz", "label": "Satz mit Nomen", "span": 12, "align": "left" },
+            { "id": "pronomen", "label": "Satz mit Pronomen", "span": 12, "align": "left" }
+          ],
+          "rows": [
+            { "id": "pr-1", "cells": { "satz": "Ich habe meinem Bruder mein Velo geliehen.", "pronomen": "Ich habe es meinem Bruder geliehen." } },
+            { "id": "pr-2", "cells": { "satz": "Hast du Grossmama das Geschenk schon geschickt?", "pronomen": "Hast du {{blank:es}} Grossmama schon geschickt?" } },
+            { "id": "pr-3", "cells": { "satz": "Können Sie mir den Film empfehlen?", "pronomen": "Können Sie {{blank:ihn}} mir empfehlen?" } },
+            { "id": "pr-4", "cells": { "satz": "Hast du deinem Vater den Grill geschenkt?", "pronomen": "Hast du {{blank:ihn}} deinem Vater geschenkt?" } },
+            { "id": "pr-5", "cells": { "satz": "Bitte bringen Sie uns die Speisekarte.", "pronomen": "Bitte bringen Sie {{blank:sie}} uns." } },
+            { "id": "pr-6", "cells": { "satz": "Ich habe meinen Eltern dieses Hotel empfohlen.", "pronomen": "Ich habe {{blank:es}} meinen Eltern empfohlen." } },
+            { "id": "pr-7", "cells": { "satz": "Wir schenken unserer Nachbarin Blumen.", "pronomen": "Wir schenken {{blank:sie}} unserer Nachbarin." } }
+          ]
+        },
+        { "type": "heading", "text": "Kurze Antworten", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Ergänzen Sie mit zwei Pronomen: Sache vor Person.",
+          "items": [
+            "Hier sind die Pralines für Grossmama. Bringst du {{blank:sie ihr|2}} bitte mit? – Klar, mache ich.",
+            "Hast du Paul die CD schon zurückgegeben? – Ja, ich habe {{blank:sie ihm|2}} gestern gebracht.",
+            "Du hast doch ein Auto. Kannst du {{blank:es uns|2}} leihen? – Tut mir leid, morgen brauche ich es selbst.",
+            "War das Essen im Restaurant gut? – Ja, ich kann {{blank:es Ihnen|2}} wirklich empfehlen.",
+            "Könnten Sie mir die Telefonnummer geben? – Ja, gern. – Moment, ich muss {{blank:sie mir|2}} notieren.",
+            "Wir haben die Hausaufgabe nicht verstanden. – Kein Problem, ich kann {{blank:sie euch|2}} noch einmal erklären.",
+            "Wo ist der Schlüssel von den Nachbarn? Ich muss {{blank:ihn ihnen|2}} zurückgeben.",
+            "Der neue Film ist sehr gut. Ich kann {{blank:ihn dir|2}} empfehlen."
+          ],
+          "showFirstAsExample": true
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt B | Am Esstisch und beim Verpacken",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-informal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt B",
+        "languageCompetencies": ["um etwas bitten", "auf Bitten reagieren"],
+        "learnerContext": "Alltagsdialoge am Esstisch und beim Verpacken eines Geschenks, mit Du-Form."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Am Esstisch", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "dialogue",
+          "instruction": "Ergänzen Sie: ihn – es – sie. Lesen Sie dann zu zweit.",
+          "context": "Eine Familie sitzt am Frühstückstisch.",
+          "speakerNames": { "1": "Kind", "2": "Mutter", "3": "", "4": "" },
+          "showSpeakerNames": true,
+          "items": [
+            { "speaker": 1, "text": "Wo ist denn das Brot?" },
+            { "speaker": 2, "text": "In der Küche. Hol {{blank:es}} dir doch einfach." },
+            { "speaker": 1, "text": "Mama, haben wir noch Milch?" },
+            { "speaker": 2, "text": "Ja. Einen Moment, ich hole {{blank:sie}} euch." },
+            { "speaker": 1, "text": "Bringst du mir bitte ein Joghurt mit?" },
+            { "speaker": 2, "text": "Natürlich, ich bringe {{blank:es}} dir gleich." },
+            { "speaker": 1, "text": "Hast du schon den Käse probiert? Er ist sehr gut." },
+            { "speaker": 2, "text": "Nein, gib {{blank:ihn}} mir doch bitte mal." },
+            { "speaker": 1, "text": "Wie findest du die Brötchen?" },
+            { "speaker": 2, "text": "Super, ich kann {{blank:sie}} dir wirklich empfehlen." },
+            { "speaker": 1, "text": "Bekommen wir auch noch eine Glace?" },
+            { "speaker": 2, "text": "Ja, in Ordnung. Holt {{blank:sie}} euch bitte selbst aus dem Kühlschrank." }
+          ]
+        },
+        { "type": "heading", "text": "Ein Geschenk verpacken", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "glossary",
+          "preset": "default",
+          "showInstruction": true,
+          "instruction": "Diese Wörter brauchen Sie beim Verpacken.",
+          "showColumnHeaders": true,
+          "showExample": true,
+          "headerLabels": ["Wort", "Erklärung", "Beispiel"],
+          "termWidth": "25",
+          "entries": [
+            { "term": "die Schachtel, -n", "definition": "ein Karton für ein Geschenk", "example": "Kannst du mir die Schachtel dort geben?" },
+            { "term": "das Klebband, -̈er", "definition": "ein Band, mit dem man Papier zusammenklebt", "example": "Wo ist das Klebband?" },
+            { "term": "die Schnur, -̈e", "definition": "ein dünnes Band zum Binden", "example": "Ich binde eine Schnur um das Paket." },
+            { "term": "das Packpapier", "definition": "starkes Papier für Pakete", "example": "Wir brauchen noch Packpapier." },
+            { "term": "das Geschenkpapier", "definition": "schönes Papier für Geschenke", "example": "Das Geschenkpapier ist rot und gold." },
+            { "term": "der Adressaufkleber, -", "definition": "ein Kleber mit der Adresse", "example": "Ich drucke den Adressaufkleber aus." },
+            { "term": "die Briefmarke, -n", "definition": "man klebt sie auf den Brief und bezahlt so das Porto", "example": "Kannst du noch Briefmarken kaufen?" },
+            { "term": "vorbereiten", "definition": "etwas fertig machen, bevor es losgeht", "example": "Ich muss jetzt das Essen vorbereiten." },
+            { "term": "liefern", "definition": "etwas nach Hause bringen", "example": "Der Take-away liefert auch Gerichte mit Reis." },
+            { "term": "der Sonderwunsch, -̈e", "definition": "ein besonderer Wunsch", "example": "Haben Sie einen Sonderwunsch?" }
+          ]
+        },
+        { "type": "heading", "text": "Wörter ordnen", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Wie heissen die Wörter richtig? Ergänzen Sie.",
+          "items": [
+            "Ich muss jetzt das Essen {{blank:vorbereiten|2}} (reivortenbe). Hilfst du mir?",
+            "Was gibt es denn? – {{blank:Nudeln}} (delnNu). – Schon wieder? Ich möchte lieber Reis!",
+            "Der chinesische Take-away im Zentrum {{blank:liefert}} (fertlie) doch Gerichte mit Nudeln und Reis.",
+            "Aber ab jetzt gibt es nicht jeden Tag einen {{blank:Sonderwunsch|2}} (derSon)!",
+            "Kannst du mir bitte die {{blank:Schachtel}} (telSchach) dort geben?",
+            "Ich kann schon mal den Adressaufkleber {{blank:ausdrucken|2}} (drucausken).",
+            "Kannst du morgen bitte noch {{blank:Briefmarken|2}} (marBriefken) kaufen?"
+          ],
+          "showFirstAsExample": true
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt B | Domino: Frage und Antwort",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-informal",
+        "worksheetType": "domino",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt B"
+      },
+      "blocks": [
+        {
+          "type": "domino",
+          "showFirstAsExample": true,
+          "oddTextSize": "s",
+          "evenTextSize": "s",
+          "leftRepresentation": "text",
+          "rightRepresentation": "text",
+          "pairs": [
+            { "left": "START", "right": "Wo ist denn mein Kugelschreiber?" },
+            { "left": "Moment, ich gebe ihn dir gleich.", "right": "Bringst du Grossmama die Pralines mit?" },
+            { "left": "Ja, ich bringe sie ihr gerne mit.", "right": "Hast du Paul die CD schon zurückgegeben?" },
+            { "left": "Ja, ich habe sie ihm gestern gebracht.", "right": "Kannst du uns dein Auto leihen?" },
+            { "left": "Tut mir leid, ich brauche es morgen selbst.", "right": "War das Essen im Restaurant gut?" },
+            { "left": "Ja, ich kann es Ihnen wirklich empfehlen.", "right": "Wir haben die Hausaufgabe nicht verstanden." },
+            { "left": "Kein Problem, ich erkläre sie euch noch einmal.", "right": "Wo ist der Schlüssel von den Nachbarn?" },
+            { "left": "Hier. Ich muss ihn ihnen noch zurückgeben.", "right": "Kannst du Monika diese Bücher mitbringen?" },
+            { "left": "Ja, natürlich kann ich sie ihr mitbringen.", "right": "Papa, unser Ball liegt auf dem Dach!" },
+            { "left": "Wartet, ich hole ihn euch.", "right": "ENDE" }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt B | Lernkarten",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "learning-cards",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt B"
+      },
+      "blocks": [
+        {
+          "type": "learningCards",
+          "title": "L7 Schritt B | Pronomen und Verpacken",
+          "sidedness": "double",
+          "frontTextSize": "m",
+          "backTextSize": "s",
+          "items": [
+            { "front": "Zwei Pronomen im Satz: Reihenfolge?", "back": "zuerst die Sache, dann die Person: Ich gebe sie dir." },
+            { "front": "Nur die Sache ist Pronomen", "back": "Sache vor Person: Ich gebe sie meiner Kollegin." },
+            { "front": "Nur die Person ist Pronomen", "back": "Person vor Sache: Ich gebe dir die Schachtel." },
+            { "front": "der Film → Pronomen (Sache)", "back": "ihn: Ich kann ihn dir empfehlen." },
+            { "front": "das Auto → Pronomen (Sache)", "back": "es: Kannst du es uns leihen?" },
+            { "front": "die Pralines → Pronomen (Sache)", "back": "sie: Bringst du sie ihr mit?" },
+            { "front": "empfehlen", "back": "jemandem sagen, dass etwas gut ist" },
+            { "front": "leihen", "back": "jemandem etwas geben, das er zurückgibt" },
+            { "front": "zurückgeben", "back": "etwas wieder geben, das man geliehen hat" },
+            { "front": "die Schachtel, -n", "back": "ein Karton für ein Geschenk" },
+            { "front": "das Klebband, -̈er", "back": "ein Band zum Zusammenkleben" },
+            { "front": "die Schnur, -̈e", "back": "ein dünnes Band zum Binden" },
+            { "front": "das Geschenkpapier", "back": "schönes Papier für Geschenke" },
+            { "front": "der Adressaufkleber, -", "back": "ein Kleber mit der Adresse" },
+            { "front": "die Briefmarke, -n", "back": "man klebt sie auf den Brief" },
+            { "front": "der Lieferdienst, -e", "back": "eine Firma, die Essen nach Hause bringt" },
+            { "front": "der Partyservice", "back": "eine Firma, die sich um ein Fest kümmert" },
+            { "front": "der Sonderwunsch, -̈e", "back": "ein besonderer Wunsch" }
+          ]
+        }
+      ]
+    }
+  ]
+}

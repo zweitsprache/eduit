@@ -34,6 +34,7 @@ export function InsertBlockPalette({
   editor,
   insertAt,
   onStartOccupationPortrait,
+  onStartJsonImport,
   onStartVocabularyOne,
   open,
   onClose,
@@ -41,6 +42,7 @@ export function InsertBlockPalette({
   editor: Editor;
   insertAt?: number | null;
   onStartOccupationPortrait: (insertAt: number) => void;
+  onStartJsonImport: (insertAt: number) => void;
   onStartVocabularyOne: (insertAt: number) => void;
   open: boolean;
   onClose: () => void;
@@ -105,6 +107,15 @@ export function InsertBlockPalette({
       );
       onClose();
       onStartVocabularyOne(workflowInsertAt);
+      return;
+    }
+    if (block.type === 'jsonImport') {
+      const { selection } = editor.state;
+      const workflowInsertAt = insertAt ?? (
+        selection instanceof NodeSelection ? selection.to : selection.from
+      );
+      onClose();
+      onStartJsonImport(workflowInsertAt);
       return;
     }
     if (block.type === 'learningCards' || block.type === 'communicationCards') {

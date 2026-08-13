@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "worksheets": [
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt D | Was schenkt man?",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt D",
+        "languageCompetencies": ["Meinungen und Vorlieben ausdrücken", "über Geschenke sprechen"],
+        "learnerContext": "Erwachsene Lernende tauschen sich über Geschenkregeln in der Schweiz und in ihren Herkunftsländern aus."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Geschenke: Was ist üblich?", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p>Martin hat bald Geburtstag und lädt seine Arbeitskolleginnen und Arbeitskollegen ein. Sie sprechen darüber, was man schenken soll.</p><ol><li>In der Schweiz schenkt man Arbeitskollegen am besten Pralines oder eine Flasche Wein.</li><li>Ich schenke ihm einen Gutschein. Ein Gutschein passt immer.</li><li>Ein Gutschein ist nicht persönlich genug, finde ich.</li><li>Ein Gutschein ist nicht besonders originell.</li><li>Man sollte den Arbeitskollegen nach seinen Wünschen fragen.</li><li>Ich schenke gern etwas Selbstgemachtes, denn das ist persönlich.</li><li>Ich bringe ihm ein Glas von meiner Zwetschgenkonfitüre mit. Die kommt immer gut an.</li><li>Ist ein Glas Konfitüre nicht ein bisschen wenig?</li><li>Ein Geschenk muss doch nicht teuer sein. Hauptsache, es kommt von Herzen.</li><li>Geld ist in meinem Land als Geschenk tabu.</li><li>Man kann doch kein Geld zum Geburtstag schenken!</li><li>Für ein Geschenk sollte man nicht zu viel Geld ausgeben.</li></ol>"
+        },
+        {
+          "type": "mcm",
+          "instruction": "Zu welcher Frage passt die Aussage? Kreuzen Sie an.",
+          "question": "A = Was schenkt man einem Arbeitskollegen? | B = Wie finden Sie Gutscheine oder Selbstgemachtes? | C = Wie teuer darf ein Geschenk sein? | D = Was sollte man auf keinen Fall schenken?",
+          "showFirstAsExample": true,
+          "rows": [
+            {
+              "id": "zu-1",
+              "text": "In der Schweiz schenkt man Arbeitskollegen am besten Pralines oder eine Flasche Wein.",
+              "options": [
+                { "id": "zu-1-a", "text": "A", "correct": true },
+                { "id": "zu-1-b", "text": "B", "correct": false },
+                { "id": "zu-1-c", "text": "C", "correct": false }
+              ]
+            },
+            {
+              "id": "zu-2",
+              "text": "Ein Gutschein ist nicht persönlich genug, finde ich.",
+              "options": [
+                { "id": "zu-2-a", "text": "A", "correct": false },
+                { "id": "zu-2-b", "text": "B", "correct": true },
+                { "id": "zu-2-c", "text": "C", "correct": false }
+              ]
+            },
+            {
+              "id": "zu-3",
+              "text": "Man sollte den Arbeitskollegen nach seinen Wünschen fragen.",
+              "options": [
+                { "id": "zu-3-a", "text": "A", "correct": true },
+                { "id": "zu-3-b", "text": "B", "correct": false },
+                { "id": "zu-3-c", "text": "C", "correct": false }
+              ]
+            },
+            {
+              "id": "zu-4",
+              "text": "Ich schenke gern etwas Selbstgemachtes, denn das ist persönlich.",
+              "options": [
+                { "id": "zu-4-a", "text": "A", "correct": false },
+                { "id": "zu-4-b", "text": "B", "correct": true },
+                { "id": "zu-4-c", "text": "C", "correct": false }
+              ]
+            },
+            {
+              "id": "zu-5",
+              "text": "Ein Geschenk muss doch nicht teuer sein. Hauptsache, es kommt von Herzen.",
+              "options": [
+                { "id": "zu-5-a", "text": "A", "correct": false },
+                { "id": "zu-5-b", "text": "B", "correct": false },
+                { "id": "zu-5-c", "text": "C", "correct": true }
+              ]
+            },
+            {
+              "id": "zu-6",
+              "text": "Für ein Geschenk sollte man nicht zu viel Geld ausgeben.",
+              "options": [
+                { "id": "zu-6-a", "text": "A", "correct": false },
+                { "id": "zu-6-b", "text": "B", "correct": false },
+                { "id": "zu-6-c", "text": "C", "correct": true }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "mcq",
+          "instruction": "Wählen Sie die richtige Antwort.",
+          "questions": [
+            {
+              "id": "gd-1",
+              "question": "Was ist laut den Aussagen in der Schweiz ein typisches Geschenk für Arbeitskollegen?",
+              "answerMode": "single",
+              "options": [
+                { "id": "gd1-a", "text": "Pralines oder eine Flasche Wein", "correct": true },
+                { "id": "gd1-b", "text": "Schmuck", "correct": false },
+                { "id": "gd1-c", "text": "ein Velo", "correct": false }
+              ]
+            },
+            {
+              "id": "gd-2",
+              "question": "Warum finden manche Personen einen Gutschein nicht gut?",
+              "answerMode": "single",
+              "options": [
+                { "id": "gd2-a", "text": "Er ist zu teuer.", "correct": false },
+                { "id": "gd2-b", "text": "Er ist nicht persönlich und nicht originell.", "correct": true },
+                { "id": "gd2-c", "text": "Man kann ihn nicht kaufen.", "correct": false }
+              ]
+            },
+            {
+              "id": "gd-3",
+              "question": "Was sagt eine Person über Geld als Geschenk?",
+              "answerMode": "single",
+              "options": [
+                { "id": "gd3-a", "text": "Geld ist in ihrem Land tabu.", "correct": true },
+                { "id": "gd3-b", "text": "Geld ist das beste Geschenk.", "correct": false },
+                { "id": "gd3-c", "text": "Geld schenkt man nur der Familie.", "correct": false }
+              ]
+            }
+          ],
+          "columns": 1,
+          "showInstruction": true
+        },
+        {
+          "type": "richText",
+          "html": "<p><strong>Ihre Meinung.</strong> Was schenken Sie Ihren Arbeitskollegen, Ihrer Familie oder Ihren Freunden gern? Machen Sie Notizen und erzählen Sie.</p><ul><li>Ich finde, …</li><li>Ich schenke gern / nicht gern …, weil …</li><li>Am wichtigsten ist, dass … / Hauptsache, …</li><li>In meinem Land / In meiner Heimat …</li><li>… darf man auf keinen Fall schenken. / … ist tabu.</li></ul>"
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt D | Ein Geschenk aussuchen",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-informal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt D",
+        "languageCompetencies": ["sich über ein Geschenk einigen", "einen Termin vereinbaren"],
+        "learnerContext": "Zwei Aufgaben aus der Prüfungsvorbereitung: gemeinsam ein Geschenk aussuchen und einen Termin finden."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Von wem hast du das bekommen?", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Ergänzen Sie: meinem – meiner – meinen.",
+          "items": [
+            "Ich bin mit der Schule fertig! Weil ich so gute Noten hatte, habe ich viele Geschenke bekommen: Von {{blank:meinen}} Eltern habe ich eine Gitarre bekommen.",
+            "Von {{blank:meinem}} Onkel habe ich ein Fussballtrikot bekommen.",
+            "Von {{blank:meinen}} Geschwistern habe ich eine tolle DVD bekommen.",
+            "Von {{blank:meiner}} Grossmutter habe ich ein kleines Portemonnaie bekommen.",
+            "Von {{blank:meinem}} Freund Alessandro und {{blank:meiner}} Freundin Miriam habe ich einen Gutschein fürs Kino bekommen."
+          ],
+          "widthFactor": 1.2,
+          "showFirstAsExample": true
+        },
+        { "type": "heading", "text": "Was schenken wir Fatma?", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "dialogue",
+          "instruction": "Ergänzen Sie das Gespräch und lesen Sie es zu zweit.",
+          "context": "Zwei Kolleginnen suchen ein Geschenk für Fatma.",
+          "speakerNames": { "1": "Lea", "2": "Nadia", "3": "", "4": "" },
+          "showSpeakerNames": true,
+          "items": [
+            { "speaker": 1, "text": "Du, Fatma hat am Freitag Geburtstag. Sollten wir ihr nicht etwas {{blank:schenken}}?" },
+            { "speaker": 2, "text": "Ja, gute Idee. Vielleicht Blumen? Ich kenne ihre Lieblingsfarbe: Weiss." },
+            { "speaker": 1, "text": "Ach nein. In meiner {{blank:Heimat}} darf man auf keinen {{blank:Fall}} weisse Blumen schenken. Das ist {{blank:tabu}}." },
+            { "speaker": 1, "text": "Wir können eine {{blank:Kette}} kaufen. Alle Frauen mögen Schmuck." },
+            { "speaker": 2, "text": "Was? So viel Geld kann ich nicht {{blank:ausgeben}}. Ausserdem ist Schmuck viel zu {{blank:persönlich}}." },
+            { "speaker": 2, "text": "Wir könnten ein Kochbuch kaufen. Das ist praktisch und kostet nicht zu viel." },
+            { "speaker": 1, "text": "Ist das nicht ein bisschen wenig?" },
+            { "speaker": 2, "text": "Nein. Am wichtigsten ist doch, dass ein Geschenk von {{blank:Herzen}} kommt." }
+          ]
+        },
+        { "type": "heading", "text": "Wann kaufen wir das Geschenk?", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "worksheetTable",
+          "instruction": "Schauen Sie die beiden Terminkalender an. Finden Sie zu zweit einen gemeinsamen Termin.",
+          "showInstruction": true,
+          "showHeader": true,
+          "showFirstAsExample": true,
+          "columns": [
+            { "id": "zeit", "label": "Donnerstag, 5. September", "span": 8, "align": "left" },
+            { "id": "a", "label": "Person A", "span": 8, "align": "left" },
+            { "id": "b", "label": "Person B", "span": 8, "align": "left" }
+          ],
+          "rows": [
+            { "id": "z-1", "cells": { "zeit": "8.00 – 12.30 Uhr", "a": "Deutschkurs", "b": "Deutschkurs" } },
+            { "id": "z-2", "cells": { "zeit": "13.00 – 14.00 Uhr", "a": "Vorstellungsgespräch", "b": "frei" } },
+            { "id": "z-3", "cells": { "zeit": "14.00 – 15.00 Uhr", "a": "frei", "b": "Natascha abholen und in den Tanzkurs bringen" } },
+            { "id": "z-4", "cells": { "zeit": "15.00 – 16.00 Uhr", "a": "Arzt", "b": "15.30 – 16.00 Uhr Termin bei der Bank" } },
+            { "id": "z-5", "cells": { "zeit": "16.00 – 17.30 Uhr", "a": "frei", "b": "frei" } },
+            { "id": "z-6", "cells": { "zeit": "17.30 – 19.00 Uhr", "a": "Fussballtraining", "b": "18.00 – 23.00 Uhr arbeiten" } },
+            { "id": "z-7", "cells": { "zeit": "Gemeinsamer Termin:", "a": "{{blank:16.00 – 17.30 Uhr|2}}", "b": "{{blank:16.00 – 17.30 Uhr|2}}" } }
+          ]
+        },
+        {
+          "type": "richText",
+          "html": "<p>Redemittel: <em>Wann kaufen wir das Geschenk für …?</em> | <em>Wann hast du Zeit?</em> | <em>Hast du um … Uhr Zeit?</em> | <em>Ja, das geht.</em> | <em>Nein, da kann ich nicht.</em></p>"
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt D | Lernkarten",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "learning-cards",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt D"
+      },
+      "blocks": [
+        {
+          "type": "learningCards",
+          "title": "L7 Schritt D | Geschenke und Meinungen",
+          "sidedness": "double",
+          "frontTextSize": "m",
+          "backTextSize": "s",
+          "items": [
+            { "front": "der Gutschein, -e", "back": "ein Papier, mit dem man etwas aussuchen kann" },
+            { "front": "etwas Selbstgemachtes", "back": "etwas, das man selbst gemacht hat" },
+            { "front": "die Konfitüre, -n", "back": "süsser Aufstrich aus Früchten" },
+            { "front": "originell", "back": "neu und besonders, nicht wie bei allen anderen" },
+            { "front": "persönlich", "back": "speziell für diese eine Person" },
+            { "front": "tabu", "back": "das darf man auf keinen Fall machen" },
+            { "front": "Geld ausgeben", "back": "Geld für etwas bezahlen" },
+            { "front": "gut ankommen", "back": "den anderen gefällt es sehr" },
+            { "front": "von Herzen kommen", "back": "ehrlich und lieb gemeint sein" },
+            { "front": "Hauptsache, …", "back": "das Wichtigste ist: Hauptsache, es kommt von Herzen." },
+            { "front": "Am wichtigsten ist, dass …", "back": "Am wichtigsten ist, dass das Geschenk persönlich ist." },
+            { "front": "auf keinen Fall", "back": "ganz sicher nicht" },
+            { "front": "die Heimat", "back": "das Land, aus dem man kommt" },
+            { "front": "der Schmuck", "back": "zum Beispiel eine Kette oder ein Ring" },
+            { "front": "das Portemonnaie, -s", "back": "eine kleine Tasche für Geld" },
+            { "front": "das Fussballtrikot, -s", "back": "das Hemd einer Fussballmannschaft" },
+            { "front": "der Wunsch, -̈e", "back": "was jemand gern haben möchte" },
+            { "front": "Wann hast du Zeit? – Ja, das geht.", "back": "Redemittel, um einen Termin zu vereinbaren" }
+          ]
+        }
+      ]
+    }
+  ]
+}

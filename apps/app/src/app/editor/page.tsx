@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { useEditor, useEditorState, EditorContent, type Editor } from '@tiptap/react';
 import { NodeSelection } from '@tiptap/pm/state';
+import { DOMParser as ProseMirrorDOMParser } from '@tiptap/pm/model';
 import Placeholder from '@tiptap/extension-placeholder';
 import { ConvertKit } from '@tiptap-pro/extension-convert-kit';
 import { TableKit } from '@tiptap-pro/extension-pages-tablekit';
@@ -233,6 +234,7 @@ import {
   type WorksheetContext,
 } from '@/lib/worksheet-types';
 import { worksheetJsonFromDoc } from '@/lib/worksheet-json-export';
+import { worksheetBlocksHtmlFromGeneratedJson } from '@/lib/worksheet-json-import';
 import { hasMeaningfulSolutions } from '@/lib/worksheet-solutions';
 import type { ContextProfile } from '@/lib/context-profiles';
 import { CustomBlockNumbering } from '@/components/editor/custom-blocks/numbering';
@@ -462,6 +464,69 @@ function fillInTheBlankToSolvedText(text: string) {
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+function parseDelimitedRow(row: string, delimiter: string) {
+  const cells: string[] = [];
+  let value = '';
+  let inQuotes = false;
+  for (let index = 0; index < row.length; index += 1) {
+    const char = row[index];
+    if (char === '"') {
+      if (inQuotes && row[index + 1] === '"') {
+        value += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (!inQuotes && char === delimiter) {
+      cells.push(value.trim());
+      value = '';
+      continue;
+    }
+    value += char;
+  }
+  cells.push(value.trim());
+  return cells;
+}
+
+function countDelimitedFields(row: string, delimiter: string) {
+  let count = 1;
+  let inQuotes = false;
+  for (let index = 0; index < row.length; index += 1) {
+    const char = row[index];
+    if (char === '"') {
+      if (inQuotes && row[index + 1] === '"') {
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (!inQuotes && char === delimiter) count += 1;
+  }
+  return count;
+}
+
+function parseCsvRows(value: string) {
+  const rows = value
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (!rows.length) return [];
+
+  const delimiter = [',', ';', '\t'].reduce((best, candidate) => {
+    const score = Math.max(...rows.slice(0, 5).map((row) => (
+      countDelimitedFields(row, candidate)
+    )));
+    return score > best.score ? { delimiter: candidate, score } : best;
+  }, { delimiter: ',', score: 0 }).delimiter;
+
+  return rows.map((row) => parseDelimitedRow(row, delimiter));
 }
 
 function serializeStyleSheet(
@@ -1023,29 +1088,24 @@ function worksheetTableColumnSpan(column: WorksheetTableColumn) {
   const legacyWidth = Number(
     (column as WorksheetTableColumn & { width?: number }).width,
   );
+  const clampSpan = (value: number) => Math.max(0.5, Math.min(24, value));
   if (Number.isFinite(span)) {
-    return Math.max(1, Math.min(12, Math.round(span)));
+    return clampSpan(Math.round(span * 2) / 2);
   }
   if (Number.isFinite(legacyWidth)) {
-    return Math.max(1, Math.min(12, Math.round(legacyWidth * 0.12)));
+    return clampSpan(Math.round((legacyWidth * 0.24) * 2) / 2);
   }
   return 1;
 }
 
 function normalizedTableColumns(columns: WorksheetTableColumn[]) {
   if (!columns.length) return [];
+  const totalUnits = 48;
   const weights = columns.map(worksheetTableColumnSpan);
   const total = weights.reduce((sum, span) => sum + span, 0);
-  if (total === 12) {
-    return columns.map((column, index) => ({
-      ...column,
-      span: weights[index],
-    }));
-  }
-
-  const quotas = weights.map((span) => (span / total) * 12);
+  const quotas = weights.map((span) => (span / total) * totalUnits);
   const spans = quotas.map((quota) => Math.max(1, Math.floor(quota)));
-  let difference = 12 - spans.reduce((sum, span) => sum + span, 0);
+  let difference = totalUnits - spans.reduce((sum, span) => sum + span, 0);
   while (difference > 0) {
     const candidates = quotas
       .map((quota, index) => ({ index, remainder: quota - spans[index] }))
@@ -1069,7 +1129,7 @@ function normalizedTableColumns(columns: WorksheetTableColumn[]) {
   }
   return columns.map((column, index) => ({
     ...column,
-    span: spans[index],
+    span: spans[index] / 2,
   }));
 }
 
@@ -1304,6 +1364,9 @@ export default function EditorPage() {
   });
   const [viewLanguage, setViewLanguage] = useState<string>(ORIGINAL_VIEW_LANGUAGE);
   const [translatingGlossary, setTranslatingGlossary] = useState(false);
+  const [bulkTranslatingWorksheet, setBulkTranslatingWorksheet] = useState(false);
+  const [exportingTranslatedZip, setExportingTranslatedZip] = useState(false);
+  const [selectedTranslationLanguages, setSelectedTranslationLanguages] = useState<string[]>([]);
   const contextPdfInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadingContextPdf, setUploadingContextPdf] = useState(false);
   const [contextPdfError, setContextPdfError] = useState('');
@@ -1356,6 +1419,9 @@ export default function EditorPage() {
   const [selectedInlineChoicePos, setSelectedInlineChoicePos] = useState<number | null>(null);
   const [selectedMiniFormPos, setSelectedMiniFormPos] = useState<number | null>(null);
   const [selectedWorksheetTablePos, setSelectedWorksheetTablePos] = useState<number | null>(null);
+  const [worksheetTableCsvText, setWorksheetTableCsvText] = useState('');
+  const [worksheetTableCsvError, setWorksheetTableCsvError] = useState<string | null>(null);
+  const [worksheetTableCsvAutoHeader, setWorksheetTableCsvAutoHeader] = useState(true);
   const [selectedPageBreakPos, setSelectedPageBreakPos] = useState<number | null>(null);
   const [exportingPDF, setExportingPDF] = useState(false);
   const [publishingPDF, setPublishingPDF] = useState(false);
@@ -1374,6 +1440,11 @@ export default function EditorPage() {
   const [jsonImportText, setJsonImportText] = useState('');
   const [jsonImportError, setJsonImportError] = useState<string | null>(null);
   const [importingJson, setImportingJson] = useState(false);
+  const [nodeJsonImportDialogOpen, setNodeJsonImportDialogOpen] = useState(false);
+  const [nodeJsonImportText, setNodeJsonImportText] = useState('');
+  const [nodeJsonImportError, setNodeJsonImportError] = useState<string | null>(null);
+  const [importingNodeJson, setImportingNodeJson] = useState(false);
+  const [nodeJsonImportAt, setNodeJsonImportAt] = useState<number | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [blockExportError, setBlockExportError] = useState<string | null>(null);
@@ -1440,6 +1511,7 @@ export default function EditorPage() {
     extensions: [
       ConvertKit.configure({
         table: false,
+        pageBreak: false,
         gapcursor: {},
       }),
       TableKit,
@@ -1787,6 +1859,23 @@ export default function EditorPage() {
       let found = false;
       currentEditor.state.doc.forEach((node) => {
         if (node.type.name === 'learningCards') found = true;
+      });
+      return found;
+    },
+  });
+
+  const containsDoubleSidedLearningCards = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor) return false;
+      let found = false;
+      currentEditor.state.doc.forEach((node) => {
+        if (
+          node.type.name === 'learningCards'
+          && node.attrs.sidedness === 'double'
+        ) {
+          found = true;
+        }
       });
       return found;
     },
@@ -2151,9 +2240,9 @@ export default function EditorPage() {
       if (!response.ok) {
         throw new Error(result.error ?? 'Could not load brand profiles.');
       }
-      setBrandProfiles(
-        (result.profiles ?? []).filter(({ isActive }) => isActive),
-      );
+      // Keep all profiles here, including inactive ones, so worksheets that are
+      // already linked to an inactive profile can still render their branding.
+      setBrandProfiles(result.profiles ?? []);
     } catch {
       setBrandProfiles([]);
     } finally {
@@ -2221,7 +2310,11 @@ export default function EditorPage() {
       'data-learning-cards-print',
       Boolean(containsLearningCards),
     );
-  }, [containsLearningCards, editor]);
+    editor.view.dom.toggleAttribute(
+      'data-learning-cards-double',
+      Boolean(containsDoubleSidedLearningCards),
+    );
+  }, [containsDoubleSidedLearningCards, containsLearningCards, editor]);
 
   useEffect(() => {
     if (!editor) return;
@@ -2245,7 +2338,6 @@ export default function EditorPage() {
 
   useEffect(() => {
     if (!editor) return;
-    if (brandProfileId && !selectedBrandProfile) return;
     const editorElement = editor.view.dom;
     // Eduit supplies the structural defaults; profiles override brand tokens.
     editorElement.setAttribute('data-brand', 'eduit');
@@ -2876,6 +2968,122 @@ export default function EditorPage() {
     }
   };
 
+  const bulkTranslateWorksheet = async (scope: 'all' | 'selected') => {
+    if (!editor || bulkTranslatingWorksheet) return;
+    const allLanguages = documentContext.translationLanguages;
+    const targetLanguages = scope === 'all'
+      ? allLanguages
+      : selectedTranslationLanguages.filter((code) => allLanguages.includes(code));
+    if (!targetLanguages.length) {
+      setPublishSuccess(false);
+      setExportError('Keine Übersetzungssprache ausgewählt.');
+      return;
+    }
+
+    const glossaryBlocks: {
+      position: number;
+      terms: {
+        id: string;
+        definition: string;
+        definitionTranslations?: Record<string, string>;
+      }[];
+    }[] = [];
+
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type.name !== 'glossaryTerms') return;
+      const attrs = node.attrs as GlossaryTermsAttrs;
+      glossaryBlocks.push({
+        position: pos,
+        terms: attrs.terms.map((term) => ({
+          id: term.id,
+          definition: term.definition,
+          definitionTranslations: term.definitionTranslations,
+        })),
+      });
+    });
+
+    if (!glossaryBlocks.length) {
+      setPublishSuccess(false);
+      setExportError('Keine Glossar-Blöcke zum Übersetzen gefunden.');
+      return;
+    }
+
+    setBulkTranslatingWorksheet(true);
+    setPublishSuccess(false);
+    setExportError(null);
+    try {
+      const response = await fetch('/api/ai/translate-worksheet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          languages: targetLanguages,
+          glossaryBlocks,
+          context: documentContext,
+        }),
+      });
+      const result = await response.json().catch(() => null) as {
+        error?: string;
+        updates?: {
+          position: number;
+          terms: {
+            id: string;
+            definitionTranslations: Record<string, string>;
+          }[];
+        }[];
+      } | null;
+      if (!response.ok) {
+        throw new Error(result?.error ?? 'Worksheet translation failed.');
+      }
+
+      const updatesByPosition = new Map(
+        (result?.updates ?? []).map((update) => [update.position, update.terms]),
+      );
+      if (updatesByPosition.size > 0) {
+        editor
+          .chain()
+          .command(({ tr }) => {
+            for (const block of glossaryBlocks) {
+              const updates = updatesByPosition.get(block.position);
+              if (!updates?.length) continue;
+              const node = tr.doc.nodeAt(block.position);
+              if (!node || node.type.name !== 'glossaryTerms') continue;
+              const attrs = node.attrs as GlossaryTermsAttrs;
+              const updatesById = new Map(
+                updates.map((entry) => [entry.id, entry.definitionTranslations]),
+              );
+              const nextTerms = attrs.terms.map((term) => {
+                const patch = updatesById.get(term.id);
+                if (!patch) return term;
+                return {
+                  ...term,
+                  definitionTranslations: {
+                    ...term.definitionTranslations,
+                    ...patch,
+                  },
+                };
+              });
+              tr.setNodeAttribute(block.position, 'terms', nextTerms);
+            }
+            return true;
+          })
+          .run();
+      }
+      setPublishSuccess(true);
+      setExportError(
+        `Übersetzung abgeschlossen (${targetLanguages.length} Sprache${targetLanguages.length === 1 ? '' : 'n'}).`,
+      );
+    } catch (error) {
+      setPublishSuccess(false);
+      setExportError(
+        error instanceof Error
+          ? error.message
+          : 'Worksheet translation failed.',
+      );
+    } finally {
+      setBulkTranslatingWorksheet(false);
+    }
+  };
+
   const updateFrayerQuadrant = (
     id: FrayerQuadrant['id'],
     patch: Partial<FrayerQuadrant>,
@@ -3268,7 +3476,7 @@ export default function EditorPage() {
     if (!selectedWorksheetTableAttrs) return;
     const columns = selectedWorksheetTableAttrs.columns;
     if (columns.length === 1) {
-      updateWorksheetTableColumns([{ ...columns[0], span: 12 }]);
+      updateWorksheetTableColumns([{ ...columns[0], span: 24 }]);
       return;
     }
 
@@ -3280,8 +3488,8 @@ export default function EditorPage() {
     const currentSpan = worksheetTableColumnSpan(columns[columnIndex]);
     const neighbourSpan = worksheetTableColumnSpan(columns[neighbourIndex]);
     const span = Math.min(
-      currentSpan + neighbourSpan - 1,
-      Math.max(1, Math.round(requestedSpan)),
+      currentSpan + neighbourSpan - 0.5,
+      Math.max(0.5, Math.round(requestedSpan * 2) / 2),
     );
     const spanDelta = span - currentSpan;
 
@@ -3324,6 +3532,90 @@ export default function EditorPage() {
     const rows = [...selectedWorksheetTableAttrs.rows];
     [rows[rowIndex], rows[targetIndex]] = [rows[targetIndex], rows[rowIndex]];
     updateWorksheetTableRows(rows);
+  };
+
+  const importWorksheetTableCsv = () => {
+    if (!selectedWorksheetTableAttrs || selectedWorksheetTablePos === null) return;
+    try {
+      const parsedRows = parseCsvRows(worksheetTableCsvText);
+      if (!parsedRows.length) {
+        throw new Error('Fuge mindestens eine CSV-Zeile ein.');
+      }
+
+      const maxColumns = Math.min(
+        6,
+        Math.max(...parsedRows.map((row) => row.length)),
+      );
+      if (maxColumns < 1) {
+        throw new Error('CSV enthalt keine Spalten.');
+      }
+
+      const importedColumns: WorksheetTableColumn[] = Array.from(
+        { length: maxColumns },
+        (_, index) => ({
+          id: `table-column-${Date.now()}-${index}`,
+          label: `Column ${index + 1}`,
+          span: index === maxColumns - 1
+            ? 24 - (maxColumns - 1)
+            : 1,
+          align: 'left' as const,
+          useTabularNums: false,
+        }),
+      );
+      const normalizedColumns = normalizedTableColumns(importedColumns);
+
+      const headerCandidates = parsedRows[0] ?? [];
+      const hasHeaderRow = worksheetTableCsvAutoHeader
+        && headerCandidates.some((cell) => cell.trim().length > 0)
+        && parsedRows.length > 1;
+      const sourceRows = hasHeaderRow ? parsedRows.slice(1) : parsedRows;
+      const dataRows = sourceRows
+        .map((row) => row.slice(0, maxColumns))
+        .filter((row) => row.some((cell) => cell.trim().length > 0));
+
+      if (!dataRows.length) {
+        throw new Error('Keine Datenzeilen nach optionaler Header-Zeile gefunden.');
+      }
+
+      const importedRows: WorksheetTableRow[] = dataRows.map((row, rowIndex) => ({
+        id: `table-row-import-${Date.now()}-${rowIndex}`,
+        isHeader: false,
+        cells: Object.fromEntries(normalizedColumns.map((column, columnIndex) => [
+          column.id,
+          row[columnIndex] ?? '',
+        ])),
+      }));
+
+      if (hasHeaderRow) {
+        importedRows.unshift({
+          id: `table-row-header-${Date.now()}`,
+          isHeader: true,
+          cells: Object.fromEntries(normalizedColumns.map((column, columnIndex) => [
+            column.id,
+            headerCandidates[columnIndex] ?? `Column ${columnIndex + 1}`,
+          ])),
+        });
+      }
+
+      setWorksheetTableAttr(
+        editor,
+        selectedWorksheetTablePos,
+        'columns',
+        normalizedColumns,
+      );
+      setWorksheetTableAttr(
+        editor,
+        selectedWorksheetTablePos,
+        'rows',
+        importedRows,
+      );
+      setWorksheetTableCsvError(null);
+      setWorksheetTableCsvText('');
+    } catch (error) {
+      setWorksheetTableCsvError(
+        error instanceof Error ? error.message : 'CSV-Import fehlgeschlagen.',
+      );
+    }
   };
 
   const updateMCQOption = (id: string, patch: Partial<MCQOption>) => {
@@ -3956,6 +4248,12 @@ export default function EditorPage() {
     }
   };
 
+  const waitForLanguageRender = () => new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+
   const exportPDF = async () => {
     setExportingPDF(true);
     setExportError(null);
@@ -3973,6 +4271,72 @@ export default function EditorPage() {
       setExportError(error instanceof Error ? error.message : 'PDF export failed.');
     } finally {
       setExportingPDF(false);
+    }
+  };
+
+  const exportTranslatedZip = async (scope: 'all' | 'selected') => {
+    if (!editor || exportingTranslatedZip) return;
+    const allLanguages = documentContext.translationLanguages;
+    const targetLanguages = scope === 'all'
+      ? allLanguages
+      : selectedTranslationLanguages.filter((code) => allLanguages.includes(code));
+    if (!targetLanguages.length) {
+      setPublishSuccess(false);
+      setExportError('Keine Übersetzungssprache ausgewählt.');
+      return;
+    }
+
+    const originalViewLanguage = viewLanguage;
+    setExportingTranslatedZip(true);
+    setExportError(null);
+    setPublishSuccess(false);
+    try {
+      const files: File[] = [];
+      for (const language of targetLanguages) {
+        setViewLanguage(language);
+        await waitForLanguageRender();
+        const { pdf } = await renderPDF();
+        files.push(new File(
+          [pdf],
+          `${worksheetTitle || 'worksheet'}-${language}.pdf`,
+          { type: 'application/pdf' },
+        ));
+      }
+
+      const formData = new FormData();
+      files.forEach((file) => formData.append('files', file, file.name));
+      formData.set('archiveName', `${worksheetTitle || 'worksheet'}-translations`);
+
+      const response = await fetch('/api/export/pdf-zip', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(result?.error ?? 'ZIP export failed.');
+      }
+
+      const archiveBlob = await response.blob();
+      const url = URL.createObjectURL(archiveBlob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${worksheetTitle || 'worksheet'}-translations.zip`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+
+      setPublishSuccess(true);
+      setExportError(
+        `ZIP export abgeschlossen (${targetLanguages.length} Sprache${targetLanguages.length === 1 ? '' : 'n'}).`,
+      );
+    } catch (error) {
+      setPublishSuccess(false);
+      setExportError(error instanceof Error ? error.message : 'ZIP export failed.');
+    } finally {
+      setViewLanguage(originalViewLanguage);
+      await waitForLanguageRender();
+      setExportingTranslatedZip(false);
     }
   };
 
@@ -4320,6 +4684,58 @@ export default function EditorPage() {
         : 'Worksheet JSON import failed.');
     } finally {
       setImportingJson(false);
+    }
+  };
+
+  const importJsonAtNodePosition = async () => {
+    if (!editor || nodeJsonImportAt === null) return;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(nodeJsonImportText);
+    } catch {
+      setNodeJsonImportError('Invalid JSON.');
+      return;
+    }
+
+    setImportingNodeJson(true);
+    setNodeJsonImportError(null);
+    try {
+      const blocksHtml = worksheetBlocksHtmlFromGeneratedJson(parsed);
+      if (!blocksHtml.trim()) {
+        throw new Error('No importable blocks found.');
+      }
+
+      const safePosition = Math.min(
+        editor.state.doc.content.size,
+        Math.max(0, nodeJsonImportAt),
+      );
+      const tr = editor.state.tr;
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = blocksHtml;
+      const parser = ProseMirrorDOMParser.fromSchema(editor.schema);
+      const slice = parser.parseSlice(wrapper, { preserveWhitespace: true });
+      if (slice.content.childCount === 0) {
+        throw new Error('JSON contains no supported blocks for insertion.');
+      }
+      tr.replaceRange(safePosition, safePosition, slice);
+      const selectionPos = tr.mapping.map(safePosition);
+      if (tr.doc.nodeAt(selectionPos)) {
+        tr.setSelection(NodeSelection.create(tr.doc, selectionPos));
+      }
+      editor.view.dispatch(tr.scrollIntoView());
+      editor.commands.focus();
+
+      setNodeJsonImportDialogOpen(false);
+      setNodeJsonImportText('');
+      setNodeJsonImportError(null);
+      setNodeJsonImportAt(null);
+    } catch (error) {
+      setNodeJsonImportError(error instanceof Error
+        ? error.message
+        : 'JSON block import failed.');
+    } finally {
+      setImportingNodeJson(false);
     }
   };
 
@@ -6760,6 +7176,19 @@ export default function EditorPage() {
 
               <div className="mt-4 space-y-3">
                 <label className="flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                  <span>Show instruction</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedWorksheetTableAttrs.showInstruction !== false}
+                    onChange={(event) => setWorksheetTableAttr(
+                      editor,
+                      selectedWorksheetTablePos,
+                      'showInstruction',
+                      event.target.checked,
+                    )}
+                  />
+                </label>
+                <label className="flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
                   <span>Hide blank numbers</span>
                   <input
                     type="checkbox"
@@ -6816,7 +7245,7 @@ export default function EditorPage() {
                     Columns
                   </p>
                   <span className="text-[10px] text-quaternary">
-                    12-column grid
+                    24-column grid
                   </span>
                 </div>
                 <div className="mt-2 space-y-2">
@@ -6836,8 +7265,8 @@ export default function EditorPage() {
                               aria-label={`Grid span of table column ${columnIndex + 1}`}
                               type="number"
                               min="1"
-                              max="12"
-                              step="1"
+                              max="24"
+                              step="0.5"
                               value={worksheetTableColumnSpan(column)}
                               onChange={(event) => {
                                 const span = event.currentTarget.valueAsNumber;
@@ -6846,6 +7275,21 @@ export default function EditorPage() {
                               }}
                               className="h-8 w-11 min-w-0 border border-primary bg-primary px-2 text-sm font-normal tabular-nums text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
                             />
+                          </label>
+                          <label className="flex items-center gap-1.5 text-xs font-semibold text-secondary whitespace-nowrap">
+                            <Toggle
+                              aria-label={`Use tabular numbers for table column ${columnIndex + 1}`}
+                              size="sm"
+                              isSelected={column.useTabularNums === true}
+                              onChange={(useTabularNums) => updateWorksheetTableColumns(
+                                selectedWorksheetTableAttrs.columns.map((currentColumn) => (
+                                  currentColumn.id === column.id
+                                    ? { ...currentColumn, useTabularNums }
+                                    : currentColumn
+                                )),
+                              )}
+                            />
+                            <span>TN</span>
                           </label>
                           <div
                             aria-label={`Alignment of table column ${columnIndex + 1}`}
@@ -6929,6 +7373,7 @@ export default function EditorPage() {
                         label: `Column ${nextIndex}`,
                         span: 1,
                         align: 'left',
+                        useTabularNums: false,
                       },
                     ]);
                   }}
@@ -7091,6 +7536,50 @@ export default function EditorPage() {
                   <PlusSquare className="size-4" />
                   Add row
                 </button>
+
+                <div className="mt-5 border-t border-secondary pt-4">
+                  <p className="text-xs font-semibold text-tertiary">
+                    CSV import
+                  </p>
+                  <label className="mt-2 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                    <span>Auto-detect header row</span>
+                    <input
+                      type="checkbox"
+                      checked={worksheetTableCsvAutoHeader}
+                      onChange={(event) => setWorksheetTableCsvAutoHeader(event.target.checked)}
+                    />
+                  </label>
+                  <p className="mt-1 text-xs text-quaternary">
+                    Wenn aktiv, wird die erste CSV-Zeile als Header erkannt und ubernommen.
+                  </p>
+                  <textarea
+                    rows={6}
+                    value={worksheetTableCsvText}
+                    onChange={(event) => {
+                      setWorksheetTableCsvText(event.target.value);
+                      if (worksheetTableCsvError) setWorksheetTableCsvError(null);
+                    }}
+                    placeholder={[
+                      'Begriff;Definition;Beispiel',
+                      'Haus;Gebaeude zum Wohnen;Ich wohne in einem Haus.',
+                      'Auto;Fahrzeug mit Motor;Das Auto ist rot.',
+                    ].join('\n')}
+                    className="mt-2 w-full resize-y border border-primary bg-primary px-3 py-2 font-mono text-xs text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  />
+                  <button
+                    type="button"
+                    onClick={importWorksheetTableCsv}
+                    disabled={!worksheetTableCsvText.trim()}
+                    className="mt-2 w-full border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    CSV importieren
+                  </button>
+                  {worksheetTableCsvError && (
+                    <p className="mt-2 text-xs text-error-primary" role="alert">
+                      {worksheetTableCsvError}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -8850,6 +9339,73 @@ export default function EditorPage() {
                 </select>
               </label>
             )}
+            {documentContext.translationLanguages.length > 0 && (
+              <div className="mt-4 rounded-lg border border-secondary bg-secondary p-3">
+                <p className="text-xs font-semibold text-tertiary">Batch-Übersetzung</p>
+                <p className="mt-1 text-xs text-quaternary">
+                  Übersetzt alle Glossar-Definitionen für alle oder ausgewählte Sprachen.
+                </p>
+                <div className="mt-3 space-y-1.5">
+                  {documentContext.translationLanguages.map((code) => {
+                    const checked = selectedTranslationLanguages.includes(code);
+                    return (
+                      <label
+                        key={`translate-select-${code}`}
+                        className="flex items-center gap-2 text-xs text-secondary"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(event) => {
+                            const next = event.target.checked
+                              ? [...selectedTranslationLanguages, code]
+                              : selectedTranslationLanguages.filter((value) => value !== code);
+                            setSelectedTranslationLanguages([...new Set(next)]);
+                          }}
+                        />
+                        {translationLanguageLabel(code)}
+                      </label>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={bulkTranslatingWorksheet}
+                    onClick={() => void bulkTranslateWorksheet('all')}
+                    className="rounded-md bg-brand-solid px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-solid_hover disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {bulkTranslatingWorksheet ? 'Übersetzt…' : 'Alle übersetzen'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={bulkTranslatingWorksheet}
+                    onClick={() => void bulkTranslateWorksheet('selected')}
+                    className="rounded-md border border-primary bg-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Ausgewählte
+                  </button>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={exportingTranslatedZip}
+                    onClick={() => void exportTranslatedZip('all')}
+                    className="rounded-md bg-brand-solid px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-solid_hover disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {exportingTranslatedZip ? 'ZIP wird erstellt…' : 'ZIP alle'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={exportingTranslatedZip}
+                    onClick={() => void exportTranslatedZip('selected')}
+                    className="rounded-md border border-primary bg-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    ZIP ausgewählte
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="border-t border-secondary pt-5">
@@ -9214,6 +9770,14 @@ export default function EditorPage() {
         editor={editor}
         insertAt={insertBlockAt}
         open={insertPaletteOpen}
+        onStartJsonImport={(insertAt) => {
+          setInsertPaletteOpen(false);
+          setInsertBlockAt(null);
+          setNodeJsonImportAt(insertAt);
+          setNodeJsonImportText('');
+          setNodeJsonImportError(null);
+          setNodeJsonImportDialogOpen(true);
+        }}
         onStartOccupationPortrait={(insertAt) => {
           setInsertPaletteOpen(false);
           setInsertBlockAt(null);
@@ -9229,6 +9793,69 @@ export default function EditorPage() {
           setInsertBlockAt(null);
         }}
       />
+      {nodeJsonImportDialogOpen && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !importingNodeJson) {
+              setNodeJsonImportDialogOpen(false);
+              setNodeJsonImportAt(null);
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="node-json-import-title"
+            className="w-full max-w-3xl rounded-xl border border-secondary bg-primary p-6 shadow-xl"
+          >
+            <h2 id="node-json-import-title" className="text-lg font-semibold text-primary">
+              JSON Import (Insert Blocks)
+            </h2>
+            <p className="mt-1 text-sm text-tertiary">
+              Import worksheet blocks at the selected position. Worksheet settings are ignored here.
+            </p>
+            <textarea
+              aria-label="Worksheet JSON block import"
+              className="mt-4 min-h-[24rem] w-full resize-y rounded-md border border-primary bg-primary px-3 py-3 font-mono text-xs leading-5 text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              onChange={(event) => {
+                setNodeJsonImportText(event.target.value);
+                setNodeJsonImportError(null);
+              }}
+              placeholder={'Paste worksheet JSON here'}
+              spellCheck={false}
+              value={nodeJsonImportText}
+            />
+            {nodeJsonImportError && (
+              <p className="mt-2 text-sm text-error-primary" role="alert">
+                {nodeJsonImportError}
+              </p>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <Button
+                color="secondary"
+                size="md"
+                isDisabled={importingNodeJson}
+                onPress={() => {
+                  setNodeJsonImportDialogOpen(false);
+                  setNodeJsonImportAt(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                color="primary"
+                size="md"
+                isDisabled={importingNodeJson || !nodeJsonImportText.trim()}
+                iconLeading={importingNodeJson ? <Loading01 className="size-4.5 animate-spin" /> : undefined}
+                onPress={() => void importJsonAtNodePosition()}
+              >
+                {importingNodeJson ? 'Importing…' : 'Import Blocks'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       <VocabularyOneAIModal
         context={documentContext}
         open={vocabularyOneInsertAt !== null}

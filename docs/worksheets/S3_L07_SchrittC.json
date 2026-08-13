@@ -1,0 +1,252 @@
+{
+  "schemaVersion": 1,
+  "worksheets": [
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt C | Eine Hochzeit in Nachrichten",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-informal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt C",
+        "languageCompetencies": ["Kurznachrichten über ein Fest verstehen", "über ein Fest berichten"],
+        "learnerContext": "Erwachsene Lernende lesen einen Nachrichtenverlauf von einer Hochzeit und berichten danach über ein eigenes Fest."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Katrin schreibt von der Hochzeit", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p><strong>13.50 Uhr – Katrin:</strong> Hoi Miriam, gleich geht's los. Wir sind schon in der Kirche und in zehn Minuten beginnt die Trauung. So viele Leute hier und eine ganz feierliche Stimmung.</p><p><strong>13.55 Uhr – Miriam:</strong> Gugus Katrin! Oh Mann, so blöd, dass ich krank bin. Sag allen einen Gruss von mir!</p><p><strong>15.15 Uhr – Katrin:</strong> Jetzt ist die Trauung schon vorbei. Es war wunderschön. Stell dir vor, ich habe sogar geweint. Fast alle haben geweint, nur die Braut nicht.</p><p><strong>15.50 Uhr – Katrin:</strong> Wow, das ist wirklich eine grosse Feier hier – sicher 200 Gäste!</p><p><strong>16.04 Uhr – Katrin:</strong> Aber eine Panne: Die beiden haben die Torte angeschnitten, dabei ist sie fast heruntergefallen. Celias Kleid – voller Rahm!</p><p><strong>16.06 Uhr – Katrin:</strong> Übrigens: Celia und Valentin haben sich über dein Geschenk ganz besonders gefreut. Super Idee, die Espressomaschine!</p><p><strong>18.45 Uhr – Katrin:</strong> Ja, wir essen! Fein!</p><p><strong>20.17 Uhr – Katrin:</strong> Valentin ist Celia auf das lange weisse Kleid getreten und beide sind fast hingefallen. Hahaha!</p><p><strong>20.46 Uhr – Katrin:</strong> Und danach haben sie auch noch einen Walzer mit ihren Eltern getanzt.</p><p><strong>12.00 Uhr (nächster Tag) – Katrin:</strong> Miri, das war noch eine wilde Feier. Alle haben getanzt: Jung und Alt. Tolle Musik, super Stimmung. Ich war erst um fünf Uhr zu Hause.</p>"
+        },
+        {
+          "type": "trueFalse",
+          "instruction": "Lesen Sie die Nachrichten. Was ist richtig, was ist falsch?",
+          "trueLabel": "richtig",
+          "falseLabel": "falsch",
+          "showFirstAsExample": true,
+          "rows": [
+            { "id": "hz-1", "text": "Auf der Feier waren nur wenige Gäste.", "correctValue": "false" },
+            { "id": "hz-2", "text": "Celia hat in der Kirche geweint.", "correctValue": "false" },
+            { "id": "hz-3", "text": "Die Torte ist auf den Boden gefallen.", "correctValue": "false" },
+            { "id": "hz-4", "text": "Der Hochzeitswalzer hat nicht so gut geklappt.", "correctValue": "true" },
+            { "id": "hz-5", "text": "Miriam ist nicht an der Hochzeit, weil sie krank ist.", "correctValue": "true" },
+            { "id": "hz-6", "text": "Miriam hat eine Espressomaschine geschenkt.", "correctValue": "true" },
+            { "id": "hz-7", "text": "Das Fest hat Katrin sehr gut gefallen.", "correctValue": "true" }
+          ]
+        },
+        { "type": "heading", "text": "Der Ablauf", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "matchingPairs",
+          "instruction": "Was passt zusammen? Ordnen Sie zu.",
+          "answerStyle": "writingLines",
+          "shuffleRight": true,
+          "shuffleSeed": 3,
+          "showFirstAsExample": true,
+          "pairs": [
+            { "id": "ab-1", "left": "Zuerst", "right": "hat die Trauung in der Kirche stattgefunden." },
+            { "id": "ab-2", "left": "Dann", "right": "hat es Torte gegeben und das Brautpaar hat die Geschenke ausgepackt." },
+            { "id": "ab-3", "left": "Später", "right": "haben alle zu Abend gegessen." },
+            { "id": "ab-4", "left": "Nach dem Abendessen", "right": "hat das Brautpaar einen Walzer getanzt." },
+            { "id": "ab-5", "left": "Am Ende", "right": "haben alle bis spät in die Nacht getanzt und gefeiert." }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt C | Über ein Fest schreiben",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-informal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt C",
+        "languageCompetencies": ["ein E-Mail über ein Fest schreiben", "einen Ablauf beschreiben"],
+        "learnerContext": "Schreibtraining: über eine Hochzeit oder ein anderes Fest berichten."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Eine Hochzeitsfeier beschreiben", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "worksheetTable",
+          "instruction": "Bringen Sie den Ablauf in die richtige Reihenfolge. Schreiben Sie die Nummer 1 bis 6.",
+          "showInstruction": true,
+          "showHeader": true,
+          "showFirstAsExample": true,
+          "blankWidthFactor": 1,
+          "columns": [
+            { "id": "nummer", "label": "Nr.", "span": 3, "align": "center" },
+            { "id": "szene", "label": "Was passiert?", "span": 21, "align": "left" }
+          ],
+          "rows": [
+            { "id": "sz-1", "cells": { "nummer": "1", "szene": "Bei der Trauung sagt das Brautpaar: «Ja!»" } },
+            { "id": "sz-2", "cells": { "nummer": "{{blank:2}}", "szene": "Viele Freunde und Verwandte warten vor der Kirche und gratulieren." } },
+            { "id": "sz-3", "cells": { "nummer": "{{blank:3}}", "szene": "Das Brautpaar und die Gäste fahren zum Restaurant." } },
+            { "id": "sz-4", "cells": { "nummer": "{{blank:4}}", "szene": "Alle essen und trinken im Restaurant. Die Torte finden alle besonders gut." } },
+            { "id": "sz-5", "cells": { "nummer": "{{blank:5}}", "szene": "Das Brautpaar tanzt zuerst." } },
+            { "id": "sz-6", "cells": { "nummer": "{{blank:6}}", "szene": "Alle tanzen wild bis zum Morgen." } }
+          ]
+        },
+        { "type": "heading", "text": "Das E-Mail ergänzen", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Ergänzen Sie das E-Mail mit den Informationen aus der Tabelle.",
+          "items": [
+            "Liebe Sara, stell Dir vor, am Wochenende war ich an der {{blank:Hochzeit}} von Bernhard und Bianca.",
+            "Natürlich haben Bernhard und Bianca bei der Trauung {{blank:Ja}} gesagt.",
+            "Ich musste weinen, weil es so wunderschön war. Vor der Kirche haben viele Freunde und Verwandte {{blank:gratuliert}}.",
+            "Dann sind wir alle zum {{blank:Restaurant}} gefahren.",
+            "Das Hochzeitsessen war wunderbar, besonders gut war die {{blank:Torte}}.",
+            "Nach dem Hochzeitsessen hat das {{blank:Brautpaar}} zuerst getanzt.",
+            "Am Ende haben alle bis zum {{blank:Morgen}} getanzt. Es war sehr lustig!"
+          ],
+          "widthFactor": 1.5,
+          "showFirstAsExample": true
+        },
+        { "type": "heading", "text": "Ihr eigenes Fest", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "richText",
+          "html": "<p>Schreiben Sie ein E-Mail über ein besonders schönes Fest. Sammeln Sie zuerst Informationen:</p><ul><li>Was haben Sie gefeiert? Wann und wo?</li><li>Wer war dabei? Was haben Sie getragen?</li><li>Wie haben Sie gefeiert? Wie war die Stimmung?</li><li>Was ist alles passiert?</li></ul><p>Diese Wörter helfen beim Ordnen: <em>Zuerst … | Dann … | Danach … | Nach dem Essen … | Am Ende …</em></p>"
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt C | Wortschatz Fest und Aussprache o / ö",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt C",
+        "languageCompetencies": ["Wortfeld Hochzeit und Fest", "Laute o und ö unterscheiden"]
+      },
+      "blocks": [
+        { "type": "heading", "text": "Wortschatz: Hochzeit und Fest", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "glossary",
+          "preset": "default",
+          "showInstruction": true,
+          "instruction": "Lesen Sie die Wörter und die Beispielsätze.",
+          "showColumnHeaders": true,
+          "showExample": true,
+          "headerLabels": ["Wort", "Erklärung", "Beispiel"],
+          "termWidth": "25",
+          "entries": [
+            { "term": "die Trauung, -en", "definition": "die Zeremonie in der Kirche oder auf dem Amt", "example": "In zehn Minuten beginnt die Trauung." },
+            { "term": "das Brautpaar, -e", "definition": "die Braut und der Bräutigam zusammen", "example": "Das Brautpaar tanzt zuerst." },
+            { "term": "die Braut, -̈e", "definition": "die Frau, die heiratet", "example": "Nur die Braut hat nicht geweint." },
+            { "term": "der Bräutigam, -e", "definition": "der Mann, der heiratet", "example": "Der Bräutigam war sehr nervös." },
+            { "term": "die Hochzeitstorte, -n", "definition": "die grosse Torte am Hochzeitsfest", "example": "Die Hochzeitstorte war super gut." },
+            { "term": "die Stimmung, -en", "definition": "wie sich die Leute an einem Fest fühlen", "example": "Es war eine feierliche Stimmung." },
+            { "term": "gratulieren", "definition": "jemandem Glück wünschen", "example": "Alle haben dem Brautpaar gratuliert." },
+            { "term": "die Panne, -n", "definition": "ein kleines Problem, etwas geht schief", "example": "Aber dann gab es eine Panne." },
+            { "term": "hinfallen", "definition": "auf den Boden fallen", "example": "Beide sind fast hingefallen." },
+            { "term": "der Hochzeitswalzer, -", "definition": "der erste Tanz vom Brautpaar", "example": "Jetzt kommt der Hochzeitswalzer." }
+          ]
+        },
+        { "type": "heading", "text": "o oder ö?", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "mcm",
+          "instruction": "Hören Sie oder lesen Sie laut. Kreuzen Sie den richtigen Laut an.",
+          "showFirstAsExample": true,
+          "rows": [
+            { "id": "oe-1", "text": "off…n (die Tür ist nicht zu)", "options": [ { "id": "oe-1-o", "text": "o", "correct": true }, { "id": "oe-1-oe", "text": "ö", "correct": false } ] },
+            { "id": "oe-2", "text": "…ffnen (die Tür aufmachen)", "options": [ { "id": "oe-2-o", "text": "o", "correct": false }, { "id": "oe-2-oe", "text": "ö", "correct": true } ] },
+            { "id": "oe-3", "text": "sch…n (das war wunderbar)", "options": [ { "id": "oe-3-o", "text": "o", "correct": false }, { "id": "oe-3-oe", "text": "ö", "correct": true } ] },
+            { "id": "oe-4", "text": "sch…n (bereits, jetzt gleich)", "options": [ { "id": "oe-4-o", "text": "o", "correct": true }, { "id": "oe-4-oe", "text": "ö", "correct": false } ] },
+            { "id": "oe-5", "text": "k…mmen (an einen Ort gehen)", "options": [ { "id": "oe-5-o", "text": "o", "correct": true }, { "id": "oe-5-oe", "text": "ö", "correct": false } ] },
+            { "id": "oe-6", "text": "k…nnen (etwas ist möglich)", "options": [ { "id": "oe-6-o", "text": "o", "correct": false }, { "id": "oe-6-oe", "text": "ö", "correct": true } ] },
+            { "id": "oe-7", "text": "bl…d (nicht gut, ärgerlich)", "options": [ { "id": "oe-7-o", "text": "o", "correct": false }, { "id": "oe-7-oe", "text": "ö", "correct": true } ] },
+            { "id": "oe-8", "text": "die H…se (ein Kleidungsstück)", "options": [ { "id": "oe-8-o", "text": "o", "correct": true }, { "id": "oe-8-oe", "text": "ö", "correct": false } ] }
+          ]
+        },
+        {
+          "type": "richText",
+          "html": "<p>Lesen Sie das Gespräch laut und achten Sie auf <strong>o</strong> und <strong>ö</strong>:</p><blockquote><p>– So blöd, dass wir nicht an die Hochzeit kommen konnten.<br />– Ja, es war so schön!<br />– Wenigstens können wir die Fotos anschauen.<br />– Schaut mal hier: Hier ist Jonas auf seine Hose getreten.<br />– Typisch! Tja, er war wohl total nervös.</p></blockquote>"
+        },
+        { "type": "heading", "text": "Festwörter suchen", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "wordGrid",
+          "instruction": "Suchen Sie die acht Wörter rund um das Fest.",
+          "columns": 14,
+          "rows": 14,
+          "rowHeight": 1,
+          "showWordList": true,
+          "directions": {
+            "leftToRight": true,
+            "rightToLeft": false,
+            "topToBottom": true,
+            "bottomToTop": false,
+            "northWestToSouthEast": true,
+            "southWestToNorthEast": false,
+            "northEastToSouthWest": false,
+            "southEastToNorthWest": false
+          },
+          "words": ["TRAUUNG", "BRAUTPAAR", "TORTE", "STIMMUNG", "GAESTE", "WALZER", "KIRCHE", "FEIER"],
+          "generation": 15
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt C | Lernkarten",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "learning-cards",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt C"
+      },
+      "blocks": [
+        {
+          "type": "learningCards",
+          "title": "L7 Schritt C | Hochzeit und Fest",
+          "sidedness": "double",
+          "frontTextSize": "m",
+          "backTextSize": "s",
+          "items": [
+            { "front": "die Hochzeit, -en", "back": "das Fest, wenn zwei Menschen heiraten" },
+            { "front": "die Trauung, -en", "back": "die Zeremonie in der Kirche oder auf dem Amt" },
+            { "front": "das Brautpaar, -e", "back": "die Braut und der Bräutigam zusammen" },
+            { "front": "die Braut, -̈e", "back": "die Frau, die heiratet" },
+            { "front": "der Bräutigam, -e", "back": "der Mann, der heiratet" },
+            { "front": "der Gast, -̈e", "back": "eine eingeladene Person" },
+            { "front": "die Hochzeitstorte, -n", "back": "die grosse Torte am Hochzeitsfest" },
+            { "front": "der Hochzeitswalzer, -", "back": "der erste Tanz vom Brautpaar" },
+            { "front": "die Stimmung, -en", "back": "wie sich die Leute an einem Fest fühlen" },
+            { "front": "feierlich", "back": "ernst und schön, wie an einem besonderen Fest" },
+            { "front": "gratulieren", "back": "jemandem Glück wünschen" },
+            { "front": "weinen", "back": "Tränen in den Augen haben" },
+            { "front": "die Panne, -n", "back": "ein kleines Problem, etwas geht schief" },
+            { "front": "hinfallen", "back": "auf den Boden fallen" },
+            { "front": "auspacken", "back": "ein Geschenk aus dem Papier nehmen" },
+            { "front": "anschneiden", "back": "das erste Stück von der Torte schneiden" },
+            { "front": "der Verwandte, -n", "back": "eine Person aus der Familie" },
+            { "front": "Zuerst … Dann … Danach … Am Ende …", "back": "Wörter, um einen Ablauf zu erzählen" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,334 @@
+{
+  "schemaVersion": 1,
+  "worksheets": [
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt E | Ein Fest planen",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-informal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt E",
+        "languageCompetencies": ["ein Fest planen", "sagen, was einem wichtig ist"],
+        "learnerContext": "Erwachsene Lernende planen gemeinsam ein Fest und sagen, was ihnen dabei wichtig ist."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Sabine und Khaled planen ein Fest", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p>Sabine und Khaled wollen zusammen ein Fest organisieren. Sie sind nicht immer gleicher Meinung.</p><p>Diese Redemittel brauchen Sie:</p><ul><li>Ich finde es toll, wenn …</li><li>Mir ist … wichtig. / Mir ist wichtig, dass …</li><li>Die Hauptsache ist, dass … / Hauptsache, …</li><li>Am wichtigsten ist, dass …</li><li>Ich finde das nicht so toll. / Ist das wirklich so wichtig? / Muss das sein?</li></ul>"
+        },
+        {
+          "type": "mcm",
+          "instruction": "Wer sagt das? Kreuzen Sie an.",
+          "showFirstAsExample": true,
+          "rows": [
+            {
+              "id": "sk-1",
+              "text": "Man kann die Gäste per Anruf einladen.",
+              "options": [
+                { "id": "sk-1-s", "text": "Sabine", "correct": false },
+                { "id": "sk-1-k", "text": "Khaled", "correct": true }
+              ]
+            },
+            {
+              "id": "sk-2",
+              "text": "Ich möchte mit Kollegen feiern.",
+              "options": [
+                { "id": "sk-2-s", "text": "Sabine", "correct": true },
+                { "id": "sk-2-k", "text": "Khaled", "correct": false }
+              ]
+            },
+            {
+              "id": "sk-3",
+              "text": "Ich möchte eine Tanzparty machen.",
+              "options": [
+                { "id": "sk-3-s", "text": "Sabine", "correct": false },
+                { "id": "sk-3-k", "text": "Khaled", "correct": true }
+              ]
+            },
+            {
+              "id": "sk-4",
+              "text": "Hauptsache, das Essen ist gut und wir unterhalten uns gut.",
+              "options": [
+                { "id": "sk-4-s", "text": "Sabine", "correct": true },
+                { "id": "sk-4-k", "text": "Khaled", "correct": false }
+              ]
+            },
+            {
+              "id": "sk-5",
+              "text": "Mir ist wichtig, dass der Raum gross ist und wir genug Platz haben.",
+              "options": [
+                { "id": "sk-5-s", "text": "Sabine", "correct": false },
+                { "id": "sk-5-k", "text": "Khaled", "correct": true }
+              ]
+            },
+            {
+              "id": "sk-6",
+              "text": "Man sollte eine Party zu Hause feiern.",
+              "options": [
+                { "id": "sk-6-s", "text": "Sabine", "correct": true },
+                { "id": "sk-6-k", "text": "Khaled", "correct": false }
+              ]
+            },
+            {
+              "id": "sk-7",
+              "text": "Ich finde es toll, wenn die Leute Spass haben und die Stimmung gut ist.",
+              "options": [
+                { "id": "sk-7-s", "text": "Sabine", "correct": false },
+                { "id": "sk-7-k", "text": "Khaled", "correct": true }
+              ]
+            },
+            {
+              "id": "sk-8",
+              "text": "Ich finde, wir müssen den Raum nicht dekorieren.",
+              "options": [
+                { "id": "sk-8-s", "text": "Sabine", "correct": true },
+                { "id": "sk-8-k", "text": "Khaled", "correct": false }
+              ]
+            }
+          ]
+        },
+        { "type": "heading", "text": "Das richtige Verb", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Ergänzen Sie das passende Verb.",
+          "items": [
+            "Nächsten Monat habe ich Geburtstag. Soll ich eine Mottoparty machen oder nicht? Ich kann mich nicht {{blank:entscheiden}}.",
+            "Ich finde es gut, wenn man zusammensitzen, schön essen und sich {{blank:unterhalten}} kann.",
+            "Da müssen wir auch nicht so viel {{blank:vorbereiten}} – nur kochen und den Tisch decken.",
+            "Kochen? Nein, davon kannst du mich nicht {{blank:überzeugen}}.",
+            "Ich finde: Jeder sollte etwas mitbringen und wir {{blank:kaufen}} nur die Getränke.",
+            "Und das Wohnzimmer müssen wir schön {{blank:dekorieren}}. Mir ist wichtig, dass es nett aussieht."
+          ],
+          "showWordBank": true,
+          "distractors": ["probieren", "weinen"],
+          "widthFactor": 1.5,
+          "showFirstAsExample": true
+        },
+        { "type": "heading", "text": "Unser Fest", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "worksheetTable",
+          "instruction": "Planen Sie in kleinen Gruppen ein Fest. Notieren Sie Ihre Entscheidungen.",
+          "showInstruction": true,
+          "showHeader": true,
+          "showFirstAsExample": true,
+          "columns": [
+            { "id": "punkt", "label": "Was?", "span": 7, "align": "left" },
+            { "id": "entscheidung", "label": "Unsere Entscheidung", "span": 10, "align": "left" },
+            { "id": "wichtig", "label": "Wie wichtig?", "span": 7, "align": "left" }
+          ],
+          "rows": [
+            { "id": "fp-1", "cells": { "punkt": "Thema / Motto", "entscheidung": "Musik aus aller Welt", "wichtig": "sehr wichtig" } },
+            { "id": "fp-2", "cells": { "punkt": "Termin und Uhrzeit", "entscheidung": "", "wichtig": "" } },
+            { "id": "fp-3", "cells": { "punkt": "Raum", "entscheidung": "", "wichtig": "" } },
+            { "id": "fp-4", "cells": { "punkt": "Gäste", "entscheidung": "", "wichtig": "" } },
+            { "id": "fp-5", "cells": { "punkt": "Essen und Getränke", "entscheidung": "", "wichtig": "" } },
+            { "id": "fp-6", "cells": { "punkt": "Dekoration", "entscheidung": "", "wichtig": "" } },
+            { "id": "fp-7", "cells": { "punkt": "Unterhaltung / Musik", "entscheidung": "", "wichtig": "" } },
+            { "id": "fp-8", "cells": { "punkt": "Budget", "entscheidung": "", "wichtig": "" } }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt E | Einladungen lesen und schreiben",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-informal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt E",
+        "languageCompetencies": ["eine Einladung verstehen", "auf eine Einladung antworten"],
+        "learnerContext": "Lese- und Schreibtraining zu Einladungen, mit einem authentischen Schweizer Beispiel."
+      },
+      "blocks": [
+        { "type": "heading", "text": "Einladung zum «Weissen Dinner»", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "richText",
+          "html": "<p>Auch dieses Jahr möchte der Verein «Weisses Dinner St. Gallen» die Bewohner der Stadt mit dieser Veranstaltung zusammenbringen. Das «Weisse Dinner» findet am Samstag, 8. Juli, ab 18.30 Uhr auf dem Gallusplatz statt. Und alle sind eingeladen: Familien, Nachbarn, Freunde, Kollegen.</p><p>Das «Weisse Dinner» ist ein Treffen für Menschen aus verschiedenen Kulturen. Es ist nicht politisch und alle können kostenlos teilnehmen.</p><p>Und so funktioniert das «Weisse Dinner»:</p><ul><li><strong>Kleidung:</strong> Bitte tragt nur weisse Kleidung.</li><li><strong>Mitbringen:</strong> Essen und Getränke, Tisch und Stühle, weisses Geschirr, gern auch Blumen und andere Dekoration – alles in Weiss.</li><li><strong>Wichtig:</strong> Bitte nehmt alles wieder mit nach Hause. Es sollte kein Abfall zurückbleiben.</li><li><strong>Sicherheit:</strong> Bringt bitte keine Schirme und Grills mit.</li><li>Bei schlechtem Wetter muss die Veranstaltung leider ausfallen.</li></ul>"
+        },
+        {
+          "type": "trueFalse",
+          "instruction": "Lesen Sie den ganzen Text. Was ist richtig, was ist falsch?",
+          "trueLabel": "richtig",
+          "falseLabel": "falsch",
+          "showFirstAsExample": true,
+          "rows": [
+            { "id": "wd-1", "text": "Man darf nur Kleider in Weiss anziehen.", "correctValue": "true" },
+            { "id": "wd-2", "text": "Der Verein kümmert sich um Essen, Tische und Dekoration.", "correctValue": "false" },
+            { "id": "wd-3", "text": "Man darf einen Grill mitnehmen.", "correctValue": "false" },
+            { "id": "wd-4", "text": "Man kann den Abfall dort lassen.", "correctValue": "false" },
+            { "id": "wd-5", "text": "Für das Fest muss man nichts bezahlen.", "correctValue": "true" },
+            { "id": "wd-6", "text": "Wenn das Wetter schlecht ist, findet das Fest nicht statt.", "correctValue": "true" },
+            { "id": "wd-7", "text": "Nur Vereinsmitglieder dürfen kommen.", "correctValue": "false" }
+          ]
+        },
+        { "type": "heading", "text": "Eine Einladung schreiben", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "fillInTheBlank",
+          "instruction": "Ergänzen Sie die Einladung.",
+          "items": [
+            "Hallo miteinander, wir organisieren eine Party. Unser {{blank:Motto}} ist: Wir tanzen!",
+            "Die Party {{blank:findet}} am Samstag, 3. April, ab 22 Uhr statt.",
+            "Wir {{blank:feiern}} im Quartierzentrum! Bringt gern eure Freunde mit.",
+            "Natürlich haben wir tolle {{blank:Musik}}: aus Europa, aus Afrika, aus Asien.",
+            "Zu essen und trinken {{blank:gibt}} es natürlich auch etwas: Pizza, Salate, Cola, Wasser, Apfelsaft.",
+            "Wir dürfen bis 3 Uhr früh tanzen. Wir {{blank:freuen}} uns auf euch! Bis dann, Evi und Philipp"
+          ],
+          "widthFactor": 1.2,
+          "showFirstAsExample": true
+        },
+        { "type": "heading", "text": "Auf eine Einladung antworten", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "richText",
+          "html": "<p>Lesen Sie die Einladung:</p><blockquote><p>Alle feiern Silvester! Wir feiern Neujahr! Wenn alle schlafen, machen wir unsere Party.<br />Ort: bei Michi im Garten. Zeit: 1. Januar, 6 Uhr morgens.<br />Antworten bitte an Michi oder mich. Jana</p></blockquote><p>Schreiben Sie eine Antwort. Schreiben Sie,</p><ul><li>dass Sie kommen,</li><li>was Sie mitbringen,</li><li>dass Sie Ihren Hund mitbringen möchten.</li></ul><p>Beginnen Sie so: <em>Hallo Michi, vielen Dank …</em></p>"
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt E | Wortschatz Fest und Wortbildung",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "worksheet",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt E",
+        "languageCompetencies": ["Wortfeld Fest organisieren", "zusammengesetzte Nomen bilden"]
+      },
+      "blocks": [
+        { "type": "heading", "text": "Wörter für ein Fest", "level": 1, "numbered": false, "gapAfter": 2 },
+        {
+          "type": "matchingPairs",
+          "instruction": "Bilden Sie zusammengesetzte Nomen und ordnen Sie zu.",
+          "answerStyle": "writingLines",
+          "shuffleRight": true,
+          "shuffleSeed": 2,
+          "showFirstAsExample": true,
+          "pairs": [
+            { "id": "wb-1", "left": "Geburtstag + Kuchen", "right": "der Geburtstagskuchen" },
+            { "id": "wb-2", "left": "Geburtstag + Party", "right": "die Geburtstagsparty" },
+            { "id": "wb-3", "left": "Hochzeit + Tag", "right": "der Hochzeitstag" },
+            { "id": "wb-4", "left": "Hochzeit + Kleid", "right": "das Hochzeitskleid" },
+            { "id": "wb-5", "left": "Weihnachten + Fest", "right": "das Weihnachtsfest" },
+            { "id": "wb-6", "left": "Geburtstag + Karte", "right": "die Geburtstagskarte" },
+            { "id": "wb-7", "left": "Quartier + Fest", "right": "das Quartierfest" }
+          ]
+        },
+        {
+          "type": "richText",
+          "html": "<p>Sprechen Sie zuerst langsam, dann schnell:</p><ul><li>Hoch·zeits·tag – Hochzeitstag</li><li>Weih·nachts·fest – Weihnachtsfest</li><li>Ge·burts·tags·ge·schenk – Geburtstagsgeschenk</li></ul><p>Und jetzt ganze Sätze:</p><ul><li>Herzlichen Glückwunsch zum Hochzeitstag.</li><li>Alles Gute zum Geburtstag, das wünschen wir dir.</li><li>Ein frohes Weihnachtsfest! Hier: ein Weihnachtsgeschenk für dich.</li></ul>"
+        },
+        { "type": "heading", "text": "Wörter rund ums Fest", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "glossary",
+          "preset": "default",
+          "showInstruction": true,
+          "instruction": "Lesen Sie die Wörter und die Beispielsätze.",
+          "showColumnHeaders": true,
+          "showExample": true,
+          "headerLabels": ["Wort", "Erklärung", "Beispiel"],
+          "termWidth": "25",
+          "entries": [
+            { "term": "das Motto, -s", "definition": "das Thema von einem Fest", "example": "Unser Motto ist: Wir tanzen!" },
+            { "term": "stattfinden", "definition": "an einem Ort und zu einer Zeit passieren", "example": "Die Party findet am Samstag statt." },
+            { "term": "dekorieren", "definition": "einen Raum schön machen", "example": "Wir dekorieren das Wohnzimmer." },
+            { "term": "die Dekoration, -en", "definition": "alles, was einen Raum schön macht", "example": "Bringt gern Blumen als Dekoration mit." },
+            { "term": "die Unterhaltung", "definition": "Musik, Spiele und alles, was Spass macht", "example": "Für die Unterhaltung sorgt eine Band." },
+            { "term": "sich unterhalten", "definition": "mit jemandem sprechen", "example": "Wir haben uns lange unterhalten." },
+            { "term": "das Budget, -s", "definition": "das Geld, das man ausgeben kann", "example": "Unser Budget ist klein." },
+            { "term": "sich entscheiden", "definition": "eine Wahl treffen", "example": "Ich kann mich nicht entscheiden." },
+            { "term": "überzeugen", "definition": "jemanden von einer Idee begeistern", "example": "Davon kannst du mich nicht überzeugen." },
+            { "term": "kostenlos", "definition": "man muss nichts bezahlen", "example": "Alle können kostenlos teilnehmen." },
+            { "term": "ausfallen", "definition": "nicht stattfinden", "example": "Bei schlechtem Wetter fällt das Fest aus." },
+            { "term": "der Abfall, -̈e", "definition": "was man wegwirft", "example": "Es sollte kein Abfall zurückbleiben." }
+          ]
+        },
+        { "type": "heading", "text": "Festwörter suchen", "level": 2, "numbered": true, "gapAfter": 1 },
+        {
+          "type": "wordGrid",
+          "instruction": "Suchen Sie die acht Wörter zum Thema Fest.",
+          "columns": 14,
+          "rows": 14,
+          "rowHeight": 1,
+          "showWordList": true,
+          "directions": {
+            "leftToRight": true,
+            "rightToLeft": false,
+            "topToBottom": true,
+            "bottomToTop": false,
+            "northWestToSouthEast": true,
+            "southWestToNorthEast": false,
+            "northEastToSouthWest": false,
+            "southEastToNorthWest": false
+          },
+          "words": ["MOTTO", "BUDGET", "DEKORATION", "MUSIK", "EINLADUNG", "GETRAENKE", "STIMMUNG", "PARTY"],
+          "generation": 21
+        }
+      ]
+    },
+    {
+      "title": "Schritte plus Neu 3 | L7 Schritt E | Lernkarten",
+      "documentSize": "a4-portrait",
+      "showSolutions": false,
+      "status": "draft",
+      "context": {
+        "worksheetLanguage": "de-formal",
+        "worksheetType": "learning-cards",
+        "subject": "DaZ",
+        "ageGroups": ["adults"],
+        "contentLanguage": "de-CH",
+        "country": "Schweiz",
+        "languageLevel": "A2",
+        "curriculum": "Schritte plus Neu 3 Schweiz, Lektion 7 Feste und Geschenke, Schritt E"
+      },
+      "blocks": [
+        {
+          "type": "learningCards",
+          "title": "L7 Schritt E | Ein Fest planen",
+          "sidedness": "double",
+          "frontTextSize": "m",
+          "backTextSize": "s",
+          "items": [
+            { "front": "das Motto, -s", "back": "das Thema von einem Fest" },
+            { "front": "stattfinden", "back": "Die Party findet am Samstag statt." },
+            { "front": "einladen", "back": "jemanden bitten, zum Fest zu kommen" },
+            { "front": "die Einladung, -en", "back": "der Text oder die Karte mit den Infos zum Fest" },
+            { "front": "dekorieren", "back": "einen Raum schön machen" },
+            { "front": "die Dekoration, -en", "back": "alles, was einen Raum schön macht" },
+            { "front": "die Unterhaltung", "back": "Musik, Spiele und alles, was Spass macht" },
+            { "front": "sich unterhalten", "back": "mit jemandem sprechen" },
+            { "front": "das Budget, -s", "back": "das Geld, das man ausgeben kann" },
+            { "front": "sich entscheiden", "back": "eine Wahl treffen" },
+            { "front": "überzeugen", "back": "jemanden von einer Idee begeistern" },
+            { "front": "vorbereiten", "back": "etwas fertig machen, bevor es losgeht" },
+            { "front": "kostenlos", "back": "man muss nichts bezahlen" },
+            { "front": "ausfallen", "back": "nicht stattfinden" },
+            { "front": "die Veranstaltung, -en", "back": "ein organisierter Anlass" },
+            { "front": "Mir ist wichtig, dass …", "back": "Mir ist wichtig, dass der Raum gross ist." },
+            { "front": "Hauptsache, …", "back": "Hauptsache, das Essen ist gut." },
+            { "front": "Ich finde es toll, wenn …", "back": "Ich finde es toll, wenn die Stimmung gut ist." }
+          ]
+        }
+      ]
+    }
+  ]
+}

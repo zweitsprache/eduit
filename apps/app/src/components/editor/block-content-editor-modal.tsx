@@ -116,6 +116,7 @@ import type {
 } from '@/components/editor/communication-cards-node';
 import type {
   LearningCardsAttrs,
+  LearningCardItem,
   LearningCardTextSize,
 } from '@/components/editor/learning-cards-node';
 import { LearningCardContent } from '@/components/editor/learning-cards-node';
@@ -377,7 +378,6 @@ function updateArticlePluralGroup(
     return true;
   }).run();
 }
-
 function LearningCardsEditor({
   attrs,
   block,
@@ -412,21 +412,44 @@ function LearningCardsEditor({
           ...next,
           groupIndex,
           sheetSide: 'front',
+          solutionSheetIndex: 0,
+          solutionSheetCount: 1,
+          solutionStartIndex: 0,
+          solutionEndIndex: 0,
         })];
         if (next.sidedness === 'double') {
           groupSheets.push(cardType.create({
             ...next,
             groupIndex,
             sheetSide: 'back',
+            solutionSheetIndex: 0,
+            solutionSheetCount: 1,
+            solutionStartIndex: 0,
+            solutionEndIndex: 0,
           }));
         }
         return groupSheets;
       }).flat();
-      const documentNodes = sheets.flatMap((sheet, index) => (
-        index < sheets.length - 1 && pageBreakType
-          ? [sheet, pageBreakType.create()]
-          : [sheet]
-      ));
+      if (next.sidedness === 'single-solution') {
+        const solutionSheet = cardType.create({
+          ...next,
+          groupIndex: groupCount,
+          sheetSide: 'solutions',
+          solutionSheetIndex: 0,
+          solutionSheetCount: 1,
+          solutionStartIndex: 0,
+          solutionEndIndex: 0,
+        });
+        sheets.push(solutionSheet);
+      }
+      const documentNodes = sheets.flatMap((sheet, index) => {
+        if (index >= sheets.length - 1 || !pageBreakType) return [sheet];
+        const nextSheet = sheets[index + 1];
+        const restartPagination = nextSheet.type.name === 'learningCards'
+          && nextSheet.attrs.sheetSide === 'solutions'
+          && nextSheet.attrs.solutionSheetIndex === 0;
+        return [sheet, pageBreakType.create({ restartPagination })];
+      });
       tr.replaceWith(0, tr.doc.content.size, documentNodes);
       return true;
     }).run();
@@ -587,11 +610,16 @@ function LearningCardsEditor({
           aria-label="Learning cards printing mode"
           className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
           onChange={(event) => updateLearningCards({
-            sidedness: event.target.value === 'single' ? 'single' : 'double',
+            sidedness: event.target.value === 'single'
+              ? 'single'
+              : event.target.value === 'single-solution'
+                ? 'single-solution'
+                : 'double',
           })}
           value={attrs.sidedness}
         >
           <option value="single">Single sided</option>
+          <option value="single-solution">Single sided – with solution key</option>
           <option value="double">Double sided — short edge</option>
         </select>
       </div>
@@ -761,7 +789,7 @@ function CommunicationCardsEditor({
       }));
       const documentNodes = sheets.flatMap((sheet, index) => (
         index < sheets.length - 1 && pageBreakType
-          ? [sheet, pageBreakType.create()]
+          ? [sheet, pageBreakType.create({ restartPagination: false })]
           : [sheet]
       ));
       tr.replaceWith(0, tr.doc.content.size, documentNodes);
@@ -1442,6 +1470,50 @@ function parseCsvRows(value: string) {
   }, { delimiter: ',', score: 0 }).delimiter;
 
   return rows.map((row) => parseDelimitedRow(row, delimiter));
+}
+
+function worksheetTableColumnSpan(column: WorksheetTableColumn) {
+  const span = Number(column.span);
+  const clampSpan = (value: number) => Math.max(0.5, Math.min(24, value));
+  if (Number.isFinite(span)) {
+    return clampSpan(Math.round(span * 2) / 2);
+  }
+  return 1;
+}
+
+function normalizeWorksheetTableColumns(columns: WorksheetTableColumn[]) {
+  if (!columns.length) return [];
+  const totalUnits = 48;
+  const weights = columns.map(worksheetTableColumnSpan);
+  const total = weights.reduce((sum, span) => sum + span, 0);
+  const quotas = weights.map((span) => (span / total) * totalUnits);
+  const spans = quotas.map((quota) => Math.max(1, Math.floor(quota)));
+  let difference = totalUnits - spans.reduce((sum, span) => sum + span, 0);
+  while (difference > 0) {
+    const candidates = quotas
+      .map((quota, index) => ({ index, remainder: quota - spans[index] }))
+      .sort((a, b) => b.remainder - a.remainder);
+    for (const { index } of candidates) {
+      if (difference <= 0) break;
+      spans[index] += 1;
+      difference -= 1;
+    }
+  }
+  while (difference < 0) {
+    const index = spans.reduce(
+      (largestIndex, span, currentIndex) => (
+        span > spans[largestIndex] ? currentIndex : largestIndex
+      ),
+      0,
+    );
+    if (spans[index] <= 1) break;
+    spans[index] -= 1;
+    difference += 1;
+  }
+  return columns.map((column, index) => ({
+    ...column,
+    span: spans[index] / 2,
+  }));
 }
 
 function StandaloneInstructionEditor({
@@ -6300,6 +6372,84 @@ function WorksheetTableEditor({
     { rows },
   );
   const hasExplicitHeaderRows = attrs.rows.some((row) => row.isHeader);
+  const [csvImportText, setCsvImportText] = useState('');
+  const [csvImportError, setCsvImportError] = useState('');
+  const [autoDetectHeaderRow, setAutoDetectHeaderRow] = useState(true);
+
+  const importTableCsv = () => {
+    try {
+      const parsedRows = parseCsvRows(csvImportText);
+      if (!parsedRows.length) {
+        throw new Error('Add at least one CSV row to import.');
+      }
+
+      const maxColumns = Math.min(
+        6,
+        Math.max(...parsedRows.map((row) => row.length)),
+      );
+      if (maxColumns < 1) {
+        throw new Error('CSV has no columns to import.');
+      }
+
+      const importedColumns: WorksheetTableColumn[] = Array.from(
+        { length: maxColumns },
+        (_, index) => ({
+          id: `table-column-${Date.now()}-${index}`,
+          label: `Column ${index + 1}`,
+          span: index === maxColumns - 1
+            ? 24 - (maxColumns - 1)
+            : 1,
+          align: 'left',
+          useTabularNums: false,
+        }),
+      );
+
+      const normalizedColumns = normalizeWorksheetTableColumns(importedColumns);
+      const headerCandidates = parsedRows[0] ?? [];
+      const hasHeaderRow = autoDetectHeaderRow
+        && headerCandidates.some((cell) => cell.trim().length > 0)
+        && parsedRows.length > 1;
+      const sourceRows = hasHeaderRow ? parsedRows.slice(1) : parsedRows;
+      const dataRows = sourceRows
+        .map((row) => row.slice(0, maxColumns))
+        .filter((row) => row.some((cell) => cell.trim().length > 0));
+
+      if (!dataRows.length) {
+        throw new Error('No data rows found after removing an optional header row.');
+      }
+
+      const importedRows: WorksheetTableRow[] = dataRows.map((row, index) => ({
+        id: `table-row-import-${Date.now()}-${index}`,
+        isHeader: false,
+        cells: Object.fromEntries(normalizedColumns.map((column, columnIndex) => [
+          column.id,
+          row[columnIndex] ?? '',
+        ])),
+      }));
+
+      if (hasHeaderRow) {
+        importedRows.unshift({
+          id: `table-row-header-${Date.now()}`,
+          isHeader: true,
+          cells: Object.fromEntries(normalizedColumns.map((column, columnIndex) => [
+            column.id,
+            headerCandidates[columnIndex] ?? `Column ${columnIndex + 1}`,
+          ])),
+        });
+      }
+
+      updateAttrs(editor, block, {
+        columns: normalizedColumns,
+        rows: importedRows,
+      });
+      setCsvImportText('');
+      setCsvImportError('');
+    } catch (error) {
+      setCsvImportError(
+        error instanceof Error ? error.message : 'CSV import failed.',
+      );
+    }
+  };
 
   useEffect(() => {
     if (!attrs.showHeader) return;
@@ -6340,6 +6490,14 @@ function WorksheetTableEditor({
           instruction: event.target.value,
         })}
         className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+      <ContentSectionHeader>Visibility</ContentSectionHeader>
+      <ContentSwitch
+        label="Show instruction"
+        isSelected={attrs.showInstruction !== false}
+        onChange={(showInstruction) => updateAttrs(editor, block, {
+          showInstruction,
+        })}
       />
       <ContentSectionHeader>Default blank width</ContentSectionHeader>
       <ContentOptionButtonGroup
@@ -6386,19 +6544,36 @@ function WorksheetTableEditor({
                   <input
                     aria-label={`Grid span of column ${index + 1}`}
                     type="number"
-                    min={1}
-                    max={12}
+                    min={0.5}
+                    max={24}
+                    step={0.5}
                     value={column.span}
                     onChange={(event) => setColumns(attrs.columns.map((current) => (
                       current.id === column.id
                         ? {
                             ...current,
-                            span: Math.min(12, Math.max(1, Number(event.target.value))),
+                            span: Math.min(
+                              24,
+                              Math.max(0.5, Math.round(Number(event.target.value) * 2) / 2),
+                            ),
                           }
                         : current
                     )))}
                     className="h-9 min-w-0 w-16 rounded-md border border-primary bg-primary px-2.5 text-sm font-normal tabular-nums text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
                   />
+                </label>
+                <label className="flex items-center gap-2 text-sm font-semibold text-secondary whitespace-nowrap">
+                  <Toggle
+                    aria-label={`Use tabular numbers for column ${index + 1}`}
+                    size="sm"
+                    isSelected={column.useTabularNums === true}
+                    onChange={(useTabularNums) => setColumns(attrs.columns.map((current) => (
+                      current.id === column.id
+                        ? { ...current, useTabularNums }
+                        : current
+                    )))}
+                  />
+                  <span>TN</span>
                 </label>
                 <div
                   aria-label={`Alignment of column ${index + 1}`}
@@ -6451,6 +6626,7 @@ function WorksheetTableEditor({
           label: `Column ${attrs.columns.length + 1}`,
           span: 3,
           align: 'left',
+          useTabularNums: false,
         }])}
       >
         Add column
@@ -6536,6 +6712,41 @@ function WorksheetTableEditor({
       }])}>
         Add row
       </ContentAddButton>
+      <ContentSectionHeader>CSV import</ContentSectionHeader>
+      <p className="mt-1 text-xs leading-5 text-tertiary">
+        When enabled, the first row is auto-detected as a header row.
+      </p>
+      <ContentSwitch
+        label="Auto-detect header row"
+        isSelected={autoDetectHeaderRow}
+        onChange={setAutoDetectHeaderRow}
+      />
+      <textarea
+        rows={6}
+        value={csvImportText}
+        onChange={(event) => {
+          setCsvImportText(event.target.value);
+          if (csvImportError) setCsvImportError('');
+        }}
+        placeholder={[
+          'Term,Definition,Example',
+          'House,Building for living,I live in a house.',
+          'Car,Vehicle with an engine,The car is red.',
+        ].join('\n')}
+        className="mt-2 w-full resize-y rounded-md border border-primary bg-primary px-3 py-2 font-mono text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+      <ContentSecondaryButton
+        className="mt-2"
+        disabled={!csvImportText.trim()}
+        onClick={importTableCsv}
+      >
+        Import CSV
+      </ContentSecondaryButton>
+      {csvImportError && (
+        <p className="mt-2 text-xs text-error-primary" role="alert">
+          {csvImportError}
+        </p>
+      )}
     </>
   );
 }

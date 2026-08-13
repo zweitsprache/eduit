@@ -17,6 +17,7 @@ import type { RichTextAttrs } from '@/components/editor/rich-text-node';
 import type { WordGridAttrs } from '@/components/editor/word-grid-node';
 import type { DominoAttrs } from '@/components/editor/domino-node';
 import type { GermanVerbTableAttrs } from '@/components/editor/german-verb-table-node';
+import type { WorksheetTableAttrs } from '@/components/editor/worksheet-table-node';
 import type { WorksheetContext } from '@/lib/worksheet-types';
 
 export type WorksheetJsonExportMeta = {
@@ -64,6 +65,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'learningCards',
   'domino',
   'germanVerbTable',
+  'worksheetTable',
 ]);
 
 function escapeHtml(value: string) {
@@ -483,6 +485,30 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
           forms: { ...verb.forms },
           separablePrefix: verb.separablePrefix,
         })),
+      };
+    }
+    case 'worksheetTable': {
+      const tableAttrs = attrs as WorksheetTableAttrs;
+      return {
+        type: 'worksheetTable',
+        instruction: tableAttrs.instruction,
+        showInstruction: tableAttrs.showInstruction,
+        columns: tableAttrs.columns.map((column) => ({
+          id: column.id,
+          label: column.label,
+          span: column.span,
+          align: column.align,
+          useTabularNums: column.useTabularNums === true,
+        })),
+        rows: tableAttrs.rows.map((row) => ({
+          id: row.id,
+          isHeader: row.isHeader,
+          cells: { ...row.cells },
+        })),
+        showHeader: tableAttrs.showHeader,
+        hideBlankNumbers: tableAttrs.hideBlankNumbers,
+        blankWidthFactor: tableAttrs.blankWidthFactor,
+        showFirstAsExample: tableAttrs.showFirstAsExample,
       };
     }
     default:
