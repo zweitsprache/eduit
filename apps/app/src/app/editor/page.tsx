@@ -116,6 +116,9 @@ import {
   type GermanVerbTableForms,
 } from '@/components/editor/german-verb-table-node';
 import {
+  DeclinationTable,
+} from '@/components/editor/declination-table-node';
+import {
   OccupationPortrait,
   DEFAULT_OCCUPATION_PORTRAIT_ATTRS,
   type OccupationPortraitAttrs,
@@ -303,6 +306,12 @@ import {
 import {
   GermanVerbTableEditorModal,
 } from '@/components/editor/german-verb-table-editor-modal';
+import {
+  DeclinationTableEditorModal,
+} from '@/components/editor/declination-table-editor-modal';
+import {
+  DeclinationTableAIModal,
+} from '@/components/editor/declination-table-ai-modal';
 import {
   GermanVerbTableAIModal,
 } from '@/components/editor/german-verb-table-ai-modal';
@@ -1484,6 +1493,10 @@ export default function EditorPage() {
     useState<{ pos: number; type: 'colorFurniture' } | null>(null);
   const [germanVerbTableEditorBlock, setGermanVerbTableEditorBlock] =
     useState<{ pos: number; type: 'germanVerbTable' } | null>(null);
+  const [declinationTableEditorBlock, setDeclinationTableEditorBlock] =
+    useState<{ pos: number; type: 'declinationTable' } | null>(null);
+  const [declinationTableAIBlock, setDeclinationTableAIBlock] =
+    useState<{ pos: number; type: 'declinationTable' } | null>(null);
   const [germanVerbTableAIBlock, setGermanVerbTableAIBlock] =
     useState<{ pos: number; type: 'germanVerbTable' } | null>(null);
   const [learningCardsAIBlock, setLearningCardsAIBlock] =
@@ -1530,6 +1543,7 @@ export default function EditorPage() {
       ColorFurniture,
       FamilyKinship,
       GermanVerbTable,
+      DeclinationTable,
       OccupationPortrait,
       TrueFalse,
       FillInTheBlank,
@@ -2769,6 +2783,43 @@ export default function EditorPage() {
   }, [docSize, editor]);
 
   useEffect(() => {
+    const automationMode = typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('automation');
+    if (automationMode !== 'batch-republish') return;
+    const raw = sessionStorage.getItem('eduit-automation-publish-options');
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as {
+        mode?: 'pdf-only' | 'worksheet-settings-only' | 'full';
+        dazitDocumentType?: string;
+        allowDescriptionOverride?: boolean;
+      };
+      if (
+        parsed.mode === 'pdf-only'
+        || parsed.mode === 'worksheet-settings-only'
+        || parsed.mode === 'full'
+      ) {
+        setRepublishScope(parsed.mode);
+      }
+      if (
+        parsed.dazitDocumentType === 'Arbeitsblatt'
+        || parsed.dazitDocumentType === 'Merkblatt'
+        || parsed.dazitDocumentType === 'Verbtabelle'
+        || parsed.dazitDocumentType === 'Deklinationstabelle'
+        || parsed.dazitDocumentType === 'Kommunikationskarten'
+        || parsed.dazitDocumentType === 'Lernkarten'
+        || parsed.dazitDocumentType === 'Domino'
+      ) {
+        setDazitDocumentType(parsed.dazitDocumentType);
+      }
+      setAllowDescriptionOverride(Boolean(parsed.allowDescriptionOverride));
+    } catch {
+      // Ignore broken session payload and keep defaults.
+    }
+  }, []);
+
+  useEffect(() => {
     const worksheetId = worksheetIdRef.current;
     if (!editor || !worksheetId || !worksheetInitializationStartedRef.current) {
       return;
@@ -2779,6 +2830,7 @@ export default function EditorPage() {
     if (
       automationMode === 'batch-publish'
       || automationMode === 'batch-full-publish'
+      || automationMode === 'batch-republish'
       || automationMode === 'batch-preview'
     ) return;
     if (worksheetPreviewTimerRef.current) {
@@ -2802,6 +2854,7 @@ export default function EditorPage() {
       (
         automationMode !== 'batch-publish'
         && automationMode !== 'batch-full-publish'
+        && automationMode !== 'batch-republish'
         && automationMode !== 'batch-preview'
       )
       || automationPublishStartedRef.current
@@ -2831,9 +2884,14 @@ export default function EditorPage() {
       if (
         automationMode === 'batch-publish'
         || automationMode === 'batch-full-publish'
+        || automationMode === 'batch-republish'
       ) {
         const published = await publishPDF(
-          automationMode === 'batch-full-publish' ? 'full' : undefined,
+          automationMode === 'batch-full-publish'
+            ? 'full'
+            : automationMode === 'batch-republish'
+              ? republishScope
+              : undefined,
         );
         if (!published) {
           if (window.parent !== window) {
@@ -2857,12 +2915,22 @@ export default function EditorPage() {
       ) as string[];
       const remaining = queue.filter((id) => id !== worksheetId);
       sessionStorage.setItem('eduit-automation-publish-queue', JSON.stringify(remaining));
+      const options = JSON.parse(
+        sessionStorage.getItem('eduit-automation-publish-options') || '{}',
+      ) as { returnTo?: string };
       window.location.href = remaining.length
         ? `/editor?worksheet=${encodeURIComponent(remaining[0])}&automation=${automationMode}`
-        : '/automations?completed=1';
+        : (options.returnTo || '/automations?completed=1');
     }, 1800);
     return () => window.clearTimeout(timer);
-  }, [brandProfilesLoaded, editor, publishingPDF, saved, worksheetId]);
+  }, [
+    brandProfilesLoaded,
+    editor,
+    publishingPDF,
+    republishScope,
+    saved,
+    worksheetId,
+  ]);
 
   if (!editor) return null;
 
@@ -5139,6 +5207,7 @@ export default function EditorPage() {
               || selectedCustomBlock.type === 'weather'
               || selectedCustomBlock.type === 'colorFurniture'
               || selectedCustomBlock.type === 'germanVerbTable'
+              || selectedCustomBlock.type === 'declinationTable'
             ) && (
             <div className="flex flex-col gap-2">
               {CONTENT_EDITOR_BLOCK_TYPES.has(selectedCustomBlock.type) && (
@@ -5189,6 +5258,19 @@ export default function EditorPage() {
                   Edit content
                 </button>
               )}
+              {selectedCustomBlock.type === 'declinationTable' && (
+                <button
+                  type="button"
+                  onClick={() => setDeclinationTableEditorBlock({
+                    pos: selectedCustomBlock.pos,
+                    type: 'declinationTable',
+                  })}
+                  className="flex w-full items-center justify-start gap-2 rounded-lg bg-brand-solid px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-solid_hover"
+                >
+                  <Edit05 className="size-4" />
+                  Edit content
+                </button>
+              )}
               {(selectedCustomBlock.type === 'mcq'
                 || selectedCustomBlock.type === 'wordGrid'
                 || selectedCustomBlock.type === 'dialogue'
@@ -5204,6 +5286,7 @@ export default function EditorPage() {
                 || selectedCustomBlock.type === 'weather'
                 || selectedCustomBlock.type === 'colorFurniture'
                 || selectedCustomBlock.type === 'learningCards'
+                || selectedCustomBlock.type === 'declinationTable'
                 || selectedCustomBlock.type === 'germanVerbTable'
                 || selectedCustomBlock.type === 'domino') && (
                 <button
@@ -5278,6 +5361,11 @@ export default function EditorPage() {
                       setGermanVerbTableAIBlock({
                         pos: selectedCustomBlock.pos,
                         type: 'germanVerbTable',
+                      });
+                    } else if (selectedCustomBlock.type === 'declinationTable') {
+                      setDeclinationTableAIBlock({
+                        pos: selectedCustomBlock.pos,
+                        type: 'declinationTable',
                       });
                     } else if (selectedCustomBlock.type === 'learningCards') {
                       setLearningCardsAIBlock({
@@ -10059,6 +10147,34 @@ export default function EditorPage() {
         documentSize={docSize}
         editor={editor}
         onClose={() => setGermanVerbTableEditorBlock(null)}
+      />
+      <DeclinationTableEditorModal
+        block={declinationTableEditorBlock}
+        editor={editor}
+        onOpenAI={() => {
+          if (!declinationTableEditorBlock) return;
+          setDeclinationTableAIBlock({
+            pos: declinationTableEditorBlock.pos,
+            type: 'declinationTable',
+          });
+        }}
+        onClose={() => setDeclinationTableEditorBlock(null)}
+      />
+      <DeclinationTableAIModal
+        open={declinationTableAIBlock !== null}
+        onClose={() => setDeclinationTableAIBlock(null)}
+        onGenerated={(result) => {
+          if (!declinationTableAIBlock) return;
+          const { pos } = declinationTableAIBlock;
+          editor.chain().command(({ tr }) => {
+            if (tr.doc.nodeAt(pos)?.type.name !== 'declinationTable') return false;
+            tr.setNodeAttribute(pos, 'rows', result.rows);
+            tr.setNodeAttribute(pos, 'baseAdjectives', result.baseAdjectives);
+            tr.setNodeAttribute(pos, 'baseNouns', result.baseNouns);
+            return true;
+          }).run();
+          setDeclinationTableAIBlock(null);
+        }}
       />
       <GermanVerbTableAIModal
         initialSettings={(() => {

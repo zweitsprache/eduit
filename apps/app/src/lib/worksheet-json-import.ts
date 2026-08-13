@@ -384,6 +384,49 @@ const germanVerbTableSchema = z.object({
   multipleVerbs: z.array(germanVerbTableMultipleVerbSchema).min(1).max(20),
 });
 
+const declinationTripletSchema = z.object({
+  article: z.tuple([
+    z.string().trim().max(200),
+    z.string().trim().max(200),
+    z.string().trim().max(200),
+  ]),
+  adjective: z.tuple([
+    z.string().trim().max(200),
+    z.string().trim().max(200),
+    z.string().trim().max(200),
+  ]),
+  noun: z.tuple([
+    z.string().trim().max(200),
+    z.string().trim().max(200),
+    z.string().trim().max(200),
+  ]),
+});
+
+const declinationTableSchema = z.object({
+  type: z.literal('declinationTable'),
+  baseAdjectives: z.object({
+    masculine: z.string().trim().min(1).max(200),
+    feminine: z.string().trim().min(1).max(200),
+    neuter: z.string().trim().min(1).max(200),
+    plural: z.string().trim().min(1).max(200),
+  }),
+  baseNouns: z.object({
+    masculine: z.string().trim().min(1).max(200),
+    feminine: z.string().trim().min(1).max(200),
+    neuter: z.string().trim().min(1).max(200),
+    plural: z.string().trim().min(1).max(200),
+  }),
+  rows: z.array(z.object({
+    key: z.enum(['nom', 'akk', 'dat', 'gen']),
+    values: z.object({
+      masculine: declinationTripletSchema,
+      feminine: declinationTripletSchema,
+      neuter: declinationTripletSchema,
+      plural: declinationTripletSchema,
+    }),
+  })).length(4),
+});
+
 const contextSchema = z.object({
   worksheetLanguage: z.enum(['en', 'de-formal', 'de-informal']).default('de-formal'),
   worksheetType: z.enum([
@@ -443,6 +486,7 @@ export const generatedWorksheetSchema = z.object({
     wordGridSchema,
     dominoSchema,
     germanVerbTableSchema,
+    declinationTableSchema,
     worksheetTableSchema,
   ])).max(1000).default([]),
 }).refine((value) => Boolean(value.sourceWorksheetId) || value.blocks.length >= 1, {
@@ -509,6 +553,12 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     const columns = escapeAttribute(encodeURIComponent(JSON.stringify(block.columns)));
     const rows = escapeAttribute(encodeURIComponent(JSON.stringify(block.rows)));
     return `<div data-type="worksheet-table" data-worksheet-table-instruction="${escapeAttribute(block.instruction)}" data-worksheet-table-show-instruction="${block.showInstruction}" data-worksheet-table-columns="${columns}" data-worksheet-table-rows="${rows}" data-worksheet-table-show-header="${block.showHeader}" data-worksheet-table-hide-blank-numbers="${block.hideBlankNumbers}" data-worksheet-table-blank-width="${block.blankWidthFactor}" data-worksheet-table-show-first-example="${block.showFirstAsExample}"></div>`;
+  }
+  if (block.type === 'declinationTable') {
+    const rows = escapeAttribute(encodeURIComponent(JSON.stringify(block.rows)));
+    const baseAdjectives = escapeAttribute(encodeURIComponent(JSON.stringify(block.baseAdjectives)));
+    const baseNouns = escapeAttribute(encodeURIComponent(JSON.stringify(block.baseNouns)));
+    return `<div data-type="declination-table" data-declination-rows="${rows}" data-declination-base-adjectives="${baseAdjectives}" data-declination-base-nouns="${baseNouns}"></div>`;
   }
   if (block.type === 'wordGrid') {
     const { leftToRight, ...otherDirections } = block.directions;

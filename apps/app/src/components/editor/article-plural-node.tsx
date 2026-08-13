@@ -182,7 +182,7 @@ function ArticlePluralNodeView({ node, selected }: NodeViewProps) {
         {showAdditionalSection && (
           <section className="article-plural-node__additional-section">
             <BlockInstruction>
-              Suchen Sie weitere Nomen / Substantive zum Thema.
+              Brauchen Sie weitere Nomen / Substantive zum Thema.
             </BlockInstruction>
             <div className="article-plural-node__header">
               <span aria-hidden="true" className="article-plural-node__index-spacer" />

@@ -17,8 +17,39 @@ import type { RichTextAttrs } from '@/components/editor/rich-text-node';
 import type { WordGridAttrs } from '@/components/editor/word-grid-node';
 import type { DominoAttrs } from '@/components/editor/domino-node';
 import type { GermanVerbTableAttrs } from '@/components/editor/german-verb-table-node';
+import type { DeclinationTableAttrs } from '@/components/editor/declination-table-node';
 import type { WorksheetTableAttrs } from '@/components/editor/worksheet-table-node';
 import type { WorksheetContext } from '@/lib/worksheet-types';
+
+const DECLENSION_ENDINGS = ['em', 'en', 'er', 'es', 'e'] as const;
+
+function adjectiveBaseCandidates(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  const candidates = new Set<string>([trimmed]);
+  DECLENSION_ENDINGS.forEach((ending) => {
+    if (trimmed.length <= ending.length || !trimmed.endsWith(ending)) return;
+    const stripped = trimmed.slice(0, -ending.length);
+    if (!stripped) return;
+    candidates.add(stripped);
+    if (stripped.endsWith('l') || stripped.endsWith('r')) {
+      candidates.add(`${stripped.slice(0, -1)}e${stripped.slice(-1)}`);
+    }
+  });
+  return [...candidates];
+}
+
+function inferAdjectiveBase(values: string[]) {
+  const counts = new Map<string, number>();
+  values.forEach((value) => {
+    adjectiveBaseCandidates(value).forEach((candidate) => {
+      counts.set(candidate, (counts.get(candidate) ?? 0) + 1);
+    });
+  });
+  return [...counts.entries()]
+    .sort((left, right) => right[1] - left[1] || right[0].length - left[0].length)[0]?.[0]
+    ?? '';
+}
 
 export type WorksheetJsonExportMeta = {
   title: string;
@@ -65,6 +96,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'learningCards',
   'domino',
   'germanVerbTable',
+  'declinationTable',
   'worksheetTable',
 ]);
 
@@ -484,6 +516,70 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
           verb: verb.verb,
           forms: { ...verb.forms },
           separablePrefix: verb.separablePrefix,
+        })),
+      };
+    }
+    case 'declinationTable': {
+      const declinationTableAttrs = attrs as DeclinationTableAttrs;
+      const nominativeRow = declinationTableAttrs.rows.find((row) => row.key === 'nom');
+      const fallbackBaseNouns = {
+        masculine: nominativeRow?.values.masculine.noun[0] ?? '',
+        feminine: nominativeRow?.values.feminine.noun[0] ?? '',
+        neuter: nominativeRow?.values.neuter.noun[0] ?? '',
+        plural: nominativeRow?.values.plural.noun[0] ?? '',
+      };
+      const fallbackBaseAdjectives = {
+        masculine: inferAdjectiveBase(
+          declinationTableAttrs.rows.flatMap((row) => row.values.masculine.adjective),
+        ),
+        feminine: inferAdjectiveBase(
+          declinationTableAttrs.rows.flatMap((row) => row.values.feminine.adjective),
+        ),
+        neuter: inferAdjectiveBase(
+          declinationTableAttrs.rows.flatMap((row) => row.values.neuter.adjective),
+        ),
+        plural: inferAdjectiveBase(
+          declinationTableAttrs.rows.flatMap((row) => row.values.plural.adjective),
+        ),
+      };
+      return {
+        type: 'declinationTable',
+        baseAdjectives: {
+          masculine: declinationTableAttrs.baseAdjectives?.masculine ?? fallbackBaseAdjectives.masculine,
+          feminine: declinationTableAttrs.baseAdjectives?.feminine ?? fallbackBaseAdjectives.feminine,
+          neuter: declinationTableAttrs.baseAdjectives?.neuter ?? fallbackBaseAdjectives.neuter,
+          plural: declinationTableAttrs.baseAdjectives?.plural ?? fallbackBaseAdjectives.plural,
+        },
+        baseNouns: {
+          masculine: declinationTableAttrs.baseNouns?.masculine ?? fallbackBaseNouns.masculine,
+          feminine: declinationTableAttrs.baseNouns?.feminine ?? fallbackBaseNouns.feminine,
+          neuter: declinationTableAttrs.baseNouns?.neuter ?? fallbackBaseNouns.neuter,
+          plural: declinationTableAttrs.baseNouns?.plural ?? fallbackBaseNouns.plural,
+        },
+        rows: declinationTableAttrs.rows.map((row) => ({
+          key: row.key,
+          values: {
+            masculine: {
+              article: [...row.values.masculine.article],
+              adjective: [...row.values.masculine.adjective],
+              noun: [...row.values.masculine.noun],
+            },
+            feminine: {
+              article: [...row.values.feminine.article],
+              adjective: [...row.values.feminine.adjective],
+              noun: [...row.values.feminine.noun],
+            },
+            neuter: {
+              article: [...row.values.neuter.article],
+              adjective: [...row.values.neuter.adjective],
+              noun: [...row.values.neuter.noun],
+            },
+            plural: {
+              article: [...row.values.plural.article],
+              adjective: [...row.values.plural.adjective],
+              noun: [...row.values.plural.noun],
+            },
+          },
         })),
       };
     }

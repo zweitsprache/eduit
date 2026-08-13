@@ -57,7 +57,7 @@ export function FilterSidebar({
         </div>
         <p className="filter-help">
           Die Niveau-Zuordnungen sind approximativ und können je nach
-          Kursprogression variieren. Tipp: Suchen Sie auch in den
+          Kursprogression variieren. Tipp: Brauchen Sie auch in den
           Nachbarniveaus Ihres aktuellen Kursniveaus.
         </p>
       </div>

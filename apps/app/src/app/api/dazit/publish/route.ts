@@ -380,7 +380,7 @@ Pluraltraining: Wenn die Nummerierung der Nomen über einen nachfolgenden Block
 hinweg weiterläuft, ist dieser Block eine technische Fortsetzung derselben
 Übung, auch wenn Spaltenüberschriften wiederholt werden. Zähle und beschreibe
 alle solchen Fortsetzungsblöcke gemeinsam als genau eine Aufgabe. Ein
-abschliessender Bereich «Suchen Sie weitere Nomen / Substantive zum Thema.» ist
+abschliessender Bereich «Brauchen Sie weitere Nomen / Substantive zum Thema.» ist
 eine ergänzende Teilaufgabe innerhalb dieses Artikel- und Pluraltrainings und
 keine weitere eigenständige Hauptaufgabe.
 

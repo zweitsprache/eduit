@@ -251,6 +251,15 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
     insert: (editor) => editor.chain().focus().insertGermanVerbTable().run(),
   },
   {
+    type: 'declinationTable',
+    label: 'Deklinationstabelle',
+    description: 'Nominativ, Akkusativ, Dativ und Genitiv mit Artikel, Adjektiv und Nomen.',
+    category: 'Content',
+    keywords: ['deklination', 'adjektiv', 'artikel', 'nomen', 'kasus', 'genitiv'],
+    Icon: Table,
+    insert: (editor) => editor.chain().focus().insertDeclinationTable().run(),
+  },
+  {
     type: 'occupationPortrait',
     label: 'Berufsporträt',
     description: 'Quellenbasiertes Berufs- oder Selbstporträt auf passendem Sprachniveau.',

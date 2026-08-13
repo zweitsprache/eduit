@@ -30,6 +30,15 @@ import { useI18n } from '@/components/i18n/locale-provider';
 type StatusFilter = 'all' | WorksheetStatus;
 type SortMode = 'updated' | 'created' | 'title';
 type ViewMode = 'cards' | 'list';
+type RepublishScope = 'pdf-only' | 'worksheet-settings-only' | 'full';
+type DazitDocumentType =
+  | 'Arbeitsblatt'
+  | 'Merkblatt'
+  | 'Verbtabelle'
+  | 'Deklinationstabelle'
+  | 'Kommunikationskarten'
+  | 'Lernkarten'
+  | 'Domino';
 type FolderDialog = {
   mode: 'create' | 'rename';
   folder?: WorksheetFolder;
@@ -39,7 +48,8 @@ type MoveDialog = {
   destinationId: string | null;
 } | null;
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE_CARDS = 12;
+const PAGE_SIZE_LIST = 20;
 
 function formatUpdatedAt(value: string, locale: string) {
   return new Intl.DateTimeFormat(locale === 'de' ? 'de-CH' : 'en-GB', {
@@ -75,6 +85,10 @@ export function WorksheetManager() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkRepublishing, setBulkRepublishing] = useState(false);
+  const [republishScope, setRepublishScope] = useState<RepublishScope>('pdf-only');
+  const [allowDescriptionOverride, setAllowDescriptionOverride] = useState(false);
+  const [dazitDocumentType, setDazitDocumentType] = useState<DazitDocumentType>('Arbeitsblatt');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -167,10 +181,11 @@ export function WorksheetManager() {
     statusFilter,
     worksheets,
   ]);
-  const pageCount = Math.max(1, Math.ceil(visibleWorksheets.length / PAGE_SIZE));
+  const pageSize = viewMode === 'list' ? PAGE_SIZE_LIST : PAGE_SIZE_CARDS;
+  const pageCount = Math.max(1, Math.ceil(visibleWorksheets.length / pageSize));
   const paginatedWorksheets = visibleWorksheets.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
   );
   const selectedWorksheets = worksheets.filter(({ id }) => selectedIds.has(id));
   const pageSelected = paginatedWorksheets.length > 0
@@ -400,6 +415,31 @@ export function WorksheetManager() {
         });
       }
       setBulkDeleting(false);
+    }
+  }
+
+  function bulkRepublishSelected() {
+    if (!selectedWorksheets.length || bulkRepublishing) return;
+    setBulkRepublishing(true);
+    setError(null);
+    try {
+      sessionStorage.setItem(
+        'eduit-automation-publish-queue',
+        JSON.stringify(selectedWorksheets.map(({ id }) => id)),
+      );
+      sessionStorage.setItem(
+        'eduit-automation-publish-options',
+        JSON.stringify({
+          mode: republishScope,
+          dazitDocumentType,
+          allowDescriptionOverride,
+          returnTo: '/documents?completed=1',
+        }),
+      );
+      window.location.href = `/editor?worksheet=${encodeURIComponent(selectedWorksheets[0].id)}&automation=batch-republish`;
+    } catch {
+      setBulkRepublishing(false);
+      setError(t('documents.publishError'));
     }
   }
 
@@ -726,7 +766,7 @@ export function WorksheetManager() {
               count: visibleWorksheets.length,
             })}
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-3">
             <label className="flex items-center gap-2 text-sm font-semibold text-secondary">
               <input
                 checked={pageSelected}
@@ -737,16 +777,70 @@ export function WorksheetManager() {
               {t('documents.selectPage')}
             </label>
             {selectedWorksheets.length > 0 && (
-              <Button
-                color="secondary"
-                isDisabled={bulkDeleting}
-                iconLeading={bulkDeleting
-                  ? <Loading01 className="size-4 animate-spin" />
-                  : <Trash01 className="size-4" />}
-                onPress={() => void bulkDeleteWorksheets()}
-              >
-                {t('documents.deleteSelected', { count: selectedWorksheets.length })}
-              </Button>
+              <>
+                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-secondary bg-primary px-3 py-2">
+                  <label className="text-xs font-semibold text-secondary">
+                    Scope
+                    <select
+                      value={republishScope}
+                      onChange={(event) => setRepublishScope(event.target.value as RepublishScope)}
+                      className="ml-2 h-8 rounded-md border border-primary bg-primary px-2 text-xs font-semibold text-secondary"
+                    >
+                      <option value="pdf-only">PDF only</option>
+                      <option value="worksheet-settings-only">Worksheet settings only</option>
+                      <option value="full">PDF + metadata</option>
+                    </select>
+                  </label>
+                  {(republishScope !== 'pdf-only') && (
+                    <label className="text-xs font-semibold text-secondary">
+                      Type
+                      <select
+                        value={dazitDocumentType}
+                        onChange={(event) => setDazitDocumentType(event.target.value as DazitDocumentType)}
+                        className="ml-2 h-8 rounded-md border border-primary bg-primary px-2 text-xs font-semibold text-secondary"
+                      >
+                        <option value="Arbeitsblatt">Arbeitsblatt</option>
+                        <option value="Merkblatt">Merkblatt</option>
+                        <option value="Verbtabelle">Verbtabelle</option>
+                        <option value="Deklinationstabelle">Deklinationstabelle</option>
+                        <option value="Kommunikationskarten">Kommunikationskarten</option>
+                        <option value="Lernkarten">Lernkarten</option>
+                        <option value="Domino">Domino</option>
+                      </select>
+                    </label>
+                  )}
+                  {republishScope === 'full' && (
+                    <label className="flex items-center gap-2 text-xs font-semibold text-secondary">
+                      <input
+                        type="checkbox"
+                        checked={allowDescriptionOverride}
+                        onChange={(event) => setAllowDescriptionOverride(event.target.checked)}
+                      />
+                      Allow description override
+                    </label>
+                  )}
+                </div>
+                <Button
+                  color="secondary"
+                  isDisabled={bulkRepublishing}
+                  iconLeading={bulkRepublishing
+                    ? <Loading01 className="size-4 animate-spin" />
+                    : <File02 className="size-4" />}
+                  onPress={bulkRepublishSelected}
+                >
+                  {t('documents.publish')} ({selectedWorksheets.length})
+                </Button>
+                <Button
+                  color="secondary"
+                  isDisabled={bulkDeleting}
+                  iconLeading={bulkDeleting
+                    ? <Loading01 className="size-4 animate-spin" />
+                    : <Trash01 className="size-4" />}
+                  onPress={() => void bulkDeleteWorksheets()}
+                >
+                  {t('documents.deleteSelected', { count: selectedWorksheets.length })}
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -954,7 +1048,7 @@ export function WorksheetManager() {
             )}
           </div>
         )}
-        {!loading && visibleWorksheets.length > PAGE_SIZE && (
+        {!loading && visibleWorksheets.length > pageSize && (
           <nav
             aria-label={t('documents.pagination')}
             className="mt-6 flex items-center justify-center gap-4"
