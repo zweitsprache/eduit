@@ -17,6 +17,7 @@ import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbe
 import {
   isSingleLetterBlankAnswer,
   parseFillInTheBlankText,
+  shouldAttachBlankToPreviousText,
   type FillInTheBlankPart,
 } from '@/components/editor/fill-in-the-blank-node';
 import {
@@ -43,6 +44,7 @@ export type WorksheetTableAttrs = {
   columns: WorksheetTableColumn[];
   rows: WorksheetTableRow[];
   showHeader: boolean;
+  compactSingleLetterBlanks: boolean;
   hideBlankNumbers: boolean;
   blankWidthFactor: number;
   showFirstAsExample: boolean;
@@ -217,10 +219,12 @@ function clampBlankWidth(value: unknown) {
 }
 
 function TableCellContent({
+  compactSingleLetterBlanks,
   hideBlankNumbers,
   parts,
   showFirstAsExample,
 }: {
+  compactSingleLetterBlanks: boolean;
   hideBlankNumbers: boolean;
   parts: FillInTheBlankPart[];
   showFirstAsExample: boolean;
@@ -240,8 +244,13 @@ function TableCellContent({
             <span
               aria-label={`Blank ${part.index}`}
               className={`fill-in-the-blank-node__blank${
-                isSingleLetterBlankAnswer(part.answer)
+                compactSingleLetterBlanks
+                  && isSingleLetterBlankAnswer(part.answer)
                   ? ' fill-in-the-blank-node__blank--single-letter'
+                  : ''
+              }${
+                shouldAttachBlankToPreviousText(parts, index)
+                  ? ' fill-in-the-blank-node__blank--suffix'
                   : ''
               }`}
               data-answer={part.answer}
@@ -489,6 +498,9 @@ function WorksheetTableNodeView({ node, selected }: NodeViewProps) {
                       />
                     ) : (
                       <TableCellContent
+                        compactSingleLetterBlanks={
+                          attrs.compactSingleLetterBlanks
+                        }
                         hideBlankNumbers={attrs.hideBlankNumbers}
                         parts={cell.parts}
                         showFirstAsExample={attrs.showFirstAsExample}
@@ -576,6 +588,18 @@ export const WorksheetTable = Node.create({
           'data-worksheet-table-show-header': String(attributes.showHeader),
         }),
       },
+      compactSingleLetterBlanks: {
+        default: true,
+        parseHTML: (element) => (
+          element.getAttribute('data-worksheet-table-compact-single-letter')
+            !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-worksheet-table-compact-single-letter': String(
+            attributes.compactSingleLetterBlanks,
+          ),
+        }),
+      },
       hideBlankNumbers: {
         default: false,
         parseHTML: (element) => (
@@ -640,6 +664,7 @@ export const WorksheetTable = Node.create({
               columns: attrs.columns ?? defaultColumns(),
               rows: attrs.rows ?? defaultRows(),
               showHeader: attrs.showHeader ?? false,
+              compactSingleLetterBlanks: attrs.compactSingleLetterBlanks ?? true,
               hideBlankNumbers: attrs.hideBlankNumbers ?? false,
               blankWidthFactor: attrs.blankWidthFactor ?? 1,
               showFirstAsExample: attrs.showFirstAsExample ?? false,

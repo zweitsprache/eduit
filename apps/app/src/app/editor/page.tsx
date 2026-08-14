@@ -2585,11 +2585,60 @@ export default function EditorPage() {
       });
     };
 
+    // The Pages extension renders each page's footer/gap/header trio as a
+    // floated `.breaker` spacer positioned via `float-left; clear: both`. Its
+    // own page-break fill height only reaches the *top* of the next footer,
+    // relying on that spacer's full page-width float to push subsequent flow
+    // content below the footer/gap/header band. Custom blocks establish their
+    // own block formatting context (`display: flow-root`, needed to contain
+    // internal margins), and per the CSS spec a BFC box must not overlap a
+    // float rather than simply flowing beneath it — so it gets squeezed into
+    // whatever horizontal space remains beside the float instead of wrapping
+    // below it, visually landing inside the footer. Extending the break
+    // node's own footprint with a margin-bottom matching that spacer's real
+    // height guarantees every following block, regardless of its own
+    // formatting context, starts below the entire footer/gap/header band.
+    const applyPageBreakClearance = () => {
+      const breakNodes = Array.from(
+        editorElement.querySelectorAll<HTMLElement>(
+          '.tiptap-page-break-node--pages-mode',
+        ),
+      );
+      if (!breakNodes.length) return;
+      const paginationRoot = document.querySelector('[data-tiptap-pagination]');
+      const footers = Array.from(
+        (paginationRoot ?? document).querySelectorAll<HTMLElement>(
+          '.tiptap-page-footer',
+        ),
+      );
+      if (!footers.length) return;
+
+      breakNodes.forEach((breakNode) => {
+        const breakTop = breakNode.getBoundingClientRect().top;
+        const nextFooter = footers.find(
+          (footer) => footer.getBoundingClientRect().top > breakTop,
+        );
+        if (!nextFooter) {
+          breakNode.style.marginBottom = '';
+          return;
+        }
+        const wrapper = nextFooter.closest<HTMLElement>('.tiptap-page-break');
+        const breaker = wrapper?.querySelector<HTMLElement>('.breaker');
+        const extra = breaker
+          ? breaker.getBoundingClientRect().height
+          : nextFooter.getBoundingClientRect().height;
+        breakNode.style.marginBottom = extra > 0 ? `${extra}px` : '';
+      });
+    };
+
     const schedulePageNumbers = () => {
       cancelAnimationFrame(outerFrame);
       cancelAnimationFrame(innerFrame);
       outerFrame = requestAnimationFrame(() => {
-        innerFrame = requestAnimationFrame(applySectionPageNumbers);
+        innerFrame = requestAnimationFrame(() => {
+          applySectionPageNumbers();
+          applyPageBreakClearance();
+        });
       });
     };
     const observer = new MutationObserver(schedulePageNumbers);

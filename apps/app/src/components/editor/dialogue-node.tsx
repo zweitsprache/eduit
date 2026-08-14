@@ -14,6 +14,7 @@ import { RoughExampleStrike } from '@/components/editor/custom-blocks/rough-exam
 import {
   parseFillInTheBlankText,
   isSingleLetterBlankAnswer,
+  shouldAttachBlankToPreviousText,
   type FillInTheBlankPart,
 } from '@/components/editor/fill-in-the-blank-node';
 
@@ -33,6 +34,7 @@ export type DialogueAttrs = {
   showSpeakerNames: boolean;
   showOriginal: boolean;
   showWordBank: boolean;
+  compactSingleLetterBlanks: boolean;
   hideBlankNumbers: boolean;
   showFirstAsExample: boolean;
 };
@@ -104,6 +106,7 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
     showSpeakerNames,
     showOriginal,
     showWordBank,
+    compactSingleLetterBlanks,
     hideBlankNumbers,
     showFirstAsExample,
   } = node.attrs as DialogueAttrs;
@@ -202,8 +205,13 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
                     <span
                       aria-label={`Blank ${part.index}`}
                       className={`fill-in-the-blank-node__blank${
-                        isSingleLetterBlankAnswer(part.answer)
+                        compactSingleLetterBlanks
+                          && isSingleLetterBlankAnswer(part.answer)
                           ? ' fill-in-the-blank-node__blank--single-letter'
+                          : ''
+                      }${
+                        shouldAttachBlankToPreviousText(parts, partIndex)
+                          ? ' fill-in-the-blank-node__blank--suffix'
                           : ''
                       }`}
                       data-answer={part.answer}
@@ -299,6 +307,17 @@ export const Dialogue = Node.create({
           'data-dialogue-show-word-bank': String(attributes.showWordBank),
         }),
       },
+      compactSingleLetterBlanks: {
+        default: true,
+        parseHTML: (element) => (
+          element.getAttribute('data-dialogue-compact-single-letter') !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-dialogue-compact-single-letter': String(
+            attributes.compactSingleLetterBlanks,
+          ),
+        }),
+      },
       hideBlankNumbers: {
         default: false,
         parseHTML: (element) => element.getAttribute('data-dialogue-hide-blank-numbers') === 'true',
@@ -355,6 +374,7 @@ export const Dialogue = Node.create({
               showSpeakerNames: attrs.showSpeakerNames ?? false,
               showOriginal: attrs.showOriginal ?? false,
               showWordBank: attrs.showWordBank ?? false,
+              compactSingleLetterBlanks: attrs.compactSingleLetterBlanks ?? true,
               hideBlankNumbers: attrs.hideBlankNumbers ?? false,
               showFirstAsExample: attrs.showFirstAsExample ?? false,
             },

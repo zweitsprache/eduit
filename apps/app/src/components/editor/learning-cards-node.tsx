@@ -12,6 +12,7 @@ import { htmlToInlineFormatting } from '@/components/editor/custom-blocks/inline
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
 import {
   isSingleLetterBlankAnswer,
+  shouldAttachBlankToPreviousText,
 } from '@/components/editor/fill-in-the-blank-node';
 
 export type LearningCardItem = {
@@ -26,6 +27,7 @@ export type LearningCardsAttrs = {
   title: string;
   format: 'a8-landscape';
   sidedness: 'single' | 'double' | 'single-solution';
+  compactSingleLetterBlanks: boolean;
   items: LearningCardItem[];
   frontTextSize: LearningCardTextSize;
   backTextSize: LearningCardTextSize;
@@ -55,6 +57,7 @@ export const DEFAULT_LEARNING_CARDS_ATTRS: LearningCardsAttrs = {
   title: 'Learning cards',
   format: 'a8-landscape',
   sidedness: 'double',
+  compactSingleLetterBlanks: true,
   items: DEFAULT_LEARNING_CARD_ITEMS,
   frontTextSize: 'm',
   backTextSize: 'm',
@@ -98,7 +101,7 @@ function parseLearningCardBlankPayload(payload: string, defaultWidthFactor = 1) 
 
   const answer = payload.slice(0, separatorIndex).trim();
   const parsedFactor = Number(payload.slice(separatorIndex + 1).trim());
-  if (!answer || !Number.isFinite(parsedFactor) || parsedFactor < 0.5) {
+  if (!answer || !Number.isFinite(parsedFactor) || parsedFactor < 0.25) {
     return { answer: payload.trim(), widthFactor: defaultWidthFactor };
   }
 
@@ -266,12 +269,14 @@ function applyMeasuredSolutionRanges(editor: Editor, ranges: SolutionRange[]) {
 
 function LearningCardsGrid({
   back,
+  compactSingleLetterBlanks,
   textSize,
   items,
   cardOffset,
   showCardNumbers,
 }: {
   back: boolean;
+  compactSingleLetterBlanks: boolean;
   textSize: LearningCardTextSize;
   items: LearningCardItem[];
   cardOffset: number;
@@ -297,6 +302,7 @@ function LearningCardsGrid({
             ) : null}
             {item ? (
               <LearningCardContent
+                compactSingleLetterBlanks={compactSingleLetterBlanks}
                 fallback={item.id.endsWith('-empty')
                   ? undefined
                   : `Card ${globalIndex}`}
@@ -339,10 +345,12 @@ function renderLearningCardSolution(item: LearningCardItem, index: number) {
 }
 
 export function LearningCardContent({
+  compactSingleLetterBlanks = true,
   fallback,
   textSize = 'm',
   text,
 }: {
+  compactSingleLetterBlanks?: boolean;
   fallback?: string;
   textSize?: LearningCardTextSize;
   text: string;
@@ -370,8 +378,13 @@ export function LearningCardContent({
             <span
               aria-label={`Blank ${String(blankIndex).padStart(2, '0')}`}
               className={`fill-in-the-blank-node__blank${
-                isSingleLetterBlankAnswer(part.answer)
+                compactSingleLetterBlanks
+                  && isSingleLetterBlankAnswer(part.answer)
                   ? ' fill-in-the-blank-node__blank--single-letter'
+                  : ''
+              }${
+                shouldAttachBlankToPreviousText(parts, index)
+                  ? ' fill-in-the-blank-node__blank--suffix'
                   : ''
               }`}
               data-answer={part.answer}
@@ -545,6 +558,7 @@ function LearningCardsNodeView({ node, editor, selected }: NodeViewProps) {
           <LearningCardsGrid
             back={back}
             cardOffset={attrs.groupIndex * 9}
+            compactSingleLetterBlanks={attrs.compactSingleLetterBlanks}
             items={items}
             showCardNumbers={attrs.sidedness === 'single-solution' && !back}
             textSize={textSize}
@@ -591,6 +605,15 @@ export const LearningCards = Node.create({
             : 'double';
         },
         renderHTML: ({ sidedness }) => ({ 'data-sidedness': sidedness }),
+      },
+      compactSingleLetterBlanks: {
+        default: DEFAULT_LEARNING_CARDS_ATTRS.compactSingleLetterBlanks,
+        parseHTML: (element) => (
+          element.getAttribute('data-compact-single-letter-blanks') !== 'false'
+        ),
+        renderHTML: ({ compactSingleLetterBlanks }) => ({
+          'data-compact-single-letter-blanks': String(compactSingleLetterBlanks),
+        }),
       },
       frontTextSize: {
         default: DEFAULT_LEARNING_CARDS_ATTRS.frontTextSize,

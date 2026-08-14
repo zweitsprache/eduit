@@ -23,6 +23,7 @@ export type FillInTheBlankAttrs = {
   text: string;
   distractors: string[];
   widthFactor: number;
+  compactSingleLetterBlanks: boolean;
   hideBlankNumbers: boolean;
   hideItemNumbers: boolean;
   showLineNumbers: boolean;
@@ -46,13 +47,13 @@ function parseBlankPayload(payload: string, defaultWidthFactor: number) {
     return { answer: payload.trim(), widthFactor: defaultWidthFactor };
   }
 
-  if (!Number.isFinite(parsedFactor) || parsedFactor < 0.5) {
+  if (!Number.isFinite(parsedFactor) || parsedFactor < 0.25) {
     return { answer, widthFactor: defaultWidthFactor };
   }
 
   return {
     answer,
-    widthFactor: Math.min(Math.max(defaultWidthFactor * parsedFactor, 0.5), 5),
+    widthFactor: Math.min(Math.max(defaultWidthFactor * parsedFactor, 0.25), 5),
   };
 }
 
@@ -62,7 +63,7 @@ export function parseFillInTheBlankText(
 ): FillInTheBlankPart[] {
   const parts: FillInTheBlankPart[] = [];
   const normalizedDefaultWidthFactor = Number.isFinite(defaultWidthFactor)
-    ? Math.min(Math.max(defaultWidthFactor, 0.5), 5)
+    ? Math.min(Math.max(defaultWidthFactor, 0.25), 5)
     : 1;
   const pattern = /\{\{blank:([^{}]+)\}\}/gi;
   let cursor = 0;
@@ -99,6 +100,14 @@ export function isSingleLetterBlankAnswer(answer: string) {
     && characters[0].toLocaleLowerCase() !== characters[0].toLocaleUpperCase();
 }
 
+export function shouldAttachBlankToPreviousText(
+  parts: FillInTheBlankPart[],
+  partIndex: number,
+) {
+  const previousPart = partIndex > 0 ? parts[partIndex - 1] : null;
+  return previousPart?.type === 'text' && /\S$/.test(previousPart.value);
+}
+
 function parseParagraphs(text: string, defaultWidthFactor: number) {
   let blankOffset = 0;
 
@@ -128,11 +137,13 @@ function stableWordBankOrder(items: Array<{ id: string; text: string }>) {
 }
 
 function FillInTheBlankParts({
+  compactSingleLetterBlanks,
   hideBlankNumbers,
   itemNumber,
   parts,
   showFirstAsExample,
 }: {
+  compactSingleLetterBlanks: boolean;
   hideBlankNumbers: boolean;
   itemNumber?: number;
   parts: FillInTheBlankPart[];
@@ -152,6 +163,8 @@ function FillInTheBlankParts({
   let blankOrdinal = 0;
   return parts.map((part, index) => {
     if (part.type === 'blank') blankOrdinal += 1;
+    const isSuffixBlank = part.type === 'blank'
+      && shouldAttachBlankToPreviousText(parts, index);
     const blankLabel = itemNumber === undefined
       ? String(part.type === 'blank' ? part.index : 0).padStart(2, '0')
       : `${String(itemNumber).padStart(2, '0')}${
@@ -163,8 +176,12 @@ function FillInTheBlankParts({
         <span
           aria-label={`Blank ${blankLabel}`}
           className={`fill-in-the-blank-node__blank${
-            isSingleLetterBlankAnswer(part.answer)
+            compactSingleLetterBlanks && isSingleLetterBlankAnswer(part.answer)
               ? ' fill-in-the-blank-node__blank--single-letter'
+              : ''
+          }${
+            isSuffixBlank
+              ? ' fill-in-the-blank-node__blank--suffix'
               : ''
           }`}
           data-answer={part.answer}
@@ -194,6 +211,7 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
     title,
     text,
     widthFactor,
+    compactSingleLetterBlanks,
     hideBlankNumbers,
     hideItemNumbers,
     showLineNumbers,
@@ -315,6 +333,7 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
       )}
       <p className="fill-in-the-blank-node__text">
         <FillInTheBlankParts
+          compactSingleLetterBlanks={compactSingleLetterBlanks}
           hideBlankNumbers={hideBlankNumbers}
           itemNumber={paragraphIndex + 1}
           parts={parts}
@@ -379,6 +398,7 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
       ) : (
         <p className="fill-in-the-blank-node__text">
           <FillInTheBlankParts
+            compactSingleLetterBlanks={compactSingleLetterBlanks}
             hideBlankNumbers={hideBlankNumbers}
             parts={paragraphs[0] ?? []}
             showFirstAsExample={showFirstAsExample}
@@ -445,10 +465,21 @@ export const FillInTheBlank = Node.create({
         default: 1,
         parseHTML: (element) => {
           const value = Number(element.getAttribute('data-fill-blank-width-factor'));
-          return Number.isFinite(value) && value >= 0.5 ? Math.min(value, 5) : 1;
+          return Number.isFinite(value) && value >= 0.25 ? Math.min(value, 5) : 1;
         },
         renderHTML: (attributes) => ({
           'data-fill-blank-width-factor': attributes.widthFactor,
+        }),
+      },
+      compactSingleLetterBlanks: {
+        default: true,
+        parseHTML: (element) => (
+          element.getAttribute('data-fill-blank-compact-single-letter') !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-fill-blank-compact-single-letter': String(
+            attributes.compactSingleLetterBlanks,
+          ),
         }),
       },
       hideBlankNumbers: {
@@ -530,6 +561,7 @@ export const FillInTheBlank = Node.create({
               text: attrs.text ?? 'The {{blank:answer}} is the correct word.',
               distractors: attrs.distractors ?? [],
               widthFactor: attrs.widthFactor ?? 1,
+              compactSingleLetterBlanks: attrs.compactSingleLetterBlanks ?? true,
               hideBlankNumbers: attrs.hideBlankNumbers ?? false,
               hideItemNumbers: attrs.hideItemNumbers ?? false,
               showLineNumbers: attrs.showLineNumbers ?? false,

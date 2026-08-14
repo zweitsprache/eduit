@@ -3295,7 +3295,7 @@
 .fill-in-the-blank-node__blank {
   position: relative;
   display: inline-flex;
-  --fill-blank-effective-width-factor: max(var(--fill-blank-width-factor, 1), 0.5);
+  --fill-blank-effective-width-factor: max(var(--fill-blank-width-factor, 1), 0.25);
   width: calc(
     var(--custom-block-blank-min-width)
     * var(--fill-blank-effective-width-factor)
@@ -3325,6 +3325,14 @@
   min-width: var(--custom-block-control-size);
   justify-content: center;
   padding-inline: 0;
+}
+
+.fill-in-the-blank-node__blank--suffix {
+  margin-inline-start: 0;
+}
+
+.fill-in-the-blank-node__blank--suffix[data-first-blank="true"] {
+  margin-inline-start: 0;
 }
 
 .tiptap

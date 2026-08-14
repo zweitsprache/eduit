@@ -44,7 +44,7 @@ const fillInTheBlankSchema = z.object({
   title: z.string().trim().max(500).default(''),
   items: z.array(z.string().trim().min(1).max(5000)).min(1).max(500),
   distractors: z.array(z.string().trim().min(1).max(500)).max(500).default([]),
-  widthFactor: z.number().min(0.5).max(5).default(1),
+  widthFactor: z.number().min(0.25).max(5).default(1),
   hideBlankNumbers: z.boolean().default(false),
   hideItemNumbers: z.boolean().default(false),
   showLineNumbers: z.boolean().default(false),

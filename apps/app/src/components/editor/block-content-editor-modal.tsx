@@ -624,6 +624,17 @@ function LearningCardsEditor({
         </select>
       </div>
 
+      <ContentSectionHeader>Learner support</ContentSectionHeader>
+      <ContentSwitchGrid>
+        <ContentSwitch
+          label="Compact single-letter blanks"
+          isSelected={attrs.compactSingleLetterBlanks ?? true}
+          onChange={(compactSingleLetterBlanks) => updateLearningCards({
+            compactSingleLetterBlanks,
+          })}
+        />
+      </ContentSwitchGrid>
+
       <ContentSectionHeader>Text size</ContentSectionHeader>
       <p className="mt-1 text-xs leading-5 text-tertiary">
         Front side
@@ -3817,13 +3828,20 @@ function FillInTheBlankEditor({
         onChange={(widthFactor) => updateAttrs(editor, block, {
           widthFactor: Number(widthFactor),
         })}
-        options={[0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((width) => ({
+        options={[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((width) => ({
           label: `${width} ×`,
           value: String(width),
         }))}
       />
       <ContentSectionHeader>Learner support</ContentSectionHeader>
       <ContentSwitchGrid>
+        <ContentSwitch
+          label="Compact single-letter blanks"
+          isSelected={attrs.compactSingleLetterBlanks ?? true}
+          onChange={(compactSingleLetterBlanks) => updateAttrs(editor, block, {
+            compactSingleLetterBlanks,
+          })}
+        />
         <ContentSwitch
           label="Show word bank"
           isSelected={attrs.showWordBank}
@@ -4557,6 +4575,13 @@ function DialogueEditor({
       </label>
       <ContentSectionHeader>Learner support</ContentSectionHeader>
       <ContentSwitchGrid>
+        <ContentSwitch
+          label="Compact single-letter blanks"
+          isSelected={attrs.compactSingleLetterBlanks ?? true}
+          onChange={(compactSingleLetterBlanks) => updateAttrs(editor, block, {
+            compactSingleLetterBlanks,
+          })}
+        />
         <ContentSwitch
           label="Show original"
           isDisabled={attrs.showSpeakerNames}
@@ -6513,6 +6538,13 @@ function WorksheetTableEditor({
       />
       <ContentSectionHeader>Learner support</ContentSectionHeader>
       <ContentSwitchGrid>
+        <ContentSwitch
+          label="Compact single-letter blanks"
+          isSelected={attrs.compactSingleLetterBlanks ?? true}
+          onChange={(compactSingleLetterBlanks) => updateAttrs(editor, block, {
+            compactSingleLetterBlanks,
+          })}
+        />
         <ContentSwitch
           label="Hide blank numbers"
           isSelected={attrs.hideBlankNumbers}
