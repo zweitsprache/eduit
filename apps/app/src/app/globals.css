@@ -69,7 +69,7 @@
 
 .tiptap-page-header::after {
   position: absolute;
-  top: var(--document-logo-top, 10mm);
+  top: calc(var(--document-logo-top, 10mm) - 2.5mm);
   right: 15mm;
   width: 52px;
   height: 16px;
@@ -107,7 +107,8 @@
 .tiptap-page-footer {
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: end;
+  align-items: start;
+  align-content: end;
   color: var(--color-text-primary) !important;
   font-size: 10px !important;
   line-height: 1.4;
@@ -116,6 +117,7 @@
 .tiptap-page-footer p {
   margin: 0 !important;
   line-height: 1.4 !important;
+  transform: translateY(2.5mm);
 }
 
 .tiptap-page-footer p:nth-child(2) {
@@ -242,6 +244,25 @@
   display: none !important;
 }
 
+/* The instruction header is a flex container, which establishes an independent
+   formatting context and so is placed *beside* the full-width floated footer/
+   header pagination band instead of wrapping below it. It then collapses to
+   zero width and spills its text past the right page edge, which makes
+   Chromium's page.pdf() shrink the whole document to fit. Normal block+inline
+   flow lets the text wrap below the band; the badge margin and vertical-align
+   reproduce the flex gap and centering. */
+.pdf-exporting .custom-block__instruction {
+  display: block !important;
+}
+.pdf-exporting .custom-block__instruction > .custom-block__badge {
+  margin-inline-end: var(--custom-block-instruction-gap) !important;
+  vertical-align: middle !important;
+}
+.pdf-exporting .custom-block__instruction > .custom-block__instruction-text {
+  display: inline !important;
+  vertical-align: middle !important;
+}
+
 @media print {
   * {
     -webkit-print-color-adjust: exact !important;
@@ -329,6 +350,23 @@
   .tiptap-page-break-node--pages-mode::before,
   .tiptap-page-break-node--pages-mode::after {
     display: none !important;
+  }
+
+  /* See the .pdf-exporting rule above: flow the instruction header as
+     block+inline so its text wraps below the floated pagination band rather
+     than being squeezed beside it and spilling off the right page edge. */
+  .custom-block__instruction {
+    display: block !important;
+  }
+
+  .custom-block__instruction > .custom-block__badge {
+    margin-inline-end: var(--custom-block-instruction-gap) !important;
+    vertical-align: middle !important;
+  }
+
+  .custom-block__instruction > .custom-block__instruction-text {
+    display: inline !important;
+    vertical-align: middle !important;
   }
 }
 @keyframes ai-generation-progress-enter {

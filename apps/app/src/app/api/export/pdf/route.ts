@@ -7,11 +7,14 @@ import { replaceClockPlaceholders } from '@/lib/clock-placeholder';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+// viewport width/height are the paper size in CSS pixels (mm * 96 / 25.4).
+// The print viewport must match the @page width, otherwise Chromium's
+// page.pdf() scales the whole document down to fit the paper width.
 const PAGE_FORMATS = {
-  'a4-portrait': { cssSize: '210mm 297mm', pageHeight: '297mm' },
-  'a4-landscape': { cssSize: '297mm 210mm', pageHeight: '210mm' },
-  'letter-portrait': { cssSize: '215.9mm 279.4mm', pageHeight: '279.4mm' },
-  'letter-landscape': { cssSize: '279.4mm 215.9mm', pageHeight: '215.9mm' },
+  'a4-portrait': { cssSize: '210mm 297mm', pageHeight: '297mm', viewport: { width: 794, height: 1123 } },
+  'a4-landscape': { cssSize: '297mm 210mm', pageHeight: '210mm', viewport: { width: 1123, height: 794 } },
+  'letter-portrait': { cssSize: '215.9mm 279.4mm', pageHeight: '279.4mm', viewport: { width: 816, height: 1056 } },
+  'letter-landscape': { cssSize: '279.4mm 215.9mm', pageHeight: '215.9mm', viewport: { width: 1056, height: 816 } },
 };
 
 const PDF_FONTS = [
@@ -149,7 +152,7 @@ export async function POST(request: Request) {
     );
   }
   try {
-    const page = await browser.newPage();
+    const page = await browser.newPage({ viewport: pageFormat.viewport });
     // Resolve the same font cascade that page.pdf() will use before waiting
     // for fonts. Otherwise print-only style changes can discover a branded
     // face after document.fonts.ready has already resolved.

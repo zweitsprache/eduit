@@ -697,8 +697,9 @@ function documentFooter(
   const footer2 = inlineFooterHtml(
     brand.footer2Html ?? DOCUMENT_CREATOR,
   );
+  const leftLines = [footer1, footer2].filter(Boolean).join('<br>');
   return [
-    `<p>${footer1}<br>${footer2}</p>`,
+    `<p>${leftLines}</p>`,
     '<p>{page}/{total}</p>',
     `<p>${worksheetId ?? DOCUMENT_ID}<br>${formatBrandDate(new Date(), brand.dateFormat)}</p>`,
   ].join('');

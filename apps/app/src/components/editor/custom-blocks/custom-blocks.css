@@ -3314,6 +3314,9 @@
   font-size: var(--custom-block-meta-font-size);
   line-height: 1;
   vertical-align: baseline;
+  /* optical nudge: the box is taller than the line, so baseline-alignment makes
+     it (and the centered solution/number) look low; relative shift is layout-neutral */
+  top: -2px;
 }
 
 .fill-in-the-blank-node__blank[data-first-blank="true"] {
@@ -3379,7 +3382,7 @@
   font-size: var(--custom-block-solution-font-size);
   font-weight: 500;
   line-height: var(--custom-block-label-line-height);
-  transform: none;
+  transform: translateY(-1.5px);
   white-space: nowrap;
   pointer-events: none;
 }
