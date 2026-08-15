@@ -293,11 +293,12 @@ Use for single- or double-sided study cards. This block must be the only block i
 | Field | Constraint |
 | --- | --- |
 | `title` | up to 200 characters |
-| `sidedness` | `single` or `double` |
+| `sidedness` | `single`, `double`, or `single-solution` |
+| `blankWidthFactor` | number 0.25-5, default `1` |
 | `frontTextSize`, `backTextSize` | `xs`, `s`, `m`, `l`, or `xl` |
 | `items` | required array of 1-450 cards |
 
-Each card has `front` and `back`, each up to 5000 characters. Cards are laid out nine per physical sheet. For `single`, the back may be empty. Do not add headings or page breaks around this block.
+Each card has `front` and `back`, each up to 5000 characters. Cards are laid out nine per physical sheet. For `single`, the back may be empty. For `single-solution`, cards print single-sided and an additional solution key section is generated from the card backs. Learning-card text supports blank tokens such as `{{blank:answer}}` and width multipliers such as `{{blank:answer|1.5}}`; the multiplier is applied relative to the block-level `blankWidthFactor`. Do not add headings or page breaks around this block.
 
 ### `wordGrid`
 

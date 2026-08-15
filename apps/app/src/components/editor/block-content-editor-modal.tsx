@@ -501,10 +501,18 @@ function LearningCardsEditor({
       const imported = source as Record<string, unknown>;
       const frontTextSize = imported.frontTextSize;
       const backTextSize = imported.backTextSize;
+      const blankWidthFactor = Number(imported.blankWidthFactor);
       updateLearningCards({
         title: typeof imported.title === 'string' ? imported.title : attrs.title,
         format: 'a8-landscape',
-        sidedness: imported.sidedness === 'single' ? 'single' : 'double',
+        sidedness: imported.sidedness === 'single'
+          ? 'single'
+          : imported.sidedness === 'single-solution'
+            ? 'single-solution'
+            : 'double',
+        blankWidthFactor: Number.isFinite(blankWidthFactor)
+          ? Math.min(Math.max(blankWidthFactor, 0.25), 5)
+          : attrs.blankWidthFactor,
         frontTextSize: frontTextSize === 'xs'
           || frontTextSize === 's'
           || frontTextSize === 'm'
@@ -634,6 +642,19 @@ function LearningCardsEditor({
           })}
         />
       </ContentSwitchGrid>
+
+      <ContentSectionHeader>Default blank width</ContentSectionHeader>
+      <ContentOptionButtonGroup
+        ariaLabel="Learning cards default blank width"
+        value={String(attrs.blankWidthFactor ?? 1)}
+        onChange={(blankWidthFactor) => updateLearningCards({
+          blankWidthFactor: Number(blankWidthFactor),
+        })}
+        options={[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((width) => ({
+          label: `${width} ×`,
+          value: String(width),
+        }))}
+      />
 
       <ContentSectionHeader>Text size</ContentSectionHeader>
       <p className="mt-1 text-xs leading-5 text-tertiary">
@@ -1871,7 +1892,11 @@ function Preview({
                 {label}
               </p>
               <div className="flex aspect-[74/52] w-full items-center justify-center overflow-hidden rounded-lg border border-secondary bg-white p-8 text-center text-secondary shadow-sm">
-                <LearningCardContent fallback={`${label} content`} text={content} />
+                <LearningCardContent
+                  blankWidthFactor={learningCardsAttrs.blankWidthFactor}
+                  fallback={`${label} content`}
+                  text={content}
+                />
               </div>
             </div>
           ))}

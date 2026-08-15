@@ -28,6 +28,7 @@ export type LearningCardsAttrs = {
   format: 'a8-landscape';
   sidedness: 'single' | 'double' | 'single-solution';
   compactSingleLetterBlanks: boolean;
+  blankWidthFactor: number;
   items: LearningCardItem[];
   frontTextSize: LearningCardTextSize;
   backTextSize: LearningCardTextSize;
@@ -58,6 +59,7 @@ export const DEFAULT_LEARNING_CARDS_ATTRS: LearningCardsAttrs = {
   format: 'a8-landscape',
   sidedness: 'double',
   compactSingleLetterBlanks: true,
+  blankWidthFactor: 1,
   items: DEFAULT_LEARNING_CARD_ITEMS,
   frontTextSize: 'm',
   backTextSize: 'm',
@@ -101,18 +103,28 @@ function parseLearningCardBlankPayload(payload: string, defaultWidthFactor = 1) 
 
   const answer = payload.slice(0, separatorIndex).trim();
   const parsedFactor = Number(payload.slice(separatorIndex + 1).trim());
-  if (!answer || !Number.isFinite(parsedFactor) || parsedFactor < 0.25) {
+  if (!answer) {
     return { answer: payload.trim(), widthFactor: defaultWidthFactor };
+  }
+
+  if (!Number.isFinite(parsedFactor) || parsedFactor < 0.25) {
+    return { answer, widthFactor: defaultWidthFactor };
   }
 
   return {
     answer,
-    widthFactor: Math.min(parsedFactor, 5),
+    widthFactor: Math.min(Math.max(defaultWidthFactor * parsedFactor, 0.25), 5),
   };
 }
 
-function parseLearningCardBlanks(text: string): LearningCardBlankPart[] {
+function parseLearningCardBlanks(
+  text: string,
+  defaultWidthFactor = 1,
+): LearningCardBlankPart[] {
   const parts: LearningCardBlankPart[] = [];
+  const normalizedDefaultWidthFactor = Number.isFinite(defaultWidthFactor)
+    ? Math.min(Math.max(defaultWidthFactor, 0.25), 5)
+    : 1;
   const pattern = /\{\{blank:([^{}]+)\}\}/gi;
   let cursor = 0;
   let blankIndex = 0;
@@ -123,7 +135,7 @@ function parseLearningCardBlanks(text: string): LearningCardBlankPart[] {
       parts.push({ type: 'text', value: text.slice(cursor, match.index) });
     }
     blankIndex += 1;
-    const blank = parseLearningCardBlankPayload(match[1], 1);
+    const blank = parseLearningCardBlankPayload(match[1], normalizedDefaultWidthFactor);
     parts.push({
       type: 'blank',
       answer: blank.answer,
@@ -139,6 +151,13 @@ function parseLearningCardBlanks(text: string): LearningCardBlankPart[] {
   }
 
   return parts.length ? parts : [{ type: 'text', value: text }];
+}
+
+function bracketHighlightsToInlineMarkup(value: string) {
+  return value.replace(
+    /(?<!\[)\[([^\[\]\r\n]+)\](?!\])/g,
+    '[[verb-exception]]$1[[/verb-exception]]',
+  );
 }
 
 function groupsOfNine(items: LearningCardItem[]) {
@@ -269,6 +288,7 @@ function applyMeasuredSolutionRanges(editor: Editor, ranges: SolutionRange[]) {
 
 function LearningCardsGrid({
   back,
+  blankWidthFactor,
   compactSingleLetterBlanks,
   textSize,
   items,
@@ -276,6 +296,7 @@ function LearningCardsGrid({
   showCardNumbers,
 }: {
   back: boolean;
+  blankWidthFactor: number;
   compactSingleLetterBlanks: boolean;
   textSize: LearningCardTextSize;
   items: LearningCardItem[];
@@ -302,6 +323,7 @@ function LearningCardsGrid({
             ) : null}
             {item ? (
               <LearningCardContent
+                blankWidthFactor={blankWidthFactor}
                 compactSingleLetterBlanks={compactSingleLetterBlanks}
                 fallback={item.id.endsWith('-empty')
                   ? undefined
@@ -324,6 +346,18 @@ function renderLearningCardSolution(item: LearningCardItem, index: number) {
   const prefix = match
     ? rawValue.slice(0, match.index).replace(/^\n+|\n+$/g, '').trim()
     : rawValue.replace(/^\n+|\n+$/g, '').trim();
+  const prefixParts = parseLearningCardBlanks(prefix);
+
+  const renderPart = (part: LearningCardBlankPart, key: string) => (
+    part.type === 'text'
+      ? <InlineFormattedText key={key} text={bracketHighlightsToInlineMarkup(part.value)} />
+      : (
+        <InlineFormattedText
+          key={key}
+          text={`[[verb-exception]]${part.answer}[[/verb-exception]]`}
+        />
+      )
+  );
 
   return (
     <li className="learning-cards-node__solution-key-item" key={item.id ?? `solution-${index}`}>
@@ -334,22 +368,27 @@ function renderLearningCardSolution(item: LearningCardItem, index: number) {
         {answer
           ? (
             <>
-              {prefix ? <InlineFormattedText text={prefix} /> : null}
-              <strong><InlineFormattedText text={answer} /></strong>
+              {prefixParts.map((part, partIndex) => renderPart(part, `prefix-${partIndex}`))}
+              <InlineFormattedText
+                text={`[[verb-exception]]${bracketHighlightsToInlineMarkup(answer)}[[/verb-exception]]`}
+              />
             </>
           )
-          : <InlineFormattedText text={prefix || rawValue} />}
+          : parseLearningCardBlanks(prefix || rawValue)
+            .map((part, partIndex) => renderPart(part, `solution-${partIndex}`))}
       </span>
     </li>
   );
 }
 
 export function LearningCardContent({
+  blankWidthFactor = 1,
   compactSingleLetterBlanks = true,
   fallback,
   textSize = 'm',
   text,
 }: {
+  blankWidthFactor?: number;
   compactSingleLetterBlanks?: boolean;
   fallback?: string;
   textSize?: LearningCardTextSize;
@@ -362,7 +401,7 @@ export function LearningCardContent({
     ? `${value.slice(0, match.index)}${value.slice(match.index + match[0].length)}`
       .replace(/^\n+|\n+$/g, '')
     : value;
-  const parts = parseLearningCardBlanks(body);
+  const parts = parseLearningCardBlanks(body, blankWidthFactor);
 
   let blankIndex = 0;
   return (
@@ -496,7 +535,15 @@ function LearningCardsNodeView({ node, editor, selected }: NodeViewProps) {
         : 0;
       const pageZeroHeight = Math.max(1, pageHeight - titleBlock);
       const ranges = packSolutionRanges(heights, pageZeroHeight, pageHeight);
-      applyMeasuredSolutionRanges(editor, ranges);
+      const enqueue = typeof queueMicrotask === 'function'
+        ? queueMicrotask
+        : (callback: () => void) => {
+          void Promise.resolve().then(callback);
+        };
+      enqueue(() => {
+        if (cancelled || editor.isDestroyed) return;
+        applyMeasuredSolutionRanges(editor, ranges);
+      });
     };
 
     measure();
@@ -557,6 +604,7 @@ function LearningCardsNodeView({ node, editor, selected }: NodeViewProps) {
         ) : (
           <LearningCardsGrid
             back={back}
+            blankWidthFactor={attrs.blankWidthFactor}
             cardOffset={attrs.groupIndex * 9}
             compactSingleLetterBlanks={attrs.compactSingleLetterBlanks}
             items={items}
@@ -613,6 +661,16 @@ export const LearningCards = Node.create({
         ),
         renderHTML: ({ compactSingleLetterBlanks }) => ({
           'data-compact-single-letter-blanks': String(compactSingleLetterBlanks),
+        }),
+      },
+      blankWidthFactor: {
+        default: DEFAULT_LEARNING_CARDS_ATTRS.blankWidthFactor,
+        parseHTML: (element) => {
+          const value = Number(element.getAttribute('data-learning-cards-blank-width-factor'));
+          return Number.isFinite(value) && value >= 0.25 ? Math.min(value, 5) : 1;
+        },
+        renderHTML: ({ blankWidthFactor }) => ({
+          'data-learning-cards-blank-width-factor': String(blankWidthFactor),
         }),
       },
       frontTextSize: {

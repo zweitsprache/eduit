@@ -452,6 +452,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
       const {
         title,
         sidedness,
+        blankWidthFactor,
         items,
         frontTextSize,
         backTextSize,
@@ -460,6 +461,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         type: 'learningCards',
         title,
         sidedness,
+        blankWidthFactor,
         frontTextSize,
         backTextSize,
         // Ids are kept because the node view uses an `-empty` suffix to decide

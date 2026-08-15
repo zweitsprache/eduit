@@ -1449,6 +1449,7 @@ export default function EditorPage() {
   const [jsonImportDialogOpen, setJsonImportDialogOpen] = useState(false);
   const [jsonImportText, setJsonImportText] = useState('');
   const [jsonImportError, setJsonImportError] = useState<string | null>(null);
+  const [jsonImportDragActive, setJsonImportDragActive] = useState(false);
   const [importingJson, setImportingJson] = useState(false);
   const [nodeJsonImportDialogOpen, setNodeJsonImportDialogOpen] = useState(false);
   const [nodeJsonImportText, setNodeJsonImportText] = useState('');
@@ -4721,6 +4722,30 @@ export default function EditorPage() {
     setJsonCopied(true);
     if (jsonCopiedTimerRef.current) clearTimeout(jsonCopiedTimerRef.current);
     jsonCopiedTimerRef.current = setTimeout(() => setJsonCopied(false), 2500);
+  };
+
+  const handleJsonImportDrop = async (event: React.DragEvent<HTMLDivElement | HTMLTextAreaElement>) => {
+    event.preventDefault();
+    setJsonImportDragActive(false);
+
+    const droppedJson =
+      event.dataTransfer.getData('application/json') ||
+      event.dataTransfer.getData('text/plain');
+
+    if (droppedJson.trim()) {
+      setJsonImportText(droppedJson);
+      setJsonImportError(null);
+      return;
+    }
+
+    const file = event.dataTransfer.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    if (text.trim()) {
+      setJsonImportText(text);
+      setJsonImportError(null);
+    }
   };
 
   const importWorksheetJson = async () => {
@@ -9771,17 +9796,47 @@ export default function EditorPage() {
             <p className="mt-1 text-sm text-tertiary">
               Replace the current worksheet with a single worksheet from JSON.
             </p>
-            <textarea
-              aria-label="Worksheet JSON import"
-              className="mt-4 min-h-[24rem] w-full resize-y rounded-md border border-primary bg-primary px-3 py-3 font-mono text-xs leading-5 text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-              onChange={(event) => {
-                setJsonImportText(event.target.value);
-                setJsonImportError(null);
+            <div
+              className={cx(
+                'mt-4 rounded-md border border-dashed transition',
+                jsonImportDragActive
+                  ? 'border-brand bg-brand-primary'
+                  : 'border-primary bg-primary',
+              )}
+              onDragEnter={(event) => {
+                event.preventDefault();
+                setJsonImportDragActive(true);
               }}
-              placeholder={"Paste worksheet JSON here"}
-              spellCheck={false}
-              value={jsonImportText}
-            />
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'copy';
+                setJsonImportDragActive(true);
+              }}
+              onDragLeave={(event) => {
+                event.preventDefault();
+                if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                  setJsonImportDragActive(false);
+                }
+              }}
+              onDrop={(event) => {
+                void handleJsonImportDrop(event);
+              }}
+            >
+              <textarea
+                aria-label="Worksheet JSON import"
+                className="min-h-[24rem] w-full resize-y rounded-md border-0 bg-transparent px-3 py-3 font-mono text-xs leading-5 text-secondary outline-none focus:outline-none"
+                onChange={(event) => {
+                  setJsonImportText(event.target.value);
+                  setJsonImportError(null);
+                }}
+                placeholder={"Paste or drop worksheet JSON here"}
+                spellCheck={false}
+                value={jsonImportText}
+              />
+            </div>
+            <p className="mt-2 text-xs text-tertiary">
+              Drag a JSON file here or paste the worksheet JSON above.
+            </p>
             {jsonImportError && (
               <p className="mt-2 text-sm text-error-primary" role="alert">
                 {jsonImportError}

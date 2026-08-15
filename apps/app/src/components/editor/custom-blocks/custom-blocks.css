@@ -209,6 +209,10 @@
   min-width: 0;
 }
 
+.learning-cards-node__solution-key-text .custom-block__verb-exception {
+  color: #2f855a;
+}
+
 .learning-cards-node__number {
   position: absolute;
   top: 4mm;
@@ -302,7 +306,10 @@
 }
 
 .learning-cards-node__body .fill-in-the-blank-node__blank {
-  min-width: calc(var(--custom-block-blank-min-width) * 0.5);
+  min-width: calc(
+    var(--custom-block-blank-min-width)
+    * max(var(--fill-blank-width-factor, 1), 0.25)
+  );
   margin-inline: 0.2em;
   vertical-align: -0.24em;
   border: var(--custom-block-row-border-width) solid

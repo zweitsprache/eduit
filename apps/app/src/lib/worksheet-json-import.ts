@@ -234,6 +234,7 @@ const learningCardsSchema = z.object({
   type: z.literal('learningCards'),
   title: z.string().trim().max(200).default('Learning cards'),
   sidedness: z.enum(['single', 'double', 'single-solution']).default('double'),
+  blankWidthFactor: z.number().min(0.25).max(5).default(1),
   frontTextSize: z.enum(['xs', 's', 'm', 'l', 'xl']).default('m'),
   backTextSize: z.enum(['xs', 's', 'm', 'l', 'xl']).default('m'),
   items: z.array(learningCardSchema).min(1).max(450),
@@ -668,7 +669,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     const encodedItems = escapeAttribute(encodeURIComponent(JSON.stringify(items)));
     const sheets = Array.from({ length: groupCount }, (_, groupIndex) => (
       sides.map((sheetSide) => (
-        `<div data-title="${escapeAttribute(block.title)}" data-format="a8-landscape" data-sidedness="${block.sidedness}" data-front-text-size="${block.frontTextSize}" data-back-text-size="${block.backTextSize}" data-items="${encodedItems}" data-group-index="${groupIndex}" data-sheet-side="${sheetSide}" data-solution-sheet-index="0" data-solution-sheet-count="1" data-solution-start-index="0" data-solution-end-index="0" data-type="learning-cards"></div>`
+        `<div data-title="${escapeAttribute(block.title)}" data-format="a8-landscape" data-sidedness="${block.sidedness}" data-learning-cards-blank-width-factor="${block.blankWidthFactor}" data-front-text-size="${block.frontTextSize}" data-back-text-size="${block.backTextSize}" data-items="${encodedItems}" data-group-index="${groupIndex}" data-sheet-side="${sheetSide}" data-solution-sheet-index="0" data-solution-sheet-count="1" data-solution-start-index="0" data-solution-end-index="0" data-type="learning-cards"></div>`
       ))
     )).flat();
     const cardBreak = '<div data-restart-pagination="false" data-type="pageBreak"></div>';
@@ -677,7 +678,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       // The break before the solution key restarts page numbering so the
       // solution section is numbered on its own. The editor's measurement pass
       // splits this single solution sheet into page-sized sheets on load.
-      const solutionSheet = `<div data-title="${escapeAttribute(block.title)}" data-format="a8-landscape" data-sidedness="single-solution" data-front-text-size="${block.frontTextSize}" data-back-text-size="${block.backTextSize}" data-items="${encodedItems}" data-group-index="${groupCount}" data-sheet-side="solutions" data-solution-sheet-index="0" data-solution-sheet-count="1" data-solution-start-index="0" data-solution-end-index="0" data-type="learning-cards"></div>`;
+      const solutionSheet = `<div data-title="${escapeAttribute(block.title)}" data-format="a8-landscape" data-sidedness="single-solution" data-learning-cards-blank-width-factor="${block.blankWidthFactor}" data-front-text-size="${block.frontTextSize}" data-back-text-size="${block.backTextSize}" data-items="${encodedItems}" data-group-index="${groupCount}" data-sheet-side="solutions" data-solution-sheet-index="0" data-solution-sheet-count="1" data-solution-start-index="0" data-solution-end-index="0" data-type="learning-cards"></div>`;
       html += `<div data-restart-pagination="true" data-type="pageBreak"></div>${solutionSheet}`;
     }
     return html;
