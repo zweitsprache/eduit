@@ -55,6 +55,7 @@ const fillInTheBlankSchema = z.object({
 const richTextSchema = z.object({
   type: z.literal('richText'),
   html: z.string().min(1).max(100_000),
+  bypassGap: z.boolean().default(false),
 });
 
 const pageBreakSchema = z.object({
@@ -98,6 +99,7 @@ const dialogueSchema = z.object({
     3: z.string().trim().max(100).default('Speaker 3'),
     4: z.string().trim().max(100).default('Speaker 4'),
   }),
+  showInstruction: z.boolean().default(true),
   showSpeakerNames: z.boolean().default(false),
   showOriginal: z.boolean().default(false),
   showWordBank: z.boolean().default(false),
@@ -321,6 +323,11 @@ const wordGridSchema = z.object({
   generation: z.number().int().min(0).max(1_000_000).default(0),
 });
 
+const wordBankSchema = z.object({
+  type: z.literal('wordBank'),
+  items: z.array(z.string().trim().min(1).max(500)).min(1).max(500),
+});
+
 const dominoPairSchema = z.object({
   id: z.string().trim().min(1).max(100).optional(),
   left: z.string().trim().min(1).max(2000),
@@ -485,6 +492,7 @@ export const generatedWorksheetSchema = z.object({
     learningCardsSchema,
     richTextSchema,
     wordGridSchema,
+    wordBankSchema,
     dominoSchema,
     germanVerbTableSchema,
     declinationTableSchema,
@@ -548,7 +556,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
   if (block.type === 'richText') {
     // The node stores its markup URI-encoded; encodeURIComponent also escapes the
     // characters that would break out of the attribute.
-    return `<div data-rich-text-html="${encodeURIComponent(block.html)}" data-type="rich-text"></div>`;
+    return `<div data-rich-text-html="${encodeURIComponent(block.html)}" data-rich-text-bypass-gap="${block.bypassGap}" data-type="rich-text"></div>`;
   }
   if (block.type === 'worksheetTable') {
     const columns = escapeAttribute(encodeURIComponent(JSON.stringify(block.columns)));
@@ -581,6 +589,9 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     };
     return `<div data-type="word-grid" data-word-grid-attrs="${encodeURIComponent(JSON.stringify(attrs))}"></div>`;
   }
+  if (block.type === 'wordBank') {
+    return `<div data-type="word-bank" data-word-bank-items="${encodeURIComponent(JSON.stringify(block.items))}"></div>`;
+  }
   if (block.type === 'fillInTheBlank') {
     return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-fill-blank-title="${escapeAttribute(block.title)}" data-fill-blank-text="${escapeAttribute(block.items.join('\n'))}" data-fill-blank-distractors="${escapeAttribute(JSON.stringify(block.distractors))}" data-fill-blank-width-factor="${block.widthFactor}" data-fill-blank-hide-numbers="${block.hideBlankNumbers}" data-fill-blank-hide-item-numbers="${block.hideItemNumbers}" data-fill-blank-show-line-numbers="${block.showLineNumbers}" data-fill-blank-show-word-bank="${block.showWordBank}" data-fill-blank-show-first-example="${block.showFirstAsExample}" data-type="fill-in-the-blank"></div>`;
   }
@@ -590,7 +601,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       speaker: item.speaker,
       text: item.text,
     }));
-    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-dialogue-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-dialogue-speaker-names="${escapeAttribute(encodeURIComponent(JSON.stringify(block.speakerNames)))}" data-dialogue-show-speaker-names="${block.showSpeakerNames}" data-dialogue-show-original="${block.showOriginal}" data-dialogue-show-word-bank="${block.showWordBank}" data-dialogue-hide-blank-numbers="${block.hideBlankNumbers}" data-dialogue-show-first-example="${block.showFirstAsExample}" data-dialogue-context="${escapeAttribute(encodeURIComponent(block.context))}" data-type="dialogue"></div>`;
+    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-dialogue-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-dialogue-speaker-names="${escapeAttribute(encodeURIComponent(JSON.stringify(block.speakerNames)))}" data-dialogue-show-instruction="${block.showInstruction}" data-dialogue-show-speaker-names="${block.showSpeakerNames}" data-dialogue-show-original="${block.showOriginal}" data-dialogue-show-word-bank="${block.showWordBank}" data-dialogue-hide-blank-numbers="${block.hideBlankNumbers}" data-dialogue-show-first-example="${block.showFirstAsExample}" data-dialogue-context="${escapeAttribute(encodeURIComponent(block.context))}" data-type="dialogue"></div>`;
   }
   if (block.type === 'mcq') {
     const questions = block.questions.map((question, index) => ({

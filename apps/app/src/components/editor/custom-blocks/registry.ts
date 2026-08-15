@@ -87,6 +87,17 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
     insert: (editor) => editor.chain().focus().insertRichText().run(),
   },
   {
+    type: 'wordBank',
+    label: 'Word Bank',
+    description: 'A standalone word bank with one item per line.',
+    category: 'Content',
+    keywords: ['word', 'bank', 'list', 'vocabulary', 'terms'],
+    Icon: List,
+    insert: (editor) => editor.chain().focus().insertContent({
+      type: 'wordBank',
+    }).run(),
+  },
+  {
     type: 'instructionBlock',
     label: 'Instruction',
     description: 'A standalone numbered instruction using the document design system.',

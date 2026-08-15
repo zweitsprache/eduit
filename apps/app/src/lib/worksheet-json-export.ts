@@ -15,6 +15,7 @@ import type { CommunicationCardsAttrs } from '@/components/editor/communication-
 import type { LearningCardsAttrs } from '@/components/editor/learning-cards-node';
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
 import type { WordGridAttrs } from '@/components/editor/word-grid-node';
+import type { WordBankAttrs } from '@/components/editor/word-bank-node';
 import type { DominoAttrs } from '@/components/editor/domino-node';
 import type { GermanVerbTableAttrs } from '@/components/editor/german-verb-table-node';
 import type { DeclinationTableAttrs } from '@/components/editor/declination-table-node';
@@ -93,6 +94,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'timeMatching',
   'communicationCards',
   'wordGrid',
+  'wordBank',
   'learningCards',
   'domino',
   'germanVerbTable',
@@ -201,8 +203,12 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     case 'pageBreak':
       return { type: 'pageBreak', restartPagination: Boolean(attrs.restartPagination) };
     case 'richText': {
-      const { html } = attrs as RichTextAttrs;
-      return { type: 'richText', html: html.trim() ? html : '<p><br></p>' };
+      const { html, bypassGap } = attrs as RichTextAttrs;
+      return {
+        type: 'richText',
+        html: html.trim() ? html : '<p><br></p>',
+        bypassGap,
+      };
     }
     case 'glossaryTerms': {
       const {
@@ -264,7 +270,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     }
     case 'dialogue': {
       const {
-        items, speakerNames, context, showSpeakerNames,
+        items, speakerNames, context, showInstruction, showSpeakerNames,
         showOriginal, showWordBank, hideBlankNumbers, showFirstAsExample,
       } = attrs as DialogueAttrs;
       return {
@@ -272,6 +278,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         instruction: instructionOr(attrs.instruction, DEFAULT_BLOCK_INSTRUCTIONS.dialogue),
         context,
         speakerNames,
+        showInstruction,
         showSpeakerNames,
         showOriginal,
         showWordBank,
@@ -447,6 +454,10 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         // Layout seed — keep it so the copy reproduces the same grid.
         generation,
       };
+    }
+    case 'wordBank': {
+      const { items } = attrs as WordBankAttrs;
+      return { type: 'wordBank', items };
     }
     case 'learningCards': {
       const {

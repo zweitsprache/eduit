@@ -12,6 +12,7 @@ import {
 
 export type InstructionBlockAttrs = {
   instruction: string;
+  bypassGap: boolean;
 };
 
 export const DEFAULT_STANDALONE_INSTRUCTION = 'Add your instruction.';
@@ -20,7 +21,10 @@ function InstructionNodeView({ node, selected }: NodeViewProps) {
   const attrs = node.attrs as InstructionBlockAttrs;
 
   return (
-    <CustomBlockRoot selected={selected} className="instruction-node">
+    <CustomBlockRoot
+      selected={selected}
+      className={`instruction-node${attrs.bypassGap ? ' instruction-node--bypass-gap' : ''}`}
+    >
       <BlockInstruction>
         {attrs.instruction || DEFAULT_STANDALONE_INSTRUCTION}
       </BlockInstruction>
@@ -57,6 +61,15 @@ export const InstructionBlock = Node.create({
           'data-instruction-text': attributes.instruction,
         }),
       },
+      bypassGap: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-instruction-bypass-gap') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-instruction-bypass-gap': String(attributes.bypassGap),
+        }),
+      },
     };
   },
 
@@ -87,6 +100,7 @@ export const InstructionBlock = Node.create({
             attrs: {
               instruction:
                 attrs.instruction ?? DEFAULT_STANDALONE_INSTRUCTION,
+              bypassGap: attrs.bypassGap ?? false,
             },
           }),
     };

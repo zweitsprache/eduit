@@ -516,7 +516,7 @@
             "widthFactor": {
               "default": 1,
               "type": "number",
-              "minimum": 0.5,
+              "minimum": 0.25,
               "maximum": 5
             },
             "hideBlankNumbers": {
@@ -603,6 +603,10 @@
                   "maxLength": 100
                 }
               }
+            },
+            "showInstruction": {
+              "default": true,
+              "type": "boolean"
             },
             "showSpeakerNames": {
               "default": false,
@@ -1070,8 +1074,15 @@
               "type": "string",
               "enum": [
                 "single",
-                "double"
+                "double",
+                "single-solution"
               ]
+            },
+            "blankWidthFactor": {
+              "default": 1,
+              "type": "number",
+              "minimum": 0.25,
+              "maximum": 5
             },
             "frontTextSize": {
               "default": "m",
@@ -1120,6 +1131,10 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 100000
+            },
+            "bypassGap": {
+              "default": false,
+              "type": "boolean"
             }
           },
           "required": [
@@ -1237,6 +1252,27 @@
           "properties": {
             "type": {
               "type": "string",
+              "const": "wordBank"
+            },
+            "items": {
+              "minItems": 1,
+              "maxItems": 500,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema33"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
               "const": "domino"
             },
             "pairs": {
@@ -1244,7 +1280,7 @@
               "maxItems": 500,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema33"
+                "$ref": "#/$defs/__schema34"
               }
             },
             "showFirstAsExample": {
@@ -1252,16 +1288,16 @@
               "type": "boolean"
             },
             "oddTextSize": {
-              "$ref": "#/$defs/__schema34"
+              "$ref": "#/$defs/__schema35"
             },
             "evenTextSize": {
-              "$ref": "#/$defs/__schema34"
+              "$ref": "#/$defs/__schema35"
             },
             "leftRepresentation": {
-              "$ref": "#/$defs/__schema35"
+              "$ref": "#/$defs/__schema36"
             },
             "rightRepresentation": {
-              "$ref": "#/$defs/__schema35"
+              "$ref": "#/$defs/__schema36"
             }
           },
           "required": [
@@ -1329,7 +1365,7 @@
               "maxLength": 200
             },
             "leftForms": {
-              "$ref": "#/$defs/__schema36"
+              "$ref": "#/$defs/__schema37"
             },
             "leftAuxiliary": {
               "default": "sein",
@@ -1360,7 +1396,7 @@
               "maxLength": 200
             },
             "forms": {
-              "$ref": "#/$defs/__schema36"
+              "$ref": "#/$defs/__schema37"
             },
             "rightAuxiliary": {
               "default": "haben",
@@ -1398,7 +1434,7 @@
               "maxItems": 20,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema37"
+                "$ref": "#/$defs/__schema38"
               }
             }
           },
@@ -1407,6 +1443,91 @@
             "leftForms",
             "forms",
             "multipleVerbs"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "declinationTable"
+            },
+            "baseAdjectives": {
+              "type": "object",
+              "properties": {
+                "masculine": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "feminine": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "neuter": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "plural": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "masculine",
+                "feminine",
+                "neuter",
+                "plural"
+              ]
+            },
+            "baseNouns": {
+              "type": "object",
+              "properties": {
+                "masculine": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "feminine": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "neuter": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "plural": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "masculine",
+                "feminine",
+                "neuter",
+                "plural"
+              ]
+            },
+            "rows": {
+              "minItems": 4,
+              "maxItems": 4,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema39"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "baseAdjectives",
+            "baseNouns",
+            "rows"
           ]
         },
         {
@@ -1430,7 +1551,7 @@
               "maxItems": 6,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema38"
+                "$ref": "#/$defs/__schema41"
               }
             },
             "rows": {
@@ -1438,7 +1559,7 @@
               "maxItems": 1000,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema39"
+                "$ref": "#/$defs/__schema42"
               }
             },
             "showHeader": {
@@ -1841,6 +1962,11 @@
       "maxLength": 100
     },
     "__schema33": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "__schema34": {
       "type": "object",
       "properties": {
         "id": {
@@ -1864,7 +1990,7 @@
         "right"
       ]
     },
-    "__schema34": {
+    "__schema35": {
       "default": "m",
       "type": "string",
       "enum": [
@@ -1875,7 +2001,7 @@
         "xl"
       ]
     },
-    "__schema35": {
+    "__schema36": {
       "default": "text",
       "type": "string",
       "enum": [
@@ -1886,7 +2012,7 @@
         "text"
       ]
     },
-    "__schema36": {
+    "__schema37": {
       "type": "object",
       "properties": {
         "ich": {
@@ -1936,7 +2062,7 @@
         }
       }
     },
-    "__schema37": {
+    "__schema38": {
       "type": "object",
       "properties": {
         "verb": {
@@ -1945,7 +2071,7 @@
           "maxLength": 200
         },
         "forms": {
-          "$ref": "#/$defs/__schema36"
+          "$ref": "#/$defs/__schema37"
         },
         "separablePrefix": {
           "default": "",
@@ -1957,7 +2083,109 @@
         "forms"
       ]
     },
-    "__schema38": {
+    "__schema39": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "enum": [
+            "nom",
+            "akk",
+            "dat",
+            "gen"
+          ]
+        },
+        "values": {
+          "type": "object",
+          "properties": {
+            "masculine": {
+              "$ref": "#/$defs/__schema40"
+            },
+            "feminine": {
+              "$ref": "#/$defs/__schema40"
+            },
+            "neuter": {
+              "$ref": "#/$defs/__schema40"
+            },
+            "plural": {
+              "$ref": "#/$defs/__schema40"
+            }
+          },
+          "required": [
+            "masculine",
+            "feminine",
+            "neuter",
+            "plural"
+          ]
+        }
+      },
+      "required": [
+        "key",
+        "values"
+      ]
+    },
+    "__schema40": {
+      "type": "object",
+      "properties": {
+        "article": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "string",
+              "maxLength": 200
+            }
+          ]
+        },
+        "adjective": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "string",
+              "maxLength": 200
+            }
+          ]
+        },
+        "noun": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "string",
+              "maxLength": 200
+            }
+          ]
+        }
+      },
+      "required": [
+        "article",
+        "adjective",
+        "noun"
+      ]
+    },
+    "__schema41": {
       "type": "object",
       "properties": {
         "id": {
@@ -1994,7 +2222,7 @@
         "span"
       ]
     },
-    "__schema39": {
+    "__schema42": {
       "type": "object",
       "properties": {
         "id": {

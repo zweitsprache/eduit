@@ -21,6 +21,7 @@ import {
   Link,
   List as ListIcon,
   ListOrdered,
+  RemoveFormatting,
   RotateCcw,
   TextAlignCenter,
   TextAlignEnd,
@@ -138,6 +139,7 @@ import type {
   WordGridAttrs,
   WordGridDirection,
 } from '@/components/editor/word-grid-node';
+import type { WordBankAttrs } from '@/components/editor/word-bank-node';
 import type {
   ChooseCorrectWordItem,
   ChooseCorrectWordsAttrs,
@@ -235,6 +237,7 @@ export type ContentEditorBlock = {
     | 'rewriteSentences'
     | 'sortingCategories'
     | 'wordGrid'
+    | 'wordBank'
     | 'chooseCorrectWords'
     | 'inlineChoice'
     | 'miniForm'
@@ -267,6 +270,7 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   rewriteSentences: 'Rewrite sentences content',
   sortingCategories: 'Sorting categories content',
   wordGrid: 'Word grid content',
+  wordBank: 'Word Bank content',
   chooseCorrectWords: 'Choose correct words content',
   inlineChoice: 'Inline choice content',
   miniForm: 'Mini form content',
@@ -1586,6 +1590,12 @@ function StandaloneInstructionEditor({
         })}
         className="mt-2 h-9 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
       />
+      <ContentSectionHeader>Spacing</ContentSectionHeader>
+      <ContentSwitch
+        label="Bypass gap"
+        isSelected={attrs.bypassGap}
+        onChange={(bypassGap) => updateAttrs(editor, block, { bypassGap })}
+      />
     </>
   );
 }
@@ -1600,6 +1610,13 @@ function RichTextEditor({
   editor: Editor;
 }) {
   const inputRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const input = inputRef.current;
+    if (input && input.innerHTML !== attrs.html) {
+      input.innerHTML = attrs.html;
+    }
+  }, [attrs.html]);
 
   function saveContent() {
     const input = inputRef.current;
@@ -1621,6 +1638,18 @@ function RichTextEditor({
     const url = window.prompt('Link URL', 'https://');
     if (!url?.trim()) return;
     runCommand('createLink', url.trim());
+  }
+
+  function clearFormatting() {
+    const input = inputRef.current;
+    if (!input) return;
+    const lines = input.innerText.replaceAll('\r\n', '\n').split('\n');
+    input.replaceChildren(...lines.flatMap((line, index) => [
+      ...(index > 0 ? [document.createElement('br')] : []),
+      document.createTextNode(line),
+    ]));
+    input.focus();
+    saveContent();
   }
 
   const tools = [
@@ -1659,6 +1688,11 @@ function RichTextEditor({
       icon: <Link className="size-4" />,
       action: addLink,
     },
+    {
+      label: 'Clear formatting',
+      icon: <RemoveFormatting className="size-4" />,
+      action: clearFormatting,
+    },
   ];
 
   return (
@@ -1687,9 +1721,14 @@ function RichTextEditor({
           onInput={saveContent}
           onBlur={saveContent}
           className="rich-text-modal-input min-h-72 px-4 py-3 text-sm text-secondary outline-none"
-          dangerouslySetInnerHTML={{ __html: attrs.html }}
         />
       </div>
+      <ContentSectionHeader>Spacing</ContentSectionHeader>
+      <ContentSwitch
+        label="Bypass gap"
+        isSelected={attrs.bypassGap}
+        onChange={(bypassGap) => updateAttrs(editor, block, { bypassGap })}
+      />
       <ContentManual>
         <ContentManualItem icon="T" title="Structure the text">
           Use paragraphs and subheadings to organize explanations, source
@@ -4588,6 +4627,14 @@ function DialogueEditor({
 
   return (
     <>
+      <ContentSectionHeader className="mt-0">Visibility</ContentSectionHeader>
+      <ContentSwitch
+        label="Show instruction"
+        isSelected={attrs.showInstruction !== false}
+        onChange={(showInstruction) => updateAttrs(editor, block, {
+          showInstruction,
+        })}
+      />
       <label className="mt-0 block text-sm font-semibold text-primary">
         Context
         <input
@@ -4706,13 +4753,14 @@ function DialogueEditor({
                 onMoveUp={() => setItems(moveItem(attrs.items, index, -1))}
                 onMoveDown={() => setItems(moveItem(attrs.items, index, 1))}
               />
-              <textarea
+              <InlineFormattedInput
                 aria-label={`Dialogue line ${index + 1}`}
-                rows={2}
+                ariaLabel={`Dialogue line ${index + 1}`}
+                multiline
                 value={item.text}
-                onChange={(event) => updateItem(item.id, { text: event.target.value })}
+                onChange={(text) => updateItem(item.id, { text })}
                 placeholder="Enter dialogue text"
-                className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                className="col-start-2 min-h-16 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
               />
             </ContentItemGrid>
           </ContentCard>
@@ -5197,6 +5245,38 @@ function WordGridEditor({
       ])}>
         Add word
       </ContentAddButton>
+    </>
+  );
+}
+
+function WordBankEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: WordBankAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  return (
+    <>
+      <ContentFieldLabel>Items</ContentFieldLabel>
+      <textarea
+        aria-label="Word bank items"
+        rows={12}
+        value={attrs.items.join('\n')}
+        onChange={(event) => updateAttrs(editor, block, {
+          items: event.target.value
+            .split(/\r?\n/)
+            .map((item) => item.trim())
+            .filter(Boolean),
+        })}
+        placeholder={'One item per line\nExample item\nAnother item'}
+        className="mt-2 min-h-72 w-full resize-y rounded-md border border-primary bg-primary px-3 py-2 text-sm leading-6 text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+      <p className="mt-2 text-xs text-tertiary">
+        {attrs.items.length} {attrs.items.length === 1 ? 'item' : 'items'}
+      </p>
     </>
   );
 }
@@ -7382,6 +7462,7 @@ export function BlockContentEditorModal({
             {block.type === 'rewriteSentences' && <RewriteSentencesEditor attrs={attrs as unknown as RewriteSentencesAttrs} block={block} editor={editor} />}
             {block.type === 'sortingCategories' && <SortingCategoriesEditor attrs={attrs as unknown as SortingCategoriesAttrs} block={block} editor={editor} />}
             {block.type === 'wordGrid' && <WordGridEditor attrs={attrs as unknown as WordGridAttrs} block={block} editor={editor} />}
+            {block.type === 'wordBank' && <WordBankEditor attrs={attrs as unknown as WordBankAttrs} block={block} editor={editor} />}
             {block.type === 'chooseCorrectWords' && <ChooseCorrectWordsEditor attrs={attrs as unknown as ChooseCorrectWordsAttrs} block={block} editor={editor} />}
             {block.type === 'inlineChoice' && <InlineChoiceEditor attrs={attrs as unknown as InlineChoiceAttrs} block={block} editor={editor} />}
             {block.type === 'miniForm' && <MiniFormEditor attrs={attrs as unknown as MiniFormAttrs} block={block} editor={editor} />}

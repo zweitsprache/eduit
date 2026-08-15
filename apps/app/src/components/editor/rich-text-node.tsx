@@ -12,6 +12,7 @@ import { CustomBlockRoot } from '@/components/editor/custom-blocks/primitives';
 
 export type RichTextAttrs = {
   html: string;
+  bypassGap: boolean;
 };
 
 export const DEFAULT_RICH_TEXT_HTML =
@@ -117,7 +118,7 @@ function RichTextNodeView({ node, selected }: NodeViewProps) {
   return (
     <CustomBlockRoot
       selected={selected}
-      className="rich-text-node"
+      className={`rich-text-node${attrs.bypassGap ? ' rich-text-node--bypass-gap' : ''}`}
       rootRef={rootRef}
     >
       <div
@@ -173,6 +174,15 @@ export const RichText = Node.create({
           'data-rich-text-html': encodeURIComponent(attributes.html),
         }),
       },
+      bypassGap: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-rich-text-bypass-gap') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-rich-text-bypass-gap': String(attributes.bypassGap),
+        }),
+      },
     };
   },
 
@@ -202,6 +212,7 @@ export const RichText = Node.create({
             type: this.name,
             attrs: {
               html: attrs.html ?? DEFAULT_RICH_TEXT_HTML,
+              bypassGap: attrs.bypassGap ?? false,
             },
           }),
     };

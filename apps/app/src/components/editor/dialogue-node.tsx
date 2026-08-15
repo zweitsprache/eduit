@@ -10,6 +10,7 @@ import {
 } from '@/components/editor/custom-blocks/primitives';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
 import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/instructions';
+import { InlineFormattedText } from '@/components/editor/custom-blocks/inline-formatting';
 import { RoughExampleStrike } from '@/components/editor/custom-blocks/rough-example-strike';
 import {
   parseFillInTheBlankText,
@@ -31,6 +32,7 @@ export type DialogueAttrs = {
   items: DialogueItem[];
   speakerNames: DialogueSpeakerNames;
   context: string;
+  showInstruction: boolean;
   showSpeakerNames: boolean;
   showOriginal: boolean;
   showWordBank: boolean;
@@ -103,6 +105,7 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
     items,
     speakerNames,
     context,
+    showInstruction,
     showSpeakerNames,
     showOriginal,
     showWordBank,
@@ -141,9 +144,11 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
       selected={selected}
       className={showOriginal ? 'dialogue-node dialogue-node--with-original' : 'dialogue-node'}
     >
-      <BlockInstruction>
-        {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.dialogue}
-      </BlockInstruction>
+      {showInstruction && (
+        <BlockInstruction>
+          {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.dialogue}
+        </BlockInstruction>
+      )}
       {context && (
         <p className="dialogue-node__context">{context}</p>
       )}
@@ -201,7 +206,9 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
             }`}>
               {parts.map((part, partIndex) => (
                 <Fragment key={`${part.type}-${partIndex}`}>
-                  {part.type === 'text' ? part.value : (
+                  {part.type === 'text' ? (
+                    <InlineFormattedText text={part.value} />
+                  ) : (
                     <span
                       aria-label={`Blank ${part.index}`}
                       className={`fill-in-the-blank-node__blank${
@@ -236,7 +243,9 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
               ))}
             </p>
             {showOriginal && (
-              <p className="dialogue-node__original">{originalText(parts)}</p>
+              <p className="dialogue-node__original">
+                <InlineFormattedText text={originalText(parts)} />
+              </p>
             )}
           </div>
         ))}
@@ -289,6 +298,15 @@ export const Dialogue = Node.create({
           'data-dialogue-show-speaker-names': String(
             attributes.showSpeakerNames,
           ),
+        }),
+      },
+      showInstruction: {
+        default: true,
+        parseHTML: (element) => (
+          element.getAttribute('data-dialogue-show-instruction') !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-dialogue-show-instruction': String(attributes.showInstruction),
         }),
       },
       showOriginal: {
@@ -371,6 +389,7 @@ export const Dialogue = Node.create({
               items: attrs.items ?? defaultItems(),
               speakerNames: attrs.speakerNames ?? defaultSpeakerNames(),
               context: attrs.context ?? '',
+              showInstruction: attrs.showInstruction ?? true,
               showSpeakerNames: attrs.showSpeakerNames ?? false,
               showOriginal: attrs.showOriginal ?? false,
               showWordBank: attrs.showWordBank ?? false,
