@@ -16,6 +16,7 @@ import type { RewriteSentencesAttrs } from '@/components/editor/rewrite-sentence
 import type { SortingCategoriesAttrs } from '@/components/editor/sorting-categories-node';
 import type { TimeMatchingAttrs } from '@/components/editor/time-matching-node';
 import type { TrueFalseAttrs } from '@/components/editor/true-false-node';
+import type { WeatherAttrs } from '@/components/editor/weather-node';
 import type { WorksheetTableAttrs } from '@/components/editor/worksheet-table-node';
 import type { InformationGapActivityAttrs } from '@/components/editor/information-gap-activity-node';
 import type { WordGridAttrs } from '@/components/editor/word-grid-node';
@@ -116,6 +117,16 @@ export function hasMeaningfulSolutions(doc: SolutionNode | null | undefined): bo
       case 'trueFalse': {
         const blockAttrs = attrs as TrueFalseAttrs;
         found = hasMeaningfulBooleanAnswers(blockAttrs.rows);
+        break;
+      }
+      case 'weather': {
+        const blockAttrs = attrs as WeatherAttrs;
+        found = Array.isArray(blockAttrs.items)
+          && blockAttrs.items.some((item) => (
+            typeof item?.statementCorrect === 'boolean'
+            || (Array.isArray(item?.options)
+              && item.options.some((option) => option?.correct === true))
+          ));
         break;
       }
       case 'fillInTheBlank': {

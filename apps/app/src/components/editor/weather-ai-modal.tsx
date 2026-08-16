@@ -5,6 +5,10 @@ import { Toggle } from '@/components/base/toggle/toggle';
 import { useI18n } from '@/components/i18n/locale-provider';
 import { AIGenerationModal } from '@/components/editor/ai-generation-modal-ui';
 import {
+  WEATHER_MCQ_INSTRUCTION,
+  WEATHER_TRUE_FALSE_INSTRUCTION,
+} from '@/components/editor/weather-node';
+import {
   generateWeatherItems,
   SWISS_CITIES,
   WEATHER_KINDS,
@@ -13,19 +17,32 @@ import {
   type WeatherMode,
 } from '@/lib/weather-activities';
 
+export type WeatherGenerationSettings = {
+  count: number;
+  maxTemperature: number;
+  minTemperature: number;
+  mode: WeatherMode;
+  showInstruction: boolean;
+  shuffleQuestions: boolean;
+  varyWeekdayAndCity: boolean;
+  weatherKinds: WeatherKind[];
+};
+
 export function WeatherAIModal({
-  initialCount,
+  initialSettings,
   onClose,
   onGenerated,
   open,
 }: {
-  initialCount: number;
+  initialSettings: WeatherGenerationSettings;
   onClose: () => void;
   onGenerated: (result: {
     instruction: string;
     mode: WeatherMode;
     items: WeatherItem[];
     questionOrder: string[];
+    showInstruction: boolean;
+    settings: WeatherGenerationSettings;
   }) => void;
   open: boolean;
 }) {
@@ -39,20 +56,22 @@ export function WeatherAIModal({
   const [maxTemperature, setMaxTemperature] = useState(30);
   const [count, setCount] = useState(4);
   const [shuffleQuestions, setShuffleQuestions] = useState(true);
+  const [showInstruction, setShowInstruction] = useState(true);
   const [varyWeekdayAndCity, setVaryWeekdayAndCity] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!open) return;
-    setMode('mcq');
-    setWeatherKinds(WEATHER_KINDS.map(({ value }) => value));
-    setMinTemperature(-10);
-    setMaxTemperature(30);
-    setCount(Math.min(12, Math.max(1, initialCount || 4)));
-    setShuffleQuestions(true);
-    setVaryWeekdayAndCity(true);
+    setMode(initialSettings.mode);
+    setWeatherKinds(initialSettings.weatherKinds);
+    setMinTemperature(initialSettings.minTemperature);
+    setMaxTemperature(initialSettings.maxTemperature);
+    setCount(Math.min(12, Math.max(1, initialSettings.count || 4)));
+    setShuffleQuestions(initialSettings.shuffleQuestions);
+    setShowInstruction(initialSettings.showInstruction);
+    setVaryWeekdayAndCity(initialSettings.varyWeekdayAndCity);
     setError('');
-  }, [initialCount, open]);
+  }, [open]);
 
   const generate = () => {
     if (!weatherKinds.length) {
@@ -93,11 +112,22 @@ export function WeatherAIModal({
     }
     onGenerated({
       instruction: mode === 'mcq'
-        ? 'Wähle die Aussage, die zur Wetterkarte passt.'
-        : 'Entscheide, ob die Aussage zur Wetterkarte passt.',
+        ? WEATHER_MCQ_INSTRUCTION
+        : WEATHER_TRUE_FALSE_INSTRUCTION,
       mode,
       items,
       questionOrder,
+      showInstruction,
+      settings: {
+        count,
+        maxTemperature,
+        minTemperature,
+        mode,
+        showInstruction,
+        shuffleQuestions,
+        varyWeekdayAndCity,
+        weatherKinds,
+      },
     });
   };
 
@@ -202,6 +232,14 @@ export function WeatherAIModal({
             value={count}
           />
         </label>
+
+        <div className="mt-5">
+          <Toggle
+            isSelected={showInstruction}
+            label={de ? 'Anweisung anzeigen' : 'Show instruction'}
+            onChange={setShowInstruction}
+          />
+        </div>
 
         <div className="mt-5">
           <Toggle

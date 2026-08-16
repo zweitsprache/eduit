@@ -308,7 +308,11 @@ import {
 import {
   TwoWayPrepositionsEditorModal,
 } from '@/components/editor/two-way-prepositions-editor-modal';
-import { WeatherAIModal } from '@/components/editor/weather-ai-modal';
+import {
+  WeatherAIModal,
+  type WeatherGenerationSettings,
+} from '@/components/editor/weather-ai-modal';
+import { WEATHER_KINDS } from '@/lib/weather-activities';
 import {
   ColorFurnitureAIModal,
 } from '@/components/editor/color-furniture-ai-modal';
@@ -787,10 +791,53 @@ function getTwoWayPrepositionsItemCount(editor: Editor, pos: number) {
   return (node.attrs as TwoWayPrepositionsAttrs).items.length || 6;
 }
 
-function getWeatherItemCount(editor: Editor, pos: number) {
+function getWeatherGenerationSettings(
+  editor: Editor,
+  pos: number,
+): WeatherGenerationSettings {
+  const defaults: WeatherGenerationSettings = {
+    count: 4,
+    maxTemperature: 30,
+    minTemperature: -10,
+    mode: 'mcq',
+    showInstruction: true,
+    shuffleQuestions: true,
+    varyWeekdayAndCity: true,
+    weatherKinds: WEATHER_KINDS.map(({ value }) => value),
+  };
+  if (pos < 0 || pos >= editor.state.doc.content.size) return defaults;
   const node = editor.state.doc.nodeAt(pos);
-  if (node?.type.name !== 'weather') return 4;
-  return (node.attrs as WeatherAttrs).items.length || 4;
+  if (node?.type.name !== 'weather') return defaults;
+  const attrs = node.attrs as WeatherAttrs;
+  const temperatures = attrs.items.map(({ temperature }) => temperature);
+  const naturalOrder = attrs.items.map(({ id }) => id);
+  const questionOrder = attrs.questionOrder?.length
+    ? attrs.questionOrder
+    : naturalOrder;
+  const inferredKinds = Array.from(new Set(attrs.items.map(({ weather }) => weather)));
+  return {
+    count: attrs.items.length || defaults.count,
+    maxTemperature: attrs.maxTemperature
+      ?? (temperatures.length ? Math.max(...temperatures) : defaults.maxTemperature),
+    minTemperature: attrs.minTemperature
+      ?? (temperatures.length ? Math.min(...temperatures) : defaults.minTemperature),
+    mode: attrs.mode,
+    showInstruction: attrs.showInstruction !== false,
+    shuffleQuestions: attrs.shuffleQuestions
+      ?? questionOrder.some((id, index) => id !== naturalOrder[index]),
+    varyWeekdayAndCity: attrs.varyWeekdayAndCity !== false,
+    weatherKinds: attrs.weatherKinds?.length
+      ? attrs.weatherKinds
+      : inferredKinds.length
+        ? inferredKinds
+        : defaults.weatherKinds,
+  };
+}
+
+function getWeatherShowInstruction(editor: Editor, pos: number) {
+  const node = editor.state.doc.nodeAt(pos);
+  if (node?.type.name !== 'weather') return true;
+  return (node.attrs as WeatherAttrs).showInstruction !== false;
 }
 
 function getColorFurnitureItemCount(editor: Editor, pos: number) {
@@ -5456,6 +5503,24 @@ export default function EditorPage() {
                   <WandSparkles className="size-4" />
                   Eduit AI
                 </button>
+              )}
+              {selectedCustomBlock.type === 'weather' && (
+                <label className="flex items-center justify-between gap-3 rounded-lg border border-primary bg-primary px-3 py-2 text-xs font-semibold text-tertiary">
+                  <span>Show instruction</span>
+                  <input
+                    type="checkbox"
+                    checked={getWeatherShowInstruction(
+                      editor,
+                      selectedCustomBlock.pos,
+                    )}
+                    onChange={(event) => setNodeAttr(
+                      editor,
+                      selectedCustomBlock.pos,
+                      'showInstruction',
+                      event.target.checked,
+                    )}
+                  />
+                </label>
               )}
               {selectedCustomBlock.type === 'wordGrid' && (
                 <>
@@ -10427,9 +10492,10 @@ export default function EditorPage() {
         }}
       />
       <WeatherAIModal
-        initialCount={weatherAIBlock
-          ? getWeatherItemCount(editor, weatherAIBlock.pos)
-          : 4}
+        initialSettings={getWeatherGenerationSettings(
+          editor,
+          weatherAIBlock?.pos ?? -1,
+        )}
         open={weatherAIBlock !== null}
         onClose={() => setWeatherAIBlock(null)}
         onGenerated={(result) => {
@@ -10441,6 +10507,12 @@ export default function EditorPage() {
             tr.setNodeAttribute(pos, 'mode', result.mode);
             tr.setNodeAttribute(pos, 'items', result.items);
             tr.setNodeAttribute(pos, 'questionOrder', result.questionOrder);
+            tr.setNodeAttribute(pos, 'showInstruction', result.showInstruction);
+            tr.setNodeAttribute(pos, 'weatherKinds', result.settings.weatherKinds);
+            tr.setNodeAttribute(pos, 'minTemperature', result.settings.minTemperature);
+            tr.setNodeAttribute(pos, 'maxTemperature', result.settings.maxTemperature);
+            tr.setNodeAttribute(pos, 'shuffleQuestions', result.settings.shuffleQuestions);
+            tr.setNodeAttribute(pos, 'varyWeekdayAndCity', result.settings.varyWeekdayAndCity);
             return true;
           }).run();
           setWeatherAIBlock(null);

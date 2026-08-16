@@ -37,10 +37,10 @@ export const WEATHER_KINDS: Array<{
   icon: string;
 }> = [
   { value: 'cloudy', label: 'bewölkt', sentence: 'bewölkt', icon: '/weather/bewoelkt.svg' },
-  { value: 'rain', label: 'Regen', sentence: 'regnerisch', icon: '/weather/regnen.svg' },
-  { value: 'snow', label: 'Schnee', sentence: 'verschneit', icon: '/weather/schneien.svg' },
-  { value: 'snowStorm', label: 'Schnee und Sturm', sentence: 'verschneit und stürmisch', icon: '/weather/schneien_und_stuermen.svg' },
-  { value: 'sunSnow', label: 'Sonne und Schnee', sentence: 'sonnig und verschneit', icon: '/weather/schneienund_die_Sonne_scheint_.svg' },
+  { value: 'rain', label: 'Regen', sentence: 'regnet', icon: '/weather/regnen.svg' },
+  { value: 'snow', label: 'Schnee', sentence: 'schneit', icon: '/weather/schneien.svg' },
+  { value: 'snowStorm', label: 'Schnee und Sturm', sentence: 'schneit und ist stürmisch', icon: '/weather/schneien_und_stuermen.svg' },
+  { value: 'sunSnow', label: 'Sonne und Schnee', sentence: 'sonnig und es schneit', icon: '/weather/schneienund_die_Sonne_scheint_.svg' },
   { value: 'sunny', label: 'sonnig', sentence: 'sonnig', icon: '/weather/sonnig.svg' },
   { value: 'storm', label: 'stürmisch', sentence: 'stürmisch', icon: '/weather/stuermen.svg' },
   { value: 'windy', label: 'windig', sentence: 'windig', icon: '/weather/windig.svg' },
@@ -72,7 +72,16 @@ export function weatherSentence(
   const temperatureText = temperature < 0
     ? `minus ${Math.abs(temperature)}`
     : String(temperature);
-  return `Am ${weekday} ist es in ${city} ${description}. Es ${Math.abs(temperature) === 1 ? 'ist' : 'sind'} ${temperatureText} Grad.`;
+  const weatherText = weather === 'rain'
+    ? `In ${city} regnet es am ${weekday}.`
+    : weather === 'snow'
+      ? `In ${city} schneit es am ${weekday}.`
+      : weather === 'snowStorm'
+        ? `In ${city} schneit es am ${weekday} und es ist stürmisch.`
+        : weather === 'sunSnow'
+          ? `In ${city} scheint am ${weekday} die Sonne und es schneit.`
+          : `Am ${weekday} ist es in ${city} ${description}.`;
+  return `${weatherText} Es ${Math.abs(temperature) === 1 ? 'ist' : 'sind'} ${temperatureText} Grad.`;
 }
 
 function shuffled<T>(values: T[]) {
