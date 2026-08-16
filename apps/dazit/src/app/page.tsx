@@ -189,6 +189,10 @@ export default async function HomePage() {
                 <Copy01 aria-hidden="true" />
                 <span><strong>Lernkarten</strong><small>Wortschatz selbstständig und in Partnerarbeit trainieren</small><b>{typeCounts.Lernkarten || 0} Dokumente ›</b></span>
               </Link>
+              <Link className="home-type-card" href="/documents?type=Wechselspiel">
+                <MessagesSquare aria-hidden="true" />
+                <span><strong>Wechselspiele</strong><small>Informationen in Partnerarbeit erfragen und ergänzen</small><b>{typeCounts.Wechselspiel || 0} Dokumente ›</b></span>
+              </Link>
               <Link className="home-type-card" href="/documents?type=Dialog">
                 <MessagesSquare aria-hidden="true" />
                 <span><strong>Dialoge</strong><small>Gespräche lesen und nachspielen</small><b>{typeCounts.Dialog || 0} Dokumente ›</b></span>

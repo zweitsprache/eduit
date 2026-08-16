@@ -7,6 +7,7 @@ const worksheetTypes = [
   'Deklinationstabelle',
   'Kommunikationskarten',
   'Lernkarten',
+  'Wechselspiel',
   'Domino',
   'Dialog',
   'Leseverstehen',

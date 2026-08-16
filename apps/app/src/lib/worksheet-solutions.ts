@@ -17,6 +17,7 @@ import type { SortingCategoriesAttrs } from '@/components/editor/sorting-categor
 import type { TimeMatchingAttrs } from '@/components/editor/time-matching-node';
 import type { TrueFalseAttrs } from '@/components/editor/true-false-node';
 import type { WorksheetTableAttrs } from '@/components/editor/worksheet-table-node';
+import type { InformationGapActivityAttrs } from '@/components/editor/information-gap-activity-node';
 import type { WordGridAttrs } from '@/components/editor/word-grid-node';
 
 type SolutionNode = {
@@ -148,6 +149,14 @@ export function hasMeaningfulSolutions(doc: SolutionNode | null | undefined): bo
         found = Array.isArray(blockAttrs.rows)
           && blockAttrs.rows.some((row) => Array.isArray(row?.cells)
             && row.cells.some((cell) => hasMeaningfulText(cell?.answer)));
+        break;
+      }
+      case 'informationGapActivity': {
+        const blockAttrs = attrs as InformationGapActivityAttrs;
+        found = Array.isArray(blockAttrs.rows)
+          && blockAttrs.rows.some((row) => !row?.isHeader
+            && row?.cells
+            && Object.values(row.cells).some(hasMeaningfulText));
         break;
       }
       case 'ordering': {

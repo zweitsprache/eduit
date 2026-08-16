@@ -455,4 +455,15 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
     Icon: Table,
     insert: (editor) => editor.chain().focus().insertWorksheetTable().run(),
   },
+  {
+    type: 'informationGapActivity',
+    label: 'Information Gap Activity',
+    description: 'Two complementary partner sheets generated from one table.',
+    category: 'Content',
+    keywords: ['information gap', 'partner', 'pair work', 'table', 'speaking'],
+    Icon: SwitchHorizontal01,
+    insert: (editor) => (
+      editor.chain().focus().insertInformationGapActivity().run()
+    ),
+  },
 ];

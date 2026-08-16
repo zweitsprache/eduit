@@ -94,6 +94,13 @@ const worksheetTableSchema = z.object({
   showFirstAsExample: z.boolean().default(false),
 });
 
+const informationGapActivitySchema = z.object({
+  type: z.literal('informationGapActivity'),
+  title: z.string().trim().min(1).max(200).default('Information gap activity'),
+  columns: z.array(worksheetTableColumnSchema).min(1).max(6),
+  rows: z.array(worksheetTableRowSchema).min(1).max(1000),
+});
+
 const dialogueSchema = z.object({
   type: z.literal('dialogue'),
   instruction: z.string().trim().min(1).max(1000),
@@ -516,6 +523,7 @@ const contextSchema = z.object({
     'verb-table',
     'declension-table',
     'learning-cards',
+    'information-gap',
     'domino',
   ]).default('worksheet'),
   sourceProfileId: z.string().max(100).nullable().default(null),
@@ -575,6 +583,7 @@ export const generatedWorksheetSchema = z.object({
     germanVerbTableSchema,
     declinationTableSchema,
     worksheetTableSchema,
+    informationGapActivitySchema,
   ])).max(1000).default([]),
 }).refine((value) => Boolean(value.sourceWorksheetId) || value.blocks.length >= 1, {
   message: 'Provide blocks or a sourceWorksheetId.',
@@ -643,6 +652,13 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     const columns = escapeAttribute(encodeURIComponent(JSON.stringify(block.columns)));
     const rows = escapeAttribute(encodeURIComponent(JSON.stringify(block.rows)));
     return `<div data-type="worksheet-table" data-worksheet-table-instruction="${escapeAttribute(block.instruction)}" data-worksheet-table-show-instruction="${block.showInstruction}" data-worksheet-table-columns="${columns}" data-worksheet-table-rows="${rows}" data-worksheet-table-show-header="${block.showHeader}" data-worksheet-table-hide-blank-numbers="${block.hideBlankNumbers}" data-worksheet-table-blank-width="${block.blankWidthFactor}" data-worksheet-table-show-first-example="${block.showFirstAsExample}"></div>`;
+  }
+  if (block.type === 'informationGapActivity') {
+    const activityId = crypto.randomUUID();
+    const columns = escapeAttribute(encodeURIComponent(JSON.stringify(block.columns)));
+    const rows = escapeAttribute(encodeURIComponent(JSON.stringify(block.rows)));
+    const sheet = (partner: 'A' | 'B') => `<div data-type="information-gap-activity" data-activity-id="${activityId}" data-title="${escapeAttribute(block.title)}" data-partner="${partner}" data-columns="${columns}" data-rows="${rows}"></div>`;
+    return `${sheet('A')}<div data-restart-pagination="false" data-type="pageBreak"></div>${sheet('B')}`;
   }
   if (block.type === 'declinationTable') {
     const rows = escapeAttribute(encodeURIComponent(JSON.stringify(block.rows)));

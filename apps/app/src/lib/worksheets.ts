@@ -63,6 +63,8 @@ function mapRow(row: WorksheetRow): Worksheet {
               ? 'communication-cards'
             : row.context?.worksheetType === 'learning-cards'
               ? 'learning-cards'
+              : row.context?.worksheetType === 'information-gap'
+                ? 'information-gap'
               : row.context?.worksheetType === 'domino'
                 ? 'domino'
         : 'worksheet',
@@ -252,6 +254,8 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
               ? 'communication-cards'
             : context.worksheetType === 'learning-cards'
               ? 'learning-cards'
+              : context.worksheetType === 'information-gap'
+                ? 'information-gap'
               : context.worksheetType === 'domino'
                 ? 'domino'
         : 'worksheet',

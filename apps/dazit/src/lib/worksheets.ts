@@ -21,6 +21,7 @@ export type Worksheet = {
     | 'Deklinationstabelle'
     | 'Kommunikationskarten'
     | 'Lernkarten'
+    | 'Wechselspiel'
     | 'Domino'
     | 'Dialog'
     | 'Leseverstehen';
@@ -107,6 +108,7 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
     'Deklinationstabelle',
     'Kommunikationskarten',
     'Lernkarten',
+    'Wechselspiel',
     'Domino',
     'Dialog',
     'Leseverstehen',

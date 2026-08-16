@@ -234,6 +234,7 @@ import {
   type WorksheetTableColumn,
   type WorksheetTableRow,
 } from '@/components/editor/worksheet-table-node';
+import { InformationGapActivity } from '@/components/editor/information-gap-activity-node';
 import {
   ACTIVE_CUSTOM_BLOCK_BRAND,
   formatBrandDate,
@@ -453,6 +454,7 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'inlineChoice',
   'miniForm',
   'worksheetTable',
+  'informationGapActivity',
   'richText',
   'spacer',
   'instructionBlock',
@@ -1355,6 +1357,7 @@ const DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE: Record<WorksheetContext['worksheetT
   'declension-table': 'Deklinationstabelle',
   'communication-cards': 'Kommunikationskarten',
   'learning-cards': 'Lernkarten',
+  'information-gap': 'Wechselspiel',
   domino: 'Domino',
 };
 
@@ -1583,6 +1586,7 @@ export default function EditorPage() {
       InlineChoice,
       MiniForm,
       WorksheetTable,
+      InformationGapActivity,
       RichText,
       Spacer,
       InstructionBlock,
@@ -2833,6 +2837,7 @@ export default function EditorPage() {
         || parsed.dazitDocumentType === 'Deklinationstabelle'
         || parsed.dazitDocumentType === 'Kommunikationskarten'
         || parsed.dazitDocumentType === 'Lernkarten'
+        || parsed.dazitDocumentType === 'Wechselspiel'
         || parsed.dazitDocumentType === 'Domino'
       ) {
         setDazitDocumentType(parsed.dazitDocumentType);
@@ -4508,6 +4513,11 @@ export default function EditorPage() {
         || containsCommunicationCards;
       const isLearningCardsWorksheet = documentContext.worksheetType === 'learning-cards'
         || containsLearningCards;
+      const containsInformationGapActivity = editor.state.doc.content.content.some(
+        (node) => node.type.name === 'informationGapActivity',
+      );
+      const isInformationGapWorksheet = documentContext.worksheetType === 'information-gap'
+        || containsInformationGapActivity;
       const isDominoWorksheet = documentContext.worksheetType === 'domino'
         || containsDomino;
       const hasAnswerKey = hasMeaningfulSolutions(editor.state.doc);
@@ -4527,6 +4537,8 @@ export default function EditorPage() {
           ? 'Kommunikationskarten'
           : isLearningCardsWorksheet
             ? 'Lernkarten'
+            : isInformationGapWorksheet
+              ? 'Wechselspiel'
             : isDominoWorksheet
               ? 'Domino'
           : isAutomationPublish
@@ -5111,6 +5123,13 @@ export default function EditorPage() {
                 setDazitDocumentType('Kommunikationskarten');
               } else if (documentContext.worksheetType === 'learning-cards' || containsLearningCards) {
                 setDazitDocumentType('Lernkarten');
+              } else if (
+                documentContext.worksheetType === 'information-gap'
+                || editor.state.doc.content.content.some(
+                  (node) => node.type.name === 'informationGapActivity',
+                )
+              ) {
+                setDazitDocumentType('Wechselspiel');
               } else if (documentContext.worksheetType === 'domino' || containsDomino) {
                 setDazitDocumentType('Domino');
               }
@@ -9147,6 +9166,7 @@ export default function EditorPage() {
                     <option value="declension-table">Deklinationstabelle</option>
                     <option value="communication-cards">Kommunikationskarten</option>
                     <option value="learning-cards">Lernkarten</option>
+                    <option value="information-gap">Wechselspiel</option>
                     <option value="domino">Domino</option>
                   </select>
                 </label>
@@ -9699,6 +9719,7 @@ export default function EditorPage() {
                     { value: 'Deklinationstabelle', label: 'Deklinationstabelle' },
                     { value: 'Kommunikationskarten', label: 'Kommunikationskarten' },
                     { value: 'Lernkarten', label: 'Lernkarten' },
+                    { value: 'Wechselspiel', label: 'Wechselspiel' },
                     { value: 'Domino', label: 'Domino' },
                   ]}
                 />

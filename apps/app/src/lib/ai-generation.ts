@@ -118,6 +118,8 @@ ${CONTENT_PRIVACY_AND_BRAND_RULES}`;
           ? 'Communication cards'
         : context.worksheetType === 'learning-cards'
           ? 'Learning cards'
+          : context.worksheetType === 'information-gap'
+            ? 'Information gap activity'
           : context.worksheetType === 'domino'
             ? 'Domino'
             : 'Worksheet';

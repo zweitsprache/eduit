@@ -175,6 +175,7 @@ import type {
   WorksheetTableColumn,
   WorksheetTableRow,
 } from '@/components/editor/worksheet-table-node';
+import type { InformationGapActivityAttrs } from '@/components/editor/information-gap-activity-node';
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
 import {
   MAX_SPACER_HEIGHT,
@@ -266,6 +267,7 @@ export type ContentEditorBlock = {
     | 'inlineChoice'
     | 'miniForm'
     | 'worksheetTable'
+    | 'informationGapActivity'
     | 'richText'
     | 'spacer'
     | 'instructionBlock'
@@ -304,6 +306,7 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   inlineChoice: 'Inline choice content',
   miniForm: 'Mini form content',
   worksheetTable: 'Table content',
+  informationGapActivity: 'Information gap activity',
   richText: 'Rich Text content',
   spacer: 'Spacer',
   instructionBlock: 'Instruction content',
@@ -7010,10 +7013,12 @@ function WorksheetTableEditor({
   attrs,
   block,
   editor,
+  tableOnly = false,
 }: {
   attrs: WorksheetTableAttrs;
   block: ContentEditorBlock;
   editor: Editor;
+  tableOnly?: boolean;
 }) {
   const setColumns = (columns: WorksheetTableColumn[]) => {
     updateAttrs(editor, block, {
@@ -7143,59 +7148,63 @@ function WorksheetTableEditor({
 
   return (
     <>
-      <ContentFieldLabel>Instruction</ContentFieldLabel>
-      <textarea
-        rows={1}
-        value={attrs.instruction}
-        onChange={(event) => updateAttrs(editor, block, {
-          instruction: event.target.value,
-        })}
-        className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-      />
-      <ContentSectionHeader>Visibility</ContentSectionHeader>
-      <ContentSwitch
-        label="Show instruction"
-        isSelected={attrs.showInstruction !== false}
-        onChange={(showInstruction) => updateAttrs(editor, block, {
-          showInstruction,
-        })}
-      />
-      <ContentSectionHeader>Default blank width</ContentSectionHeader>
-      <ContentOptionButtonGroup
-        ariaLabel="Default blank width"
-        value={String(attrs.blankWidthFactor)}
-        onChange={(blankWidthFactor) => updateAttrs(editor, block, {
-          blankWidthFactor: Number(blankWidthFactor),
-        })}
-        options={[1, 2, 3, 4, 5].map((width) => ({
-          label: `${width} ×`,
-          value: String(width),
-        }))}
-      />
-      <ContentSectionHeader>Learner support</ContentSectionHeader>
-      <ContentSwitchGrid>
-        <ContentSwitch
-          label="Compact single-letter blanks"
-          isSelected={attrs.compactSingleLetterBlanks ?? true}
-          onChange={(compactSingleLetterBlanks) => updateAttrs(editor, block, {
-            compactSingleLetterBlanks,
-          })}
-        />
-        <ContentSwitch
-          label="Hide blank numbers"
-          isSelected={attrs.hideBlankNumbers}
-          onChange={(hideBlankNumbers) => updateAttrs(editor, block, {
-            hideBlankNumbers,
-          })}
-        />
-        <ContentSwitch
-          label="Show example"
-          isSelected={attrs.showFirstAsExample}
-          onChange={(showFirstAsExample) => updateAttrs(editor, block, {
-            showFirstAsExample,
-          })}
-        />
-      </ContentSwitchGrid>
+      {!tableOnly && (
+        <>
+          <ContentFieldLabel>Instruction</ContentFieldLabel>
+          <textarea
+            rows={1}
+            value={attrs.instruction}
+            onChange={(event) => updateAttrs(editor, block, {
+              instruction: event.target.value,
+            })}
+            className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          />
+          <ContentSectionHeader>Visibility</ContentSectionHeader>
+          <ContentSwitch
+            label="Show instruction"
+            isSelected={attrs.showInstruction !== false}
+            onChange={(showInstruction) => updateAttrs(editor, block, {
+              showInstruction,
+            })}
+          />
+          <ContentSectionHeader>Default blank width</ContentSectionHeader>
+          <ContentOptionButtonGroup
+            ariaLabel="Default blank width"
+            value={String(attrs.blankWidthFactor)}
+            onChange={(blankWidthFactor) => updateAttrs(editor, block, {
+              blankWidthFactor: Number(blankWidthFactor),
+            })}
+            options={[1, 2, 3, 4, 5].map((width) => ({
+              label: `${width} ×`,
+              value: String(width),
+            }))}
+          />
+          <ContentSectionHeader>Learner support</ContentSectionHeader>
+          <ContentSwitchGrid>
+            <ContentSwitch
+              label="Compact single-letter blanks"
+              isSelected={attrs.compactSingleLetterBlanks ?? true}
+              onChange={(compactSingleLetterBlanks) => updateAttrs(editor, block, {
+                compactSingleLetterBlanks,
+              })}
+            />
+            <ContentSwitch
+              label="Hide blank numbers"
+              isSelected={attrs.hideBlankNumbers}
+              onChange={(hideBlankNumbers) => updateAttrs(editor, block, {
+                hideBlankNumbers,
+              })}
+            />
+            <ContentSwitch
+              label="Show example"
+              isSelected={attrs.showFirstAsExample}
+              onChange={(showFirstAsExample) => updateAttrs(editor, block, {
+                showFirstAsExample,
+              })}
+            />
+          </ContentSwitchGrid>
+        </>
+      )}
       <ContentSectionHeader count={`${attrs.columns.length} columns`}>
         Column layout
       </ContentSectionHeader>
@@ -7415,6 +7424,47 @@ function WorksheetTableEditor({
           {csvImportError}
         </p>
       )}
+    </>
+  );
+}
+
+function InformationGapActivityEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: InformationGapActivityAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const tableAttrs: WorksheetTableAttrs = {
+    instruction: '',
+    showInstruction: false,
+    columns: attrs.columns,
+    rows: attrs.rows,
+    showHeader: false,
+    compactSingleLetterBlanks: true,
+    hideBlankNumbers: true,
+    blankWidthFactor: 1,
+    showFirstAsExample: false,
+  };
+
+  return (
+    <>
+      <ContentFieldLabel>Title</ContentFieldLabel>
+      <input
+        value={attrs.title}
+        onChange={(event) => updateAttrs(editor, block, {
+          title: event.target.value,
+        })}
+        className="mt-2 w-full rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+      <WorksheetTableEditor
+        attrs={tableAttrs}
+        block={block}
+        editor={editor}
+        tableOnly
+      />
     </>
   );
 }
@@ -8002,6 +8052,7 @@ export function BlockContentEditorModal({
             {block.type === 'inlineChoice' && <InlineChoiceEditor attrs={attrs as unknown as InlineChoiceAttrs} block={block} editor={editor} />}
             {block.type === 'miniForm' && <MiniFormEditor attrs={attrs as unknown as MiniFormAttrs} block={block} editor={editor} />}
             {block.type === 'worksheetTable' && <WorksheetTableEditor attrs={attrs as unknown as WorksheetTableAttrs} block={block} editor={editor} />}
+            {block.type === 'informationGapActivity' && <InformationGapActivityEditor attrs={attrs as unknown as InformationGapActivityAttrs} block={block} editor={editor} />}
             {block.type === 'richText' && <RichTextEditor attrs={attrs as unknown as RichTextAttrs} block={block} editor={editor} />}
             {block.type === 'spacer' && <SpacerEditor attrs={attrs as unknown as SpacerAttrs} block={block} editor={editor} />}
             {block.type === 'instructionBlock' && <StandaloneInstructionEditor attrs={attrs as unknown as InstructionBlockAttrs} block={block} editor={editor} />}

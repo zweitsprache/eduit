@@ -7,6 +7,7 @@ export type DazitPublicationDocumentType =
   | 'Deklinationstabelle'
   | 'Kommunikationskarten'
   | 'Lernkarten'
+  | 'Wechselspiel'
   | 'Domino'
   | 'Dialog'
   | 'Leseverstehen';

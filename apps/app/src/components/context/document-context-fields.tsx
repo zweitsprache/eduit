@@ -138,6 +138,7 @@ export function DocumentContextFields({
           <option value="declension-table">Deklinationstabelle</option>
           <option value="communication-cards">Kommunikationskarten</option>
           <option value="learning-cards">Lernkarten</option>
+          <option value="information-gap">Wechselspiel</option>
           <option value="domino">Domino</option>
         </select>
       </label>

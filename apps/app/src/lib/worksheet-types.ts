@@ -19,6 +19,7 @@ export type WorksheetContext = {
     | 'declension-table'
     | 'communication-cards'
     | 'learning-cards'
+    | 'information-gap'
     | 'domino';
   sourceProfileId: string | null;
   subject: string;

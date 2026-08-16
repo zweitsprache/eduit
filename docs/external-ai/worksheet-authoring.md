@@ -54,7 +54,7 @@ All context properties are optional. Use known caller-provided values; do not gu
 | Property | Accepted value |
 | --- | --- |
 | `worksheetLanguage` | `en`, `de-formal`, or `de-informal` |
-| `worksheetType` | `worksheet`, `fact-sheet`, `verb-table`, `declension-table`, `learning-cards`, or `domino` |
+| `worksheetType` | `worksheet`, `fact-sheet`, `verb-table`, `declension-table`, `learning-cards`, `information-gap`, or `domino` |
 | `sourceProfileId` | string up to 100 characters or null |
 | `subject` | string up to 100 characters |
 | `customSubject` | string up to 150 characters |

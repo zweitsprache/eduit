@@ -27,6 +27,7 @@ import type { DominoAttrs } from '@/components/editor/domino-node';
 import type { GermanVerbTableAttrs } from '@/components/editor/german-verb-table-node';
 import type { DeclinationTableAttrs } from '@/components/editor/declination-table-node';
 import type { WorksheetTableAttrs } from '@/components/editor/worksheet-table-node';
+import type { InformationGapActivityAttrs } from '@/components/editor/information-gap-activity-node';
 import type { WorksheetContext } from '@/lib/worksheet-types';
 
 const DECLENSION_ENDINGS = ['em', 'en', 'er', 'es', 'e'] as const;
@@ -112,6 +113,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'germanVerbTable',
   'declinationTable',
   'worksheetTable',
+  'informationGapActivity',
 ]);
 
 function escapeHtml(value: string) {
@@ -721,6 +723,18 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         showFirstAsExample: tableAttrs.showFirstAsExample,
       };
     }
+    case 'informationGapActivity': {
+      const activityAttrs = attrs as InformationGapActivityAttrs;
+      return {
+        type: 'informationGapActivity',
+        title: activityAttrs.title,
+        columns: activityAttrs.columns.map((column) => ({ ...column })),
+        rows: activityAttrs.rows.map((row) => ({
+          ...row,
+          cells: { ...row.cells },
+        })),
+      };
+    }
     default:
       return null;
   }
@@ -761,6 +775,8 @@ export function worksheetJsonFromDoc(
   let communicationCardsSeen = false;
 
   let dominoSeen = false;
+  const informationGapActivitiesSeen = new Set<string>();
+  let informationGapPageBreakPending = false;
 
   doc.forEach((node) => {
     const legacyRichText = legacyRichTextNode(node) ?? legacyRichTextFromSubtree(node).trim();
@@ -795,6 +811,18 @@ export function worksheetJsonFromDoc(
       return;
     }
     if (dominoSeen && node.type.name === 'pageBreak') return;
+    if (node.type.name === 'informationGapActivity') {
+      const activityId = String(node.attrs.activityId);
+      if (informationGapActivitiesSeen.has(activityId)) return;
+      informationGapActivitiesSeen.add(activityId);
+      informationGapPageBreakPending = true;
+      blocks.push(blockJson(node)!);
+      return;
+    }
+    if (informationGapPageBreakPending && node.type.name === 'pageBreak') {
+      informationGapPageBreakPending = false;
+      return;
+    }
     const block = blockJson(node);
     if (block) {
       blocks.push(block);

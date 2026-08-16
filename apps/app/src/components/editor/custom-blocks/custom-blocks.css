@@ -4613,6 +4613,81 @@
   page-break-inside: auto !important;
 }
 
+.custom-block.information-gap-activity-node {
+  display: block;
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+}
+
+.tiptap[data-brand="eduit"] .information-gap-activity-node__title {
+  margin: 0 0 calc(3 * var(--custom-block-space-question-to-rows)) !important;
+  color: var(--brand-heading-h1-text-color, #101828);
+  font-family: var(--custom-block-font-family);
+  font-size: var(--custom-block-heading-h1-font-size);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.information-gap-activity-node__cell--empty {
+  background: var(--color-bg-primary);
+}
+
+.information-gap-activity-node__table
+  :is(.worksheet-table-node__header, .worksheet-table-node__row) {
+  grid-template-columns:
+    calc(var(--custom-block-index-size) + 2 * var(--custom-block-inline-gap))
+    repeat(48, minmax(0, 1fr));
+}
+
+.information-gap-activity-node__index-cell {
+  display: flex;
+  min-width: 0;
+  min-height: var(--custom-block-row-height);
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  padding: var(--custom-block-row-padding-block)
+    var(--custom-block-inline-gap);
+  border-right: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  border-left: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+}
+
+.information-gap-activity-node__index-cell--header {
+  background: var(--color-bg-secondary);
+}
+
+.information-gap-activity-node__table
+  .worksheet-table-node__row
+  > :is(.information-gap-activity-node__index-cell, .worksheet-table-node__cell) {
+  min-height: calc(1.5 * var(--custom-block-row-height));
+}
+
+.information-gap-activity-node__solution {
+  display: none;
+}
+
+.tiptap[data-show-solutions="true"]
+  .information-gap-activity-node__solution {
+  display: block;
+  width: 100%;
+  color: var(--custom-block-solution-color);
+  font-family: var(--custom-block-solution-font-family);
+  font-size: var(--custom-block-solution-font-size);
+  line-height: var(--custom-block-fill-blank-line-height);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.information-gap-activity-node__table
+  .worksheet-table-node__row:last-child {
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+}
+
 .worksheet-table-node > .custom-block__instruction {
   break-after: avoid-page;
   page-break-after: avoid;
