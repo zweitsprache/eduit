@@ -1406,6 +1406,7 @@ const DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE: Record<WorksheetContext['worksheetT
   'learning-cards': 'Lernkarten',
   'information-gap': 'Wechselspiel',
   domino: 'Domino',
+  dialog: 'Dialog',
 };
 
 const WORD_GRID_DIRECTION_OPTIONS: {
@@ -2886,6 +2887,7 @@ export default function EditorPage() {
         || parsed.dazitDocumentType === 'Lernkarten'
         || parsed.dazitDocumentType === 'Wechselspiel'
         || parsed.dazitDocumentType === 'Domino'
+        || parsed.dazitDocumentType === 'Dialog'
       ) {
         setDazitDocumentType(parsed.dazitDocumentType);
       }
@@ -9233,6 +9235,7 @@ export default function EditorPage() {
                     <option value="learning-cards">Lernkarten</option>
                     <option value="information-gap">Wechselspiel</option>
                     <option value="domino">Domino</option>
+                    <option value="dialog">Dialog</option>
                   </select>
                 </label>
 
@@ -9786,6 +9789,7 @@ export default function EditorPage() {
                     { value: 'Lernkarten', label: 'Lernkarten' },
                     { value: 'Wechselspiel', label: 'Wechselspiel' },
                     { value: 'Domino', label: 'Domino' },
+                    { value: 'Dialog', label: 'Dialog' },
                   ]}
                 />
                 {republishScope === 'full' && (

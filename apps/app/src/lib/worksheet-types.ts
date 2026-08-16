@@ -20,7 +20,8 @@ export type WorksheetContext = {
     | 'communication-cards'
     | 'learning-cards'
     | 'information-gap'
-    | 'domino';
+    | 'domino'
+    | 'dialog';
   sourceProfileId: string | null;
   subject: string;
   customSubject: string;

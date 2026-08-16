@@ -140,6 +140,7 @@ export function DocumentContextFields({
           <option value="learning-cards">Lernkarten</option>
           <option value="information-gap">Wechselspiel</option>
           <option value="domino">Domino</option>
+          <option value="dialog">Dialog</option>
         </select>
       </label>
       <label className="block text-xs font-semibold text-tertiary">

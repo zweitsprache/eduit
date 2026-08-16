@@ -122,6 +122,8 @@ ${CONTENT_PRIVACY_AND_BRAND_RULES}`;
             ? 'Information gap activity'
           : context.worksheetType === 'domino'
             ? 'Domino'
+          : context.worksheetType === 'dialog'
+            ? 'Dialog'
             : 'Worksheet';
   const contextText = [
     ['Worksheet type', worksheetType],
