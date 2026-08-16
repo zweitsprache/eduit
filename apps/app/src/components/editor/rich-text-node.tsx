@@ -20,6 +20,7 @@ export const DEFAULT_RICH_TEXT_HTML =
 
 function RichTextNodeView({ node, selected }: NodeViewProps) {
   const attrs = node.attrs as RichTextAttrs;
+  const startsWithParagraph = /^\s*<p(?:\s|>)/i.test(attrs.html);
   const rootRef = useRef<HTMLDivElement>(null);
   const [selectionFragments, setSelectionFragments] = useState<Array<{
     top: number;
@@ -122,7 +123,7 @@ function RichTextNodeView({ node, selected }: NodeViewProps) {
       rootRef={rootRef}
     >
       <div
-        className="rich-text-node__content"
+        className={`rich-text-node__content${startsWithParagraph ? ' rich-text-node__content--starts-with-paragraph' : ''}`}
         dangerouslySetInnerHTML={{ __html: attrs.html }}
       />
       {selected && selectionFragments.map((fragment, index) => (

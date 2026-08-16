@@ -60,7 +60,7 @@ const DEFAULT_INSTRUCTION_TRANSLATIONS: Record<
   },
   'Mark each statement as true or false.':
     {
-      formal: 'Markieren Sie jede Aussage als richtig oder falsch.',
+      formal: 'Sind die Informationen richtig oder falsch? Kreuzen Sie an.',
       informal: 'Markiere jede Aussage als richtig oder falsch.',
     },
   'Match the items on the left with the items on the right.':
@@ -82,6 +82,14 @@ const DEFAULT_INSTRUCTION_TRANSLATIONS: Record<
     {
       formal: 'Lesen Sie die folgenden Glossarbegriffe.',
       informal: 'Lies die folgenden Glossarbegriffe.',
+    },
+    'Read the timetable and answer the questions.': {
+      formal: 'Lesen Sie den Fahrplan und beantworten Sie die Fragen.',
+      informal: 'Lies den Fahrplan und beantworte die Fragen.',
+    },
+    'Read the opening hours and answer the questions.': {
+      formal: 'Lesen Sie die Öffnungszeiten und beantworten Sie die Fragen.',
+      informal: 'Lies die Öffnungszeiten und beantworte die Fragen.',
     },
   'Rewrite the sentences correctly.': {
     formal: 'Schreiben Sie die Sätze richtig um.',

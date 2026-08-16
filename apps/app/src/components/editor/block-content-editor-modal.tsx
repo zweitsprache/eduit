@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
+import type { ClipboardEvent } from 'react';
 import type { Editor } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { useEditorState } from '@tiptap/react';
@@ -127,6 +128,21 @@ import type {
   DialogueSpeaker,
 } from '@/components/editor/dialogue-node';
 import type {
+  EmailAttrs,
+  MessengerAttrs,
+  MessengerMessage,
+} from '@/components/editor/communication-mockup-nodes';
+import type {
+  TimetableAttrs,
+  TimetableRow,
+} from '@/components/editor/timetable-node';
+import type {
+  OpeningHoursAttrs,
+  OpeningHoursRow,
+  OpeningHoursSign,
+} from '@/components/editor/opening-hours-node';
+import { formatOpeningHoursRange } from '@/components/editor/opening-hours-node';
+import type {
   RewriteSentenceItem,
   RewriteSentencesAttrs,
 } from '@/components/editor/rewrite-sentences-node';
@@ -160,6 +176,10 @@ import type {
   WorksheetTableRow,
 } from '@/components/editor/worksheet-table-node';
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
+import {
+  MAX_SPACER_HEIGHT,
+  type SpacerAttrs,
+} from '@/components/editor/spacer-node';
 import {
   DEFAULT_STANDALONE_INSTRUCTION,
   type InstructionBlockAttrs,
@@ -234,6 +254,10 @@ export type ContentEditorBlock = {
     | 'communicationCards'
     | 'learningCards'
     | 'dialogue'
+    | 'messenger'
+    | 'email'
+    | 'timetable'
+    | 'openingHours'
     | 'rewriteSentences'
     | 'sortingCategories'
     | 'wordGrid'
@@ -243,6 +267,7 @@ export type ContentEditorBlock = {
     | 'miniForm'
     | 'worksheetTable'
     | 'richText'
+    | 'spacer'
     | 'instructionBlock'
     | 'letterNode'
     | 'crossword'
@@ -267,6 +292,10 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   communicationCards: 'Communication Cards',
   learningCards: 'Learning cards',
   dialogue: 'Dialogue content',
+  messenger: 'Messenger content',
+  email: 'E-Mail content',
+  timetable: 'Timetable content',
+  openingHours: 'Opening Hours content',
   rewriteSentences: 'Rewrite sentences content',
   sortingCategories: 'Sorting categories content',
   wordGrid: 'Word grid content',
@@ -276,6 +305,7 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   miniForm: 'Mini form content',
   worksheetTable: 'Table content',
   richText: 'Rich Text content',
+  spacer: 'Spacer',
   instructionBlock: 'Instruction content',
   letterNode: 'Letter Node content',
   crossword: 'Crossword content',
@@ -1613,7 +1643,11 @@ function RichTextEditor({
 
   useEffect(() => {
     const input = inputRef.current;
-    if (input && input.innerHTML !== attrs.html) {
+    if (
+      input
+      && document.activeElement !== input
+      && input.innerHTML !== attrs.html
+    ) {
       input.innerHTML = attrs.html;
     }
   }, [attrs.html]);
@@ -1644,11 +1678,23 @@ function RichTextEditor({
     const input = inputRef.current;
     if (!input) return;
     const lines = input.innerText.replaceAll('\r\n', '\n').split('\n');
-    input.replaceChildren(...lines.flatMap((line, index) => [
-      ...(index > 0 ? [document.createElement('br')] : []),
-      document.createTextNode(line),
-    ]));
+    input.replaceChildren(...lines.map((line) => {
+      const paragraph = document.createElement('p');
+      paragraph.append(line ? document.createTextNode(line) : document.createElement('br'));
+      return paragraph;
+    }));
     input.focus();
+    saveContent();
+  }
+
+  function pastePlainText(event: ClipboardEvent<HTMLDivElement>) {
+    event.preventDefault();
+    document.execCommand('defaultParagraphSeparator', false, 'p');
+    document.execCommand(
+      'insertText',
+      false,
+      event.clipboardData.getData('text/plain'),
+    );
     saveContent();
   }
 
@@ -1718,8 +1764,12 @@ function RichTextEditor({
           ref={inputRef}
           contentEditable
           suppressContentEditableWarning
+          onFocus={() => {
+            document.execCommand('defaultParagraphSeparator', false, 'p');
+          }}
           onInput={saveContent}
           onBlur={saveContent}
+          onPaste={pastePlainText}
           className="rich-text-modal-input min-h-72 px-4 py-3 text-sm text-secondary outline-none"
         />
       </div>
@@ -1743,6 +1793,36 @@ function RichTextEditor({
         </ContentManualItem>
       </ContentManual>
     </>
+  );
+}
+
+function SpacerEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: SpacerAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  return (
+    <label className="text-xs font-semibold text-tertiary">
+      Height (px)
+      <input
+        type="number"
+        min={0}
+        max={MAX_SPACER_HEIGHT}
+        step={1}
+        value={attrs.height}
+        onChange={(event) => updateAttrs(editor, block, {
+          height: Math.min(
+            MAX_SPACER_HEIGHT,
+            Math.max(0, Math.round(Number(event.target.value) || 0)),
+          ),
+        })}
+        className="mt-1 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+    </label>
   );
 }
 
@@ -4611,6 +4691,457 @@ function LearningObjectiveEditor({
   );
 }
 
+function TimetableEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: TimetableAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const setRows = (rows: TimetableRow[]) => updateAttrs(editor, block, { rows });
+  const updateRow = (id: string, patch: Partial<TimetableRow>) => setRows(
+    attrs.rows.map((row) => row.id === id ? { ...row, ...patch } : row),
+  );
+  const headerFields: Array<{
+    key: 'destinationLabel' | 'platformLabel' | 'noticeLabel';
+    label: string;
+  }> = [
+    { key: 'destinationLabel', label: 'Destination label' },
+    { key: 'platformLabel', label: 'Platform label' },
+    { key: 'noticeLabel', label: 'Notice label' },
+  ];
+
+  return (
+    <>
+      <ContentSwitch
+        label="Show instruction"
+        isSelected={attrs.showInstruction}
+        onChange={(showInstruction) => updateAttrs(editor, block, {
+          showInstruction,
+        })}
+      />
+      <ContentSectionHeader className="mt-0">Board labels</ContentSectionHeader>
+      <div className="grid grid-cols-3 gap-3">
+        {headerFields.map((field) => (
+          <label className="block text-xs font-semibold text-primary" key={field.key}>
+            {field.label}
+            <input
+              className="mt-2 h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm font-medium text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              onChange={(event) => updateAttrs(editor, block, {
+                [field.key]: event.target.value,
+              })}
+              value={attrs[field.key]}
+            />
+          </label>
+        ))}
+      </div>
+      <label className="mt-3 block text-sm font-semibold text-primary">
+        Footer announcement
+        <input
+          className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          onChange={(event) => updateAttrs(editor, block, { footer: event.target.value })}
+          value={attrs.footer}
+        />
+      </label>
+      <ContentSectionHeader count={`${attrs.rows.length} departures`}>
+        Departures
+      </ContentSectionHeader>
+      <div className="mt-3 space-y-2">
+        {attrs.rows.map((row, index) => (
+          <ContentCard key={row.id}>
+            <ContentItemGrid>
+              <ContentItemNumber>{String(index + 1).padStart(2, '0')}</ContentItemNumber>
+              <div className="grid min-w-0 grid-cols-[0.8fr_0.8fr_2fr_0.65fr_1fr] gap-2">
+                {([
+                  ['service', 'Service'],
+                  ['time', 'Time'],
+                  ['destination', 'Destination / route'],
+                  ['platform', 'Platform'],
+                  ['notice', 'Notice'],
+                ] as const).map(([key, label]) => (
+                  <label className="min-w-0 text-[10px] font-semibold text-tertiary" key={key}>
+                    {label}
+                    <input
+                      className="mt-1 h-9 w-full min-w-0 rounded-md border border-primary bg-primary px-2 text-sm font-medium text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                      onChange={(event) => updateRow(row.id, { [key]: event.target.value })}
+                      value={row[key]}
+                    />
+                  </label>
+                ))}
+              </div>
+              <ContentItemActions
+                canDelete={attrs.rows.length > 1}
+                canMoveDown={index < attrs.rows.length - 1}
+                canMoveUp={index > 0}
+                label={`departure ${index + 1}`}
+                onDelete={() => setRows(attrs.rows.filter(({ id }) => id !== row.id))}
+                onMoveDown={() => setRows(moveItem(attrs.rows, index, 1))}
+                onMoveUp={() => setRows(moveItem(attrs.rows, index, -1))}
+              />
+            </ContentItemGrid>
+          </ContentCard>
+        ))}
+      </div>
+      <ContentAddButton onClick={() => setRows([...attrs.rows, {
+        id: `timetable-row-${Date.now()}`,
+        service: 'IC',
+        time: '14.00',
+        destination: 'Destination',
+        platform: '',
+        notice: '',
+      }])}>
+        Add departure
+      </ContentAddButton>
+    </>
+  );
+}
+
+function OpeningHoursEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: OpeningHoursAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const setSigns = (signs: OpeningHoursSign[]) => updateAttrs(editor, block, {
+    signs,
+  });
+  const updateSign = (id: string, patch: Partial<OpeningHoursSign>) => setSigns(
+    attrs.signs.map((sign) => sign.id === id ? { ...sign, ...patch } : sign),
+  );
+  const updateRows = (sign: OpeningHoursSign, rows: OpeningHoursRow[]) => {
+    updateSign(sign.id, { rows });
+  };
+
+  return (
+    <>
+      <ContentSwitch
+        label="Show instruction"
+        isSelected={attrs.showInstruction}
+        onChange={(showInstruction) => updateAttrs(editor, block, {
+          showInstruction,
+        })}
+      />
+      <ContentSectionHeader className="mt-0" count={`${attrs.signs.length} signs`}>
+        Signs
+      </ContentSectionHeader>
+      <div className="mt-3 space-y-3">
+        {attrs.signs.map((sign, signIndex) => (
+          <ContentCard key={sign.id}>
+            <ContentItemGrid>
+              <ContentItemNumber>
+                {String(signIndex + 1).padStart(2, '0')}
+              </ContentItemNumber>
+              <div className="min-w-0">
+                <label className="block text-xs font-semibold text-primary">
+                  Sign title
+                  <input
+                    className="mt-1 h-9 w-full rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                    onChange={(event) => updateSign(sign.id, {
+                      title: event.target.value,
+                    })}
+                    placeholder="Library"
+                    value={sign.title}
+                  />
+                </label>
+                <ContentSwitch
+                  label="Abbreviate weekdays"
+                  isSelected={sign.abbreviateWeekdays}
+                  onChange={(abbreviateWeekdays) => updateSign(sign.id, {
+                    abbreviateWeekdays,
+                  })}
+                />
+                <div className="mt-3 space-y-2">
+                  {sign.rows.map((row, rowIndex) => (
+                    <div
+                      className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-2"
+                      key={row.id}
+                    >
+                      {([
+                        ['days', 'Days'],
+                        ['hours', 'Hours'],
+                      ] as const).map(([key, label]) => (
+                        <label className="min-w-0 text-[10px] font-semibold text-tertiary" key={key}>
+                          {label}
+                          <input
+                            className="mt-1 h-9 w-full min-w-0 rounded-md border border-primary bg-primary px-2 text-sm font-medium text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                            onChange={(event) => updateRows(sign, sign.rows.map(
+                              (candidate) => candidate.id === row.id
+                                ? { ...candidate, [key]: event.target.value }
+                                : candidate,
+                            ))}
+                            onBlur={(event) => updateRows(sign, sign.rows.map(
+                              (candidate) => candidate.id === row.id
+                                ? {
+                                    ...candidate,
+                                    [key]: formatOpeningHoursRange(event.target.value),
+                                  }
+                                : candidate,
+                            ))}
+                            value={row[key]}
+                          />
+                        </label>
+                      ))}
+                      <ContentItemActions
+                        canDelete={sign.rows.length > 1}
+                        canMoveDown={rowIndex < sign.rows.length - 1}
+                        canMoveUp={rowIndex > 0}
+                        label={`hours row ${rowIndex + 1}`}
+                        onDelete={() => updateRows(
+                          sign,
+                          sign.rows.filter(({ id }) => id !== row.id),
+                        )}
+                        onMoveDown={() => updateRows(
+                          sign,
+                          moveItem(sign.rows, rowIndex, 1),
+                        )}
+                        onMoveUp={() => updateRows(
+                          sign,
+                          moveItem(sign.rows, rowIndex, -1),
+                        )}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <ContentInlineAddButton onClick={() => updateRows(sign, [
+                  ...sign.rows,
+                  {
+                    id: `opening-hours-row-${Date.now()}`,
+                    days: 'Monday – Friday',
+                    hours: '09:00 – 18:00',
+                  },
+                ])}>
+                  Add hours row
+                </ContentInlineAddButton>
+              </div>
+              <ContentItemActions
+                canDelete={attrs.signs.length > 1}
+                canMoveDown={signIndex < attrs.signs.length - 1}
+                canMoveUp={signIndex > 0}
+                label={`sign ${signIndex + 1}`}
+                onDelete={() => setSigns(
+                  attrs.signs.filter(({ id }) => id !== sign.id),
+                )}
+                onMoveDown={() => setSigns(moveItem(attrs.signs, signIndex, 1))}
+                onMoveUp={() => setSigns(moveItem(attrs.signs, signIndex, -1))}
+              />
+            </ContentItemGrid>
+          </ContentCard>
+        ))}
+      </div>
+      <ContentAddButton onClick={() => setSigns([...attrs.signs, {
+        id: `opening-hours-sign-${Date.now()}`,
+        title: 'Opening hours',
+        abbreviateWeekdays: false,
+        rows: [{
+          id: `opening-hours-row-${Date.now()}`,
+          days: 'Monday – Friday',
+          hours: '09:00 – 18:00',
+        }],
+      }])}>
+        Add sign
+      </ContentAddButton>
+    </>
+  );
+}
+
+function MessengerEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: MessengerAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const setMessages = (messages: MessengerMessage[]) => updateAttrs(editor, block, {
+    messages,
+  });
+  const updateMessage = (id: string, patch: Partial<MessengerMessage>) => {
+    setMessages(attrs.messages.map((message) => (
+      message.id === id ? { ...message, ...patch } : message
+    )));
+  };
+
+  return (
+    <>
+      <ContentSectionHeader className="mt-0">Contact</ContentSectionHeader>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block text-sm font-semibold text-primary">
+          Name
+          <input
+            className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            onChange={(event) => updateAttrs(editor, block, {
+              contactName: event.target.value,
+            })}
+            value={attrs.contactName}
+          />
+        </label>
+        <label className="block text-sm font-semibold text-primary">
+          Status
+          <input
+            className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            onChange={(event) => updateAttrs(editor, block, {
+              status: event.target.value,
+            })}
+            value={attrs.status}
+          />
+        </label>
+      </div>
+      <ContentSectionHeader count={`${attrs.messages.length} messages`}>
+        Messages
+      </ContentSectionHeader>
+      <div className="mt-3 space-y-2">
+        {attrs.messages.map((message, index) => (
+          <ContentCard key={message.id}>
+            <ContentItemGrid>
+              <ContentItemNumber>{String(index + 1).padStart(2, '0')}</ContentItemNumber>
+              <ContentOptionButtonGroup
+                ariaLabel={`Direction for message ${index + 1}`}
+                className="mt-0"
+                onChange={(side) => updateMessage(message.id, {
+                  side: side as MessengerMessage['side'],
+                })}
+                options={[
+                  { label: 'Incoming', value: 'incoming' },
+                  { label: 'Outgoing', value: 'outgoing' },
+                ]}
+                value={message.side}
+              />
+              <ContentItemActions
+                canDelete={attrs.messages.length > 1}
+                canMoveDown={index < attrs.messages.length - 1}
+                canMoveUp={index > 0}
+                label={`message ${index + 1}`}
+                onDelete={() => setMessages(attrs.messages.filter(({ id }) => id !== message.id))}
+                onMoveDown={() => setMessages(moveItem(attrs.messages, index, 1))}
+                onMoveUp={() => setMessages(moveItem(attrs.messages, index, -1))}
+              />
+              <textarea
+                aria-label={`Message ${index + 1}`}
+                className="col-start-2 min-h-20 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                onChange={(event) => updateMessage(message.id, {
+                  text: event.target.value,
+                })}
+                value={message.text}
+              />
+              <label className="col-start-2 text-xs font-semibold text-tertiary">
+                Time
+                <input
+                  className="mt-1 h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm font-medium text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  onChange={(event) => updateMessage(message.id, {
+                    time: event.target.value,
+                  })}
+                  value={message.time}
+                />
+              </label>
+            </ContentItemGrid>
+          </ContentCard>
+        ))}
+      </div>
+      <ContentAddButton onClick={() => setMessages([...attrs.messages, {
+        id: `messenger-message-${Date.now()}`,
+        side: 'incoming',
+        text: 'Neue Nachricht',
+        time: '',
+      }])}>
+        Add message
+      </ContentAddButton>
+    </>
+  );
+}
+
+function EmailEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: EmailAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const fields: Array<{
+    key: keyof Omit<EmailAttrs, 'body' | 'attachmentType' | 'attachmentName'>;
+    label: string;
+  }> = [
+    { key: 'fromName', label: 'Sender name' },
+    { key: 'fromAddress', label: 'Sender address' },
+    { key: 'to', label: 'Recipient' },
+    { key: 'date', label: 'Date' },
+    { key: 'subject', label: 'Subject' },
+  ];
+
+  return (
+    <>
+      <ContentSectionHeader className="mt-0">Message details</ContentSectionHeader>
+      <div className="grid grid-cols-2 gap-3">
+        {fields.map((field) => (
+          <label
+            className={`block text-sm font-semibold text-primary${
+              field.key === 'subject' ? ' col-span-2' : ''
+            }`}
+            key={field.key}
+          >
+            {field.label}
+            <input
+              className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              onChange={(event) => updateAttrs(editor, block, {
+                [field.key]: event.target.value,
+              })}
+              value={attrs[field.key]}
+            />
+          </label>
+        ))}
+      </div>
+      <ContentSectionHeader>Body</ContentSectionHeader>
+      <textarea
+        className="mt-3 min-h-72 w-full resize-y rounded-md border border-primary bg-primary px-3 py-2.5 text-sm leading-6 text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+        onChange={(event) => updateAttrs(editor, block, { body: event.target.value })}
+        value={attrs.body}
+      />
+      <ContentSectionHeader>Attachment</ContentSectionHeader>
+      <ContentOptionButtonGroup
+        ariaLabel="Attachment type"
+        onChange={(attachmentType) => updateAttrs(editor, block, {
+          attachmentType,
+          ...(
+            attachmentType === 'none'
+              ? { attachmentName: '' }
+              : !attrs.attachmentName
+                ? { attachmentName: 'Anhang' }
+                : {}
+          ),
+        })}
+        options={[
+          { label: 'None', value: 'none' },
+          { label: 'Document', value: 'document' },
+          { label: 'Image', value: 'image' },
+          { label: 'Video', value: 'video' },
+          { label: 'Audio', value: 'audio' },
+        ]}
+        value={attrs.attachmentType}
+      />
+      {attrs.attachmentType !== 'none' && (
+        <label className="mt-3 block text-sm font-semibold text-primary">
+          Filename
+          <input
+            className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm font-medium text-primary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            onChange={(event) => updateAttrs(editor, block, {
+              attachmentName: event.target.value,
+            })}
+            placeholder="example.pdf"
+            value={attrs.attachmentName}
+          />
+        </label>
+      )}
+    </>
+  );
+}
+
 function DialogueEditor({
   attrs,
   block,
@@ -7459,6 +7990,10 @@ export function BlockContentEditorModal({
             {block.type === 'communicationCards' && <CommunicationCardsEditor attrs={attrs as unknown as CommunicationCardsAttrs} block={block as ContentEditorBlock & { type: 'communicationCards' }} editor={editor} groupIndex={communicationCardsGroupIndex} onGroupIndexChange={setCommunicationCardsGroupIndex} selectedCardId={communicationCardsSelectedCardId} onSelectedCardIdChange={setCommunicationCardsSelectedCardId} />}
             {block.type === 'learningCards' && <LearningCardsEditor attrs={attrs as unknown as LearningCardsAttrs} block={block as ContentEditorBlock & { type: 'learningCards' }} editor={editor} groupIndex={learningCardsGroupIndex} onGroupIndexChange={setLearningCardsGroupIndex} selectedCardId={learningCardsSelectedCardId} onSelectedCardIdChange={setLearningCardsSelectedCardId} />}
             {block.type === 'dialogue' && <DialogueEditor attrs={attrs as unknown as DialogueAttrs} block={block} editor={editor} />}
+            {block.type === 'messenger' && <MessengerEditor attrs={attrs as unknown as MessengerAttrs} block={block} editor={editor} />}
+            {block.type === 'email' && <EmailEditor attrs={attrs as unknown as EmailAttrs} block={block} editor={editor} />}
+            {block.type === 'timetable' && <TimetableEditor attrs={attrs as unknown as TimetableAttrs} block={block} editor={editor} />}
+            {block.type === 'openingHours' && <OpeningHoursEditor attrs={attrs as unknown as OpeningHoursAttrs} block={block} editor={editor} />}
             {block.type === 'rewriteSentences' && <RewriteSentencesEditor attrs={attrs as unknown as RewriteSentencesAttrs} block={block} editor={editor} />}
             {block.type === 'sortingCategories' && <SortingCategoriesEditor attrs={attrs as unknown as SortingCategoriesAttrs} block={block} editor={editor} />}
             {block.type === 'wordGrid' && <WordGridEditor attrs={attrs as unknown as WordGridAttrs} block={block} editor={editor} />}
@@ -7468,6 +8003,7 @@ export function BlockContentEditorModal({
             {block.type === 'miniForm' && <MiniFormEditor attrs={attrs as unknown as MiniFormAttrs} block={block} editor={editor} />}
             {block.type === 'worksheetTable' && <WorksheetTableEditor attrs={attrs as unknown as WorksheetTableAttrs} block={block} editor={editor} />}
             {block.type === 'richText' && <RichTextEditor attrs={attrs as unknown as RichTextAttrs} block={block} editor={editor} />}
+            {block.type === 'spacer' && <SpacerEditor attrs={attrs as unknown as SpacerAttrs} block={block} editor={editor} />}
             {block.type === 'instructionBlock' && <StandaloneInstructionEditor attrs={attrs as unknown as InstructionBlockAttrs} block={block} editor={editor} />}
             {block.type === 'letterNode' && <LetterNodeEditor attrs={attrs as unknown as LetterNodeAttrs} block={block} editor={editor} />}
             {block.type === 'crossword' && <CrosswordEditor attrs={attrs as unknown as CrosswordAttrs} block={block} editor={editor} />}

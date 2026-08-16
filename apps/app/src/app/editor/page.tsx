@@ -182,6 +182,12 @@ import {
   type DialogueSpeaker,
 } from '@/components/editor/dialogue-node';
 import {
+  Email,
+  Messenger,
+} from '@/components/editor/communication-mockup-nodes';
+import { Timetable } from '@/components/editor/timetable-node';
+import { OpeningHours } from '@/components/editor/opening-hours-node';
+import {
   RewriteSentences,
   rewriteWordBankMode,
   type RewriteSentenceItem,
@@ -270,6 +276,7 @@ import {
   FillInTheBlankAIModal,
 } from '@/components/editor/fill-in-the-blank-ai-modal';
 import { RichText } from '@/components/editor/rich-text-node';
+import { Spacer } from '@/components/editor/spacer-node';
 import { InstructionBlock } from '@/components/editor/instruction-node';
 import { MediaLayout } from '@/components/editor/media-layout-node';
 import { MediaLayoutEditorModal } from '@/components/editor/media-layout-editor-modal';
@@ -434,6 +441,10 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'communicationCards',
   'learningCards',
   'dialogue',
+  'messenger',
+  'email',
+  'timetable',
+  'openingHours',
   'rewriteSentences',
   'sortingCategories',
   'wordGrid',
@@ -443,6 +454,7 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'miniForm',
   'worksheetTable',
   'richText',
+  'spacer',
   'instructionBlock',
   'mediaLayout',
   'letterNode',
@@ -1558,6 +1570,10 @@ export default function EditorPage() {
       LearningCards,
       CustomHeading,
       Dialogue,
+      Messenger,
+      Email,
+      Timetable,
+      OpeningHours,
       RewriteSentences,
       SortingCategories,
       Ordering,
@@ -1568,6 +1584,7 @@ export default function EditorPage() {
       MiniForm,
       WorksheetTable,
       RichText,
+      Spacer,
       InstructionBlock,
       MediaLayout,
       LetterNode,

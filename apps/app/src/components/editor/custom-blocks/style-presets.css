@@ -151,8 +151,20 @@
   line-height: 1.5 !important;
 }
 
-.tiptap:is([data-style-preset="academic"], [data-style-preset="semi-academic"]) .rich-text-node__content p {
-  margin-bottom: 0.5em !important;
+.tiptap:is([data-style-preset="academic"], [data-style-preset="semi-academic"]) .rich-text-node > .rich-text-node__content > p {
+  margin-bottom: 0 !important;
+  padding-top: 8px;
+}
+
+.tiptap:is([data-style-preset="academic"], [data-style-preset="semi-academic"])
+  .rich-text-node
+  > .rich-text-node__content--starts-with-paragraph
+  > p:first-child {
+  padding-top: 0;
+}
+
+.tiptap:is([data-style-preset="academic"], [data-style-preset="semi-academic"]) .rich-text-node > .rich-text-node__content div {
+  padding-top: 8px;
 }
 
 .tiptap:is([data-style-preset="academic"], [data-style-preset="semi-academic"]) .rich-text-node__content h2 {

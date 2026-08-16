@@ -20,6 +20,7 @@ import {
   GraduationHat01,
   Image01,
 } from '@untitledui/icons';
+import { Clock3, TrainFront } from 'lucide-react';
 
 export type CustomBlockDefinition = {
   type: string;
@@ -69,6 +70,15 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
     insert: (editor) => editor.chain().focus().insertPageBreak().run(),
   },
   {
+    type: 'spacer',
+    label: 'Spacer',
+    description: 'Add configurable vertical whitespace between blocks.',
+    category: 'Layout',
+    keywords: ['spacer', 'space', 'gap', 'vertical', 'whitespace', 'layout'],
+    Icon: Rows01,
+    insert: (editor) => editor.chain().focus().insertSpacer().run(),
+  },
+  {
     type: 'customHeading',
     label: 'Heading',
     description: 'A branded heading with optional document numbering.',
@@ -85,6 +95,42 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
     keywords: ['rich', 'text', 'paragraph', 'heading', 'list', 'link', 'formatted'],
     Icon: TypeSquare,
     insert: (editor) => editor.chain().focus().insertRichText().run(),
+  },
+  {
+    type: 'messenger',
+    label: 'Messenger',
+    description: 'An editable mobile messenger conversation mockup.',
+    category: 'Content',
+    keywords: ['messenger', 'chat', 'message', 'conversation', 'mobile'],
+    Icon: MessageChatSquare,
+    insert: (editor) => editor.chain().focus().insertMessenger().run(),
+  },
+  {
+    type: 'email',
+    label: 'E-Mail',
+    description: 'An editable e-mail message mockup with addressing fields.',
+    category: 'Content',
+    keywords: ['email', 'e-mail', 'mail', 'message', 'inbox'],
+    Icon: File02,
+    insert: (editor) => editor.chain().focus().insertEmail().run(),
+  },
+  {
+    type: 'timetable',
+    label: 'Timetable',
+    description: 'An editable railway departure-board mockup.',
+    category: 'Content',
+    keywords: ['timetable', 'departure', 'train', 'railway', 'platform', 'schedule'],
+    Icon: TrainFront,
+    insert: (editor) => editor.chain().focus().insertTimetable().run(),
+  },
+  {
+    type: 'openingHours',
+    label: 'Opening Hours',
+    description: 'Editable opening-hours signs for places and businesses.',
+    category: 'Content',
+    keywords: ['opening', 'hours', 'times', 'library', 'shop', 'business'],
+    Icon: Clock3,
+    insert: (editor) => editor.chain().focus().insertOpeningHours().run(),
   },
   {
     type: 'wordBank',

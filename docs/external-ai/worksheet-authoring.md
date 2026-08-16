@@ -118,6 +118,14 @@ Use only when a deliberate new page is required.
 | --- | --- |
 | `restartPagination` | boolean, default `false` |
 
+### `spacer`
+
+Use for deliberate vertical whitespace between worksheet blocks.
+
+| Field | Constraint |
+| --- | --- |
+| `height` | integer pixels, 0-400, default `32` |
+
 ### `glossary`
 
 Use for vocabulary, verb, noun, or adjective reference tables.
@@ -191,6 +199,7 @@ Use for one or more multiple-choice questions.
 | `instruction` | up to 1000 characters |
 | `blockQuestion` | shared prompt or source question, up to 2000 characters |
 | `questions` | required array of 1-50 questions |
+| `questionNumber` | positive integer or `null`; omit for grouped questions so numbering follows array order |
 | `columns` | integer 1-3, default `1` |
 | `shuffleAnswers`, `showInstruction` | booleans; defaults `false` and `true` |
 

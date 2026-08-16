@@ -83,6 +83,26 @@
   transition: border-color 150ms, box-shadow 150ms;
 }
 
+.spacer-node {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.spacer-node--selected {
+  outline: 1px dashed var(--color-border-brand, currentColor);
+  outline-offset: -1px;
+  background: color-mix(in srgb, var(--color-bg-brand-primary, transparent) 18%, transparent);
+}
+
+.pdf-exporting .spacer-node--selected {
+  outline: 0;
+  background: transparent;
+}
+
 /* Each learning-card sheet is a separate ProseMirror node. The coordinates
    below are relative to A4 portrait's content origin (25 mm from the left,
    25 mm from the top), but target the physical page center (105 × 148.5 mm).
@@ -2308,7 +2328,7 @@
 .crossword-node__clues li {
   display: grid;
   grid-template-columns: 1ch minmax(0, 1fr);
-  align-items: baseline;
+  align-items: center;
   column-gap: 0.75rem;
   color: var(--color-text-secondary);
   line-height: 1.4;
@@ -2573,6 +2593,11 @@
   border-bottom: var(--custom-block-row-border-width) solid
     var(--custom-block-row-border-color);
   font-size: var(--custom-block-body-font-size);
+}
+
+.mcq-node .custom-block__rows > .custom-block__row:first-child {
+  border-top: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
 }
 
 .custom-block__row-index {
@@ -5143,7 +5168,21 @@
   margin-bottom: 0;
 }
 
-.rich-text-node__content p,
+.rich-text-node > .rich-text-node__content > p {
+  margin: 0;
+  padding-top: 8px;
+}
+
+.rich-text-node
+  > .rich-text-node__content--starts-with-paragraph
+  > p:first-child {
+  padding-top: 0;
+}
+
+.rich-text-node > .rich-text-node__content div {
+  padding-top: 8px;
+}
+
 .rich-text-modal-input p {
   margin: 0.5em 0;
 }
@@ -5230,4 +5269,490 @@
   color: var(--color-brand-700);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.messenger-node,
+.email-node {
+  container-type: inline-size;
+}
+
+.messenger-node__window,
+.email-node__window {
+  margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid var(--color-border-primary);
+  border-radius: 8px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.messenger-node__window {
+  width: min(100%, 22rem);
+}
+
+.email-node__window {
+  width: min(100%, 34rem);
+}
+
+.messenger-node__header {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  min-height: 3rem;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.7rem;
+  border-bottom: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-secondary);
+}
+
+.messenger-node__avatar {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid var(--color-border-primary);
+  border-radius: 50%;
+  background: var(--color-bg-primary);
+}
+
+.messenger-node__avatar svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  stroke-width: 1.7;
+}
+
+.messenger-node__identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.messenger-node__identity strong {
+  overflow: hidden;
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.messenger-node__identity small {
+  margin-top: 0.2rem;
+  color: var(--color-text-tertiary);
+  font-size: 0.65rem;
+}
+
+.messenger-node__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--color-text-secondary);
+}
+
+.messenger-node__actions svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 1.7;
+}
+
+.messenger-node__messages {
+  display: flex;
+  min-height: 8rem;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 1rem;
+  background-color: var(--color-bg-primary);
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--color-border-primary) 35%, transparent) 0.6px,
+    transparent 0.6px
+  );
+  background-size: 12px 12px;
+}
+
+.messenger-node__message {
+  width: fit-content;
+  max-width: 76%;
+  padding: 0.55rem 0.7rem 0.4rem;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: 8px 8px 8px 2px;
+  background: var(--color-bg-secondary);
+}
+
+.messenger-node__message[data-side="outgoing"] {
+  align-self: flex-end;
+  border-color: color-mix(in srgb, var(--color-brand-600) 35%, var(--color-border-primary));
+  border-radius: 8px 8px 2px 8px;
+  background: color-mix(in srgb, var(--color-brand-100) 55%, var(--color-bg-primary));
+}
+
+.messenger-node__message p {
+  margin: 0 !important;
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.messenger-node__message time {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--color-text-tertiary);
+  font-size: 0.55rem;
+  line-height: 1;
+  text-align: right;
+}
+
+.email-node__toolbar {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr) 1rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--color-border-secondary);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.email-node__toolbar svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.email-node__heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem 0.3rem;
+}
+
+.email-node__heading h3 {
+  min-width: 0;
+  margin: 0 !important;
+  font-size: 1rem !important;
+  line-height: 1.3 !important;
+  overflow-wrap: anywhere;
+}
+
+.email-node__heading time {
+  color: var(--color-text-tertiary);
+  font-size: 0.62rem;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.email-node__addresses {
+  position: relative;
+  margin: 0;
+  padding: 0 2.5rem 0.55rem 1rem;
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.email-node__addresses div {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 0.4rem;
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.email-node__addresses dt {
+  color: var(--color-text-tertiary);
+}
+
+.email-node__addresses dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.email-node__header-attachment {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.6rem;
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--color-text-tertiary);
+  stroke-width: 1.7;
+}
+
+.email-node__body {
+  min-height: 9rem;
+  padding: 1rem 1.1rem 0.7rem;
+}
+
+.email-node__body p {
+  margin: 0 0 0.85rem !important;
+  font-size: 0.8rem !important;
+  line-height: 1.55 !important;
+  overflow-wrap: anywhere;
+}
+
+.email-node__body p:last-child {
+  margin-bottom: 0 !important;
+}
+
+.email-node__attachment {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--color-border-primary);
+  border-radius: 6px;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  line-height: 1.25;
+}
+
+.email-node__attachment svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  stroke-width: 1.7;
+}
+
+.email-node__attachment span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.opening-hours-node,
+.timetable-node {
+  container-type: inline-size;
+}
+
+.opening-hours-node > .custom-block__instruction + .opening-hours-node__grid {
+  margin-block-start: var(
+    --custom-block-space-instruction-to-divider
+  ) !important;
+}
+
+.opening-hours-node__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--custom-block-column-gap);
+  row-gap: var(--custom-block-column-gap);
+}
+
+.opening-hours-node__sign {
+  min-width: 0;
+  overflow: hidden;
+  border: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  border-radius: var(--custom-block-radius-control);
+  background: var(--color-bg-primary);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.opening-hours-node__header {
+  display: grid;
+  grid-template-columns: var(--custom-block-index-size) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--custom-block-inline-gap);
+  min-height: var(--custom-block-row-height);
+  padding: var(--custom-block-row-padding-block)
+    var(--custom-block-inline-gap);
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  background: var(--color-bg-secondary);
+}
+
+.opening-hours-node__header svg {
+  width: var(--custom-block-index-size);
+  height: var(--custom-block-index-size);
+  padding: 0.25rem;
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--custom-block-radius-control);
+  color: var(--color-text-secondary);
+  stroke-width: 1.7;
+}
+
+.opening-hours-node__header h3 {
+  margin: 0 !important;
+  color: var(--color-text-primary);
+  font-size: var(--custom-block-body-font-size) !important;
+  font-weight: 700;
+  line-height: var(--custom-block-label-line-height) !important;
+  overflow-wrap: anywhere;
+}
+
+.opening-hours-node__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--custom-block-inline-gap);
+  align-items: stretch;
+  min-height: var(--custom-block-row-height);
+  padding: var(--custom-block-row-padding-block)
+    var(--custom-block-inline-gap);
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  color: var(--color-text-primary);
+  font-size: var(--custom-block-body-font-size);
+  line-height: var(--custom-block-label-line-height);
+}
+
+.opening-hours-node__row:last-child {
+  border-bottom: 0;
+}
+
+.opening-hours-node__row > span,
+.opening-hours-node__row > strong {
+  display: flex;
+  align-items: center;
+}
+
+.opening-hours-node__row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.opening-hours-node__row > strong {
+  justify-content: flex-end;
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+  white-space: pre-wrap;
+}
+
+.timetable-node > .custom-block__instruction + .timetable-node__board {
+  margin-block-start: var(
+    --custom-block-space-instruction-to-divider
+  ) !important;
+}
+
+.timetable-node__board {
+  width: 100%;
+  overflow: hidden;
+  border: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  border-radius: var(--custom-block-radius-control);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.timetable-node__header,
+.timetable-node__row {
+  display: grid;
+  grid-template-columns: 3.6rem 3.8rem minmax(0, 1fr) 3.2rem 6.7rem;
+  align-items: center;
+}
+
+.timetable-node__header {
+  min-height: var(--custom-block-row-height);
+  padding: var(--custom-block-row-padding-block)
+    var(--custom-block-inline-gap);
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
+  font-size: var(--custom-block-body-font-size);
+  line-height: var(--custom-block-control-size);
+}
+
+.timetable-node__header strong {
+  min-width: 0;
+  padding-inline: 0.25rem;
+  font-weight: 600;
+}
+
+.timetable-node__row {
+  min-height: var(--custom-block-row-height);
+  padding: var(--custom-block-row-padding-block)
+    var(--custom-block-inline-gap);
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  font-size: var(--custom-block-body-font-size);
+  font-weight: 500;
+  line-height: var(--custom-block-label-line-height);
+}
+
+.timetable-node__row > * {
+  min-width: 0;
+  padding-inline: 0.25rem;
+  overflow-wrap: anywhere;
+}
+
+.timetable-node__service {
+  display: inline-flex;
+  width: calc(100% - 0.35rem);
+  min-height: var(--custom-block-index-size);
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--custom-block-radius-control);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-size: var(--custom-block-meta-font-size);
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.timetable-node__time,
+.timetable-node__platform {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.timetable-node__destination {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre-wrap;
+}
+
+.timetable-node__notice {
+  text-align: left;
+}
+
+.timetable-node__footer {
+  display: flex;
+  min-height: var(--custom-block-row-height);
+  box-sizing: border-box;
+  align-items: center;
+  margin: 0 !important;
+  padding: var(--custom-block-row-padding-block)
+    var(--custom-block-inline-gap);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: var(--custom-block-body-font-size) !important;
+  font-weight: 600;
+  line-height: var(--custom-block-control-size) !important;
+  overflow-wrap: anywhere;
+}
+
+@container (max-width: 34rem) {
+  .timetable-node__header,
+  .timetable-node__row {
+    grid-template-columns: 3.1rem 3.25rem minmax(0, 1fr) 2.6rem 4.7rem;
+  }
+
+  .timetable-node__row {
+    font-size: var(--custom-block-meta-font-size);
+  }
+
+  .timetable-node__service {
+    font-size: var(--custom-block-meta-font-size);
+  }
+}
+
+@media print {
+  .messenger-node__messages {
+    background-image: none;
+  }
 }

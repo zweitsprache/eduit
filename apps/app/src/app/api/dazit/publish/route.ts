@@ -7,7 +7,6 @@ import { getCurrentAppUser } from '@/lib/auth/authorization';
 import { updateWorksheet } from '@/lib/worksheets';
 import { sql } from '@/lib/neon';
 import { dazitMetadataModel } from '@/lib/ai';
-import { germanProgressionDetectionReference } from '@/lib/german-language-progression';
 import {
   worksheetSemanticManifestFromJson,
   type WorksheetSemanticManifest,
@@ -32,6 +31,7 @@ type PublishMetadata = {
   tags: string[];
   format?: string;
   languageLevel?: string;
+  level?: string;
   actionCompetencies?: string[];
   languageCompetencies?: string[];
   actionField?: string | null;
@@ -124,7 +124,6 @@ const descriptionSchema = z.object({
   excerpt: z.string().trim().min(120).max(280),
   searchSnippet: z.string().trim().min(90).max(180),
   tags: z.array(z.string().trim().min(2).max(50)).min(1).max(10),
-  level: z.enum(PUBLICATION_LEVELS),
   actionCompetencies: z.array(z.enum(ACTION_COMPETENCY_OPTIONS)).max(3),
   languageCompetencies: z.array(z.enum(LANGUAGE_COMPETENCY_OPTIONS)).min(1).max(5),
   actionField: z.enum(ACTION_FIELD_OPTIONS).nullable(),
@@ -167,7 +166,6 @@ function applyWorksheetSettingOverrides(
   generated: GeneratedDescription,
   metadata: PublishMetadata,
 ): GeneratedDescription {
-  const levelOverride = normalizePublicationLevel(metadata.languageLevel);
   const actionCompetencyOverride = Array.isArray(metadata.actionCompetencies)
     ? metadata.actionCompetencies.filter((value): value is string => (
       ACTION_COMPETENCY_OPTIONS.includes(value as typeof ACTION_COMPETENCY_OPTIONS[number])
@@ -185,7 +183,6 @@ function applyWorksheetSettingOverrides(
 
   return {
     ...generated,
-    level: levelOverride ?? generated.level,
     actionCompetencies: actionCompetencyOverride.length
       ? actionCompetencyOverride
       : generated.actionCompetencies,
@@ -286,6 +283,12 @@ async function generateDescription(
   worksheetManifest: WorksheetSemanticManifest | null,
   allowTerminologyOverride = false,
 ) {
+  const publicationLevel = normalizePublicationLevel(
+    metadata.languageLevel ?? metadata.level,
+  );
+  if (!publicationLevel) {
+    throw new Error('A valid worksheet language level from A1.1 to B1.2 is required.');
+  }
   const pdfText = await extractPdfText(pdf);
   const worksheetManifestJson = worksheetManifest
     ? JSON.stringify(worksheetManifest, null, 2)
@@ -311,6 +314,11 @@ async function generateDescription(
         }))
       );
     const violations: string[] = [];
+    const mentionedLevels = generatedText.match(/\b(?:A1\.1|A1\.2|A2\.1|A2\.2|B1\.1|B1\.2)\b/gi)
+      ?? [];
+    if (mentionedLevels.some((level) => level.toUpperCase() !== publicationLevel)) {
+      violations.push('description contains a language level that differs from the worksheet setting');
+    }
     if (forbiddenAdultDazTerminology.test(generatedText)) {
       violations.push('forbidden adult DaZ terminology detected');
     }
@@ -411,6 +419,11 @@ Verbindliche DaZ-Terminologie:
           type: 'text',
           text: `Titel: ${metadata.title}
 Dokumenttyp: ${metadata.documentType}
+Verbindliches Niveau aus den Arbeitsblatteinstellungen: ${publicationLevel}
+
+Bewerte oder bestimme das Sprachniveau nicht selbst. Das angegebene Niveau ist
+verbindlich. Falls du ein Niveau im Kartenauszug, SEO-Snippet oder in der
+Beschreibung erwähnst, verwende ausschliesslich ${publicationLevel}.
 
 ${worksheetManifest
   ? `Verbindliche semantische Arbeitsblattstruktur:
@@ -460,17 +473,13 @@ Erstelle:
    «können müssen sollen dürfen» ist verboten; korrekt sind die vier
    separaten Schlagwörter «können», «müssen», «sollen», «dürfen». Priorisiere
    bei der Begrenzung auf 10 die zentralen Einzelbegriffe des Dokuments.
-4. Bestimme genau ein Niveau von A1.1 bis B1.2. Nutze ausschliesslich die unten
-   stehenden Progressionsdeskriptoren. Ordne das Dokument dem frühesten Niveau
-   zu, auf dem seine zentralen sprachlichen Strukturen verfügbar sind. Beurteile
-   nicht nur die sichtbare Textmenge oder das Layout.
-5. Bestimme die Sprachhandlungskompetenz nur, wenn das Dokument eine konkrete
+4. Bestimme die Sprachhandlungskompetenz nur, wenn das Dokument eine konkrete
    rezeptive oder produktive Sprachhandlung erkennbar unterstützt. Gib sonst
    eine leere Liste zurück. Eine Grammatik- oder Verbtabelle allein ist keine
    Sprachhandlung und darf nicht automatisch Lesen oder Schreiben zugeordnet
    werden.
-6. Bestimme alle unmittelbar behandelten Sprachkompetenzen.
-7. Beschreibe im Beitrag zur Sprachhandlungskompetenz knapp und sachlich, wie der sprachliche
+5. Bestimme alle unmittelbar behandelten Sprachkompetenzen.
+6. Beschreibe im Beitrag zur Sprachhandlungskompetenz knapp und sachlich, wie der sprachliche
    Inhalt die Handlungsfähigkeit erwachsener Lernender erweitert. Beschreibe
    ausdrücklich nicht bloss die Fertigkeit, das Aufgabenformat oder die
    Tabellenstruktur. Beispiel Modalverben: Lernende können ausdrücken, was sie
@@ -478,7 +487,7 @@ Erstelle:
    Verwendungsmöglichkeiten, die aus dem PDF belegbar sind. Die
    Text umfasst mindestens 100 Zeichen. Generiere keine Beispielsätze,
    Musterformulierungen, Dialogbeispiele oder Listen mit möglichen Äusserungen.
-8. Ordne höchstens ein Handlungsfeld aus der folgenden geschlossenen Liste zu:
+7. Ordne höchstens ein Handlungsfeld aus der folgenden geschlossenen Liste zu:
    Deutschkurs; Gesundheit; Sicherheit und Notfälle; Familie und Partnerschaft;
    Kinder und Schule; Soziales Netz; Beratung und Unterstützung; Einkaufen;
    Ernährung; Wohnen; Mobilität; Finanzen und Versicherungen; Behörden;
@@ -489,10 +498,6 @@ Erstelle:
    Wortschatzmaterialien ohne klaren Lebensbereich erhalten null. Wähle nicht
    «Deutschkurs» bloss deshalb, weil das Dokument in einem DaZ-Kurs verwendet
    wird.
-
-Verbindliche Progressionsdeskriptoren:
-${germanProgressionDetectionReference()}
-
 Der Text soll Kursleiter:innen bei der Entscheidung helfen, ob das Material zu
 ihrem DaZ-Kurs für Erwachsene passt. Relevante Suchbegriffe sollen natürlich aus dem
 tatsächlichen Inhalt des PDFs entstehen.
@@ -532,7 +537,7 @@ beziehungsweise Kursleiter:innen und Lernende.`
     searchSnippet: output.searchSnippet,
     html: `<p>${escapeHtml(output.introduction)}</p>${sections}`,
     tags: filterGeneratedTags(output.tags, metadata.documentType, pdfText),
-    level: output.level,
+    level: publicationLevel,
     actionCompetencies: output.actionCompetencies,
     languageCompetencies: output.languageCompetencies,
     actionField: output.actionField,

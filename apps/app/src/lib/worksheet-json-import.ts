@@ -63,6 +63,11 @@ const pageBreakSchema = z.object({
   restartPagination: z.boolean().default(false),
 });
 
+const spacerSchema = z.object({
+  type: z.literal('spacer'),
+  height: z.number().int().min(0).max(400).default(32),
+});
+
 const worksheetTableColumnSchema = z.object({
   id: z.string().trim().min(1).max(100),
   label: z.string().max(500).default(''),
@@ -111,6 +116,73 @@ const dialogueSchema = z.object({
   })).min(2).max(500),
 });
 
+const messengerSchema = z.object({
+  type: z.literal('messenger'),
+  contactName: z.string().trim().max(200).default(''),
+  status: z.string().trim().max(200).default(''),
+  messages: z.array(z.object({
+    side: z.enum(['incoming', 'outgoing']).default('incoming'),
+    text: z.string().max(5000),
+    time: z.string().trim().max(100).default(''),
+  })).min(1).max(500),
+});
+
+const emailSchema = z.object({
+  type: z.literal('email'),
+  fromName: z.string().trim().max(200).default(''),
+  fromAddress: z.string().trim().max(500).default(''),
+  to: z.string().trim().max(1000).default(''),
+  date: z.string().trim().max(200).default(''),
+  subject: z.string().max(1000).default(''),
+  body: z.string().max(20_000).default(''),
+  attachmentType: z.enum([
+    'none',
+    'document',
+    'image',
+    'video',
+    'audio',
+  ]).default('none'),
+  attachmentName: z.string().max(1000).default(''),
+});
+
+const timetableSchema = z.object({
+  type: z.literal('timetable'),
+  instruction: z.string().max(1000).default(
+    'Read the timetable and answer the questions.',
+  ),
+  showInstruction: z.boolean().default(true),
+  destinationLabel: z.string().max(100).default('Nach'),
+  platformLabel: z.string().max(100).default('Gleis'),
+  noticeLabel: z.string().max(100).default('Hinweis'),
+  footer: z.string().max(2000).default(''),
+  rows: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    service: z.string().max(200).default(''),
+    time: z.string().max(100).default(''),
+    destination: z.string().max(2000).default(''),
+    platform: z.string().max(100).default(''),
+    notice: z.string().max(500).default(''),
+  })).min(1).max(100),
+});
+
+const openingHoursSchema = z.object({
+  type: z.literal('openingHours'),
+  instruction: z.string().max(1000).default(
+    'Read the opening hours and answer the questions.',
+  ),
+  showInstruction: z.boolean().default(true),
+  signs: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    title: z.string().trim().min(1).max(200),
+    abbreviateWeekdays: z.boolean().default(false),
+    rows: z.array(z.object({
+      id: z.string().trim().min(1).max(100).optional(),
+      days: z.string().max(500).default(''),
+      hours: z.string().max(500).default(''),
+    })).min(1).max(50),
+  })).min(1).max(20),
+});
+
 const mcqOptionSchema = z.object({
   id: z.string().trim().min(1).max(100).optional(),
   text: z.string().trim().min(1).max(1000),
@@ -129,6 +201,7 @@ const mcqSchema = z.object({
   instruction: z.string().trim().max(1000).default('Choose the correct answer.'),
   blockQuestion: z.string().trim().max(2000).default(''),
   questions: z.array(mcqQuestionSchema).min(1).max(50),
+  questionNumber: z.number().int().positive().nullable().default(null),
   columns: z.number().int().min(1).max(3).default(1),
   shuffleAnswers: z.boolean().default(false),
   showInstruction: z.boolean().default(true),
@@ -481,7 +554,12 @@ export const generatedWorksheetSchema = z.object({
     glossarySchema,
     fillInTheBlankSchema,
     pageBreakSchema,
+    spacerSchema,
     dialogueSchema,
+    messengerSchema,
+    emailSchema,
+    timetableSchema,
+    openingHoursSchema,
     mcqSchema,
     mcmSchema,
     articlePluralSchema,
@@ -553,6 +631,9 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
   if (block.type === 'pageBreak') {
     return `<div data-restart-pagination="${block.restartPagination}" data-type="pageBreak"></div>`;
   }
+  if (block.type === 'spacer') {
+    return `<div data-spacer-height="${block.height}" data-type="spacer"></div>`;
+  }
   if (block.type === 'richText') {
     // The node stores its markup URI-encoded; encodeURIComponent also escapes the
     // characters that would break out of the attribute.
@@ -603,6 +684,34 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     }));
     return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-dialogue-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-dialogue-speaker-names="${escapeAttribute(encodeURIComponent(JSON.stringify(block.speakerNames)))}" data-dialogue-show-instruction="${block.showInstruction}" data-dialogue-show-speaker-names="${block.showSpeakerNames}" data-dialogue-show-original="${block.showOriginal}" data-dialogue-show-word-bank="${block.showWordBank}" data-dialogue-hide-blank-numbers="${block.hideBlankNumbers}" data-dialogue-show-first-example="${block.showFirstAsExample}" data-dialogue-context="${escapeAttribute(encodeURIComponent(block.context))}" data-type="dialogue"></div>`;
   }
+  if (block.type === 'messenger') {
+    const messages = block.messages.map((message, index) => ({
+      id: `messenger-message-${index + 1}`,
+      ...message,
+    }));
+    return `<div data-contact-name="${escapeAttribute(encodeURIComponent(block.contactName))}" data-status="${escapeAttribute(encodeURIComponent(block.status))}" data-messages="${escapeAttribute(encodeURIComponent(JSON.stringify(messages)))}" data-type="messenger"></div>`;
+  }
+  if (block.type === 'email') {
+    return `<div data-from-name="${escapeAttribute(encodeURIComponent(block.fromName))}" data-from-address="${escapeAttribute(encodeURIComponent(block.fromAddress))}" data-to="${escapeAttribute(encodeURIComponent(block.to))}" data-date="${escapeAttribute(encodeURIComponent(block.date))}" data-subject="${escapeAttribute(encodeURIComponent(block.subject))}" data-body="${escapeAttribute(encodeURIComponent(block.body))}" data-attachment-type="${block.attachmentType}" data-attachment-name="${escapeAttribute(encodeURIComponent(block.attachmentName))}" data-type="email"></div>`;
+  }
+  if (block.type === 'timetable') {
+    const rows = block.rows.map((row, index) => ({
+      ...row,
+      id: row.id ?? `timetable-row-${index + 1}`,
+    }));
+    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-show-instruction="${block.showInstruction}" data-destination-label="${escapeAttribute(encodeURIComponent(block.destinationLabel))}" data-platform-label="${escapeAttribute(encodeURIComponent(block.platformLabel))}" data-notice-label="${escapeAttribute(encodeURIComponent(block.noticeLabel))}" data-footer="${escapeAttribute(encodeURIComponent(block.footer))}" data-rows="${escapeAttribute(encodeURIComponent(JSON.stringify(rows)))}" data-type="timetable"></div>`;
+  }
+  if (block.type === 'openingHours') {
+    const signs = block.signs.map((sign, signIndex) => ({
+      ...sign,
+      id: sign.id ?? `opening-hours-sign-${signIndex + 1}`,
+      rows: sign.rows.map((row, rowIndex) => ({
+        ...row,
+        id: row.id ?? `opening-hours-row-${signIndex + 1}-${rowIndex + 1}`,
+      })),
+    }));
+    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-show-instruction="${block.showInstruction}" data-signs="${escapeAttribute(encodeURIComponent(JSON.stringify(signs)))}" data-type="opening-hours"></div>`;
+  }
   if (block.type === 'mcq') {
     const questions = block.questions.map((question, index) => ({
       id: question.id ?? `mcq-question-${index + 1}`,
@@ -614,7 +723,10 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       })),
       answerMode: question.answerMode,
     }));
-    return `<div data-mcq-instruction="${escapeAttribute(block.instruction)}" data-mcq-block-question="${escapeAttribute(encodeURIComponent(block.blockQuestion))}" data-mcq-questions="${escapeAttribute(encodeURIComponent(JSON.stringify(questions)))}" data-mcq-columns="${block.columns}" data-mcq-shuffle-answers="${block.shuffleAnswers}" data-mcq-show-instruction="${block.showInstruction}" data-type="mcq"></div>`;
+    const questionNumber = block.questionNumber === null
+      ? ''
+      : ` data-mcq-question-number="${block.questionNumber}"`;
+    return `<div data-mcq-instruction="${escapeAttribute(block.instruction)}" data-mcq-block-question="${escapeAttribute(encodeURIComponent(block.blockQuestion))}" data-mcq-questions="${escapeAttribute(encodeURIComponent(JSON.stringify(questions)))}" data-mcq-columns="${block.columns}" data-mcq-shuffle-answers="${block.shuffleAnswers}" data-mcq-show-instruction="${block.showInstruction}"${questionNumber} data-type="mcq"></div>`;
   }
   if (block.type === 'mcm') {
     const rows = block.rows.map((row, rowIndex) => ({

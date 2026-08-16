@@ -6,6 +6,12 @@ import type { CustomHeadingAttrs } from '@/components/editor/heading-node';
 import type { GlossaryTermsAttrs } from '@/components/editor/glossary-terms-node';
 import type { FillInTheBlankAttrs } from '@/components/editor/fill-in-the-blank-node';
 import type { DialogueAttrs } from '@/components/editor/dialogue-node';
+import type {
+  EmailAttrs,
+  MessengerAttrs,
+} from '@/components/editor/communication-mockup-nodes';
+import type { TimetableAttrs } from '@/components/editor/timetable-node';
+import type { OpeningHoursAttrs } from '@/components/editor/opening-hours-node';
 import type { MCMAttrs } from '@/components/editor/mcm-node';
 import type { ArticlePluralAttrs } from '@/components/editor/article-plural-node';
 import type { TrueFalseAttrs } from '@/components/editor/true-false-node';
@@ -14,6 +20,7 @@ import type { TimeMatchingAttrs } from '@/components/editor/time-matching-node';
 import type { CommunicationCardsAttrs } from '@/components/editor/communication-cards-node';
 import type { LearningCardsAttrs } from '@/components/editor/learning-cards-node';
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
+import type { SpacerAttrs } from '@/components/editor/spacer-node';
 import type { WordGridAttrs } from '@/components/editor/word-grid-node';
 import type { WordBankAttrs } from '@/components/editor/word-bank-node';
 import type { DominoAttrs } from '@/components/editor/domino-node';
@@ -82,10 +89,15 @@ const LEGACY_RICH_TEXT_NODE_TYPES = new Set([
 const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'customHeading',
   'pageBreak',
+  'spacer',
   'richText',
   'glossaryTerms',
   'fillInTheBlank',
   'dialogue',
+  'messenger',
+  'email',
+  'timetable',
+  'openingHours',
   'mcm',
   'articlePlural',
   'mcq',
@@ -202,6 +214,10 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     }
     case 'pageBreak':
       return { type: 'pageBreak', restartPagination: Boolean(attrs.restartPagination) };
+    case 'spacer': {
+      const { height } = attrs as SpacerAttrs;
+      return { type: 'spacer', height };
+    }
     case 'richText': {
       const { html, bypassGap } = attrs as RichTextAttrs;
       return {
@@ -287,12 +303,97 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         items: items.map(({ speaker, text }) => ({ speaker, text })),
       };
     }
+    case 'messenger': {
+      const { contactName, status, messages } = attrs as MessengerAttrs;
+      return {
+        type: 'messenger',
+        contactName,
+        status,
+        messages: messages.map(({ side, text, time }) => ({ side, text, time })),
+      };
+    }
+    case 'email': {
+      const {
+        fromName,
+        fromAddress,
+        to,
+        date,
+        subject,
+        body,
+        attachmentType,
+        attachmentName,
+      } = attrs as EmailAttrs;
+      return {
+        type: 'email',
+        fromName,
+        fromAddress,
+        to,
+        date,
+        subject,
+        body,
+        attachmentType,
+        attachmentName,
+      };
+    }
+    case 'timetable': {
+      const {
+        instruction,
+        showInstruction,
+        destinationLabel,
+        platformLabel,
+        noticeLabel,
+        footer,
+        rows,
+      } = attrs as TimetableAttrs;
+      return {
+        type: 'timetable',
+        instruction: instructionOr(
+          instruction,
+          DEFAULT_BLOCK_INSTRUCTIONS.timetable,
+        ),
+        showInstruction,
+        destinationLabel,
+        platformLabel,
+        noticeLabel,
+        footer,
+        rows: rows.map(({ id, service, time, destination, platform, notice }) => ({
+          id,
+          service,
+          time,
+          destination,
+          platform,
+          notice,
+        })),
+      };
+    }
+    case 'openingHours': {
+      const { instruction, showInstruction, signs } = attrs as OpeningHoursAttrs;
+      return {
+        type: 'openingHours',
+        instruction: instructionOr(
+          instruction,
+          DEFAULT_BLOCK_INSTRUCTIONS.openingHours,
+        ),
+        showInstruction,
+        signs: signs.map(({ id, title, abbreviateWeekdays, rows }) => ({
+          id,
+          title,
+          abbreviateWeekdays,
+          rows: rows.map(({ id: rowId, days, hours }) => ({
+            id: rowId,
+            days,
+            hours,
+          })),
+        })),
+      };
+    }
     case 'mcq': {
       const mcqAttrs = attrs as unknown as MCQAttrs;
       return {
         type: 'mcq',
         instruction: mcqAttrs.instruction,
         blockQuestion: mcqAttrs.blockQuestion,
+        questionNumber: mcqAttrs.questionNumber,
         columns: mcqAttrs.columns,
         shuffleAnswers: mcqAttrs.shuffleAnswers,
         showInstruction: mcqAttrs.showInstruction,

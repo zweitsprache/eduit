@@ -9,6 +9,8 @@ export const DEFAULT_BLOCK_INSTRUCTIONS = {
   mcm: 'Choose the correct answer for each row.',
   rewriteSentences: 'Rewrite the sentences correctly.',
   sortingCategories: 'Sort the items into the correct categories.',
+  timetable: 'Read the timetable and answer the questions.',
+  openingHours: 'Read the opening hours and answer the questions.',
   trueFalse: 'Mark each statement as true or false.',
 } as const;
 
