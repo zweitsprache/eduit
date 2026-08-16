@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Copy01, File02 } from '@untitledui/icons';
-import { Baby, BookOpen, Brain, CloudSunRain, Cpu, HandHelping, HardHat, HeartPulse, House, ListCheck, MessagesSquare, Salad, Share2, ShoppingBasket, SquareSplitHorizontal, Stamp, TableCellsSplit, TramFront, UserSearch, UsersRound } from 'lucide-react';
+import { Baby, BookOpen, Brain, CloudSunRain, Cpu, Grid3x2, HandHelping, HardHat, HeartPulse, House, ListCheck, MessagesSquare, Salad, Share2, ShoppingBasket, SquareSplitHorizontal, Stamp, TableCellsSplit, TramFront, UserSearch, UsersRound } from 'lucide-react';
 import { SiteHeader } from '@/components/site-header';
 import { WorksheetCard } from '@/components/worksheet-card';
 import { CountUp } from '@/components/count-up';
@@ -190,7 +190,7 @@ export default async function HomePage() {
                 <span><strong>Lernkarten</strong><small>Wortschatz selbstständig und in Partnerarbeit trainieren</small><b>{typeCounts.Lernkarten || 0} Dokumente ›</b></span>
               </Link>
               <Link className="home-type-card" href="/documents?type=Wechselspiel">
-                <MessagesSquare aria-hidden="true" />
+                <Grid3x2 aria-hidden="true" />
                 <span><strong>Wechselspiele</strong><small>Informationen in Partnerarbeit erfragen und ergänzen</small><b>{typeCounts.Wechselspiel || 0} Dokumente ›</b></span>
               </Link>
               <Link className="home-type-card" href="/documents?type=Dialog">
