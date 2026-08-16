@@ -13,6 +13,29 @@ const worksheetTypes = [
   'Leseverstehen',
 ] as const;
 
+const actionFields = [
+  'Deutschkurs',
+  'Gesundheit',
+  'Sicherheit und Notfälle',
+  'Familie und Partnerschaft',
+  'Kinder und Schule',
+  'Soziales Netz',
+  'Beratung und Unterstützung',
+  'Einkaufen',
+  'Ernährung',
+  'Wohnen',
+  'Mobilität',
+  'Finanzen und Versicherungen',
+  'Behörden',
+  'Freizeit und Hobbys',
+  'Kultur und Identität',
+  'Arbeit',
+  'Arbeitssuche',
+  'Umwelt und Klima',
+  'Technologie',
+  'Weiterbildung',
+] as const;
+
 const groups = [
   ['Schwierigkeit', ['Basic', 'Intermediate', 'Advanced'], ['9', '4', '3']],
   ['Seitenzahl', ['1–4', '5–8', '9+'], ['4', '7', '5']],
@@ -20,24 +43,30 @@ const groups = [
 
 export function FilterSidebar({
   onActionCompetencyChange,
+  onActionFieldChange,
   onLanguageCompetencyChange,
   onLevelChange,
   onTypeChange,
   selectedActionCompetencies,
+  selectedActionFields,
   selectedLanguageCompetencies,
   selectedLevels,
   selectedTypes,
   typeCounts,
+  actionFieldCounts,
 }: {
   onTypeChange: (type: string, checked: boolean) => void;
   onLevelChange: (level: string, checked: boolean) => void;
   onActionCompetencyChange: (competency: string, checked: boolean) => void;
+  onActionFieldChange: (actionField: string, checked: boolean) => void;
   onLanguageCompetencyChange: (competency: string, checked: boolean) => void;
   selectedLevels: string[];
   selectedActionCompetencies: string[];
+  selectedActionFields: string[];
   selectedLanguageCompetencies: string[];
   selectedTypes: string[];
   typeCounts: Record<string, number>;
+  actionFieldCounts: Record<string, number>;
 }) {
   return (
     <aside className="filters">
@@ -61,6 +90,23 @@ export function FilterSidebar({
           Kursprogression variieren. Tipp: Brauchen Sie auch in den
           Nachbarniveaus Ihres aktuellen Kursniveaus.
         </p>
+      </div>
+      <div className="filter-group">
+        <h3>Handlungsfeld</h3>
+        {actionFields.map((actionField) => (
+          <label key={actionField}>
+            <input
+              checked={selectedActionFields.includes(actionField)}
+              onChange={(event) => onActionFieldChange(
+                actionField,
+                event.target.checked,
+              )}
+              type="checkbox"
+            />
+            <span>{actionField}</span>
+            <small>{actionFieldCounts[actionField] || 0}</small>
+          </label>
+        ))}
       </div>
       <div className="filter-group">
         <h3>Sprachhandlungskompetenz</h3>

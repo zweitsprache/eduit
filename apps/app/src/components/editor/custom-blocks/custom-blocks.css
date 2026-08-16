@@ -3499,6 +3499,12 @@
   page-break-inside: auto;
 }
 
+.glossary-terms-node > .custom-block__instruction + .glossary-terms-node__table {
+  margin-block-start: var(
+    --custom-block-space-instruction-to-divider
+  ) !important;
+}
+
 .glossary-terms-node__header {
   border-top: var(--custom-block-row-border-width) solid
     var(--custom-block-row-border-color);

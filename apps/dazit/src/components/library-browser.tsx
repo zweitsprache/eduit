@@ -67,6 +67,7 @@ function worksheetSearchScore(worksheet: Worksheet, query: string) {
 export function LibraryBrowser({
   canAdminister = false,
   isAuthenticated = false,
+  initialActionFields = [],
   initialLevels = [],
   initialQuery = '',
   initialTypes = [],
@@ -74,6 +75,7 @@ export function LibraryBrowser({
 }: {
   canAdminister?: boolean;
   isAuthenticated?: boolean;
+  initialActionFields?: string[];
   initialLevels?: string[];
   initialQuery?: string;
   initialTypes?: string[];
@@ -85,6 +87,9 @@ export function LibraryBrowser({
   const [selectedLevels, setSelectedLevels] = useState<string[]>(initialLevels);
   const [selectedActionCompetencies, setSelectedActionCompetencies] = useState<string[]>([]);
   const [selectedLanguageCompetencies, setSelectedLanguageCompetencies] = useState<string[]>([]);
+  const [selectedActionFields, setSelectedActionFields] = useState<string[]>(
+    initialActionFields,
+  );
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
@@ -94,8 +99,9 @@ export function LibraryBrowser({
   useEffect(() => {
     setSelectedTypes(initialTypes);
     setSelectedLevels(initialLevels);
+    setSelectedActionFields(initialActionFields);
     setCurrentPage(1);
-  }, [initialTypes, initialLevels]);
+  }, [initialActionFields, initialTypes, initialLevels]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 720px)');
@@ -133,6 +139,15 @@ export function LibraryBrowser({
     }),
     {},
   ), [libraryWorksheets]);
+  const actionFieldCounts = useMemo(() => libraryWorksheets.reduce<Record<string, number>>(
+    (counts, worksheet) => worksheet.actionField
+      ? {
+        ...counts,
+        [worksheet.actionField]: (counts[worksheet.actionField] || 0) + 1,
+      }
+      : counts,
+    {},
+  ), [libraryWorksheets]);
   const visibleWorksheets = libraryWorksheets
     .map((worksheet, index) => ({
       index,
@@ -144,6 +159,11 @@ export function LibraryBrowser({
       && (!selectedTypes.length || selectedTypes.includes(worksheet.documentType))
       && (!selectedLevels.length || (
         worksheet.level ? selectedLevels.includes(worksheet.level) : false
+      ))
+      && (!selectedActionFields.length || (
+        worksheet.actionField
+          ? selectedActionFields.includes(worksheet.actionField)
+          : false
       ))
       && (!selectedActionCompetencies.length || selectedActionCompetencies.some(
         (competency) => worksheet.actionCompetencies?.includes(competency),
@@ -255,12 +275,19 @@ export function LibraryBrowser({
           selectedTypes={selectedTypes}
           selectedLevels={selectedLevels}
           selectedActionCompetencies={selectedActionCompetencies}
+          selectedActionFields={selectedActionFields}
           selectedLanguageCompetencies={selectedLanguageCompetencies}
           typeCounts={typeCounts}
+          actionFieldCounts={actionFieldCounts}
           onTypeChange={(value, checked) => updateSelection(setSelectedTypes, value, checked)}
           onLevelChange={(value, checked) => updateSelection(setSelectedLevels, value, checked)}
           onActionCompetencyChange={(value, checked) => updateSelection(
             setSelectedActionCompetencies,
+            value,
+            checked,
+          )}
+          onActionFieldChange={(value, checked) => updateSelection(
+            setSelectedActionFields,
             value,
             checked,
           )}

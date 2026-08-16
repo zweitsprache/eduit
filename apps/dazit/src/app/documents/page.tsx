@@ -31,9 +31,14 @@ function decodeValue(value?: string) {
   }
 }
 
-function buildCanonicalPath(level: string, type: string, searchText: string) {
+function buildCanonicalPath(
+  level: string,
+  type: string,
+  searchText: string,
+  actionField: string,
+) {
   const hasSearchText = Boolean(searchText);
-  const filtersCount = [level, type, searchText].filter(Boolean).length;
+  const filtersCount = [level, type, searchText, actionField].filter(Boolean).length;
   const singleLevel = Boolean(level) && filtersCount === 1;
   const singleType = Boolean(type) && filtersCount === 1;
 
@@ -46,19 +51,25 @@ function buildCanonicalPath(level: string, type: string, searchText: string) {
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams: Promise<{ level?: string; q?: string; type?: string }>;
+  searchParams: Promise<{
+    actionField?: string;
+    level?: string;
+    q?: string;
+    type?: string;
+  }>;
 }): Promise<Metadata> {
   const query = await searchParams;
   const level = decodeValue(query.level);
   const type = decodeValue(query.type);
   const searchText = decodeValue(query.q);
+  const actionField = decodeValue(query.actionField);
 
-  const filtersCount = [level, type, searchText].filter(Boolean).length;
+  const filtersCount = [level, type, searchText, actionField].filter(Boolean).length;
   const singleLevel = Boolean(level) && filtersCount === 1;
   const singleType = Boolean(type) && filtersCount === 1;
   const hasSearchText = Boolean(searchText);
   const hasAnyQueryFilter = filtersCount > 0;
-  const canonicalPath = buildCanonicalPath(level, type, searchText);
+  const canonicalPath = buildCanonicalPath(level, type, searchText, actionField);
   const isIndexable = !hasAnyQueryFilter || (!hasSearchText && (singleLevel || singleType));
 
   const title = singleLevel
@@ -107,7 +118,12 @@ export async function generateMetadata({
 export default async function LibraryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ level?: string; q?: string; type?: string }>;
+  searchParams: Promise<{
+    actionField?: string;
+    level?: string;
+    q?: string;
+    type?: string;
+  }>;
 }) {
   const [worksheets, currentUser, query] = await Promise.all([
     getWorksheetCards(),
@@ -117,7 +133,8 @@ export default async function LibraryPage({
   const level = decodeValue(query.level);
   const type = decodeValue(query.type);
   const searchText = decodeValue(query.q);
-  const canonicalPath = buildCanonicalPath(level, type, searchText);
+  const actionField = decodeValue(query.actionField);
+  const canonicalPath = buildCanonicalPath(level, type, searchText, actionField);
   const isAuthenticated = Boolean(currentUser);
   const structuredData = [
     {
@@ -183,6 +200,7 @@ export default async function LibraryPage({
       <LibraryBrowser
         canAdminister={Boolean(currentUser?.isAdmin)}
         isAuthenticated={isAuthenticated}
+        initialActionFields={actionField ? [actionField] : []}
         initialLevels={query.level ? [query.level] : []}
         initialQuery={query.q || ''}
         initialTypes={query.type ? [query.type] : []}

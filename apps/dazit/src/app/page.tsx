@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Copy01, File02 } from '@untitledui/icons';
-import { Baby, BookOpen, Brain, CloudSunRain, Cpu, Grid3x2, HandHelping, HardHat, HeartPulse, House, ListCheck, MessagesSquare, Salad, Share2, ShoppingBasket, SquareSplitHorizontal, Stamp, TableCellsSplit, TramFront, UserSearch, UsersRound } from 'lucide-react';
+import { Baby, Bike, BookOpen, Brain, CloudSunRain, Cpu, Grid3x2, HandCoins, HandHelping, HardHat, HeartPulse, House, ListCheck, MessagesSquare, Salad, Share2, ShoppingBasket, SquareSplitHorizontal, Stamp, TableCellsSplit, TramFront, UserSearch, UsersRound, Wrench } from 'lucide-react';
 import { SiteHeader } from '@/components/site-header';
 import { WorksheetCard } from '@/components/worksheet-card';
 import { CountUp } from '@/components/count-up';
@@ -46,7 +46,7 @@ const topics = [
   'Sicherheit und Notfälle',
   'Familie und Partnerschaft',
   'Kinder und Schule',
-  'Soziales Netzwerk',
+  'Soziales Netz',
   'Beratung und Unterstützung',
   'Einkaufen',
   'Ernährung',
@@ -216,7 +216,11 @@ export default async function HomePage() {
           <section className="home-section home-topics">
             <div className="home-topic-grid">
               {topics.map((topic, index) => (
-                <div className="home-topic-card" key={topic}>
+                <Link
+                  className="home-topic-card"
+                  href={`/documents?actionField=${encodeURIComponent(topic)}`}
+                  key={topic}
+                >
                   {topic === 'Deutschkurs'
                     ? <BookOpen aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
                     : topic === 'Gesundheit'
@@ -227,7 +231,7 @@ export default async function HomePage() {
                           ? <UsersRound aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
                           : topic === 'Kinder und Schule'
                             ? <Baby aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
-                            : topic === 'Soziales Netzwerk'
+                            : topic === 'Soziales Netz'
                               ? <Share2 aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
                               : topic === 'Beratung und Unterstützung'
                                 ? <HandHelping aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
@@ -239,8 +243,14 @@ export default async function HomePage() {
                                       ? <House aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
                                       : topic === 'Mobilität'
                                         ? <TramFront aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                                        : topic === 'Finanzen und Versicherungen'
+                                          ? <HandCoins aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
                                         : topic === 'Behörden'
                                           ? <Stamp aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                                          : topic === 'Freizeit und Hobbys'
+                                            ? <Bike aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
+                                          : topic === 'Arbeit'
+                                            ? <Wrench aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
                                           : topic === 'Arbeitssuche'
                                             ? <UserSearch aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
                                             : topic === 'Kultur und Identität'
@@ -253,7 +263,7 @@ export default async function HomePage() {
                                                     ? <Brain aria-hidden="true" className="home-topic-icon" strokeWidth={2} />
                                                     : <span aria-hidden="true" className="home-topic-icon-placeholder" />}
                   <strong>{topic}</strong>
-                </div>
+                </Link>
               ))}
             </div>
           </section>
