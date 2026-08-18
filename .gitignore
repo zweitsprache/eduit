@@ -18,3 +18,4 @@ yarn-error.log*
 # Local build and visual QA artifacts
 tsconfig.tsbuildinfo
 tmp/
+.npm-cache/
