@@ -34,7 +34,7 @@ function RichTextNodeView({ node, selected }: NodeViewProps) {
       return;
     }
     const editor = root.closest('.ProseMirror');
-    if (!editor) return;
+    if (!(editor instanceof HTMLElement)) return;
     const rootRect = root.getBoundingClientRect();
     const next = getEditorPageAreas(editor).flatMap((area) => {
       const top = Math.max(rootRect.top, area.top);
@@ -58,6 +58,7 @@ function RichTextNodeView({ node, selected }: NodeViewProps) {
     const root = rootRef.current;
     if (!root || !selected) return;
     const editor = root.closest('.ProseMirror');
+    if (!(editor instanceof HTMLElement)) return;
     let frame = requestAnimationFrame(measureSelectionFragments);
     const scheduleMeasure = () => {
       cancelAnimationFrame(frame);
@@ -65,35 +66,33 @@ function RichTextNodeView({ node, selected }: NodeViewProps) {
     };
     const resizeObserver = new ResizeObserver(scheduleMeasure);
     resizeObserver.observe(root);
-    const mutationObserver = editor
-      ? new MutationObserver((mutations) => {
-        const onlySelectionFrameChanges = mutations.every((mutation) => {
-          if (
-            mutation.type === 'attributes'
-            && mutation.target instanceof HTMLElement
-            && mutation.target.classList.contains(
+    const mutationObserver = new MutationObserver((mutations) => {
+      const onlySelectionFrameChanges = mutations.every((mutation) => {
+        if (
+          mutation.type === 'attributes'
+          && mutation.target instanceof HTMLElement
+          && mutation.target.classList.contains(
+            'rich-text-node__selection-fragment',
+          )
+        ) {
+          return true;
+        }
+        const changedNodes = [
+          ...Array.from(mutation.addedNodes),
+          ...Array.from(mutation.removedNodes),
+        ];
+        return mutation.type === 'childList'
+          && changedNodes.length > 0
+          && changedNodes.every((changedNode) => (
+            changedNode instanceof HTMLElement
+            && changedNode.classList.contains(
               'rich-text-node__selection-fragment',
             )
-          ) {
-            return true;
-          }
-          const changedNodes = [
-            ...Array.from(mutation.addedNodes),
-            ...Array.from(mutation.removedNodes),
-          ];
-          return mutation.type === 'childList'
-            && changedNodes.length > 0
-            && changedNodes.every((changedNode) => (
-              changedNode instanceof HTMLElement
-              && changedNode.classList.contains(
-                'rich-text-node__selection-fragment',
-              )
-            ));
-        });
-        if (!onlySelectionFrameChanges) scheduleMeasure();
-      })
-      : null;
-    mutationObserver?.observe(editor!, {
+          ));
+      });
+      if (!onlySelectionFrameChanges) scheduleMeasure();
+    });
+    mutationObserver.observe(editor, {
       attributes: true,
       childList: true,
       subtree: true,
@@ -102,7 +101,7 @@ function RichTextNodeView({ node, selected }: NodeViewProps) {
     return () => {
       cancelAnimationFrame(frame);
       resizeObserver.disconnect();
-      mutationObserver?.disconnect();
+      mutationObserver.disconnect();
       window.removeEventListener('resize', scheduleMeasure);
     };
   }, [measureSelectionFragments, selected]);
