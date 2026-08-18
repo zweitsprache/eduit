@@ -21,21 +21,30 @@ export async function GET(
     return Response.json({ error: 'range_not_supported' }, { status: 416 });
   }
 
-  const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN ?? process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) return new Response('Dazit Blob is not configured.', { status: 503 });
+  const tokens = [
+    process.env.DAZIT_BLOB_READ_WRITE_TOKEN,
+    process.env.BLOB_READ_WRITE_TOKEN,
+  ].filter((value): value is string => Boolean(value));
+  if (!tokens.length) return new Response('Dazit Blob is not configured.', { status: 503 });
 
   const worksheet = await worksheetBySlug((await params).slug);
   if (!worksheet) return new Response('PDF not found.', { status: 404 });
   const isAnswerKey = new URL(request.url).searchParams.get('type') === 'answer-key';
   const blobPath = isAnswerKey ? worksheet.answerKeyBlobPath : worksheet.blobPath;
   if (!blobPath) return new Response('PDF not found.', { status: 404 });
-  const result = await get(blobPath, {
-    access: 'private',
-    token,
-    // Republishing overwrites the same path, so a cached read would serve the
-    // previous PDF.
-    useCache: false,
-  });
+  let result = null as Awaited<ReturnType<typeof get>> | null;
+  for (const token of tokens) {
+    const candidate = await get(blobPath, {
+      access: 'private',
+      token,
+      // Republishing overwrites the same path, so a cached read would serve the
+      // previous PDF.
+      useCache: false,
+    });
+    if (!candidate || candidate.statusCode !== 200) continue;
+    result = candidate;
+    break;
+  }
   if (!result) return new Response('PDF not found.', { status: 404 });
   if (result.statusCode === 304) {
     return new Response(null, { status: 304 });
