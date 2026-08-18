@@ -1223,7 +1223,7 @@ const PAGE_HEADER_TOP_MARGIN_MM = 10;
 const PAGE_HEADER_RIGHT_MM = 15;
 const PAGE_FOOTER_TEXT_OFFSET_MM = 2.5;
 
-const EDITOR_PAGE_BOX_STYLE: CSSProperties = {
+const EDITOR_PAGE_BOX_STYLE: CSSProperties & Record<string, string> = {
   '--document-logo-top': `${PAGE_HEADER_TOP_MARGIN_MM}mm`,
   '--document-page-header-top': `${PAGE_HEADER_TOP_MARGIN_MM}mm`,
   '--document-page-header-right': `${PAGE_HEADER_RIGHT_MM}mm`,
