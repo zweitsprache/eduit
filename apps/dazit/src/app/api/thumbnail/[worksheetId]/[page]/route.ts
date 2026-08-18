@@ -4,20 +4,31 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ worksheetId: string; page: string }> },
 ) {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN ?? process.env.BLOB_READ_WRITE_TOKEN;
   if (!token) return new Response('Dazit Blob is not configured.', { status: 503 });
   const { worksheetId, page } = await params;
+  const explicitPath = new URL(request.url).searchParams.get('path');
   const pageIndex = Number.parseInt(page, 10) - 1;
-  if (
+  const thumbnailPath = explicitPath
+    ? decodeURIComponent(explicitPath)
+    : `worksheets/${worksheetId}/thumbnails/page-${pageIndex + 1}.webp`;
+
+  if (explicitPath) {
+    // Restrict lookup to worksheet thumbnail assets only.
+    if (!/^worksheets\/[^/]+\/thumbnails\/page-\d+\.webp$/i.test(thumbnailPath)) {
+      return new Response('Thumbnail not found.', { status: 404 });
+    }
+  } else if (
     !/^[0-9a-f-]{36}$/i.test(worksheetId)
     || !Number.isInteger(pageIndex)
     || pageIndex < 0
     || pageIndex >= 100
-  ) return new Response('Thumbnail not found.', { status: 404 });
-  const thumbnailPath = `worksheets/${worksheetId}/thumbnails/page-${pageIndex + 1}.webp`;
+  ) {
+    return new Response('Thumbnail not found.', { status: 404 });
+  }
 
   const result = await get(thumbnailPath, { access: 'private', token, useCache: false });
   if (!result || result.statusCode !== 200) {

@@ -21,7 +21,7 @@ export async function GET(
     return Response.json({ error: 'range_not_supported' }, { status: 416 });
   }
 
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN ?? process.env.BLOB_READ_WRITE_TOKEN;
   if (!token) return new Response('Dazit Blob is not configured.', { status: 503 });
 
   const worksheet = await worksheetBySlug((await params).slug);

@@ -65,6 +65,14 @@ function formatPublishedDate(date: Date) {
   return `${day}.${month}.${date.getFullYear()}`;
 }
 
+function buildThumbnailUrl(path: string, worksheetId: string | undefined, page: number, updatedAt: string) {
+  const params = new URLSearchParams({
+    path,
+    v: String(new Date(updatedAt).getTime() || 0),
+  });
+  return `/api/thumbnail/${encodeURIComponent(worksheetId || 'unknown')}/${page}?${params.toString()}`;
+}
+
 function rowLanguage(context: Record<string, unknown> | null): Worksheet['language'] {
   const raw = typeof context?.contentLanguage === 'string'
     ? context.contentLanguage
@@ -155,11 +163,9 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
     blobPath: row.pdfPath,
     answerKeyBlobPath: row.answerKeyPdfPath || undefined,
     thumbnailPaths: row.thumbnailPaths || [],
-    thumbnailUrls: row.worksheetId
-      ? (row.thumbnailPaths || []).map(
-        (_, index) => `/api/thumbnail/${encodeURIComponent(row.worksheetId)}/${index + 1}?v=${row.updatedAt ? new Date(row.updatedAt).getTime() : 0}`,
-      )
-      : [],
+    thumbnailUrls: (row.thumbnailPaths || []).map(
+      (path, index) => buildThumbnailUrl(path, row.worksheetId, index + 1, row.updatedAt),
+    ),
     publishedAt: Number.isNaN(publishedAt.getTime()) ? undefined : publishedAt.toISOString(),
     worksheetId: row.worksheetId,
   };

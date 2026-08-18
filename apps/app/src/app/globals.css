@@ -204,8 +204,6 @@
 .editor-content .tiptap-page-break-node--pages-mode {
   display: block;
   position: relative;
-  height: 0 !important;
-  min-height: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
   overflow: visible !important;
