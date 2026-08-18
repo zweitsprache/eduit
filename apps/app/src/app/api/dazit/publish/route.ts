@@ -8,6 +8,10 @@ import { updateWorksheet } from '@/lib/worksheets';
 import { sql } from '@/lib/neon';
 import { dazitMetadataModel } from '@/lib/ai';
 import {
+  createLearningLinkToken,
+  extractLearningCardsSnapshotFromWorksheetJson,
+} from '@/lib/learning-card-publication';
+import {
   worksheetSemanticManifestFromJson,
   type WorksheetSemanticManifest,
 } from '@/lib/worksheet-semantic-manifest';
@@ -563,10 +567,11 @@ export async function POST(request: Request) {
     if (user && !user.isAdmin && !isWorkflowRequest) {
       return NextResponse.json({ error: 'Only administrators can publish worksheets.' }, { status: 403 });
     }
-    const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN;
+    const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN
+      ?? process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) {
       return NextResponse.json(
-        { error: 'Dazit publishing is not configured. Add DAZIT_BLOB_READ_WRITE_TOKEN to the editor environment.' },
+        { error: 'Dazit publishing is not configured. Add DAZIT_BLOB_READ_WRITE_TOKEN (or BLOB_READ_WRITE_TOKEN) to the editor environment.' },
         { status: 503 },
       );
     }
@@ -594,6 +599,9 @@ export async function POST(request: Request) {
     const thumbnails = formData.getAll('thumbnails')
       .filter((value): value is File => value instanceof File);
     const metadata = JSON.parse(metadataValue) as PublishMetadata;
+    const learningCardsSnapshot = typeof worksheetJsonValue === 'string'
+      ? extractLearningCardsSnapshotFromWorksheetJson(worksheetJsonValue)
+      : null;
     if (typeof worksheetJsonValue === 'string' && worksheetJsonValue.length > 4_000_000) {
       return NextResponse.json({ error: 'Worksheet JSON exceeds the 4 MB limit.' }, { status: 413 });
     }
@@ -669,6 +677,29 @@ export async function POST(request: Request) {
     if (mode !== 'full' && !publicationRows[0]) {
       return NextResponse.json(
         { error: 'This publishing mode requires an existing Dazit publication.' },
+        { status: 400 },
+      );
+    }
+    const learningPublicationRows = metadata.documentType === 'Lernkarten'
+      ? await sql`
+        select
+          token,
+          title,
+          snapshot,
+          is_published as "isPublished"
+        from learning_card_publications
+        where worksheet_id = ${metadata.worksheetId}
+      ` as Array<{
+        token: string;
+        title: string;
+        snapshot: unknown;
+        isPublished: boolean;
+      }>
+      : [];
+    const existingLearningPublication = learningPublicationRows[0];
+    if (metadata.documentType === 'Lernkarten' && mode === 'full' && !learningCardsSnapshot) {
+      return NextResponse.json(
+        { error: 'A learning-cards worksheet JSON snapshot is required.' },
         { status: 400 },
       );
     }
@@ -925,6 +956,48 @@ export async function POST(request: Request) {
     if (mode !== 'metadata-only') {
       await updateWorksheet(metadata.worksheetId, user!.id, { status: 'published' }, true);
     }
+    let learningLink: { token: string; url: string; isPublished: boolean } | null = null;
+    if (metadata.documentType === 'Lernkarten') {
+      const tokenValue = existingLearningPublication?.token ?? createLearningLinkToken();
+      const snapshotToPersist = learningCardsSnapshot
+        ?? existingLearningPublication?.snapshot
+        ?? null;
+      if (snapshotToPersist) {
+        const titleValue = learningCardsSnapshot?.title
+          || existingLearningPublication?.title
+          || metadata.title;
+        await sql`
+          insert into learning_card_publications (
+            worksheet_id,
+            token,
+            title,
+            snapshot,
+            is_published,
+            published_at,
+            updated_at
+          ) values (
+            ${metadata.worksheetId},
+            ${tokenValue},
+            ${titleValue},
+            ${JSON.stringify(snapshotToPersist)}::jsonb,
+            true,
+            now(),
+            now()
+          )
+          on conflict (worksheet_id) do update set
+            token = excluded.token,
+            title = excluded.title,
+            snapshot = excluded.snapshot,
+            is_published = true,
+            updated_at = now()
+        `;
+        learningLink = {
+          token: tokenValue,
+          url: `${new URL(request.url).origin}/learn/${tokenValue}`,
+          isPublished: true,
+        };
+      }
+    }
     const latestRevisionRows = await sql`
       select source_revision as "sourceRevision"
       from worksheets
@@ -935,6 +1008,7 @@ export async function POST(request: Request) {
       publicationStatus: Number(latestRevisionRows[0]?.sourceRevision) === effectivePublishedRevision
         ? 'current'
         : 'outdated',
+      learningLink,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Publishing failed.';

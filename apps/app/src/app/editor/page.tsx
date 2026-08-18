@@ -5,6 +5,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
 } from 'react';
 import { useEditor, useEditorState, EditorContent, type Editor } from '@tiptap/react';
 import { NodeSelection } from '@tiptap/pm/state';
@@ -187,6 +188,7 @@ import {
 } from '@/components/editor/communication-mockup-nodes';
 import { Timetable } from '@/components/editor/timetable-node';
 import { OpeningHours } from '@/components/editor/opening-hours-node';
+import { getSectionStartsFromPageBreaks } from '@/components/editor/page-layout';
 import {
   RewriteSentences,
   rewriteWordBankMode,
@@ -1217,6 +1219,17 @@ const NAV_ITEMS = [
 
 const mmToPixels = (millimeters: number) => millimeters * (96 / 25.4);
 
+const PAGE_HEADER_TOP_MARGIN_MM = 10;
+const PAGE_HEADER_RIGHT_MM = 15;
+const PAGE_FOOTER_TEXT_OFFSET_MM = 2.5;
+
+const EDITOR_PAGE_BOX_STYLE: CSSProperties = {
+  '--document-logo-top': `${PAGE_HEADER_TOP_MARGIN_MM}mm`,
+  '--document-page-header-top': `${PAGE_HEADER_TOP_MARGIN_MM}mm`,
+  '--document-page-header-right': `${PAGE_HEADER_RIGHT_MM}mm`,
+  '--document-page-footer-text-offset': `${PAGE_FOOTER_TEXT_OFFSET_MM}mm`,
+};
+
 type PageFormatSpec = {
   id: string;
   width: number;
@@ -1409,6 +1422,17 @@ const DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE: Record<WorksheetContext['worksheetT
   dialog: 'Dialog',
 };
 
+type LearningLinkPublication = {
+  worksheetId: string;
+  title: string;
+  token: string;
+  url: string;
+  isPublished: boolean;
+  cardCount: number;
+  publishedAt?: string;
+  updatedAt?: string;
+};
+
 const WORD_GRID_DIRECTION_OPTIONS: {
   value: WordGridDirection;
   label: string;
@@ -1509,6 +1533,9 @@ export default function EditorPage() {
     'pdf-only' | 'worksheet-settings-only' | 'full'
   >('pdf-only');
   const [allowDescriptionOverride, setAllowDescriptionOverride] = useState(false);
+  const [learningLinkPublication, setLearningLinkPublication] = useState<LearningLinkPublication | null>(null);
+  const [loadingLearningLinkPublication, setLoadingLearningLinkPublication] = useState(false);
+  const [managingLearningLinkPublication, setManagingLearningLinkPublication] = useState(false);
   const [exportingBlockPNG, setExportingBlockPNG] = useState(false);
   const [jsonCopied, setJsonCopied] = useState(false);
   const [jsonImportDialogOpen, setJsonImportDialogOpen] = useState(false);
@@ -1649,7 +1676,7 @@ export default function EditorPage() {
         pageFormat: DOC_SIZES.find(({ id }) => id === docSize)?.format()
           ?? documentFormat(PAGE_FORMATS.A4),
         header: DOCUMENT_HEADER,
-        headerTopMargin: mmToPixels(10),
+        headerTopMargin: mmToPixels(PAGE_HEADER_TOP_MARGIN_MM),
         footer: documentFooter(DEFAULT_DOCUMENT_BRAND),
         editableFooter: false,
         pageGapBackground: 'var(--color-bg-tertiary)',
@@ -2617,28 +2644,11 @@ export default function EditorPage() {
       const pagesStorage = editor.storage.pages as {
         getPageForPosition?: (pos: number) => number;
       };
-      const restartPages: number[] = [];
-      editor.state.doc.descendants((node, pos) => {
-        if (
-          node.type.name === 'pageBreak'
-          && node.attrs.restartPagination === true
-        ) {
-          // A page-break node belongs to the page it ends. Looking up the
-          // position after it can return a synthetic page past the rendered
-          // footer count, especially for the final break. The restarted
-          // section always begins on the following physical page.
-          const breakPage = pagesStorage.getPageForPosition?.(pos);
-          if (breakPage) {
-            const restartPage = Math.min(footers.length, breakPage + 1);
-            if (restartPage > 1) restartPages.push(restartPage);
-          }
-          return false;
-        }
-        return true;
-      });
-
-      const sectionStarts = Array.from(new Set([1, ...restartPages]))
-        .sort((left, right) => left - right);
+      const sectionStarts = getSectionStartsFromPageBreaks(
+        editor.state.doc,
+        pagesStorage.getPageForPosition,
+        footers.length,
+      );
       footers.forEach((footer, index) => {
         const physicalPage = index + 1;
         const sectionIndex = sectionStarts.findLastIndex(
@@ -2668,15 +2678,12 @@ export default function EditorPage() {
         });
       });
     };
-    const observer = new MutationObserver(schedulePageNumbers);
-    observer.observe(editorElement, { childList: true, subtree: true });
     editor.on('update', schedulePageNumbers);
     schedulePageNumbers();
 
     return () => {
       cancelAnimationFrame(outerFrame);
       cancelAnimationFrame(innerFrame);
-      observer.disconnect();
       editor.off('update', schedulePageNumbers);
     };
   }, [editor]);
@@ -2836,6 +2843,7 @@ export default function EditorPage() {
             setPublicationStatus(publicationResult.status);
           }
         }
+        await loadLearningLinkPublication(result.worksheet.id);
       } catch (loadError) {
         worksheetInitializationStartedRef.current = false;
         setExportError(loadError instanceof Error
@@ -4510,6 +4518,61 @@ export default function EditorPage() {
     return `${baseDescription}${suffix}`;
   }
 
+  const loadLearningLinkPublication = async (targetWorksheetId: string) => {
+    setLoadingLearningLinkPublication(true);
+    try {
+      const response = await fetch(
+        `/api/learning-cards/publication?worksheetId=${encodeURIComponent(targetWorksheetId)}`,
+      );
+      if (!response.ok) {
+        setLearningLinkPublication(null);
+        return;
+      }
+      const result = parseJsonOrNull<{
+        publication?: LearningLinkPublication | null;
+      }>(await response.text());
+      setLearningLinkPublication(result?.publication ?? null);
+    } catch {
+      setLearningLinkPublication(null);
+    } finally {
+      setLoadingLearningLinkPublication(false);
+    }
+  };
+
+  const manageLearningLinkPublication = async (action: 'unpublish' | 'regenerate') => {
+    const id = worksheetIdRef.current;
+    if (!id || managingLearningLinkPublication) return;
+    setManagingLearningLinkPublication(true);
+    setExportError(null);
+    setPublishSuccess(false);
+    try {
+      const response = await fetch('/api/learning-cards/publication', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worksheetId: id, action }),
+      });
+      const result = parseJsonOrNull<{
+        publication?: LearningLinkPublication | null;
+        error?: string;
+      }>(await response.text());
+      if (!response.ok) {
+        throw new Error(result?.error ?? 'Could not update learning link.');
+      }
+      setLearningLinkPublication(result?.publication ?? null);
+      setPublishSuccess(true);
+      setExportError(
+        action === 'unpublish'
+          ? 'Learning link unpublished.'
+          : 'Learning link regenerated.',
+      );
+    } catch (error) {
+      setPublishSuccess(false);
+      setExportError(error instanceof Error ? error.message : 'Could not update learning link.');
+    } finally {
+      setManagingLearningLinkPublication(false);
+    }
+  };
+
   const publishPDF = async (modeOverride?: 'full' | 'pdf-only' | 'worksheet-settings-only') => {
     const id = worksheetIdRef.current;
     if (!id || publishingPDF) return false;
@@ -4627,16 +4690,14 @@ export default function EditorPage() {
           `page-${index + 1}.webp`,
         );
       });
-      if (publishMode === 'full') {
-        const { json: worksheetJson } = worksheetJsonFromDoc(editor.state.doc, {
-          title: worksheetTitle,
-          documentSize: docSize,
-          showSolutions,
-          brandProfileId,
-          context: documentContext,
-        });
-        formData.set('worksheetJson', worksheetJson);
-      }
+      const { json: worksheetJson } = worksheetJsonFromDoc(editor.state.doc, {
+        title: worksheetTitle,
+        documentSize: docSize,
+        showSolutions,
+        brandProfileId,
+        context: documentContext,
+      });
+      formData.set('worksheetJson', worksheetJson);
       formData.set('metadata', JSON.stringify(metadata));
       const response = await fetch('/api/dazit/publish', { method: 'POST', body: formData });
       const result = await response.json().catch(() => null) as {
@@ -4647,6 +4708,9 @@ export default function EditorPage() {
       setExportError('Published to Dazit.');
       setPublishSuccess(true);
       setPublicationStatus(result?.publicationStatus ?? 'current');
+      if (metadata.documentType === 'Lernkarten') {
+        await loadLearningLinkPublication(id);
+      }
       return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Publishing failed.';
@@ -5065,7 +5129,11 @@ export default function EditorPage() {
   };
 
   return (
-    <div className="editor-app flex h-screen flex-col overflow-hidden bg-secondary text-primary">
+    <div
+      className="editor-app flex h-screen flex-col overflow-hidden bg-secondary text-primary"
+      data-doc-size={docSize}
+      style={EDITOR_PAGE_BOX_STYLE}
+    >
 
       {/* Top header (sticky) */}
       <header className="editor-topbar grid h-16 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 border-b border-secondary bg-primary px-4 lg:px-6">
@@ -9812,6 +9880,55 @@ export default function EditorPage() {
                   </label>
                 )}
               </div>
+            )}
+            {(dazitDocumentType === 'Lernkarten'
+              || documentContext.worksheetType === 'learning-cards'
+              || containsLearningCards) && (
+              <section className="mt-5 rounded-lg border border-secondary bg-primary p-3">
+                <p className="text-sm font-semibold text-primary">Online-Lernkarten-Link</p>
+                {loadingLearningLinkPublication ? (
+                  <p className="mt-1 text-xs text-tertiary">Lade Link-Status…</p>
+                ) : learningLinkPublication ? (
+                  <>
+                    <p className="mt-1 text-xs text-tertiary">
+                      Status: {learningLinkPublication.isPublished ? 'Veröffentlicht' : 'Nicht veröffentlicht'} · {learningLinkPublication.cardCount} Karten
+                    </p>
+                    <p className="mt-2 break-all rounded border border-primary bg-primary px-2 py-1.5 text-xs text-secondary">
+                      {learningLinkPublication.url}
+                    </p>
+                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <button
+                        className="rounded-md border border-secondary px-2.5 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover disabled:opacity-50"
+                        disabled={managingLearningLinkPublication}
+                        onClick={() => void navigator.clipboard?.writeText(learningLinkPublication.url)}
+                        type="button"
+                      >
+                        Link kopieren
+                      </button>
+                      <button
+                        className="rounded-md border border-warning-primary px-2.5 py-2 text-xs font-semibold text-warning-primary transition hover:bg-warning-primary/20 disabled:opacity-50"
+                        disabled={managingLearningLinkPublication}
+                        onClick={() => void manageLearningLinkPublication('unpublish')}
+                        type="button"
+                      >
+                        Unpublish
+                      </button>
+                      <button
+                        className="rounded-md border border-brand px-2.5 py-2 text-xs font-semibold text-brand-secondary transition hover:bg-brand-primary disabled:opacity-50"
+                        disabled={managingLearningLinkPublication}
+                        onClick={() => void manageLearningLinkPublication('regenerate')}
+                        type="button"
+                      >
+                        URL erneuern
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="mt-1 text-xs text-tertiary">
+                    Der Link wird beim Veröffentlichen automatisch erstellt.
+                  </p>
+                )}
+              </section>
             )}
             <div className="mt-6 flex justify-end gap-3">
               <Button

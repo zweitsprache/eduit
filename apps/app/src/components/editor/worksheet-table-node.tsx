@@ -23,6 +23,7 @@ import {
 import {
   InlineFormattedText,
 } from '@/components/editor/custom-blocks/inline-formatting';
+import { getEditorPageAreas } from '@/components/editor/page-layout';
 
 export type WorksheetTableColumn = {
   id: string;
@@ -323,19 +324,7 @@ function WorksheetTableNodeView({ node, selected }: NodeViewProps) {
     if (!rows.length) return;
 
     const editor = frame.closest('.ProseMirror');
-    const headers = editor
-      ? Array.from(editor.querySelectorAll<HTMLElement>('.tiptap-page-header'))
-      : [];
-    const footers = editor
-      ? Array.from(editor.querySelectorAll<HTMLElement>('.tiptap-page-footer'))
-      : [];
-    const pageAreas = headers.flatMap((header, index) => {
-      const footer = footers[index];
-      if (!footer) return [];
-      const top = header.getBoundingClientRect().bottom;
-      const bottom = footer.getBoundingClientRect().top;
-      return bottom > top ? [{ top, bottom }] : [];
-    });
+    const pageAreas = getEditorPageAreas(editor as HTMLElement | null);
 
     if (!pageAreas.length) {
       rows.at(-1)?.setAttribute('data-page-last', 'true');

@@ -848,6 +848,19 @@ function CommunicationCardsEditor({
         sidedness: 'single' as const,
         format: 'a4-landscape' as const,
       };
+      const currentSnapshot = JSON.stringify({
+        title: attrs.title,
+        textSize: attrs.textSize,
+        items: attrs.items,
+        groupIndex: attrs.groupIndex,
+      });
+      const nextSnapshot = JSON.stringify({
+        title: next.title,
+        textSize: next.textSize,
+        items: next.items,
+        groupIndex: next.groupIndex,
+      });
+      if (currentSnapshot === nextSnapshot) return true;
       const cardType = tr.doc.type.schema.nodes.communicationCards;
       const pageBreakType = tr.doc.type.schema.nodes.pageBreak;
       if (!cardType) return false;

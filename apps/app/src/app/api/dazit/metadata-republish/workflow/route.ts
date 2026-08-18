@@ -18,7 +18,8 @@ export const { POST } = serve<WorkflowPayload>(async (context) => {
   const { worksheetId, origin } = context.requestPayload;
 
   await context.run('regenerate-dazit-metadata', async () => {
-    const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN;
+    const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN
+      ?? process.env.BLOB_READ_WRITE_TOKEN;
     const workflowToken = process.env.QSTASH_TOKEN;
     if (!token || !workflowToken) throw new Error('Dazit or workflow credentials are missing.');
 

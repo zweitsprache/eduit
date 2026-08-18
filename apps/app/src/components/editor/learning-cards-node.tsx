@@ -10,6 +10,7 @@ import { CustomBlockRoot } from '@/components/editor/custom-blocks/primitives';
 import { InlineFormattedText } from '@/components/editor/custom-blocks/inline-formatting';
 import { htmlToInlineFormatting } from '@/components/editor/custom-blocks/inline-formatting';
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
+import { getEditorPageAreas } from '@/components/editor/page-layout';
 import {
   isSingleLetterBlankAnswer,
   shouldAttachBlankToPreviousText,
@@ -506,12 +507,10 @@ function LearningCardsNodeView({ node, editor, selected }: NodeViewProps) {
         );
         if (cardSheet) {
           const cardTop = cardSheet.getBoundingClientRect().top;
-          const footers = Array.from(
-            editorRoot.querySelectorAll('.tiptap-page-footer'),
-          ) as HTMLElement[];
+          const pageAreas = getEditorPageAreas(editorRoot);
           let nearest = Infinity;
-          for (const footer of footers) {
-            const gap = footer.getBoundingClientRect().top - cardTop;
+          for (const area of pageAreas) {
+            const gap = area.bottom - cardTop;
             if (gap > 0 && gap < nearest) nearest = gap;
           }
           if (Number.isFinite(nearest) && nearest > capacity) {

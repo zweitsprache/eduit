@@ -9,6 +9,7 @@ import {
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 import { CustomBlockRoot } from '@/components/editor/custom-blocks/primitives';
+import { getEditorPageAreas } from '@/components/editor/page-layout';
 
 export type RichTextAttrs = {
   html: string;
@@ -35,19 +36,9 @@ function RichTextNodeView({ node, selected }: NodeViewProps) {
     const editor = root.closest('.ProseMirror');
     if (!editor) return;
     const rootRect = root.getBoundingClientRect();
-    const headers = Array.from(
-      editor.querySelectorAll<HTMLElement>('.tiptap-page-header'),
-    );
-    const footers = Array.from(
-      editor.querySelectorAll<HTMLElement>('.tiptap-page-footer'),
-    );
-    const next = headers.flatMap((header, index) => {
-      const footer = footers[index];
-      if (!footer) return [];
-      const headerRect = header.getBoundingClientRect();
-      const footerRect = footer.getBoundingClientRect();
-      const top = Math.max(rootRect.top, headerRect.bottom);
-      const bottom = Math.min(rootRect.bottom, footerRect.top);
+    const next = getEditorPageAreas(editor).flatMap((area) => {
+      const top = Math.max(rootRect.top, area.top);
+      const bottom = Math.min(rootRect.bottom, area.bottom);
       return bottom > top
         ? [{ top: top - rootRect.top, height: bottom - top }]
         : [];

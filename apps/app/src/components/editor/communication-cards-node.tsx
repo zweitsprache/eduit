@@ -324,7 +324,7 @@ export const CommunicationCards = Node.create({
         }));
         const nodes = sheets.flatMap((sheet, index) => (
           index < sheets.length - 1 && pageBreakType
-            ? [sheet, pageBreakType.create()]
+            ? [sheet, pageBreakType.create({ restartPagination: false })]
             : [sheet]
         ));
         if (dispatch) dispatch(state.tr.replaceWith(0, state.doc.content.size, nodes));

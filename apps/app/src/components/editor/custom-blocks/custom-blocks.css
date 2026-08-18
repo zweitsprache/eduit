@@ -403,8 +403,8 @@
   display: flex;
   width: 100%;
   max-width: 257mm;
-  height: 158mm;
-  min-height: 158mm;
+  height: 156mm;
+  min-height: 156mm;
   flex-direction: column;
   overflow: hidden;
   break-inside: avoid;
