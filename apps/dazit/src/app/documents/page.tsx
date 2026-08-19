@@ -1,147 +1,64 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import Link from 'next/link';
-import { LibraryBrowser } from '@/components/library-browser';
+import { DocumentsClientPage } from '@/components/documents-client-page';
 import { SiteHeader } from '@/components/site-header';
 import { getWorksheetCards } from '@/lib/worksheets';
 import { absoluteDazitUrl } from '@/lib/site-url';
-import { getCurrentDazitUser } from '@/lib/auth/authorization';
 
 const clusterLinks = [
-  { href: '/documents?level=A1.1', label: 'DaZ Arbeitsblätter A1.1' },
-  { href: '/documents?level=A1.2', label: 'DaZ Arbeitsblätter A1.2' },
-  { href: '/documents?level=A2.1', label: 'DaZ Arbeitsblätter A2.1' },
-  { href: '/documents?level=A2.2', label: 'DaZ Arbeitsblätter A2.2' },
-  { href: '/documents?level=B1.1', label: 'DaZ Arbeitsblätter B1.1' },
-  { href: '/documents?level=B1.2', label: 'DaZ Arbeitsblätter B1.2' },
-  { href: '/documents?type=Arbeitsblatt', label: 'DaZ Arbeitsblätter druckfertig' },
-  { href: '/documents?type=Dialog', label: 'DaZ Dialoge zum Ausdrucken' },
-  { href: '/documents?type=Lernkarten', label: 'DaZ Lernkarten PDF' },
-  { href: '/documents?type=Verbtabelle', label: 'DaZ Verbtabellen PDF' },
-  { href: '/documents?type=Deklinationstabelle', label: 'DaZ Deklinationstabellen PDF' },
+  { href: '/niveau/A1.1', label: 'DaZ Arbeitsblätter A1.1' },
+  { href: '/niveau/A1.2', label: 'DaZ Arbeitsblätter A1.2' },
+  { href: '/niveau/A2.1', label: 'DaZ Arbeitsblätter A2.1' },
+  { href: '/niveau/A2.2', label: 'DaZ Arbeitsblätter A2.2' },
+  { href: '/niveau/B1.1', label: 'DaZ Arbeitsblätter B1.1' },
+  { href: '/niveau/B1.2', label: 'DaZ Arbeitsblätter B1.2' },
+  { href: '/typ/arbeitsblatt', label: 'DaZ Arbeitsblätter druckfertig' },
+  { href: '/typ/dialog', label: 'DaZ Dialoge zum Ausdrucken' },
+  { href: '/typ/lernkarten', label: 'DaZ Lernkarten PDF' },
+  { href: '/typ/verbtabelle', label: 'DaZ Verbtabellen PDF' },
+  { href: '/typ/deklinationstabelle', label: 'DaZ Deklinationstabellen PDF' },
 ];
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 1800;
 
-function decodeValue(value?: string) {
-  if (!value) return '';
-  try {
-    return decodeURIComponent(value).trim();
-  } catch {
-    return value.trim();
-  }
-}
-
-function buildCanonicalPath(
-  level: string,
-  type: string,
-  searchText: string,
-  actionField: string,
-) {
-  const hasSearchText = Boolean(searchText);
-  const filtersCount = [level, type, searchText, actionField].filter(Boolean).length;
-  const singleLevel = Boolean(level) && filtersCount === 1;
-  const singleType = Boolean(type) && filtersCount === 1;
-
-  if (hasSearchText) return '/documents';
-  if (singleLevel) return `/documents?level=${encodeURIComponent(level)}`;
-  if (singleType) return `/documents?type=${encodeURIComponent(type)}`;
-  return '/documents';
-}
-
-export async function generateMetadata({
-  searchParams,
-}: {
-  searchParams: Promise<{
-    actionField?: string;
-    level?: string;
-    q?: string;
-    type?: string;
-  }>;
-}): Promise<Metadata> {
-  const query = await searchParams;
-  const level = decodeValue(query.level);
-  const type = decodeValue(query.type);
-  const searchText = decodeValue(query.q);
-  const actionField = decodeValue(query.actionField);
-
-  const filtersCount = [level, type, searchText, actionField].filter(Boolean).length;
-  const singleLevel = Boolean(level) && filtersCount === 1;
-  const singleType = Boolean(type) && filtersCount === 1;
-  const hasSearchText = Boolean(searchText);
-  const hasAnyQueryFilter = filtersCount > 0;
-  const canonicalPath = buildCanonicalPath(level, type, searchText, actionField);
-  const isIndexable = !hasAnyQueryFilter || (!hasSearchText && (singleLevel || singleType));
-
-  const title = singleLevel
-    ? `DaZ Arbeitsblätter ${level}`
-    : singleType
-      ? `DaZ ${type} zum Ausdrucken`
-      : 'DaZ Arbeitsblätter & Unterrichtsmaterial';
-
-  const description = singleLevel
-    ? `Druckfertige DaZ Arbeitsblätter auf Niveau ${level} für Erwachsene. Sofort im Unterricht einsetzbar.`
-    : singleType
-      ? `Druckfertige ${type} für DaZ-Kurse mit Erwachsenen. Direkt herunterladen und einsetzen.`
-      : 'Druckfertige Arbeitsblätter, Dialoge, Lernkarten und Tabellen für DaZ-Kurse mit Erwachsenen.';
-
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: canonicalPath,
-    },
-    robots: {
-      // Index the core page plus single-facet landing pages; keep search or mixed filters out of the index.
-      index: isIndexable,
+export const metadata: Metadata = {
+  title: 'DaZ Arbeitsblätter & Unterrichtsmaterial',
+  description: 'Druckfertige Arbeitsblätter, Dialoge, Lernkarten und Tabellen für DaZ-Kurse mit Erwachsenen.',
+  alternates: {
+    canonical: '/documents',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
       follow: true,
-      googleBot: {
-        index: isIndexable,
-        follow: true,
-      },
     },
-    openGraph: {
-      title,
-      description,
-      url: canonicalPath,
-      type: 'website',
-      locale: 'de_CH',
-      siteName: 'DaZit',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-    },
-  };
-}
+  },
+  openGraph: {
+    title: 'DaZ Arbeitsblätter & Unterrichtsmaterial',
+    description: 'Druckfertige Arbeitsblätter, Dialoge, Lernkarten und Tabellen für DaZ-Kurse mit Erwachsenen.',
+    url: '/documents',
+    type: 'website',
+    locale: 'de_CH',
+    siteName: 'DaZit',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'DaZ Arbeitsblätter & Unterrichtsmaterial',
+    description: 'Druckfertige Arbeitsblätter, Dialoge, Lernkarten und Tabellen für DaZ-Kurse mit Erwachsenen.',
+  },
+};
 
-export default async function LibraryPage({
-  searchParams,
-}: {
-  searchParams: Promise<{
-    actionField?: string;
-    level?: string;
-    q?: string;
-    type?: string;
-  }>;
-}) {
-  const [worksheets, currentUser, query] = await Promise.all([
-    getWorksheetCards(),
-    getCurrentDazitUser(),
-    searchParams,
-  ]);
-  const level = decodeValue(query.level);
-  const type = decodeValue(query.type);
-  const searchText = decodeValue(query.q);
-  const actionField = decodeValue(query.actionField);
-  const canonicalPath = buildCanonicalPath(level, type, searchText, actionField);
-  const isAuthenticated = Boolean(currentUser);
+export default async function LibraryPage() {
+  const worksheets = await getWorksheetCards();
   const structuredData = [
     {
       '@context': 'https://schema.org',
       '@type': 'CollectionPage',
       '@id': absoluteDazitUrl('/documents#collection-page'),
-      url: absoluteDazitUrl(canonicalPath),
+      url: absoluteDazitUrl('/documents'),
       name: 'DaZ Arbeitsblätter & Unterrichtsmaterial',
       description: 'Druckfertige Arbeitsblätter, Dialoge, Lernkarten und Tabellen für DaZ-Kurse mit Erwachsenen.',
       inLanguage: 'de-CH',
@@ -197,15 +114,9 @@ export default async function LibraryPage({
           <Link href={item.href} key={item.href}>{item.label}</Link>
         ))}
       </div>
-      <LibraryBrowser
-        canAdminister={Boolean(currentUser?.isAdmin)}
-        isAuthenticated={isAuthenticated}
-        initialActionFields={actionField ? [actionField] : []}
-        initialLevels={query.level ? [query.level] : []}
-        initialQuery={query.q || ''}
-        initialTypes={query.type ? [query.type] : []}
-        worksheets={worksheets}
-      />
+      <Suspense fallback={<main className="library-layout" />}>
+        <DocumentsClientPage worksheets={worksheets} />
+      </Suspense>
     </>
   );
 }

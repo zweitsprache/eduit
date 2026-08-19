@@ -33,7 +33,17 @@ export function DocumentGallery({
         }}
       >
         {activeThumbnail
-          ? <img key={activeThumbnail} src={activeThumbnail} alt={`Vorschau Seite ${activePage + 1}`} />
+          ? (
+            <img
+              key={activeThumbnail}
+              src={activeThumbnail}
+              alt={`Vorschau Seite ${activePage + 1} von ${pages} zu diesem Dokument`}
+              width={1600}
+              height={900}
+              loading="lazy"
+              decoding="async"
+            />
+          )
           : (
             <>
               <File02 aria-hidden="true" />

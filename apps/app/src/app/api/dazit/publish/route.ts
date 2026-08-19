@@ -630,12 +630,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'One thumbnail per PDF page is required.' }, { status: 400 });
     }
     const revisionRows = await sql`
-      select source_revision as "sourceRevision"
-      from worksheets
-      where id = ${metadata.worksheetId}
-    ` as Array<{ sourceRevision: string | number }>;
+      select w.source_revision as "sourceRevision",
+             b.name as "brandName"
+      from worksheets w
+      left join brand_profiles b on b.id = w.brand_profile_id
+      where w.id = ${metadata.worksheetId}
+    ` as Array<{ sourceRevision: string | number; brandName: string | null }>;
     if (!revisionRows[0]) {
       return NextResponse.json({ error: 'Worksheet not found.' }, { status: 404 });
+    }
+    if ((revisionRows[0].brandName ?? '').trim().toLowerCase() !== 'dazit') {
+      return NextResponse.json(
+        { error: 'Only worksheets using the Dazit brand can be published to Dazit.' },
+        { status: 400 },
+      );
     }
     const sourceRevision = Number(revisionRows[0].sourceRevision);
     const publicationRows = await sql`

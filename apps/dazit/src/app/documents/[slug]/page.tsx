@@ -9,12 +9,12 @@ import { getWorksheetCards, worksheetBySlug } from '@/lib/worksheets';
 import { absoluteDazitUrl } from '@/lib/site-url';
 import { InlineMetadataEditor } from '@/components/inline-metadata-editor';
 import { InlineHtmlEditor } from '@/components/inline-html-editor';
-import { getCurrentDazitUser } from '@/lib/auth/authorization';
 import { DownloadAuthGate } from '@/components/download-auth-gate';
+import { AdminOnly } from '@/components/admin-only';
 
 type Props = { params: Promise<{ slug: string }> };
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 86400;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const worksheet = await worksheetBySlug((await params).slug);
@@ -96,9 +96,6 @@ export default async function WorksheetDetailPage({ params }: Props) {
   const detailTitle = `${worksheet.title} | ${worksheet.documentType}${worksheet.level ? ` ${worksheet.level}` : ''}`;
   const detailDescription = snippet
     || `${worksheet.documentType}${worksheet.level ? ` für ${worksheet.level}` : ''} zum direkten Einsatz im DaZ-Unterricht.`;
-  const currentUser = await getCurrentDazitUser();
-  const canAdminister = Boolean(currentUser?.isAdmin);
-  const isAuthenticated = Boolean(currentUser);
   const allWorksheets = await getWorksheetCards();
   const related = allWorksheets
     .filter(({ slug, subject }) => slug !== worksheet.slug && subject === worksheet.subject)
@@ -220,7 +217,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
               thumbnailUrls={worksheet.thumbnailUrls}
             />
             <InlineHtmlEditor
-              editable={canAdminister}
+              editable
               field="descriptionHtml"
               heading="Beschreibung"
               html={worksheet.descriptionHtml || ''}
@@ -229,14 +226,14 @@ export default async function WorksheetDetailPage({ params }: Props) {
           </div>
           <div className="detail-column detail-info-column">
             <div className="detail-copy">
-              {canAdminister && <InlineMetadataEditor worksheet={worksheet} />}
-              {canAdminister && (
+              <InlineMetadataEditor worksheet={worksheet} />
+              <AdminOnly>
                 <section className="snippet-preview" aria-label="Snippet-Vorschau">
                   <span className="snippet-preview-url">{snippetUrl}</span>
                   <strong>{detailTitle}</strong>
                   <p>{detailDescription}</p>
                 </section>
-              )}
+              </AdminOnly>
               <div className="detail-flags">
                 <span className={`subject subject-${worksheet.color}`}>{worksheet.documentType.toUpperCase()}</span>
                 {worksheet.hasAnswerKey && <span className="answer-key">✓ Lösungsblatt enthalten</span>}
@@ -245,7 +242,6 @@ export default async function WorksheetDetailPage({ params }: Props) {
               <p className="lead">{worksheet.description}</p>
               <div className="detail-actions">
                 <DownloadAuthGate
-                  canDownload={isAuthenticated}
                   className="download-primary"
                   downloadUrl={worksheet.pdfUrl}
                 >
@@ -253,7 +249,6 @@ export default async function WorksheetDetailPage({ params }: Props) {
                 </DownloadAuthGate>
                 {worksheet.hasAnswerKey && (
                   <DownloadAuthGate
-                    canDownload={isAuthenticated}
                     className="download-primary"
                     dataVariant="answer-key"
                     downloadUrl={worksheet.answerKeyPdfUrl ?? worksheet.pdfUrl}
@@ -261,7 +256,9 @@ export default async function WorksheetDetailPage({ params }: Props) {
                     <Download01 /> Lösungsblatt
                   </DownloadAuthGate>
                 )}
-                {canAdminister && <button><Plus /> Zur Sammlung</button>}
+                <AdminOnly>
+                  <button><Plus /> Zur Sammlung</button>
+                </AdminOnly>
               </div>
               <dl className="metadata-grid">
                 <div><dt>Dokumenttyp</dt><dd>{worksheet.documentType}</dd></div>
@@ -304,7 +301,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
               </div>
             </div>
             <InlineHtmlEditor
-              editable={canAdminister}
+              editable
               field="actionCompetencyContributionHtml"
               heading="Beitrag zur Sprachhandlungskompetenz"
               html={worksheet.actionCompetencyContributionHtml || ''}
@@ -317,7 +314,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
             <h2>Zugehörige Arbeitsblätter</h2>
             <div className="related-grid">
               {familyMaterials.map((item) => (
-                <WorksheetCard canDownload={isAuthenticated} key={item.slug} worksheet={item} />
+                <WorksheetCard key={item.slug} worksheet={item} />
               ))}
             </div>
           </section>
@@ -325,7 +322,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
         <section className="related">
           <h2>Ähnliche Dokumente</h2>
           <div className="related-grid">
-            {fallbackRelated.map((item) => <WorksheetCard canDownload={isAuthenticated} key={item.slug} worksheet={item} />)}
+            {fallbackRelated.map((item) => <WorksheetCard key={item.slug} worksheet={item} />)}
           </div>
         </section>
       </main>

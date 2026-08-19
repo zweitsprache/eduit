@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Worksheet } from '@/lib/worksheets';
+import { useDazitViewer } from '@/lib/auth/use-dazit-viewer';
 
 const TYPES = ['Arbeitsblatt', 'Merkblatt', 'Verbtabelle', 'Deklinationstabelle', 'Kommunikationskarten', 'Lernkarten', 'Wechselspiel', 'Domino', 'Dialog', 'Leseverstehen'];
 const LEVELS = ['A1.1', 'A1.2', 'A2.1', 'A2.2', 'B1.1', 'B1.2'];
@@ -11,6 +12,7 @@ const LANGUAGES = ['Wortschatz', 'Grammatik', 'Aussprache', 'Intonation', 'Ortho
 const FIELDS = ['Deutschkurs', 'Gesundheit', 'Sicherheit und Notfälle', 'Familie und Partnerschaft', 'Kinder und Schule', 'Soziales Netz', 'Beratung und Unterstützung', 'Einkaufen', 'Ernährung', 'Wohnen', 'Mobilität', 'Finanzen und Versicherungen', 'Behörden', 'Freizeit und Hobbys', 'Kultur und Identität', 'Arbeit', 'Arbeitssuche', 'Umwelt und Klima', 'Technologie', 'Weiterbildung'];
 
 export function InlineMetadataEditor({ worksheet }: { worksheet: Worksheet }) {
+  const viewer = useDazitViewer();
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -48,7 +50,7 @@ export function InlineMetadataEditor({ worksheet }: { worksheet: Worksheet }) {
       setError(saveError instanceof Error ? saveError.message : 'Speichern fehlgeschlagen.');
     } finally { setSaving(false); }
   };
-  if (!worksheet.worksheetId) return null;
+  if (!worksheet.worksheetId || !viewer?.isAdmin) return null;
   if (!editing) return <button className="metadata-edit-button" onClick={() => setEditing(true)} type="button">Metadaten bearbeiten</button>;
   return (
     <section className="inline-metadata-editor">

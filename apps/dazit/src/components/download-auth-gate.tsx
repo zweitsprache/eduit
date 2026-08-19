@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { XClose } from '@untitledui/icons';
 import { AuthSurface } from '@/components/auth-surface';
 import { savePendingDownload } from '@/lib/pending-download';
+import { authClient } from '@/lib/auth/client';
 
 function AuthRequiredModal({
   error,
@@ -77,16 +78,18 @@ export function DownloadAuthGate({
   dataVariant,
   children,
 }: {
-  canDownload: boolean;
+  canDownload?: boolean;
   className?: string;
   downloadUrl?: string | null;
   dataVariant?: string;
   children: ReactNode;
 }) {
+  const { data: session } = authClient.useSession();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const resolvedCanDownload = canDownload ?? Boolean(session?.user);
 
   const closeModal = () => {
     setOpen(false);
@@ -96,7 +99,7 @@ export function DownloadAuthGate({
   const startDownload = async () => {
     if (!downloadUrl) return;
     setError(null);
-    if (!canDownload) {
+    if (!resolvedCanDownload) {
       savePendingDownload(downloadUrl);
       setOpen(true);
       return;

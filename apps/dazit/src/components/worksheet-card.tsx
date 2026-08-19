@@ -7,7 +7,7 @@ import { DownloadAuthGate } from '@/components/download-auth-gate';
 export function WorksheetCard({
   worksheet,
   compact = false,
-  canDownload = false,
+  canDownload,
   deleting = false,
   onDelete,
 }: {
@@ -35,7 +35,16 @@ export function WorksheetCard({
           aria-label={`${worksheet.title} ansehen`}
         >
           {worksheet.thumbnailUrls?.[0]
-            ? <img src={worksheet.thumbnailUrls[0]} alt="" />
+            ? (
+              <img
+                src={worksheet.thumbnailUrls[0]}
+                alt={`Vorschau: ${worksheet.title}`}
+                width={1600}
+                height={900}
+                loading="lazy"
+                decoding="async"
+              />
+            )
             : (
               <>
                 <File02 aria-hidden="true" />

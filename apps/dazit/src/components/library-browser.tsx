@@ -6,8 +6,11 @@ import { FilterSidebar } from '@/components/filter-sidebar';
 import { WorksheetCard } from '@/components/worksheet-card';
 import type { Worksheet } from '@/lib/worksheets';
 import { trackSearch } from '@/components/search-tracking-form';
+import { useDazitViewer } from '@/lib/auth/use-dazit-viewer';
 
 type SortMode = 'relevance' | 'newest' | 'popular' | 'title';
+
+const EMPTY_FILTERS: string[] = [];
 
 function normalizeSearchText(value: string) {
   return value
@@ -65,12 +68,12 @@ function worksheetSearchScore(worksheet: Worksheet, query: string) {
 }
 
 export function LibraryBrowser({
-  canAdminister = false,
-  isAuthenticated = false,
-  initialActionFields = [],
-  initialLevels = [],
+  canAdminister,
+  isAuthenticated,
+  initialActionFields = EMPTY_FILTERS,
+  initialLevels = EMPTY_FILTERS,
   initialQuery = '',
-  initialTypes = [],
+  initialTypes = EMPTY_FILTERS,
   worksheets,
 }: {
   canAdminister?: boolean;
@@ -81,6 +84,9 @@ export function LibraryBrowser({
   initialTypes?: string[];
   worksheets: Worksheet[];
 }) {
+  const viewer = useDazitViewer();
+  const resolvedCanAdminister = canAdminister ?? Boolean(viewer?.isAdmin);
+  const resolvedIsAuthenticated = isAuthenticated ?? Boolean(viewer?.authenticated);
   const [libraryWorksheets, setLibraryWorksheets] = useState(worksheets);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>(initialTypes);
@@ -321,7 +327,7 @@ export function LibraryBrowser({
         <div className="results-toolbar">
           <strong>{visibleWorksheets.length} Ergebnisse</strong>
           <div>
-            {canAdminister && (
+            {resolvedCanAdminister && (
               <button
                 className="download-results-button"
                 disabled={downloadingResults || visibleWorksheets.length === 0}
@@ -350,10 +356,10 @@ export function LibraryBrowser({
         <div className="worksheet-grid">
           {paginatedWorksheets.map((worksheet) => (
             <WorksheetCard
-              canDownload={isAuthenticated}
+              canDownload={resolvedIsAuthenticated}
               deleting={deletingId === worksheet.worksheetId}
               key={worksheet.slug}
-              onDelete={canAdminister ? deleteWorksheet : undefined}
+              onDelete={resolvedCanAdminister ? deleteWorksheet : undefined}
               worksheet={worksheet}
             />
           ))}

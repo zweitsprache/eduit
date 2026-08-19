@@ -4576,6 +4576,12 @@ export default function EditorPage() {
   const publishPDF = async (modeOverride?: 'full' | 'pdf-only' | 'worksheet-settings-only') => {
     const id = worksheetIdRef.current;
     if (!id || publishingPDF) return false;
+    if ((selectedBrandProfile?.name ?? '').trim().toLowerCase() !== 'dazit') {
+      automationPublishErrorRef.current = 'Only worksheets using the Dazit brand can be published to Dazit.';
+      setExportError('Only worksheets using the Dazit brand can be published to Dazit.');
+      setPublishSuccess(false);
+      return false;
+    }
     setPublishingPDF(true);
     automationPublishErrorRef.current = null;
     setExportError(null);

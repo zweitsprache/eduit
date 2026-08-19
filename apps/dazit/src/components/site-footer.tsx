@@ -6,15 +6,15 @@ export function SiteFooter() {
       <div className="site-footer-grid">
         <nav aria-label="Dokumenttypen">
           <Link href="/documents">Arbeits- und Merkblätter</Link>
-          <Link href="/documents?type=Verbtabelle">Verbtabellen</Link>
-          <Link href="/documents?type=Deklinationstabelle">Deklinationstabellen</Link>
-          <Link href="/documents?type=Lernkarten">Lernkarten</Link>
-          <Link href="/documents?type=Dialog">Dialoge</Link>
-          <Link href="/documents?type=Leseverstehen">Leseverstehen</Link>
+          <Link href="/typ/verbtabelle">Verbtabellen</Link>
+          <Link href="/typ/deklinationstabelle">Deklinationstabellen</Link>
+          <Link href="/typ/lernkarten">Lernkarten</Link>
+          <Link href="/typ/dialog">Dialoge</Link>
+          <Link href="/typ/leseverstehen">Leseverstehen</Link>
         </nav>
         <nav aria-label="Sprachniveaus">
           {['A1.1', 'A1.2', 'A2.1', 'A2.2', 'B1.1', 'B1.2'].map((level) => (
-            <Link href={`/documents?level=${encodeURIComponent(level)}`} key={level}>{level}</Link>
+            <Link href={`/niveau/${encodeURIComponent(level)}`} key={level}>{level}</Link>
           ))}
         </nav>
         <nav aria-label="Rechtliches">

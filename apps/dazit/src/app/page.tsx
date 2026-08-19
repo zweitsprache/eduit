@@ -5,7 +5,6 @@ import { Baby, Bike, BookOpen, Brain, CloudSunRain, Cpu, Grid3x2, HandCoins, Han
 import { SiteHeader } from '@/components/site-header';
 import { WorksheetCard } from '@/components/worksheet-card';
 import { CountUp } from '@/components/count-up';
-import { getCurrentDazitUser } from '@/lib/auth/authorization';
 
 function MosqueIcon({ className }: { className?: string }) {
   return (
@@ -23,7 +22,7 @@ import { getHomepageStats, getWorksheetCards } from '@/lib/worksheets';
 import { SearchTrackingForm } from '@/components/search-tracking-form';
 import { absoluteDazitUrl } from '@/lib/site-url';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: 'DaZ Arbeitsblätter, Dialoge und Lernkarten',
@@ -64,12 +63,10 @@ const topics = [
 ] as const;
 
 export default async function HomePage() {
-  const [homepageStats, newest, currentUser] = await Promise.all([
+  const [homepageStats, newest] = await Promise.all([
     getHomepageStats(),
     getWorksheetCards().then((worksheets) => worksheets.slice(0, 4)),
-    getCurrentDazitUser(),
   ]);
-  const isAuthenticated = Boolean(currentUser);
   const { total, levelCounts, typeCounts } = homepageStats;
   const structuredData = [
     {
@@ -159,7 +156,7 @@ export default async function HomePage() {
             {levels.map(([level, className]) => (
               <Link
                 className={`home-level-card ${className}`}
-                href={`/documents?level=${encodeURIComponent(level)}`}
+                href={`/niveau/${encodeURIComponent(level)}`}
                 key={level}
               >
                 <strong>{level}</strong>
@@ -173,31 +170,31 @@ export default async function HomePage() {
           <section className="home-section home-types">
             <div className="home-section-heading"><h2>Nach Typ</h2></div>
             <div className="home-type-grid">
-              <Link className="home-type-card" href="/documents?type=Arbeitsblatt">
+              <Link className="home-type-card" href="/typ/arbeitsblatt">
                 <File02 aria-hidden="true" />
                 <span><strong>Arbeits- und Merkblätter</strong><small>Grammatik und Wortschatz üben und nachschlagen</small><b>{typeCounts.Arbeitsblatt || 0} Dokumente ›</b></span>
               </Link>
-              <Link className="home-type-card" href="/documents?type=Verbtabelle">
+              <Link className="home-type-card" href="/typ/verbtabelle">
                 <TableCellsSplit aria-hidden="true" />
                 <span><strong>Verbtabellen</strong><small>Konjugationen kompakt nachschlagen und trainieren</small><b>{typeCounts.Verbtabelle || 0} Dokumente ›</b></span>
               </Link>
-              <Link className="home-type-card" href="/documents?type=Domino">
+              <Link className="home-type-card" href="/typ/domino">
                 <SquareSplitHorizontal aria-hidden="true" />
                 <span><strong>Dominos</strong><small>Wortschatz und Grammatik spielerisch festigen</small><b>{typeCounts.Domino || 0} Dokumente ›</b></span>
               </Link>
-              <Link className="home-type-card" href="/documents?type=Lernkarten">
+              <Link className="home-type-card" href="/typ/lernkarten">
                 <Copy01 aria-hidden="true" />
                 <span><strong>Lernkarten</strong><small>Wortschatz selbstständig und in Partnerarbeit trainieren</small><b>{typeCounts.Lernkarten || 0} Dokumente ›</b></span>
               </Link>
-              <Link className="home-type-card" href="/documents?type=Wechselspiel">
+              <Link className="home-type-card" href="/typ/wechselspiel">
                 <Grid3x2 aria-hidden="true" />
                 <span><strong>Wechselspiele</strong><small>Informationen in Partnerarbeit erfragen und ergänzen</small><b>{typeCounts.Wechselspiel || 0} Dokumente ›</b></span>
               </Link>
-              <Link className="home-type-card" href="/documents?type=Dialog">
+              <Link className="home-type-card" href="/typ/dialog">
                 <MessagesSquare aria-hidden="true" />
                 <span><strong>Dialoge</strong><small>Gespräche lesen und nachspielen</small><b>{typeCounts.Dialog || 0} Dokumente ›</b></span>
               </Link>
-              <Link className="home-type-card" href="/documents?type=Leseverstehen">
+              <Link className="home-type-card" href="/typ/leseverstehen">
                 <ListCheck aria-hidden="true" />
                 <span><strong>Leseverstehen</strong><small>Texte lesen und Verständnis überprüfen</small><b>{typeCounts.Leseverstehen || 0} Dokumente ›</b></span>
               </Link>
@@ -207,7 +204,7 @@ export default async function HomePage() {
           <section className="home-section home-new">
             <div className="home-new-grid">
               {newest.map((worksheet) => (
-                <WorksheetCard canDownload={isAuthenticated} key={worksheet.slug} worksheet={worksheet} />
+                <WorksheetCard key={worksheet.slug} worksheet={worksheet} />
               ))}
             </div>
             <Link className="home-new-mobile-link" href="/documents">Alle neuen Dokumente</Link>

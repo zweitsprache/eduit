@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Worksheet } from '@/lib/worksheets';
+import { useDazitViewer } from '@/lib/auth/use-dazit-viewer';
 
 export function InlineHtmlEditor({
   editable = false,
@@ -17,6 +18,7 @@ export function InlineHtmlEditor({
   html: string;
   worksheet: Worksheet;
 }) {
+  const viewer = useDazitViewer();
   const router = useRouter();
   const contentRef = useRef<HTMLDivElement>(null);
   const [editing, setEditing] = useState(false);
@@ -68,13 +70,15 @@ export function InlineHtmlEditor({
     }
   };
 
+  const canEdit = editable && Boolean(viewer?.isAdmin);
+
   return (
     <article className={`publication-description inline-html-editor${editing ? ' is-editing' : ''}`}>
       <div className="inline-html-heading">
         <h2>{heading}</h2>
-        {editable && !editing && <button onClick={() => setEditing(true)} type="button">Bearbeiten</button>}
+        {canEdit && !editing && <button onClick={() => setEditing(true)} type="button">Bearbeiten</button>}
       </div>
-      {editing && (
+      {canEdit && editing && (
         <div className="inline-html-toolbar" aria-label="Textformatierung">
           <button onMouseDown={(event) => { event.preventDefault(); format('bold'); }} type="button"><strong>Fett</strong></button>
           <button onMouseDown={(event) => { event.preventDefault(); format('italic'); }} type="button"><em>Kursiv</em></button>
@@ -86,12 +90,12 @@ export function InlineHtmlEditor({
       <div
         aria-label={`${heading} bearbeiten`}
         className="inline-html-content"
-        contentEditable={editing}
+        contentEditable={canEdit && editing}
         dangerouslySetInnerHTML={{ __html: html }}
         ref={contentRef}
         suppressContentEditableWarning
       />
-      {editing && (
+      {canEdit && editing && (
         <>
           {error && <p className="metadata-editor-error">{error}</p>}
           <div className="metadata-editor-actions">
