@@ -69,6 +69,8 @@ function mapRow(row: WorksheetRow): Worksheet {
                 ? 'domino'
               : row.context?.worksheetType === 'dialog'
                 ? 'dialog'
+              : row.context?.worksheetType === 'word-list'
+                ? 'word-list'
         : 'worksheet',
       subject: row.context?.subject || legacySubjects[0] || 'daz',
       ageGroups: Array.isArray((row.context as WorksheetContext & {
@@ -262,6 +264,8 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
                 ? 'domino'
               : context.worksheetType === 'dialog'
                 ? 'dialog'
+              : context.worksheetType === 'word-list'
+                ? 'word-list'
         : 'worksheet',
       sourceProfileId: typeof context.sourceProfileId === 'string'
         ? context.sourceProfileId.slice(0, 100)

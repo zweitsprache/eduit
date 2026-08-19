@@ -194,6 +194,10 @@ export default async function HomePage() {
                 <MessagesSquare aria-hidden="true" />
                 <span><strong>Dialoge</strong><small>Gespräche lesen und nachspielen</small><b>{typeCounts.Dialog || 0} Dokumente ›</b></span>
               </Link>
+              <Link className="home-type-card" href="/typ/worterliste">
+                <BookOpen aria-hidden="true" />
+                <span><strong>Wörterlisten</strong><small>Wortschatz gesammelt üben und nachschlagen</small><b>{typeCounts.Wörterliste || 0} Dokumente ›</b></span>
+              </Link>
               <Link className="home-type-card" href="/typ/leseverstehen">
                 <ListCheck aria-hidden="true" />
                 <span><strong>Leseverstehen</strong><small>Texte lesen und Verständnis überprüfen</small><b>{typeCounts.Leseverstehen || 0} Dokumente ›</b></span>

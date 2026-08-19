@@ -526,6 +526,7 @@ const contextSchema = z.object({
     'information-gap',
     'domino',
     'dialog',
+    'word-list',
   ]).default('worksheet'),
   sourceProfileId: z.string().max(100).nullable().default(null),
   subject: z.string().max(100).default('daz'),

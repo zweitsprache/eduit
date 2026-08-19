@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { getDazitHomepageStatsFromDb, getPublishedWorksheetCardsFromDb, getPublishedWorksheetsFromDb } from '@/lib/db';
+import { getDazitHomepageStatsFromDb, getFamilyWorksheetCardsFromDb, getPublishedWorksheetBySlugFromDb, getPublishedWorksheetCardsFromDb, getPublishedWorksheetsFromDb, getRelatedWorksheetCardsFromDb } from '@/lib/db';
 import type { DazitHomepageStatsRow, DazitPublicationCardRow, DazitPublicationRelationship, DazitPublicationRow } from '@/lib/db';
 
 export type Subject = 'A1.1' | 'Language' | 'Science' | 'Humanities' | 'Arts' | 'PE & health';
@@ -24,6 +24,7 @@ export type Worksheet = {
     | 'Wechselspiel'
     | 'Domino'
     | 'Dialog'
+    | 'Wörterliste'
     | 'Leseverstehen';
   pages: number;
   language: 'Deutsch für die Schweiz' | 'Deutsch' | 'French' | 'Italian' | 'English';
@@ -119,6 +120,7 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
     'Wechselspiel',
     'Domino',
     'Dialog',
+    'Wörterliste',
     'Leseverstehen',
   ];
   const subject = subjects.includes(row.level as Subject)
@@ -239,10 +241,55 @@ async function loadHomepageStats() {
   }
 }
 
+async function loadWorksheetBySlug(slug: string) {
+  try {
+    const row = await getPublishedWorksheetBySlugFromDb(slug);
+    if (!row) return null;
+    return publishedWorksheet(row);
+  } catch (error) {
+    console.error('Could not load Dazit publication by slug from the database.', error);
+    return null;
+  }
+}
+
+async function loadFamilyWorksheetCards(worksheetId: string) {
+  try {
+    const rows = await getFamilyWorksheetCardsFromDb(worksheetId);
+    return rows
+      .map((row) => publishedWorksheetCard(row))
+      .filter((item): item is Worksheet => item !== null);
+  } catch (error) {
+    console.error('Could not load Dazit family publication cards from the database.', error);
+    return [];
+  }
+}
+
+async function loadRelatedWorksheetCards(
+  slug: string,
+  level: string | undefined,
+  documentType: Worksheet['documentType'],
+  limit: number,
+) {
+  try {
+    const rows = await getRelatedWorksheetCardsFromDb(slug, level, documentType, limit);
+    return rows
+      .map((row) => publishedWorksheetCard(row))
+      .filter((item): item is Worksheet => item !== null);
+  } catch (error) {
+    console.error('Could not load Dazit related publication cards from the database.', error);
+    return [];
+  }
+}
+
 export const getWorksheetCards = cache(loadWorksheetCards);
 export const getWorksheets = cache(loadWorksheets);
 export const getHomepageStats = cache(loadHomepageStats);
+export const getWorksheetBySlug = cache(loadWorksheetBySlug);
+export const getFamilyWorksheetCards = cache(loadFamilyWorksheetCards);
+export const getRelatedWorksheetCards = cache(loadRelatedWorksheetCards);
 
 export async function worksheetBySlug(slug: string) {
-  return (await getWorksheets()).find((worksheet) => worksheet.slug === slug);
+  const worksheet = await getWorksheetBySlug(slug);
+  if (worksheet) return worksheet;
+  return (await getWorksheets()).find((item) => item.slug === slug);
 }

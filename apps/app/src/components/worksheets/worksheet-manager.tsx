@@ -39,7 +39,8 @@ type DazitDocumentType =
   | 'Kommunikationskarten'
   | 'Lernkarten'
   | 'Domino'
-  | 'Dialog';
+  | 'Dialog'
+  | 'Wörterliste';
 type FolderDialog = {
   mode: 'create' | 'rename';
   folder?: WorksheetFolder;
@@ -808,6 +809,7 @@ export function WorksheetManager() {
                         <option value="Lernkarten">Lernkarten</option>
                         <option value="Domino">Domino</option>
                         <option value="Dialog">Dialog</option>
+                        <option value="Wörterliste">Wörterliste</option>
                       </select>
                     </label>
                   )}

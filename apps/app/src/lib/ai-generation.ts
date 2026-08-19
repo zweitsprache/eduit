@@ -124,6 +124,8 @@ ${CONTENT_PRIVACY_AND_BRAND_RULES}`;
             ? 'Domino'
           : context.worksheetType === 'dialog'
             ? 'Dialog'
+          : context.worksheetType === 'word-list'
+            ? 'Word list'
             : 'Worksheet';
   const contextText = [
     ['Worksheet type', worksheetType],

@@ -21,7 +21,8 @@ export type WorksheetContext = {
     | 'learning-cards'
     | 'information-gap'
     | 'domino'
-    | 'dialog';
+    | 'dialog'
+    | 'word-list';
   sourceProfileId: string | null;
   subject: string;
   customSubject: string;

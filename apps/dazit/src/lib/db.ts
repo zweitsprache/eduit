@@ -10,6 +10,7 @@ export type DazitPublicationDocumentType =
   | 'Wechselspiel'
   | 'Domino'
   | 'Dialog'
+  | 'Wörterliste'
   | 'Leseverstehen';
 
 export type DazitPublicationRow = {
@@ -234,6 +235,43 @@ export async function getPublishedWorksheetsFromDb() {
   return rows;
 }
 
+export async function getPublishedWorksheetBySlugFromDb(slug: string) {
+  if (!process.env.DATABASE_URL) return null as DazitPublicationRow | null;
+  const sql = neon(process.env.DATABASE_URL);
+  const rows = await sql`
+    select
+      p.worksheet_id as "worksheetId",
+      p.slug,
+      p.title,
+      p.document_type as "documentType",
+      p.pdf_path as "pdfPath",
+      p.answer_key_pdf_path as "answerKeyPdfPath",
+      p.thumbnail_paths as "thumbnailPaths",
+      p.page_count as "pageCount",
+      p.size_bytes as "sizeBytes",
+      p.published_at as "publishedAt",
+      p.updated_at as "updatedAt",
+      p.excerpt,
+      p.search_snippet as "searchSnippet",
+      p.description_html as "descriptionHtml",
+      p.tags,
+      p.level,
+      p.action_competencies as "actionCompetencies",
+      p.language_competencies as "languageCompetencies",
+      p.action_competency_contribution_html as "actionCompetencyContributionHtml",
+      p.action_field as "actionField",
+      p.download_count::int as downloads,
+      coalesce(p.has_answer_key, w.show_solutions, false) as "hasAnswerKey",
+      w.document_size as "documentSize",
+      w.context
+    from dazit_publications p
+    join worksheets w on w.id = p.worksheet_id
+    where p.slug = ${slug}
+    limit 1
+  ` as DazitPublicationRow[];
+  return rows[0] || null;
+}
+
 export async function getPublishedWorksheetCardsFromDb() {
   if (!process.env.DATABASE_URL) return [] as DazitPublicationCardRow[];
   const sql = neon(process.env.DATABASE_URL);
@@ -265,6 +303,105 @@ export async function getPublishedWorksheetCardsFromDb() {
     from dazit_publications p
     join worksheets w on w.id = p.worksheet_id
     order by p.published_at desc
+  ` as DazitPublicationCardRow[];
+  return rows;
+}
+
+export async function getFamilyWorksheetCardsFromDb(worksheetId: string) {
+  if (!process.env.DATABASE_URL) return [] as DazitPublicationCardRow[];
+  const sql = neon(process.env.DATABASE_URL);
+  const rows = await sql`
+    with family_ids as (
+      select case
+        when relationship.source_worksheet_id = ${worksheetId} then relationship.related_worksheet_id
+        else relationship.source_worksheet_id
+      end as worksheet_id
+      from worksheet_relationships relationship
+      where relationship.source_worksheet_id = ${worksheetId}
+         or relationship.related_worksheet_id = ${worksheetId}
+    )
+    select
+      p.worksheet_id as "worksheetId",
+      p.slug,
+      p.title,
+      p.document_type as "documentType",
+      p.pdf_path as "pdfPath",
+      p.answer_key_pdf_path as "answerKeyPdfPath",
+      case when jsonb_typeof(p.thumbnail_paths) = 'array' and jsonb_array_length(p.thumbnail_paths) > 0
+        then jsonb_build_array(p.thumbnail_paths->0) else '[]'::jsonb end as "thumbnailPaths",
+      p.page_count as "pageCount",
+      p.size_bytes as "sizeBytes",
+      p.published_at as "publishedAt",
+      p.updated_at as "updatedAt",
+      p.excerpt,
+      p.search_snippet as "searchSnippet",
+      p.tags,
+      p.level,
+      p.action_competencies as "actionCompetencies",
+      p.language_competencies as "languageCompetencies",
+      p.action_field as "actionField",
+      p.download_count::int as downloads,
+      coalesce(p.has_answer_key, w.show_solutions, false) as "hasAnswerKey",
+      w.document_size as "documentSize",
+      null as context
+    from family_ids family
+    join dazit_publications p on p.worksheet_id = family.worksheet_id
+    join worksheets w on w.id = p.worksheet_id
+    order by p.published_at desc
+  ` as DazitPublicationCardRow[];
+  return rows;
+}
+
+export async function getRelatedWorksheetCardsFromDb(
+  slug: string,
+  level: string | undefined,
+  documentType: string,
+  limit = 4,
+) {
+  if (!process.env.DATABASE_URL) return [] as DazitPublicationCardRow[];
+  const sql = neon(process.env.DATABASE_URL);
+  const rows = await sql`
+    with query_params as (
+      select
+        ${slug}::text as "slug",
+        ${level ?? null}::text as "level",
+        ${documentType}::text as "documentType",
+        ${Math.max(1, Math.min(limit, 12))}::int as "limit"
+    )
+    
+    select
+      p.worksheet_id as "worksheetId",
+      p.slug,
+      p.title,
+      p.document_type as "documentType",
+      p.pdf_path as "pdfPath",
+      p.answer_key_pdf_path as "answerKeyPdfPath",
+      case when jsonb_typeof(p.thumbnail_paths) = 'array' and jsonb_array_length(p.thumbnail_paths) > 0
+        then jsonb_build_array(p.thumbnail_paths->0) else '[]'::jsonb end as "thumbnailPaths",
+      p.page_count as "pageCount",
+      p.size_bytes as "sizeBytes",
+      p.published_at as "publishedAt",
+      p.updated_at as "updatedAt",
+      p.excerpt,
+      p.search_snippet as "searchSnippet",
+      p.tags,
+      p.level,
+      p.action_competencies as "actionCompetencies",
+      p.language_competencies as "languageCompetencies",
+      p.action_field as "actionField",
+      p.download_count::int as downloads,
+      coalesce(p.has_answer_key, w.show_solutions, false) as "hasAnswerKey",
+      w.document_size as "documentSize",
+      null as context
+    from dazit_publications p
+    join worksheets w on w.id = p.worksheet_id
+    cross join query_params params
+    where p.slug <> params."slug"
+    order by
+      case when params."level" is not null and p.level = params."level" then 0 else 1 end,
+      case when p.document_type = params."documentType" then 0 else 1 end,
+      p.published_at desc
+    limit (select params."limit" from query_params params)
   ` as DazitPublicationCardRow[];
   return rows;
 }

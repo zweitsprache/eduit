@@ -1420,6 +1420,7 @@ const DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE: Record<WorksheetContext['worksheetT
   'information-gap': 'Wechselspiel',
   domino: 'Domino',
   dialog: 'Dialog',
+  'word-list': 'Wörterliste',
 };
 
 type LearningLinkPublication = {
@@ -2896,6 +2897,7 @@ export default function EditorPage() {
         || parsed.dazitDocumentType === 'Wechselspiel'
         || parsed.dazitDocumentType === 'Domino'
         || parsed.dazitDocumentType === 'Dialog'
+        || parsed.dazitDocumentType === 'Wörterliste'
       ) {
         setDazitDocumentType(parsed.dazitDocumentType);
       }
@@ -9310,6 +9312,7 @@ export default function EditorPage() {
                     <option value="information-gap">Wechselspiel</option>
                     <option value="domino">Domino</option>
                     <option value="dialog">Dialog</option>
+                    <option value="word-list">Wörterliste</option>
                   </select>
                 </label>
 
@@ -9864,6 +9867,7 @@ export default function EditorPage() {
                     { value: 'Wechselspiel', label: 'Wechselspiel' },
                     { value: 'Domino', label: 'Domino' },
                     { value: 'Dialog', label: 'Dialog' },
+                    { value: 'Wörterliste', label: 'Wörterliste' },
                   ]}
                 />
                 {republishScope === 'full' && (

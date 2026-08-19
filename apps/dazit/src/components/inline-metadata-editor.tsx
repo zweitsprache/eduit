@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { Worksheet } from '@/lib/worksheets';
 import { useDazitViewer } from '@/lib/auth/use-dazit-viewer';
 
-const TYPES = ['Arbeitsblatt', 'Merkblatt', 'Verbtabelle', 'Deklinationstabelle', 'Kommunikationskarten', 'Lernkarten', 'Wechselspiel', 'Domino', 'Dialog', 'Leseverstehen'];
+const TYPES = ['Arbeitsblatt', 'Merkblatt', 'Verbtabelle', 'Deklinationstabelle', 'Kommunikationskarten', 'Lernkarten', 'Wechselspiel', 'Domino', 'Dialog', 'Wörterliste', 'Leseverstehen'];
 const LEVELS = ['A1.1', 'A1.2', 'A2.1', 'A2.2', 'B1.1', 'B1.2'];
 const ACTIONS = ['Lesen', 'Hören', 'Monologisches Sprechen', 'Dialogisches Sprechen', 'Monologisches Schreiben', 'Dialogisches Schreiben'];
 const LANGUAGES = ['Wortschatz', 'Grammatik', 'Aussprache', 'Intonation', 'Orthografie'];

@@ -10,6 +10,7 @@ export function SiteFooter() {
           <Link href="/typ/deklinationstabelle">Deklinationstabellen</Link>
           <Link href="/typ/lernkarten">Lernkarten</Link>
           <Link href="/typ/dialog">Dialoge</Link>
+          <Link href="/typ/worterliste">Wörterlisten</Link>
           <Link href="/typ/leseverstehen">Leseverstehen</Link>
         </nav>
         <nav aria-label="Sprachniveaus">

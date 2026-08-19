@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
 import { WorksheetCard } from '@/components/worksheet-card';
 import { DocumentGallery } from '@/components/document-gallery';
-import { getWorksheetCards, worksheetBySlug } from '@/lib/worksheets';
+import { getFamilyWorksheetCards, getRelatedWorksheetCards, getWorksheetCards, worksheetBySlug } from '@/lib/worksheets';
 import { absoluteDazitUrl } from '@/lib/site-url';
 import { InlineMetadataEditor } from '@/components/inline-metadata-editor';
 import { InlineHtmlEditor } from '@/components/inline-html-editor';
@@ -15,6 +15,11 @@ import { AdminOnly } from '@/components/admin-only';
 type Props = { params: Promise<{ slug: string }> };
 
 export const revalidate = 86400;
+
+export async function generateStaticParams() {
+  const worksheets = await getWorksheetCards();
+  return worksheets.map(({ slug }) => ({ slug }));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const worksheet = await worksheetBySlug((await params).slug);
@@ -96,19 +101,10 @@ export default async function WorksheetDetailPage({ params }: Props) {
   const detailTitle = `${worksheet.title} | ${worksheet.documentType}${worksheet.level ? ` ${worksheet.level}` : ''}`;
   const detailDescription = snippet
     || `${worksheet.documentType}${worksheet.level ? ` für ${worksheet.level}` : ''} zum direkten Einsatz im DaZ-Unterricht.`;
-  const allWorksheets = await getWorksheetCards();
-  const related = allWorksheets
-    .filter(({ slug, subject }) => slug !== worksheet.slug && subject === worksheet.subject)
-    .slice(0, 4);
-  const fallbackRelated = related.length >= 4
-    ? related
-    : [...related, ...allWorksheets.filter(({ slug }) => slug !== worksheet.slug && !related.some((item) => item.slug === slug))]
-      .slice(0, 4);
-  const familyMaterials = (worksheet.relationships || [])
-    .map((relationship) => allWorksheets.find(
-      ({ worksheetId }) => worksheetId === relationship.worksheetId,
-    ))
-    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const [familyMaterials, relatedMaterials] = await Promise.all([
+    worksheet.worksheetId ? getFamilyWorksheetCards(worksheet.worksheetId) : Promise.resolve([]),
+    getRelatedWorksheetCards(worksheet.slug, worksheet.level, worksheet.documentType, 4),
+  ]);
   const worksheetUrl = absoluteDazitUrl(`/documents/${worksheet.slug}`);
   const snippetUrl = worksheetUrl.replace(/^https?:\/\//, '');
   const webpageId = `${worksheetUrl}#webpage`;
@@ -157,7 +153,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
         '@type': 'EducationalAudience',
         educationalRole: 'student',
       },
-      isPartOf: worksheet.relationships?.length
+      isPartOf: familyMaterials.length > 0
         ? {
           '@type': 'Collection',
           name: 'Arbeitsblatt-Reihe',
@@ -322,7 +318,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
         <section className="related">
           <h2>Ähnliche Dokumente</h2>
           <div className="related-grid">
-            {fallbackRelated.map((item) => <WorksheetCard key={item.slug} worksheet={item} />)}
+            {relatedMaterials.map((item) => <WorksheetCard key={item.slug} worksheet={item} />)}
           </div>
         </section>
       </main>
