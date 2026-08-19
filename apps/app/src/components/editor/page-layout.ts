@@ -29,8 +29,8 @@ export function getSectionStartsFromPageBreaks(
       return true;
     }
     const breakPage = getPageForPosition?.(pos);
-    if (breakPage) {
-      const restartPage = Math.min(pageCount, breakPage + 1);
+    if (breakPage && breakPage >= 1) {
+      const restartPage = Math.min(pageCount, breakPage);
       if (restartPage > 1) restartPages.push(restartPage);
     }
     return false;

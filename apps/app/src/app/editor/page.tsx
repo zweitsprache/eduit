@@ -423,6 +423,39 @@ const SelectablePageBreak = PageBreak.extend({
       },
     };
   },
+  addNodeView() {
+    return ({ editor }) => {
+      const dom = document.createElement('div');
+      dom.setAttribute('data-type', 'pageBreak');
+      dom.classList.add('tiptap-page-break-node');
+      dom.setAttribute('data-node-view', 'custom');
+
+      const resetPageBreakSpacer = () => {
+        dom.style.height = '0px';
+        dom.style.minHeight = '0px';
+        dom.style.margin = '0';
+        dom.style.padding = '0';
+        dom.style.overflow = 'visible';
+        dom.style.position = 'relative';
+      };
+
+      resetPageBreakSpacer();
+
+      const pagesStorage = editor.storage?.pages;
+      if (pagesStorage && typeof pagesStorage === 'object' && pagesStorage.onAfterPageLayoutCallbacks instanceof Map) {
+        pagesStorage.onAfterPageLayoutCallbacks.set(dom, resetPageBreakSpacer);
+      }
+
+      return {
+        dom,
+        destroy() {
+          if (pagesStorage && typeof pagesStorage === 'object' && pagesStorage.onAfterPageLayoutCallbacks instanceof Map) {
+            pagesStorage.onAfterPageLayoutCallbacks.delete(dom);
+          }
+        },
+      };
+    };
+  },
 });
 const DOCUMENT_HEADER = '<p></p>';
 const DOCUMENT_CREATOR = 'Creator name';
