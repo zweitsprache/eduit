@@ -424,26 +424,51 @@ const SelectablePageBreak = PageBreak.extend({
     };
   },
   addNodeView() {
-    return ({ editor }) => {
+    return ({ editor, getPos }) => {
       const dom = document.createElement('div');
       dom.setAttribute('data-type', 'pageBreak');
       dom.classList.add('tiptap-page-break-node');
+      dom.classList.add('tiptap-page-break-node--pages-mode');
       dom.setAttribute('data-node-view', 'custom');
 
-      const resetPageBreakSpacer = () => {
-        dom.style.height = '0px';
-        dom.style.minHeight = '0px';
-        dom.style.margin = '0';
-        dom.style.padding = '0';
-        dom.style.overflow = 'visible';
-        dom.style.position = 'relative';
+      // Mirrors @tiptap-pro/extension-pagebreak's default node view: Pages
+      // doesn't size this element itself, it calls back into
+      // onAfterPageLayoutCallbacks and expects the callback to measure the
+      // gap to the next page footer and apply it as this node's height.
+      // A prior custom node view here (for selectable:true) always reset
+      // the height to 0, which silently turned every manual page break into
+      // a non-functional dashed divider.
+      let lastHeight = 0;
+      const updatePageBreakSpacer = () => {
+        if (getPos() === undefined) return;
+        const editorDom = editor.view.dom;
+        if (!(editorDom instanceof HTMLElement)) return;
+        const paginationContainer = editorDom.querySelector('[data-tiptap-pagination]');
+        if (!paginationContainer) return;
+        const footers = Array.from(paginationContainer.querySelectorAll<HTMLElement>('.tiptap-page-footer'));
+        if (footers.length === 0) return;
+        const nodeTop = dom.getBoundingClientRect().top;
+        const nextFooter = footers.find((footer) => footer.getBoundingClientRect().top > nodeTop);
+        if (!nextFooter) return;
+        const editorRect = editorDom.getBoundingClientRect();
+        const widthRatio = editorDom.offsetWidth > 0 ? editorRect.width / editorDom.offsetWidth : 0;
+        const heightRatio = editorDom.offsetHeight > 0 ? editorRect.height / editorDom.offsetHeight : 0;
+        const styleZoom = Number.parseFloat(editorDom.style.zoom || '1') || 1;
+        const zoomRatioValue = widthRatio || heightRatio || styleZoom;
+        const zoomRatio = Number.isFinite(zoomRatioValue) && zoomRatioValue > 0 ? zoomRatioValue : 1;
+        const fillHeight = Math.max(0, nextFooter.getBoundingClientRect().top - nodeTop) / zoomRatio;
+        const nextHeight = fillHeight < 1 ? 0 : fillHeight;
+        if (Math.abs(lastHeight - nextHeight) < 1) return;
+        lastHeight = nextHeight;
+        dom.style.height = `${nextHeight}px`;
       };
 
-      resetPageBreakSpacer();
-
+      // Not called immediately: editor.view isn't available yet during
+      // initial node view construction. Pages invokes this later via
+      // onAfterPageLayoutCallbacks once layout has actually happened.
       const pagesStorage = editor.storage?.pages;
       if (pagesStorage && typeof pagesStorage === 'object' && pagesStorage.onAfterPageLayoutCallbacks instanceof Map) {
-        pagesStorage.onAfterPageLayoutCallbacks.set(dom, resetPageBreakSpacer);
+        pagesStorage.onAfterPageLayoutCallbacks.set(dom, updatePageBreakSpacer);
       }
 
       return {

@@ -5336,15 +5336,22 @@
   counter-reset: rich-text-ordered-item;
 }
 
+/* display: grid (or flex/table/etc.) makes an li establish its own Block
+   Formatting Context. Tiptap Pages cannot split BFC blocks across pages —
+   it can only move them whole — and its move mechanism collides with the
+   floated page-gap element it inserts, producing a squashed 0-width row
+   when a row's top lands exactly on a page boundary. Keeping li a plain
+   (non-BFC) block and positioning the index badge absolutely lets Pages
+   split normally between rows instead. */
 .rich-text-node__content ol > li,
 .rich-text-modal-input ol > li {
-  display: grid;
-  grid-template-columns: var(--custom-block-index-size) minmax(0, 1fr);
+  position: relative;
   min-width: 0;
   min-height: var(--custom-block-row-height);
-  align-items: center;
-  column-gap: var(--custom-block-inline-gap);
   padding-block: var(--custom-block-row-padding-block);
+  padding-inline-start: calc(
+    var(--custom-block-index-size) + var(--custom-block-inline-gap)
+  );
   border-bottom: var(--custom-block-row-border-width) solid
     var(--custom-block-row-border-color);
   break-inside: avoid;
@@ -5360,8 +5367,15 @@
 
 .rich-text-node__content ol > li::before,
 .rich-text-modal-input ol > li::before {
-  display: inline-flex;
+  position: absolute;
+  /* Anchored to the bottom (not vertically centered in the li's full box)
+     because Pages can pad the top of an li to push it past a page break;
+     centering against that inflated height would float the badge into the
+     empty page-gap instead of next to the visible text. */
+  bottom: var(--custom-block-row-padding-block);
   box-sizing: border-box;
+  inset-inline-start: 0;
+  display: inline-flex;
   width: var(--custom-block-index-size);
   height: var(--custom-block-index-size);
   align-items: center;
