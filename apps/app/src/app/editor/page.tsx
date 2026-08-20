@@ -39,6 +39,7 @@ import {
   TextAlignEnd,
   TextAlignStart,
   FileUp,
+  Volume2,
   WandSparkles,
   X,
 } from 'lucide-react';
@@ -180,6 +181,7 @@ import {
   DEFAULT_DIALOGUE_SPEAKER_NAMES,
   Dialogue,
   type DialogueAttrs,
+  type DialogueAudio,
   type DialogueItem,
   type DialogueSpeaker,
 } from '@/components/editor/dialogue-node';
@@ -275,6 +277,7 @@ import {
 } from '@/components/editor/occupation-portrait-ai-modal';
 import { WordGridCSVImportModal } from '@/components/editor/word-grid-csv-import-modal';
 import { DialogueAIModal } from '@/components/editor/dialogue-ai-modal';
+import { DialogueAudioModal } from '@/components/editor/dialogue-audio-modal';
 import { MiniFormAIModal } from '@/components/editor/mini-form-ai-modal';
 import {
   FillInTheBlankAIModal,
@@ -1625,6 +1628,8 @@ export default function EditorPage() {
     useState<ContentEditorBlock | null>(null);
   const [wordGridCSVBlock, setWordGridCSVBlock] =
     useState<ContentEditorBlock | null>(null);
+  const [dialogueAudioBlock, setDialogueAudioBlock] =
+    useState<{ pos: number; type: 'dialogue' } | null>(null);
   const [dialogueAIBlock, setDialogueAIBlock] =
     useState<ContentEditorBlock | null>(null);
   const [miniFormAIBlock, setMiniFormAIBlock] =
@@ -5691,6 +5696,29 @@ export default function EditorPage() {
                     <FileUp className="size-4" />
                     CSV Import
                   </button>
+                </>
+              )}
+              {selectedCustomBlock.type === 'dialogue' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setDialogueAudioBlock({
+                      pos: selectedCustomBlock.pos,
+                      type: 'dialogue',
+                    })}
+                    className="flex w-full items-center justify-start gap-2 rounded-lg border border-primary bg-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+                  >
+                    <Volume2 className="size-4" />
+                    {selectedDialogueAttrs?.audio ? 'Edit audio' : 'Generate audio'}
+                  </button>
+                  {selectedDialogueAttrs?.audio && (
+                    <audio
+                      controls
+                      preload="none"
+                      src={selectedDialogueAttrs.audio.url}
+                      className="w-full"
+                    />
+                  )}
                 </>
               )}
             </div>
@@ -10970,6 +10998,26 @@ export default function EditorPage() {
           }).run();
           setDialogueAIBlock(null);
           setContentEditorBlock(block);
+        }}
+      />
+      <DialogueAudioModal
+        contentLanguage={documentContext.contentLanguage}
+        initialAudio={selectedDialogueAttrs?.audio ?? null}
+        items={selectedDialogueAttrs?.items ?? []}
+        open={dialogueAudioBlock !== null}
+        speakerNames={
+          selectedDialogueAttrs?.speakerNames
+          ?? DEFAULT_DIALOGUE_SPEAKER_NAMES
+        }
+        onClose={() => setDialogueAudioBlock(null)}
+        onGenerated={(audio: DialogueAudio) => {
+          const block = dialogueAudioBlock;
+          if (!block) return;
+          editor.chain().command(({ tr }) => {
+            if (tr.doc.nodeAt(block.pos)?.type.name !== 'dialogue') return false;
+            tr.setNodeAttribute(block.pos, 'audio', audio);
+            return true;
+          }).run();
         }}
       />
       <MiniFormAIModal

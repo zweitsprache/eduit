@@ -4,6 +4,7 @@ import { Fragment, type CSSProperties } from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 import { MessageChatSquare } from '@untitledui/icons';
+import QRCode from 'react-qr-code';
 import {
   BlockInstruction,
   CustomBlockRoot,
@@ -28,6 +29,16 @@ export type DialogueItem = {
   text: string;
 };
 
+export type DialogueAudio = {
+  url: string;
+  voices: Partial<Record<DialogueSpeaker, string>>;
+  instruction: string;
+  language: string;
+  speakingRate: number;
+  durationSeconds: number;
+  updatedAt: string;
+};
+
 export type DialogueAttrs = {
   items: DialogueItem[];
   speakerNames: DialogueSpeakerNames;
@@ -39,6 +50,7 @@ export type DialogueAttrs = {
   compactSingleLetterBlanks: boolean;
   hideBlankNumbers: boolean;
   showFirstAsExample: boolean;
+  audio: DialogueAudio | null;
 };
 
 export const DEFAULT_DIALOGUE_SPEAKER_NAMES: DialogueSpeakerNames = {
@@ -79,6 +91,11 @@ function defaultSpeakerNames(): DialogueSpeakerNames {
   return { ...DEFAULT_DIALOGUE_SPEAKER_NAMES };
 }
 
+function buildListenUrl(audioUrl: string): string | null {
+  if (typeof window === 'undefined') return null;
+  return `${window.location.origin}/listen?src=${encodeURIComponent(audioUrl)}`;
+}
+
 function parseSpeakerNames(value: string | null): DialogueSpeakerNames {
   if (!value) return defaultSpeakerNames();
   try {
@@ -91,6 +108,26 @@ function parseSpeakerNames(value: string | null): DialogueSpeakerNames {
     };
   } catch {
     return defaultSpeakerNames();
+  }
+}
+
+function parseAudio(value: string | null): DialogueAudio | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(decodeURIComponent(value));
+    return typeof parsed?.url === 'string' && parsed.url
+      ? {
+          url: parsed.url,
+          voices: typeof parsed.voices === 'object' && parsed.voices ? parsed.voices : {},
+          instruction: typeof parsed.instruction === 'string' ? parsed.instruction : '',
+          language: typeof parsed.language === 'string' ? parsed.language : '',
+          speakingRate: Number(parsed.speakingRate) || 1,
+          durationSeconds: Number(parsed.durationSeconds) || 0,
+          updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : '',
+        }
+      : null;
+  } catch {
+    return null;
   }
 }
 
@@ -112,7 +149,9 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
     compactSingleLetterBlanks,
     hideBlankNumbers,
     showFirstAsExample,
+    audio,
   } = node.attrs as DialogueAttrs;
+  const listenUrl = audio?.url ? buildListenUrl(audio.url) : null;
   let blankOffset = 0;
   let speakerOrdinal = 0;
   let previousSpeaker: DialogueSpeaker | null = null;
@@ -144,6 +183,12 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
       selected={selected}
       className={showOriginal ? 'dialogue-node dialogue-node--with-original' : 'dialogue-node'}
     >
+      {listenUrl && (
+        <div className="dialogue-node__audio-qr" aria-hidden="true">
+          <QRCode value={listenUrl} size={64} className="dialogue-node__audio-qr-code" />
+          <span className="dialogue-node__audio-qr-label">Listen</span>
+        </div>
+      )}
       {showInstruction && (
         <BlockInstruction>
           {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.dialogue}
@@ -363,6 +408,13 @@ export const Dialogue = Node.create({
           'data-dialogue-context': encodeURIComponent(attributes.context ?? ''),
         }),
       },
+      audio: {
+        default: null,
+        parseHTML: (element) => parseAudio(element.getAttribute('data-dialogue-audio')),
+        renderHTML: (attributes) => (attributes.audio ? {
+          'data-dialogue-audio': encodeURIComponent(JSON.stringify(attributes.audio)),
+        } : {}),
+      },
     };
   },
 
@@ -396,6 +448,7 @@ export const Dialogue = Node.create({
               compactSingleLetterBlanks: attrs.compactSingleLetterBlanks ?? true,
               hideBlankNumbers: attrs.hideBlankNumbers ?? false,
               showFirstAsExample: attrs.showFirstAsExample ?? false,
+              audio: attrs.audio ?? null,
             },
           }),
     };

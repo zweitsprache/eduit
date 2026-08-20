@@ -76,6 +76,6 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!auth|api/auth|api/polar/webhook|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.[^/]+$).*)',
+    '/((?!auth|listen|api/auth|api/polar/webhook|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.[^/]+$).*)',
   ],
 };

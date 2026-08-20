@@ -134,21 +134,6 @@ export function WorksheetManager() {
     if (stored === 'cards' || stored === 'list') setViewMode(stored);
   }, []);
 
-  useEffect(() => {
-    const refresh = () => void load();
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') refresh();
-    };
-    window.addEventListener('focus', refresh);
-    window.addEventListener('pageshow', refresh);
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-    return () => {
-      window.removeEventListener('focus', refresh);
-      window.removeEventListener('pageshow', refresh);
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
-    };
-  }, [load]);
-
   const visibleWorksheets = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase(locale);
     return worksheets
