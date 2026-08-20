@@ -41,8 +41,9 @@ function collectGrammarTagOptions(
 }
 
 const rawOptions: GrammarTagOption[] = [];
-const grammarNodes = Array.isArray((taxonomy as GrammarTaxonomy).grammar)
-  ? (taxonomy as GrammarTaxonomy).grammar
+const taxonomyData = taxonomy as GrammarTaxonomy;
+const grammarNodes: GrammarTagNode[] = Array.isArray(taxonomyData.grammar)
+  ? taxonomyData.grammar
   : [];
 collectGrammarTagOptions(grammarNodes, [], rawOptions);
 
