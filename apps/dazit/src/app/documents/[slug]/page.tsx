@@ -247,7 +247,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
                   <DownloadAuthGate
                     className="download-primary"
                     dataVariant="answer-key"
-                    downloadUrl={worksheet.answerKeyPdfUrl ?? worksheet.pdfUrl}
+                    downloadUrl={worksheet.answerKeyPdfUrl}
                   >
                     <Download01 /> Lösungsblatt
                   </DownloadAuthGate>

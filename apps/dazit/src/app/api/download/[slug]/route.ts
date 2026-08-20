@@ -30,7 +30,12 @@ export async function GET(
   const worksheet = await worksheetBySlug((await params).slug);
   if (!worksheet) return new Response('PDF not found.', { status: 404 });
   const isAnswerKey = new URL(request.url).searchParams.get('type') === 'answer-key';
-  const blobPath = isAnswerKey ? worksheet.answerKeyBlobPath : worksheet.blobPath;
+  const blobPath = isAnswerKey
+    ? worksheet.answerKeyBlobPath
+    : worksheet.blobPath;
+  if (isAnswerKey && (!blobPath || blobPath === worksheet.blobPath)) {
+    return new Response('PDF not found.', { status: 404 });
+  }
   if (!blobPath) return new Response('PDF not found.', { status: 404 });
   let result = null as Awaited<ReturnType<typeof get>> | null;
   for (const token of tokens) {

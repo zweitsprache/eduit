@@ -106,6 +106,9 @@ function rowFormat(documentSize: string): string | undefined {
 
 function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Worksheet | null {
   if (!row.slug || !row.title || !row.pdfPath) return null;
+  const answerKeyBlobPath = row.answerKeyPdfPath && row.answerKeyPdfPath !== row.pdfPath
+    ? row.answerKeyPdfPath
+    : undefined;
   const subjects: Subject[] = ['A1.1', 'Language', 'Science', 'Humanities', 'Arts', 'PE & health'];
   const documentTypes: Worksheet['documentType'][] = [
     'Worksheet',
@@ -141,7 +144,7 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
     language: rowLanguage(row.context),
     difficulty: rowDifficulty(row.level),
     downloads: String(row.downloads || 0),
-    hasAnswerKey: Boolean(row.hasAnswerKey),
+    hasAnswerKey: Boolean(row.hasAnswerKey && answerKeyBlobPath),
     size: formatSize(row.sizeBytes),
     format: rowFormat(row.documentSize),
     added: Number.isNaN(publishedAt.getTime())
@@ -161,9 +164,9 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
               : 'lavender',
     tags: Array.isArray(row.tags) ? row.tags : [],
     pdfUrl: `/api/download/${encodeURIComponent(row.slug)}`,
-    answerKeyPdfUrl: row.answerKeyPdfPath ? `/api/download/${encodeURIComponent(row.slug)}?type=answer-key` : undefined,
+    answerKeyPdfUrl: answerKeyBlobPath ? `/api/download/${encodeURIComponent(row.slug)}?type=answer-key` : undefined,
     blobPath: row.pdfPath,
-    answerKeyBlobPath: row.answerKeyPdfPath || undefined,
+    answerKeyBlobPath,
     thumbnailPaths: row.thumbnailPaths || [],
     thumbnailUrls: (row.thumbnailPaths || []).map(
       (path, index) => buildThumbnailUrl(path, row.worksheetId, index + 1, row.updatedAt),

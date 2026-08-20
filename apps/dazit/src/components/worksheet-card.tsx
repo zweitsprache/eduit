@@ -90,7 +90,7 @@ export function WorksheetCard({
                 className="card-download"
                 dataVariant="answer-key"
                 canDownload={canDownload}
-                downloadUrl={worksheet.answerKeyPdfUrl ?? worksheet.pdfUrl}
+                downloadUrl={worksheet.answerKeyPdfUrl}
               >
                 <ArrowDownToLine aria-hidden="true" />
                 <span className="sr-only">Lösungsblatt herunterladen</span>
