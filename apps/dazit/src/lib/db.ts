@@ -31,6 +31,7 @@ export type DazitPublicationRow = {
   level: string | null;
   actionCompetencies: string[];
   languageCompetencies: string[];
+  grammarTags: string[];
   actionCompetencyContributionHtml: string | null;
   actionField: string | null;
   downloads: number;
@@ -57,6 +58,7 @@ export type DazitPublicationCardRow = {
   level: string | null;
   actionCompetencies: string[];
   languageCompetencies: string[];
+  grammarTags: string[];
   actionField: string | null;
   downloads: number;
   hasAnswerKey: boolean;
@@ -101,6 +103,7 @@ export type DazitPublicationMetadata = {
   level: string | null;
   actionCompetencies: string[];
   languageCompetencies: string[];
+  grammarTags: string[];
   actionCompetencyContributionHtml: string | null;
   actionField: string | null;
   downloads: number;
@@ -131,6 +134,7 @@ export async function getPublicationMetadata() {
       level,
       action_competencies as "actionCompetencies",
       language_competencies as "languageCompetencies",
+      grammar_tags as "grammarTags",
       action_competency_contribution_html as "actionCompetencyContributionHtml"
       , action_field as "actionField"
       , download_count::int as downloads
@@ -222,6 +226,7 @@ export async function getPublishedWorksheetsFromDb() {
       p.level,
       p.action_competencies as "actionCompetencies",
       p.language_competencies as "languageCompetencies",
+      p.grammar_tags as "grammarTags",
       p.action_competency_contribution_html as "actionCompetencyContributionHtml",
       p.action_field as "actionField",
       p.download_count::int as downloads,
@@ -258,6 +263,7 @@ export async function getPublishedWorksheetBySlugFromDb(slug: string) {
       p.level,
       p.action_competencies as "actionCompetencies",
       p.language_competencies as "languageCompetencies",
+      p.grammar_tags as "grammarTags",
       p.action_competency_contribution_html as "actionCompetencyContributionHtml",
       p.action_field as "actionField",
       p.download_count::int as downloads,
@@ -295,6 +301,7 @@ export async function getPublishedWorksheetCardsFromDb() {
       p.level,
       p.action_competencies as "actionCompetencies",
       p.language_competencies as "languageCompetencies",
+      p.grammar_tags as "grammarTags",
       p.action_field as "actionField",
       p.download_count::int as downloads,
       coalesce(p.has_answer_key, w.show_solutions, false) as "hasAnswerKey",
@@ -339,6 +346,7 @@ export async function getFamilyWorksheetCardsFromDb(worksheetId: string) {
       p.level,
       p.action_competencies as "actionCompetencies",
       p.language_competencies as "languageCompetencies",
+      p.grammar_tags as "grammarTags",
       p.action_field as "actionField",
       p.download_count::int as downloads,
       coalesce(p.has_answer_key, w.show_solutions, false) as "hasAnswerKey",
@@ -388,6 +396,7 @@ export async function getRelatedWorksheetCardsFromDb(
       p.level,
       p.action_competencies as "actionCompetencies",
       p.language_competencies as "languageCompetencies",
+      p.grammar_tags as "grammarTags",
       p.action_field as "actionField",
       p.download_count::int as downloads,
       coalesce(p.has_answer_key, w.show_solutions, false) as "hasAnswerKey",

@@ -45,6 +45,18 @@ export async function POST(request: Request) {
         border: 0 !important;
       }
       .tiptap-pagination-gap { display: none !important; height: 0 !important; border: 0 !important; }
+      /* Keep manual page-break spacing for pagination, but hide editor markers. */
+      .tiptap-page-break-node,
+      .tiptap-page-break-node--pages-mode {
+        border-top-color: transparent !important;
+      }
+      .tiptap-page-break-node::before,
+      .tiptap-page-break-node::after,
+      .tiptap-page-break-node--pages-mode::before,
+      .tiptap-page-break-node--pages-mode::after {
+        display: none !important;
+        content: none !important;
+      }
       .custom-block--selected, .heading-node--selected, .ProseMirror-selectednode {
         border-color: transparent !important; outline: 0 !important; box-shadow: none !important;
       }

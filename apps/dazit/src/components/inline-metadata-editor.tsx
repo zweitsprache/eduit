@@ -24,6 +24,7 @@ export function InlineMetadataEditor({ worksheet }: { worksheet: Worksheet }) {
     level: worksheet.level || 'A1.1', tags: worksheet.tags.join(', '),
     actionCompetencies: worksheet.actionCompetencies || [],
     languageCompetencies: worksheet.languageCompetencies || [],
+    grammarTags: (worksheet.grammarTags || []).join(', '),
     actionField: worksheet.actionField || '',
   });
   const toggle = (key: 'actionCompetencies' | 'languageCompetencies', value: string) => setForm((current) => ({
@@ -41,6 +42,7 @@ export function InlineMetadataEditor({ worksheet }: { worksheet: Worksheet }) {
           descriptionHtml: worksheet.descriptionHtml || '',
           actionCompetencyContributionHtml: worksheet.actionCompetencyContributionHtml || '',
           tags: form.tags.split(',').map((tag) => tag.trim()).filter(Boolean),
+          grammarTags: form.grammarTags.split(',').map((tag) => tag.trim()).filter(Boolean),
         }),
       });
       const result = await response.json().catch(() => null) as { error?: string } | null;
@@ -65,6 +67,7 @@ export function InlineMetadataEditor({ worksheet }: { worksheet: Worksheet }) {
       <label>Schlagwörter<input value={form.tags} onChange={(event) => setForm({ ...form, tags: event.target.value })} /><small>Mit Kommas trennen</small></label>
       <fieldset><legend>Sprachhandlungskompetenz</legend>{ACTIONS.map((value) => <label key={value}><input checked={form.actionCompetencies.includes(value)} onChange={() => toggle('actionCompetencies', value)} type="checkbox" /> {value}</label>)}</fieldset>
       <fieldset><legend>Sprachkompetenz</legend>{LANGUAGES.map((value) => <label key={value}><input checked={form.languageCompetencies.includes(value)} onChange={() => toggle('languageCompetencies', value)} type="checkbox" /> {value}</label>)}</fieldset>
+      <label>Grammatik-Tags (IDs)<textarea maxLength={4000} rows={3} value={form.grammarTags} onChange={(event) => setForm({ ...form, grammarTags: event.target.value })} /><small>Mit Kommas trennen, z.B. verbgrammatik.tempus.perfekt</small></label>
       <label>Handlungsfeld<select value={form.actionField} onChange={(event) => setForm({ ...form, actionField: event.target.value })}><option value="">Nicht definiert</option>{FIELDS.map((value) => <option key={value}>{value}</option>)}</select></label>
       {error && <p className="metadata-editor-error">{error}</p>}
       <div className="metadata-editor-actions"><button onClick={() => setEditing(false)} type="button">Abbrechen</button><button disabled={saving} onClick={save} type="button">{saving ? 'Speichert …' : 'Speichern'}</button></div>

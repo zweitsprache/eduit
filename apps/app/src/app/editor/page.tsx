@@ -4404,7 +4404,20 @@ export default function EditorPage() {
     if (!editorElement || !appElement) throw new Error('The worksheet is not ready.');
     appElement.classList.add('pdf-exporting');
 
+    const previousShowSolutionsAttribute = editorElement.getAttribute('data-show-solutions');
+
     try {
+      if (options?.showSolutions) {
+        // Some solution markers are drawn at runtime (SVG overlays). Force solution mode
+        // on the live editor briefly so those overlays are present before cloning.
+        editorElement.setAttribute('data-show-solutions', 'true');
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => resolve());
+          });
+        });
+      }
+
       await document.fonts.ready;
       const visitedStyleSheets = new Set<CSSStyleSheet>();
       const head = Array.from(document.styleSheets).map((styleSheet) => {
@@ -4459,6 +4472,11 @@ export default function EditorPage() {
 
       return { pdf: await response.blob(), exportPayload };
     } finally {
+      if (previousShowSolutionsAttribute === null) {
+        editorElement.removeAttribute('data-show-solutions');
+      } else {
+        editorElement.setAttribute('data-show-solutions', previousShowSolutionsAttribute);
+      }
       appElement.classList.remove('pdf-exporting');
     }
   };

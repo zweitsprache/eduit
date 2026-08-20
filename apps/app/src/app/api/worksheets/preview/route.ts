@@ -163,6 +163,18 @@ export async function POST(request: Request) {
           .preview-document > .tiptap {
             margin-top: 0 !important;
           }
+          /* Keep manual page-break spacing for layout, but hide editor markers. */
+          .preview-document .tiptap-page-break-node,
+          .preview-document .tiptap-page-break-node--pages-mode {
+            border-top-color: transparent !important;
+          }
+          .preview-document .tiptap-page-break-node::before,
+          .preview-document .tiptap-page-break-node::after,
+          .preview-document .tiptap-page-break-node--pages-mode::before,
+          .preview-document .tiptap-page-break-node--pages-mode::after {
+            display: none !important;
+            content: none !important;
+          }
           .ProseMirror-selectednode::after,
           .custom-block--selected::after,
           .heading-node--selected::after,

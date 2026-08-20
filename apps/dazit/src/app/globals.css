@@ -1374,6 +1374,23 @@ button { color: inherit; }
 .metadata-grid dt { color: #92949f; }
 .metadata-grid dd { margin: 0; font-weight: 700; text-align: right; }
 .metadata-grid .metadata-grid-wide dd { text-align: left; }
+.grammar-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.grammar-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #e4e6ec;
+  background: #f7f8fb;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.3;
+  color: #464a59;
+}
 .detail-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 22px; color: #8b8d98; }
 .detail-tags span { padding: 6px 13px; background: #f8f8f8; }
 .related-badge { color: #5b3f91; font-size: 11px; font-weight: 800; }

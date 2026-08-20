@@ -35,6 +35,12 @@ function cleanList(value: unknown, allowed?: string[]) {
     .slice(0, 10);
 }
 
+function cleanGrammarTagList(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.map((item) => cleanText(item, 180)).filter(Boolean))]
+    .slice(0, 80);
+}
+
 export async function PATCH(request: Request, { params }: Props) {
   try {
     const currentUser = await getCurrentDazitUser();
@@ -68,6 +74,7 @@ export async function PATCH(request: Request, { params }: Props) {
         tags = ${JSON.stringify(cleanList(payload.tags))}::jsonb,
         action_competencies = ${JSON.stringify(cleanList(payload.actionCompetencies, actionCompetencies))}::jsonb,
         language_competencies = ${JSON.stringify(cleanList(payload.languageCompetencies, languageCompetencies))}::jsonb,
+        grammar_tags = ${JSON.stringify(cleanGrammarTagList(payload.grammarTags))}::jsonb,
         action_competency_contribution_html = ${cleanHtml(payload.actionCompetencyContributionHtml)},
         action_field = ${actionFields.includes(actionField) ? actionField : null}, updated_at = now()
       where worksheet_id = ${worksheetId}
@@ -80,7 +87,7 @@ export async function PATCH(request: Request, { params }: Props) {
       const manifest = await new Response(manifestResult.stream).json() as Record<string, unknown>;
       await put(manifestPath, JSON.stringify({
         ...manifest, title, description: excerpt, searchSnippet: searchSnippet || undefined, documentType, subject: level,
-        grade: level, tags: cleanList(payload.tags),
+        grade: level, tags: cleanList(payload.tags), grammarTags: cleanGrammarTagList(payload.grammarTags),
       }, null, 2), {
         access: 'private', addRandomSuffix: false, allowOverwrite: true,
         contentType: 'application/json', token,
