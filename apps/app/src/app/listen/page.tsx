@@ -4,14 +4,9 @@ export const metadata = {
   title: 'Listen — Eduit',
 };
 
-// Only ever render <audio> for our own public blob storage URLs.
+// Only ever render <audio> for our own public dialogue-audio proxy route.
 function isAllowedAudioSrc(src: string): boolean {
-  try {
-    const url = new URL(src);
-    return url.protocol === 'https:' && url.hostname.endsWith('.public.blob.vercel-storage.com');
-  } catch {
-    return false;
-  }
+  return src.startsWith('/api/public/dialogue-audio?path=');
 }
 
 export default async function ListenPage({

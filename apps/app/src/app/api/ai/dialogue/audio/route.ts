@@ -130,10 +130,11 @@ export async function POST(request: Request) {
     });
 
     const audio = concatMp3(parts);
-    // Public access: the QR-linked "listen" page must play this without login.
-    // addRandomSuffix keeps the URL unguessable since there is no auth check.
+    // Store is private-only (public access is rejected). Serve it through the
+    // unauthenticated proxy route instead; addRandomSuffix is the access token
+    // since the "listen" page must play this without login.
     const blob = await put(`dialogue-audio-public/${user.id}/dialogue.mp3`, audio, {
-      access: 'public',
+      access: 'private',
       addRandomSuffix: true,
       contentType: 'audio/mpeg',
       cacheControlMaxAge: 31_536_000,
@@ -141,7 +142,7 @@ export async function POST(request: Request) {
 
     return Response.json({
       audio: {
-        url: blob.url,
+        url: `/api/public/dialogue-audio?path=${encodeURIComponent(blob.pathname)}`,
         byteSize: audio.byteLength,
         durationSeconds: estimateMp3Seconds(audio.byteLength),
         lineCount: lines.length,
