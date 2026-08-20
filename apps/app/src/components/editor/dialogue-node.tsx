@@ -183,12 +183,6 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
       selected={selected}
       className={showOriginal ? 'dialogue-node dialogue-node--with-original' : 'dialogue-node'}
     >
-      {listenUrl && (
-        <div className="dialogue-node__audio-qr" aria-hidden="true">
-          <QRCode value={listenUrl} size={64} className="dialogue-node__audio-qr-code" />
-          <span className="dialogue-node__audio-qr-label">Listen</span>
-        </div>
-      )}
       {showInstruction && (
         <BlockInstruction>
           {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.dialogue}
@@ -212,11 +206,16 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
       <div
         className={`dialogue-node__rows${
           showSpeakerNames ? ' dialogue-node__rows--speaker-names' : ''
-        }`}
+        }${listenUrl ? ' dialogue-node__rows--with-audio' : ''}`}
         style={{
           '--dialogue-speaker-badge-width': `${speakerBadgeWidth}ch`,
         } as CSSProperties}
       >
+        {listenUrl && (
+          <div className="dialogue-node__audio-qr" aria-hidden="true">
+            <QRCode value={listenUrl} size={64} className="dialogue-node__audio-qr-code" />
+          </div>
+        )}
         {parsedItems.map(({ item, parts, speakerOrdinal: itemOrdinal, startsSpeakerTurn }) => (
           <div className="dialogue-node__row" key={item.id}>
             {!startsSpeakerTurn ? (

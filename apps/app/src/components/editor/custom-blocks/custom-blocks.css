@@ -3701,13 +3701,6 @@
   width: 100%;
 }
 
-.dialogue-node__audio-qr-label {
-  font-size: 8px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-text-tertiary, #78716c);
-}
-
 .dialogue-node__context::before {
   display: block;
   height: var(--custom-block-space-section);
@@ -3722,6 +3715,36 @@
 
 .dialogue-node__rows {
   margin: var(--custom-block-space-instruction-to-divider) 0 0 !important;
+  border-top: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+}
+
+.dialogue-node__rows--with-audio {
+  /* Stop the top divider short of the QR code instead of running under it. */
+  position: relative;
+  border-top: none;
+  background-image: linear-gradient(
+    to right,
+    var(--custom-block-row-border-color) 0 100%
+  );
+  background-repeat: no-repeat;
+  background-position: left top;
+  background-size: calc(100% - 96px - var(--custom-block-inline-gap))
+    var(--custom-block-row-border-width);
+}
+
+.dialogue-node__rows--with-audio .dialogue-node__row {
+  padding-inline-end: calc(96px + var(--custom-block-inline-gap));
+  /* Stop each row divider short of the QR code instead of running under it. */
+  border-bottom: none;
+  background-image: linear-gradient(
+    to right,
+    var(--custom-block-row-border-color) 0 100%
+  );
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: calc(100% - 96px - var(--custom-block-inline-gap))
+    var(--custom-block-row-border-width);
 }
 
 .custom-block__word-bank + .dialogue-node__rows {
@@ -3748,11 +3771,6 @@
   grid-template-columns:
     var(--dialogue-speaker-badge-width)
     minmax(0, 1fr);
-}
-
-.dialogue-node__row:first-child {
-  border-top: var(--custom-block-row-border-width) solid
-    var(--custom-block-row-border-color);
 }
 
 .dialogue-node--with-original .dialogue-node__row {
