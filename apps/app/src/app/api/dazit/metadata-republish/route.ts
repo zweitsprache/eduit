@@ -6,7 +6,7 @@ import { sql } from '@/lib/neon';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const CURRENT_METADATA_VERSION = 3;
+const CURRENT_METADATA_VERSION = 4;
 
 export async function GET() {
   const user = await getCurrentAppUser();

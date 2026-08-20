@@ -15,6 +15,7 @@ import {
   worksheetSemanticManifestFromJson,
   type WorksheetSemanticManifest,
 } from '@/lib/worksheet-semantic-manifest';
+import { GRAMMAR_TAG_ID_SET } from '@/lib/grammar-tags';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,6 +39,7 @@ type PublishMetadata = {
   level?: string;
   actionCompetencies?: string[];
   languageCompetencies?: string[];
+  grammarTags?: string[];
   actionField?: string | null;
 };
 
@@ -54,6 +56,7 @@ type PublicationSnapshot = {
   level: string | null;
   actionCompetencies: string[];
   languageCompetencies: string[];
+  grammarTags: string[];
   actionCompetencyContributionHtml: string | null;
   actionField: string | null;
   publishedRevision: number;
@@ -198,6 +201,18 @@ function applyWorksheetSettingOverrides(
       : generated.languageCompetencies,
     actionField: actionFieldOverride ?? generated.actionField,
   };
+}
+
+function normalizeGrammarTags(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const unique = new Set<string>();
+  value.forEach((item) => {
+    if (typeof item !== 'string') return;
+    const normalized = item.trim();
+    if (!normalized || !GRAMMAR_TAG_ID_SET.has(normalized)) return;
+    unique.add(normalized);
+  });
+  return [...unique].slice(0, 80);
 }
 
 function normalizeSearchText(value: string) {
@@ -661,6 +676,7 @@ export async function POST(request: Request) {
         level,
         action_competencies as "actionCompetencies",
         language_competencies as "languageCompetencies",
+        grammar_tags as "grammarTags",
         action_competency_contribution_html as "actionCompetencyContributionHtml",
         action_field as "actionField",
         published_revision as "publishedRevision"
@@ -679,6 +695,7 @@ export async function POST(request: Request) {
       level: string | null;
       actionCompetencies: string[];
       languageCompetencies: string[];
+      grammarTags: string[];
       actionCompetencyContributionHtml: string | null;
       actionField: string | null;
       publishedRevision: string | number;
@@ -723,6 +740,7 @@ export async function POST(request: Request) {
     const effectivePublishedRevision = mode === 'metadata-only' && existingPublication
       ? Number(existingPublication.publishedRevision)
       : sourceRevision;
+    const grammarTagsFromMetadata = normalizeGrammarTags(metadata.grammarTags);
     const worksheetSettingsOverride = existingPublication
       ? {
         level: normalizePublicationLevel(metadata.languageLevel) ?? existingPublication.level,
@@ -737,8 +755,13 @@ export async function POST(request: Request) {
         actionField: typeof metadata.actionField === 'string' && metadata.actionField
           ? metadata.actionField
           : existingPublication.actionField,
+        grammarTags: grammarTagsFromMetadata
+          ?? existingPublication.grammarTags,
       }
       : null;
+    const grammarTags = grammarTagsFromMetadata
+      ?? existingPublication?.grammarTags
+      ?? [];
 
     const pdfPath = mode === 'metadata-only'
       ? publicationRows[0].pdfPath
@@ -809,9 +832,10 @@ export async function POST(request: Request) {
         level: description.level,
         worksheetSemanticManifest: worksheetManifest
           ?? existingManifest.worksheetSemanticManifest,
-      actionCompetencies: description.actionCompetencies,
-      languageCompetencies: description.languageCompetencies,
-      actionField: description.actionField,
+        actionCompetencies: description.actionCompetencies,
+        languageCompetencies: description.languageCompetencies,
+        grammarTags,
+        actionField: description.actionField,
         publishedAt: new Date().toISOString(),
       }
       : mode === 'worksheet-settings-only' && existingPublication && worksheetSettingsOverride
@@ -833,6 +857,7 @@ export async function POST(request: Request) {
           level: worksheetSettingsOverride.level,
           actionCompetencies: worksheetSettingsOverride.actionCompetencies,
           languageCompetencies: worksheetSettingsOverride.languageCompetencies,
+          grammarTags: worksheetSettingsOverride.grammarTags,
           actionField: worksheetSettingsOverride.actionField,
           actionCompetencyContributionHtml: existingManifest.actionCompetencyContributionHtml
             ?? existingPublication.actionCompetencyContributionHtml
@@ -874,6 +899,7 @@ export async function POST(request: Request) {
         level,
         action_competencies,
         language_competencies,
+        grammar_tags,
         action_competency_contribution_html,
         action_field,
         metadata_version,
@@ -898,9 +924,10 @@ export async function POST(request: Request) {
         ${description.level},
         ${JSON.stringify(description.actionCompetencies)}::jsonb,
         ${JSON.stringify(description.languageCompetencies)}::jsonb,
+        ${JSON.stringify(grammarTags)}::jsonb,
         ${description.actionCompetencyContributionHtml},
         ${description.actionField},
-        3,
+        4,
         ${effectivePublishedRevision},
         now(),
         now()
@@ -922,6 +949,7 @@ export async function POST(request: Request) {
         level = excluded.level,
         action_competencies = excluded.action_competencies,
         language_competencies = excluded.language_competencies,
+        grammar_tags = excluded.grammar_tags,
         action_competency_contribution_html = excluded.action_competency_contribution_html,
         action_field = excluded.action_field,
         metadata_version = excluded.metadata_version,
@@ -943,6 +971,7 @@ export async function POST(request: Request) {
             level = ${worksheetSettingsOverride.level},
             action_competencies = ${JSON.stringify(worksheetSettingsOverride.actionCompetencies)}::jsonb,
             language_competencies = ${JSON.stringify(worksheetSettingsOverride.languageCompetencies)}::jsonb,
+            grammar_tags = ${JSON.stringify(worksheetSettingsOverride.grammarTags)}::jsonb,
             action_field = ${worksheetSettingsOverride.actionField},
             published_revision = ${sourceRevision},
             updated_at = now()

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { EMPTY_WORKSHEET_CONTEXT, type WorksheetPatch } from './worksheet-types';
+import { GRAMMAR_TAG_ID_SET } from './grammar-tags';
 
 const headingSchema = z.object({
   type: z.literal('heading'),
@@ -544,6 +545,11 @@ const contextSchema = z.object({
   actionField: z.string().max(100).default(''),
   actionCompetencies: z.array(z.string().max(80)).max(10).default([]),
   languageCompetencies: z.array(z.string().max(80)).max(10).default([]),
+  grammarTags: z.array(
+    z.string().max(150).refine((value) => GRAMMAR_TAG_ID_SET.has(value), {
+      message: 'Unknown grammar tag ID.',
+    }),
+  ).max(80).default([]),
   learnerContext: z.string().max(1000).default(''),
   contextPdfName: z.string().max(250).default(''),
   contextPdfText: z.string().max(1_000_000).default(''),

@@ -1,6 +1,7 @@
 "use client";
 
 import { SearchSelect } from '@/components/base/select/select';
+import { GrammarTagsField } from '@/components/context/grammar-tags-field';
 import type { WorksheetContext } from '@/lib/worksheet-types';
 
 const LEARNER_STAGE_OPTIONS = [
@@ -293,6 +294,12 @@ export function DocumentContextFields({
                 ))}
               </div>
             </fieldset>
+          )}
+          {(context.subject === 'daz' || context.subject === 'additional-languages') && (
+            <GrammarTagsField
+              value={context.grammarTags}
+              onChange={(grammarTags) => onChange({ grammarTags })}
+            />
           )}
           {(context.subject === 'daz' || context.subject === 'additional-languages') && (
             <label className="block text-xs font-semibold text-tertiary">

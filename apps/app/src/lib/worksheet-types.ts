@@ -40,6 +40,7 @@ export type WorksheetContext = {
   actionField: string;
   actionCompetencies: string[];
   languageCompetencies: string[];
+  grammarTags: string[];
   learnerContext: string;
   contextPdfName: string;
   contextPdfText: string;
@@ -65,6 +66,7 @@ export const EMPTY_WORKSHEET_CONTEXT: WorksheetContext = {
   actionField: '',
   actionCompetencies: [],
   languageCompetencies: [],
+  grammarTags: [],
   learnerContext: '',
   contextPdfName: '',
   contextPdfText: '',

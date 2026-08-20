@@ -29,7 +29,7 @@ export const { POST } = serve<WorkflowPayload>(async (context) => {
       from dazit_publications
       where worksheet_id = ${worksheetId}
         and document_type = 'Lernkarten'
-        and metadata_version < 3
+        and metadata_version < 4
     ` as Publication[];
     const publication = rows[0];
     if (!publication) return;

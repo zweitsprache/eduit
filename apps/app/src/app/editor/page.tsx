@@ -47,6 +47,7 @@ import { SearchSelect, Select } from '@/components/base/select/select';
 import { Toggle } from '@/components/base/toggle/toggle';
 import { cx } from '@/utils/cx';
 import { SidebarAccountCard } from '@/components/app/sidebar-account-card';
+import { GrammarTagsField } from '@/components/context/grammar-tags-field';
 import { LanguageSwitcher } from '@/components/i18n/language-switcher';
 import { useI18n } from '@/components/i18n/locale-provider';
 import { EduitLogo } from '@eduit/ui';
@@ -4731,6 +4732,7 @@ export default function EditorPage() {
         languageLevel: documentContext.languageLevel,
         actionCompetencies: documentContext.actionCompetencies,
         languageCompetencies: documentContext.languageCompetencies,
+        grammarTags: documentContext.grammarTags,
         actionField: documentContext.actionField || null,
       };
       const formData = new FormData();
@@ -9538,6 +9540,13 @@ export default function EditorPage() {
                           ))}
                         </div>
                       </fieldset>
+                    )}
+                    {(documentContext.subject === 'daz'
+                      || documentContext.subject === 'additional-languages') && (
+                      <GrammarTagsField
+                        value={documentContext.grammarTags}
+                        onChange={(grammarTags) => updateDocumentContext({ grammarTags })}
+                      />
                     )}
                     {(documentContext.subject === 'daz'
                       || documentContext.subject === 'additional-languages') && (

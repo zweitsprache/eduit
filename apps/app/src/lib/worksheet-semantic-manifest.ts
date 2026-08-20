@@ -28,6 +28,7 @@ const SEMANTIC_CONTEXT_KEYS = [
   'actionField',
   'actionCompetencies',
   'languageCompetencies',
+  'grammarTags',
   'learnerContext',
   'country',
 ] as const;

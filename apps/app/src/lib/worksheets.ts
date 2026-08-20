@@ -7,6 +7,7 @@ import {
   type WorksheetContext,
   type WorksheetPatch,
 } from '@/lib/worksheet-types';
+import { GRAMMAR_TAG_ID_SET } from '@/lib/grammar-tags';
 import { requireOwnedWorksheetFolder } from '@/lib/worksheet-folders';
 
 type WorksheetRow = {
@@ -92,6 +93,15 @@ function mapRow(row: WorksheetRow): Worksheet {
           languageCompetencies: string[];
         }).languageCompetencies)
         : EMPTY_WORKSHEET_CONTEXT.languageCompetencies,
+      grammarTags: Array.isArray((row.context as WorksheetContext & {
+        grammarTags?: unknown;
+      })?.grammarTags)
+        ? ((row.context as WorksheetContext & {
+          grammarTags: string[];
+        }).grammarTags)
+          .filter((value): value is string => typeof value === 'string')
+          .filter((value) => GRAMMAR_TAG_ID_SET.has(value))
+        : EMPTY_WORKSHEET_CONTEXT.grammarTags,
       translationLanguages: Array.isArray((row.context as WorksheetContext & {
         translationLanguages?: unknown;
       })?.translationLanguages)
@@ -309,6 +319,13 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
           .filter(Boolean)
           .slice(0, 10)
         : EMPTY_WORKSHEET_CONTEXT.languageCompetencies,
+      grammarTags: Array.isArray(context.grammarTags)
+        ? context.grammarTags
+          .filter((value): value is string => typeof value === 'string')
+          .map((value) => value.trim().slice(0, 150))
+          .filter((value) => GRAMMAR_TAG_ID_SET.has(value))
+          .slice(0, 80)
+        : EMPTY_WORKSHEET_CONTEXT.grammarTags,
       learnerContext: text('learnerContext', 1000),
       contextPdfName: text('contextPdfName', 250),
       contextPdfText: text('contextPdfText', 1_000_000),
