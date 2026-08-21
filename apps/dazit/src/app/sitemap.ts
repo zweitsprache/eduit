@@ -64,7 +64,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly' as const,
       priority: 0.8,
       images: worksheet.thumbnailUrls?.[0]
-        ? [absoluteDazitUrl(worksheet.thumbnailUrls[0])]
+        ? [absoluteDazitUrl(worksheet.thumbnailUrls[0]).replaceAll('&', '&amp;')]
         : undefined,
     })),
   ];
