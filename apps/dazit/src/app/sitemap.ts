@@ -57,7 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...staticPages,
     ...worksheets.map((worksheet) => ({
-      url: absoluteDazitUrl(`/documents/${worksheet.slug}`),
+      url: absoluteDazitUrl(`/documents/${encodeURIComponent(worksheet.slug)}`),
       lastModified: worksheet.publishedAt
         ? new Date(worksheet.publishedAt)
         : now,
