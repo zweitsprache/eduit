@@ -11,7 +11,6 @@ import { InlineMetadataEditor } from '@/components/inline-metadata-editor';
 import { InlineHtmlEditor } from '@/components/inline-html-editor';
 import { DownloadAuthGate } from '@/components/download-auth-gate';
 import { AdminOnly } from '@/components/admin-only';
-import { GRAMMAR_TAG_LABEL_BY_ID } from '@/lib/grammar-tags';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -93,10 +92,6 @@ function translateLearnerStage(value?: string) {
     'not-education-specific': 'Nicht bildungsspezifisch',
   };
   return translations[value] || value;
-}
-
-function grammarTagLabel(id: string) {
-  return GRAMMAR_TAG_LABEL_BY_ID.get(id) || id;
 }
 
 export default async function WorksheetDetailPage({ params }: Props) {
@@ -241,12 +236,6 @@ export default async function WorksheetDetailPage({ params }: Props) {
               </div>
               <h1>{worksheet.title}</h1>
               <p className="lead">{worksheet.description}</p>
-              {worksheet.hinweis && (
-                <aside className="worksheet-hinweis" role="note">
-                  <strong>Hinweis</strong>
-                  <div dangerouslySetInnerHTML={{ __html: worksheet.hinweis }} />
-                </aside>
-              )}
               <div className="detail-actions">
                 <DownloadAuthGate
                   className="download-primary"
@@ -294,22 +283,6 @@ export default async function WorksheetDetailPage({ params }: Props) {
                   <div className="metadata-grid-wide">
                     <dt>Sprachkompetenz</dt>
                     <dd>{worksheet.languageCompetencies?.join(', ')}</dd>
-                  </div>
-                )}
-                {Boolean(worksheet.grammarTags?.length) && (
-                  <div className="metadata-grid-wide">
-                    <dt>Grammatik</dt>
-                    <dd className="grammar-tags-list">
-                      {worksheet.grammarTags?.map((grammarTag) => (
-                        <span
-                          className="grammar-tag-chip"
-                          key={grammarTag}
-                          title={grammarTag}
-                        >
-                          {grammarTagLabel(grammarTag)}
-                        </span>
-                      ))}
-                    </dd>
                   </div>
                 )}
                 {worksheet.actionField && (

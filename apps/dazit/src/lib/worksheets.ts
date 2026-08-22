@@ -46,10 +46,8 @@ export type Worksheet = {
   descriptionHtml?: string;
   level?: string;
   learnerStage?: string;
-  hinweis?: string;
   actionCompetencies?: string[];
   languageCompetencies?: string[];
-  grammarTags?: string[];
   actionCompetencyContributionHtml?: string;
   actionField?: string;
   format?: string;
@@ -189,12 +187,8 @@ function publishedWorksheet(row: DazitPublicationRow): Worksheet | null {
     learnerStage: typeof row.context?.learnerStage === 'string'
       ? row.context.learnerStage
       : undefined,
-    hinweis: typeof row.context?.hinweis === 'string'
-      ? row.context.hinweis
-      : undefined,
     actionCompetencies: Array.isArray(row.actionCompetencies) ? row.actionCompetencies : [],
     languageCompetencies: Array.isArray(row.languageCompetencies) ? row.languageCompetencies : [],
-    grammarTags: Array.isArray(row.grammarTags) ? row.grammarTags : [],
     actionCompetencyContributionHtml: row.actionCompetencyContributionHtml || undefined,
     actionField: row.actionField || undefined,
     ageGroups: Array.isArray(row.context?.ageGroups) ? row.context.ageGroups : [],
@@ -209,7 +203,6 @@ function publishedWorksheetCard(row: DazitPublicationCardRow): Worksheet | null 
     searchSnippet: row.searchSnippet || undefined,
     actionCompetencies: Array.isArray(row.actionCompetencies) ? row.actionCompetencies : [],
     languageCompetencies: Array.isArray(row.languageCompetencies) ? row.languageCompetencies : [],
-    grammarTags: Array.isArray(row.grammarTags) ? row.grammarTags : [],
     actionField: row.actionField || undefined,
   };
 }
