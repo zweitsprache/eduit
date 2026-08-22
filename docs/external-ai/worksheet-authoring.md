@@ -70,6 +70,7 @@ All context properties are optional. Use known caller-provided values; do not gu
 | `actionField` | string up to 100 characters |
 | `actionCompetencies`, `languageCompetencies` | up to 10 strings, each up to 80 characters |
 | `learnerContext` | string up to 1000 characters |
+| `hinweis` | string up to 2000 characters; supports HTML formatting such as `<strong>` |
 | `contextPdfName` | string up to 250 characters |
 | `contextPdfText` | string up to 1,000,000 characters; normally supplied by the caller, not generated |
 | `contextPdfPageCount` | positive integer or null |

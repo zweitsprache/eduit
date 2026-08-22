@@ -274,6 +274,11 @@
           "type": "string",
           "maxLength": 1000
         },
+        "hinweis": {
+          "default": "",
+          "type": "string",
+          "maxLength": 2000
+        },
         "contextPdfName": {
           "default": "",
           "type": "string",

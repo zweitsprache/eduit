@@ -2,6 +2,7 @@
 
 import { SearchSelect } from '@/components/base/select/select';
 import { GrammarTagsField } from '@/components/context/grammar-tags-field';
+import { InlineFormattedInput } from '@/components/editor/custom-blocks/inline-formatted-input';
 import type { WorksheetContext } from '@/lib/worksheet-types';
 
 const LEARNER_STAGE_OPTIONS = [
@@ -326,6 +327,17 @@ export function DocumentContextFields({
                 learnerContext: event.target.value,
               })}
               className={`${inputClass} resize-y`}
+            />
+          </label>
+          <label className={`${twoColumns ? 'col-span-2' : ''} block text-xs font-semibold text-tertiary`}>
+            Hinweis
+            <InlineFormattedInput
+              ariaLabel="Hinweis"
+              multiline
+              value={context.hinweis}
+              placeholder="Wichtige Information für die Lernenden"
+              onChange={(hinweis) => onChange({ hinweis })}
+              className={`${inputClass} min-h-20 whitespace-pre-wrap`}
             />
           </label>
         </div>

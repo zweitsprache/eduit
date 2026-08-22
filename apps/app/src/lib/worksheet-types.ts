@@ -42,6 +42,7 @@ export type WorksheetContext = {
   languageCompetencies: string[];
   grammarTags: string[];
   learnerContext: string;
+  hinweis: string;
   contextPdfName: string;
   contextPdfText: string;
   contextPdfPageCount: number | null;
@@ -68,6 +69,7 @@ export const EMPTY_WORKSHEET_CONTEXT: WorksheetContext = {
   languageCompetencies: [],
   grammarTags: [],
   learnerContext: '',
+  hinweis: '',
   contextPdfName: '',
   contextPdfText: '',
   contextPdfPageCount: null,

@@ -241,6 +241,12 @@ export default async function WorksheetDetailPage({ params }: Props) {
               </div>
               <h1>{worksheet.title}</h1>
               <p className="lead">{worksheet.description}</p>
+              {worksheet.hinweis && (
+                <aside className="worksheet-hinweis" role="note">
+                  <strong>Hinweis</strong>
+                  <div dangerouslySetInnerHTML={{ __html: worksheet.hinweis }} />
+                </aside>
+              )}
               <div className="detail-actions">
                 <DownloadAuthGate
                   className="download-primary"

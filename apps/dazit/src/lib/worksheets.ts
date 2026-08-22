@@ -46,6 +46,7 @@ export type Worksheet = {
   descriptionHtml?: string;
   level?: string;
   learnerStage?: string;
+  hinweis?: string;
   actionCompetencies?: string[];
   languageCompetencies?: string[];
   grammarTags?: string[];
@@ -187,6 +188,9 @@ function publishedWorksheet(row: DazitPublicationRow): Worksheet | null {
     level: row.level || undefined,
     learnerStage: typeof row.context?.learnerStage === 'string'
       ? row.context.learnerStage
+      : undefined,
+    hinweis: typeof row.context?.hinweis === 'string'
+      ? row.context.hinweis
       : undefined,
     actionCompetencies: Array.isArray(row.actionCompetencies) ? row.actionCompetencies : [],
     languageCompetencies: Array.isArray(row.languageCompetencies) ? row.languageCompetencies : [],

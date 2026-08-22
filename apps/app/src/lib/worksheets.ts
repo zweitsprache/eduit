@@ -327,6 +327,7 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
           .slice(0, 80)
         : EMPTY_WORKSHEET_CONTEXT.grammarTags,
       learnerContext: text('learnerContext', 1000),
+      hinweis: text('hinweis', 2000),
       contextPdfName: text('contextPdfName', 250),
       contextPdfText: text('contextPdfText', 1_000_000),
       contextPdfPageCount: Number.isFinite(pageCount)

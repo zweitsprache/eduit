@@ -50,6 +50,7 @@ export const DEFAULT_DOMINO_PAIRS: DominoPair[] = [
 const GRID_COLUMNS = 6;
 const GRID_ROWS = 4;
 export const GRID_CELLS = GRID_COLUMNS * GRID_ROWS;
+export const DOMINO_MAX_PAIRS = 23;
 
 function defaultPairs() {
   return DEFAULT_DOMINO_PAIRS.map((pair) => ({ ...pair }));

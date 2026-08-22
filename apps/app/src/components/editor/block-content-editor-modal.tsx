@@ -43,9 +43,11 @@ import {
   type MatchingPairsAttrs,
 } from '@/components/editor/matching-pairs-node';
 import {
+  DOMINO_MAX_PAIRS,
   type DominoAttrs,
   type DominoPair,
   type DominoTextSize,
+  dominoGroupSize,
 } from '@/components/editor/domino-node';
 import {
   DEFAULT_TIME_MATCHING_ATTRS,
@@ -7777,8 +7779,56 @@ function DominoEditor({
   block: ContentEditorBlock;
   editor: Editor;
 }) {
-  const maxPairs = 11;
-  const setPairs = (pairs: DominoPair[]) => updateAttrs(editor, block, { pairs });
+  const maxPairs = DOMINO_MAX_PAIRS;
+  const setPairs = (pairs: DominoPair[]) => {
+    editor.chain().command(({ tr }) => {
+      const currentNode = tr.doc.nodeAt(block.pos);
+      if (currentNode?.type.name !== 'domino') return false;
+      const dominoType = tr.doc.type.schema.nodes.domino;
+      if (!dominoType) return false;
+
+      const groupId = currentNode.attrs.groupId || `domino-${Date.now()}`;
+      const groupNodes: Array<{ node: ProseMirrorNode; pos: number }> = [];
+      tr.doc.forEach((node, pos) => {
+        if (node.type.name === 'domino' && node.attrs.groupId === groupId) {
+          groupNodes.push({ node, pos });
+        }
+      });
+      if (!groupNodes.length) groupNodes.push({ node: currentNode, pos: block.pos });
+
+      const groupSize = dominoGroupSize(pairs);
+      if (groupSize === groupNodes.length) {
+        groupNodes.forEach(({ pos }, index) => {
+          tr.setNodeAttribute(pos, 'pairs', pairs);
+          tr.setNodeAttribute(pos, 'groupId', groupId);
+          tr.setNodeAttribute(pos, 'groupSize', groupSize);
+          tr.setNodeAttribute(pos, 'groupIndex', index);
+        });
+        return true;
+      }
+
+      const baseAttrs = {
+        ...groupNodes[0].node.attrs,
+        pairs,
+        groupId,
+        groupSize,
+      };
+      const nodes = Array.from({ length: groupSize }, (_, groupIndex) => dominoType.create({
+        ...baseAttrs,
+        groupIndex,
+      }));
+      const pageBreakType = tr.doc.type.schema.nodes.pageBreak;
+      const separatedNodes = nodes.flatMap((node, index) => (
+        index < nodes.length - 1 && pageBreakType
+          ? [node, pageBreakType.create()]
+          : [node]
+      ));
+      const from = groupNodes[0].pos;
+      const to = groupNodes[groupNodes.length - 1].pos + groupNodes[groupNodes.length - 1].node.nodeSize;
+      tr.replaceWith(from, to, separatedNodes);
+      return true;
+    }).run();
+  };
   return (
     <>
       <ContentSectionHeader>Learner support</ContentSectionHeader>
@@ -7838,8 +7888,8 @@ function DominoEditor({
         Domino pairs
       </ContentSectionHeader>
       <p className="mt-1 text-xs leading-5 text-tertiary">
-        The first and last grid cells are always ZIEL. Each pair fills two
-        adjacent cells, so the 6 × 4 grid holds up to {maxPairs} pairs.
+        START is always before the first pair and ZIEL is always after the last
+        pair. Each pair fills two adjacent cells, so two 6 × 4 grids hold up to {maxPairs} pairs.
       </p>
       <div className="mt-3 space-y-2">
         {attrs.pairs.map((pair, index) => (

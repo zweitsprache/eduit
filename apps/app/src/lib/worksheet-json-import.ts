@@ -624,6 +624,7 @@ const contextSchema = z.object({
     }),
   ).max(80).default([]),
   learnerContext: z.string().max(1000).default(''),
+  hinweis: z.string().max(2000).default(''),
   contextPdfName: z.string().max(250).default(''),
   contextPdfText: z.string().max(1_000_000).default(''),
   contextPdfPageCount: z.number().int().positive().nullable().default(null),

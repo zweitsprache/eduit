@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { AIGenerationModal } from '@/components/editor/ai-generation-modal-ui';
-import type { DominoPair } from '@/components/editor/domino-node';
+import { dominoGroupSize, type DominoPair } from '@/components/editor/domino-node';
 import {
   availableUniqueTimes,
   digitalTime,
@@ -130,9 +130,8 @@ export function DominoAIModal({
       left: formatTimeRepresentation(left, time.hour, time.minute),
       right: formatTimeRepresentation(right, time.hour, time.minute),
     }));
-    const maxPairsPerGrid = 11;
     const groupSize = multiPage
-      ? Math.max(1, Math.ceil(pairs.length / maxPairsPerGrid))
+      ? dominoGroupSize(pairs)
       : 1;
     onGenerated({
       preset,

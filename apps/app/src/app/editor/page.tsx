@@ -9627,6 +9627,17 @@ export default function EditorPage() {
                         className="mt-1.5 w-full resize-y rounded-md border border-primary bg-primary px-3 py-2 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
                       />
                     </label>
+                    <label className="block text-xs font-semibold text-tertiary">
+                      Hinweis
+                      <InlineFormattedInput
+                        ariaLabel="Hinweis"
+                        multiline
+                        value={documentContext.hinweis}
+                        placeholder="Wichtige Information für die Lernenden"
+                        onChange={(hinweis) => updateDocumentContext({ hinweis })}
+                        className="custom-block__inline-formatted-input min-h-20 w-full whitespace-pre-wrap rounded-lg border border-primary bg-primary px-3 py-2 text-sm text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
+                      />
+                    </label>
                   </div>
                 </div>
               </div>
