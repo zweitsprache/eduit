@@ -21,9 +21,11 @@ import type { CommunicationCardsAttrs } from '@/components/editor/communication-
 import type { LearningCardsAttrs } from '@/components/editor/learning-cards-node';
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
 import type { SpacerAttrs } from '@/components/editor/spacer-node';
+import type { WritingLinesAttrs } from '@/components/editor/writing-lines-node';
 import type { WordGridAttrs } from '@/components/editor/word-grid-node';
 import type { WordBankAttrs } from '@/components/editor/word-bank-node';
 import type { DominoAttrs } from '@/components/editor/domino-node';
+import type { CrosswordAttrs } from '@/components/editor/crossword-node';
 import type { GermanVerbTableAttrs } from '@/components/editor/german-verb-table-node';
 import type { DeclinationTableAttrs } from '@/components/editor/declination-table-node';
 import type { WorksheetTableAttrs } from '@/components/editor/worksheet-table-node';
@@ -94,6 +96,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'customHeading',
   'pageBreak',
   'spacer',
+  'writingLines',
   'richText',
   'glossaryTerms',
   'fillInTheBlank',
@@ -113,6 +116,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'wordBank',
   'learningCards',
   'domino',
+  'crossword',
   'germanVerbTable',
   'declinationTable',
   'worksheetTable',
@@ -225,6 +229,29 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     case 'spacer': {
       const { height } = attrs as SpacerAttrs;
       return { type: 'spacer', height };
+    }
+    case 'writingLines': {
+      const { lineCount, lineHeight } = attrs as WritingLinesAttrs;
+      return { type: 'writingLines', lineCount, lineHeight };
+    }
+    case 'crossword': {
+      const {
+        instruction,
+        entries,
+        layoutSeed,
+        cellSize,
+        cellAspectRatio,
+        showWordBank,
+      } = attrs as CrosswordAttrs;
+      return {
+        type: 'crossword',
+        instruction,
+        entries,
+        layoutSeed,
+        cellSize,
+        cellAspectRatio,
+        showWordBank,
+      };
     }
     case 'richText': {
       const { html, bypassGap } = attrs as RichTextAttrs;

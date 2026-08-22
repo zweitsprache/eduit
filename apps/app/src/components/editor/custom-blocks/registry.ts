@@ -79,6 +79,15 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
     insert: (editor) => editor.chain().focus().insertSpacer().run(),
   },
   {
+    type: 'writingLines',
+    label: 'Writing lines',
+    description: 'Blank ruled lines for handwriting practice, without item numbers.',
+    category: 'Layout',
+    keywords: ['writing', 'lines', 'handwriting', 'ruled', 'blank', 'practice'],
+    Icon: Rows01,
+    insert: (editor) => editor.chain().focus().insertWritingLines().run(),
+  },
+  {
     type: 'customHeading',
     label: 'Heading',
     description: 'A branded heading with optional document numbering.',

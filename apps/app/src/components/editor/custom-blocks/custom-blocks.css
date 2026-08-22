@@ -103,6 +103,34 @@
   background: transparent;
 }
 
+.writing-lines-node {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.writing-lines-node__line {
+  box-sizing: border-box;
+  width: 100%;
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+}
+
+.writing-lines-node--selected {
+  outline: 1px dashed var(--color-border-brand, currentColor);
+  outline-offset: -1px;
+  background: color-mix(in srgb, var(--color-bg-brand-primary, transparent) 18%, transparent);
+}
+
+.pdf-exporting .writing-lines-node--selected {
+  outline: 0;
+  background: transparent;
+}
+
 /* Each learning-card sheet is a separate ProseMirror node. The coordinates
    below are relative to A4 portrait's content origin (25 mm from the left,
    25 mm from the top), but target the physical page center (105 × 148.5 mm).

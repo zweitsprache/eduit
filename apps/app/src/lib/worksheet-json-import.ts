@@ -69,6 +69,26 @@ const spacerSchema = z.object({
   height: z.number().int().min(0).max(400).default(32),
 });
 
+const writingLinesSchema = z.object({
+  type: z.literal('writingLines'),
+  lineCount: z.number().int().min(1).max(30).default(4),
+  lineHeight: z.number().int().min(16).max(120).default(40),
+});
+
+const crosswordSchema = z.object({
+  type: z.literal('crossword'),
+  instruction: z.string().trim().min(1).max(1000).default('Complete the crossword using the clues.'),
+  entries: z.array(z.object({
+    id: z.string().trim().min(1).max(100),
+    answer: z.string().trim().min(1).max(100),
+    clue: z.string().max(1000),
+  })).min(1).max(100),
+  layoutSeed: z.number().int().min(0).default(1),
+  cellSize: z.number().min(22).max(40).default(30),
+  cellAspectRatio: z.enum(['1:1', '1.25:1']).default('1.25:1'),
+  showWordBank: z.boolean().default(false),
+});
+
 const worksheetTableColumnSchema = z.object({
   id: z.string().trim().min(1).max(100),
   label: z.string().max(500).default(''),
@@ -624,6 +644,8 @@ export const generatedWorksheetSchema = z.object({
     fillInTheBlankSchema,
     pageBreakSchema,
     spacerSchema,
+    writingLinesSchema,
+    crosswordSchema,
     dialogueSchema,
     messengerSchema,
     emailSchema,
@@ -706,6 +728,12 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
   }
   if (block.type === 'spacer') {
     return `<div data-spacer-height="${block.height}" data-type="spacer"></div>`;
+  }
+  if (block.type === 'writingLines') {
+    return `<div data-writing-lines-count="${block.lineCount}" data-writing-lines-height="${block.lineHeight}" data-type="writing-lines"></div>`;
+  }
+  if (block.type === 'crossword') {
+    return `<div data-crossword-instruction="${escapeAttribute(block.instruction)}" data-crossword-entries="${escapeAttribute(encodeURIComponent(JSON.stringify(block.entries)))}" data-crossword-layout-seed="${block.layoutSeed}" data-crossword-cell-size="${block.cellSize}" data-crossword-cell-aspect-ratio="${block.cellAspectRatio}" data-crossword-show-word-bank="${block.showWordBank}" data-type="crossword"></div>`;
   }
   if (block.type === 'richText') {
     // The node stores its markup URI-encoded; encodeURIComponent also escapes the

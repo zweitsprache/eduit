@@ -182,6 +182,13 @@ import {
   type SpacerAttrs,
 } from '@/components/editor/spacer-node';
 import {
+  MAX_WRITING_LINE_HEIGHT,
+  MAX_WRITING_LINES_COUNT,
+  MIN_WRITING_LINE_HEIGHT,
+  MIN_WRITING_LINES_COUNT,
+  type WritingLinesAttrs,
+} from '@/components/editor/writing-lines-node';
+import {
   DEFAULT_STANDALONE_INSTRUCTION,
   type InstructionBlockAttrs,
 } from '@/components/editor/instruction-node';
@@ -270,6 +277,7 @@ export type ContentEditorBlock = {
     | 'informationGapActivity'
     | 'richText'
     | 'spacer'
+    | 'writingLines'
     | 'instructionBlock'
     | 'letterNode'
     | 'crossword'
@@ -309,6 +317,7 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   informationGapActivity: 'Information gap activity',
   richText: 'Rich Text content',
   spacer: 'Spacer',
+  writingLines: 'Writing lines',
   instructionBlock: 'Instruction content',
   letterNode: 'Letter Node content',
   crossword: 'Crossword content',
@@ -1839,6 +1848,85 @@ function SpacerEditor({
         className="mt-1 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
       />
     </label>
+  );
+}
+
+// Keeps its own text while the user is typing so clamping doesn't fight
+// keystrokes; the value is only rounded/clamped once the field loses focus.
+function ClampedNumberField({
+  label,
+  value,
+  min,
+  max,
+  onCommit,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onCommit: (value: number) => void;
+}) {
+  const [text, setText] = useState(String(value));
+
+  useEffect(() => {
+    setText(String(value));
+  }, [value]);
+
+  const commit = () => {
+    const parsed = Math.round(Number(text));
+    const clamped = Number.isFinite(parsed)
+      ? Math.min(max, Math.max(min, parsed))
+      : value;
+    setText(String(clamped));
+    if (clamped !== value) onCommit(clamped);
+  };
+
+  return (
+    <label className="text-xs font-semibold text-tertiary">
+      {label}
+      <input
+        type="number"
+        min={min}
+        max={max}
+        step={1}
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') event.currentTarget.blur();
+        }}
+        className="mt-1 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+    </label>
+  );
+}
+
+function WritingLinesEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: WritingLinesAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <ClampedNumberField
+        label="Number of lines"
+        value={attrs.lineCount}
+        min={MIN_WRITING_LINES_COUNT}
+        max={MAX_WRITING_LINES_COUNT}
+        onCommit={(lineCount) => updateAttrs(editor, block, { lineCount })}
+      />
+      <ClampedNumberField
+        label="Line height (px)"
+        value={attrs.lineHeight}
+        min={MIN_WRITING_LINE_HEIGHT}
+        max={MAX_WRITING_LINE_HEIGHT}
+        onCommit={(lineHeight) => updateAttrs(editor, block, { lineHeight })}
+      />
+    </div>
   );
 }
 
@@ -8026,8 +8114,14 @@ export function BlockContentEditorModal({
             <XClose className="size-5" />
           </button>
         </header>
-        <div className="grid min-h-0 flex-1 grid-cols-[minmax(22rem,0.85fr)_minmax(30rem,1.15fr)] overflow-hidden">
-          <div className="overflow-y-auto border-r border-secondary p-6">
+        <div className={`grid min-h-0 flex-1 overflow-hidden ${
+          block.type === 'writingLines'
+            ? 'grid-cols-1'
+            : 'grid-cols-[minmax(22rem,0.85fr)_minmax(30rem,1.15fr)]'
+        }`}>
+          <div className={`overflow-y-auto p-6 ${
+            block.type === 'writingLines' ? '' : 'border-r border-secondary'
+          }`}>
             {block.type in DEFAULT_BLOCK_INSTRUCTIONS && (
               <InstructionOverrideEditor
                 attrs={attrs}
@@ -8068,15 +8162,18 @@ export function BlockContentEditorModal({
             {block.type === 'informationGapActivity' && <InformationGapActivityEditor attrs={attrs as unknown as InformationGapActivityAttrs} block={block} editor={editor} />}
             {block.type === 'richText' && <RichTextEditor attrs={attrs as unknown as RichTextAttrs} block={block} editor={editor} />}
             {block.type === 'spacer' && <SpacerEditor attrs={attrs as unknown as SpacerAttrs} block={block} editor={editor} />}
+            {block.type === 'writingLines' && <WritingLinesEditor attrs={attrs as unknown as WritingLinesAttrs} block={block} editor={editor} />}
             {block.type === 'instructionBlock' && <StandaloneInstructionEditor attrs={attrs as unknown as InstructionBlockAttrs} block={block} editor={editor} />}
             {block.type === 'letterNode' && <LetterNodeEditor attrs={attrs as unknown as LetterNodeAttrs} block={block} editor={editor} />}
             {block.type === 'crossword' && <CrosswordEditor attrs={attrs as unknown as CrosswordAttrs} block={block} editor={editor} />}
             {block.type === 'errorCorrection' && <ErrorCorrectionEditor attrs={attrs as unknown as ErrorCorrectionAttrs} block={block} editor={editor} />}
             {block.type === 'domino' && <DominoEditor attrs={attrs as unknown as DominoAttrs} block={block} editor={editor} />}
           </div>
-          <div className="overflow-y-auto bg-primary p-6">
-            <Preview attrs={attrs} block={effectiveBlock as ContentEditorBlock} editor={editor} learningCardsGroupIndex={learningCardsGroupIndex} learningCardsSelectedCardId={learningCardsSelectedCardId} communicationCardsGroupIndex={communicationCardsGroupIndex} communicationCardsSelectedCardId={communicationCardsSelectedCardId} />
-          </div>
+          {block.type !== 'writingLines' && (
+            <div className="overflow-y-auto bg-primary p-6">
+              <Preview attrs={attrs} block={effectiveBlock as ContentEditorBlock} editor={editor} learningCardsGroupIndex={learningCardsGroupIndex} learningCardsSelectedCardId={learningCardsSelectedCardId} communicationCardsGroupIndex={communicationCardsGroupIndex} communicationCardsSelectedCardId={communicationCardsSelectedCardId} />
+            </div>
+          )}
         </div>
         <footer className="flex h-16 shrink-0 items-center justify-end border-t border-secondary px-6">
           <button type="button" onClick={onClose} className="rounded-lg bg-brand-solid px-4 py-2 text-sm font-semibold text-white hover:bg-brand-solid_hover">

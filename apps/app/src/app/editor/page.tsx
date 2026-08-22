@@ -284,6 +284,7 @@ import {
 } from '@/components/editor/fill-in-the-blank-ai-modal';
 import { RichText } from '@/components/editor/rich-text-node';
 import { Spacer } from '@/components/editor/spacer-node';
+import { WritingLines } from '@/components/editor/writing-lines-node';
 import { InstructionBlock } from '@/components/editor/instruction-node';
 import { MediaLayout } from '@/components/editor/media-layout-node';
 import { MediaLayoutEditorModal } from '@/components/editor/media-layout-editor-modal';
@@ -525,6 +526,7 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'informationGapActivity',
   'richText',
   'spacer',
+  'writingLines',
   'instructionBlock',
   'mediaLayout',
   'letterNode',
@@ -1729,6 +1731,7 @@ export default function EditorPage() {
       InformationGapActivity,
       RichText,
       Spacer,
+      WritingLines,
       InstructionBlock,
       MediaLayout,
       LetterNode,
