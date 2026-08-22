@@ -1,24 +1,9 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import Link from 'next/link';
 import { DocumentsClientPage } from '@/components/documents-client-page';
 import { SiteHeader } from '@/components/site-header';
 import { getWorksheetCards } from '@/lib/worksheets';
 import { absoluteDazitUrl } from '@/lib/site-url';
-
-const clusterLinks = [
-  { href: '/niveau/A1.1', label: 'DaZ Arbeitsblätter A1.1' },
-  { href: '/niveau/A1.2', label: 'DaZ Arbeitsblätter A1.2' },
-  { href: '/niveau/A2.1', label: 'DaZ Arbeitsblätter A2.1' },
-  { href: '/niveau/A2.2', label: 'DaZ Arbeitsblätter A2.2' },
-  { href: '/niveau/B1.1', label: 'DaZ Arbeitsblätter B1.1' },
-  { href: '/niveau/B1.2', label: 'DaZ Arbeitsblätter B1.2' },
-  { href: '/typ/arbeitsblatt', label: 'DaZ Arbeitsblätter druckfertig' },
-  { href: '/typ/dialog', label: 'DaZ Dialoge zum Ausdrucken' },
-  { href: '/typ/lernkarten', label: 'DaZ Lernkarten PDF' },
-  { href: '/typ/verbtabelle', label: 'DaZ Verbtabellen PDF' },
-  { href: '/typ/deklinationstabelle', label: 'DaZ Deklinationstabellen PDF' },
-];
 
 export const revalidate = 1800;
 
@@ -108,12 +93,6 @@ export default async function LibraryPage() {
         type="application/ld+json"
       />
       <SiteHeader active="library" search />
-      <div className="subject-bar" aria-label="Themen">
-        <strong>Themen</strong>
-        {clusterLinks.map((item) => (
-          <Link href={item.href} key={item.href}>{item.label}</Link>
-        ))}
-      </div>
       <Suspense fallback={<main className="library-layout" />}>
         <DocumentsClientPage worksheets={worksheets} />
       </Suspense>

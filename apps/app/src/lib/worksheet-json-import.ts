@@ -409,6 +409,59 @@ const wordBankSchema = z.object({
   items: z.array(z.string().trim().min(1).max(500)).min(1).max(500),
 });
 
+const rewriteSentenceItemSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  input: z.string().trim().min(1).max(5000),
+  solution: z.string().trim().min(1).max(5000),
+  image: z.object({
+    src: z.string().trim().min(1).max(5000),
+    alt: z.string().trim().max(5000).default(''),
+  }).optional(),
+});
+
+const rewriteSentencesSchema = z.object({
+  type: z.literal('rewriteSentences'),
+  instruction: z.string().trim().max(1000).default('Rewrite the sentences correctly.'),
+  items: z.array(rewriteSentenceItemSchema).min(1).max(200),
+  showFirstAsExample: z.boolean().default(false),
+});
+
+const sortingCategorySchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  title: z.string().trim().max(200).default(''),
+});
+
+const sortingCategoryItemSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  text: z.string().trim().min(1).max(2000),
+  categoryId: z.string().trim().min(1).max(100),
+});
+
+const sortingCategoriesSchema = z.object({
+  type: z.literal('sortingCategories'),
+  instruction: z.string().trim().max(1000).default('Sort the items into the correct categories.'),
+  categories: z.array(sortingCategorySchema).min(1).max(4),
+  items: z.array(sortingCategoryItemSchema).min(1).max(500),
+  colorCoding: z.boolean().default(false),
+  showFirstAsExample: z.boolean().default(false),
+});
+
+const chooseCorrectWordItemSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  word: z.string().trim().min(1).max(2000),
+  optionCount: z.number().int().min(2).max(12).default(8),
+});
+
+const chooseCorrectWordsSchema = z.object({
+  type: z.literal('chooseCorrectWords'),
+  instruction: z.string().trim().max(1000).default('Choose the correctly written words.'),
+  keepLeft: z.number().int().min(0).max(10).default(1),
+  keepRight: z.number().int().min(0).max(10).default(1),
+  showFirstAsExample: z.boolean().default(false),
+  items: z.array(chooseCorrectWordItemSchema).min(1).max(100),
+  generation: z.number().int().min(0).max(1_000_000).default(0),
+});
+
 const dominoPairSchema = z.object({
   id: z.string().trim().min(1).max(100).optional(),
   left: z.string().trim().min(1).max(2000),
@@ -587,6 +640,9 @@ export const generatedWorksheetSchema = z.object({
     richTextSchema,
     wordGridSchema,
     wordBankSchema,
+    rewriteSentencesSchema,
+    sortingCategoriesSchema,
+    chooseCorrectWordsSchema,
     dominoSchema,
     germanVerbTableSchema,
     declinationTableSchema,
@@ -696,6 +752,35 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
   }
   if (block.type === 'wordBank') {
     return `<div data-type="word-bank" data-word-bank-items="${encodeURIComponent(JSON.stringify(block.items))}"></div>`;
+  }
+  if (block.type === 'rewriteSentences') {
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `rewrite-${index + 1}`,
+      input: item.input,
+      solution: item.solution,
+      image: item.image,
+    }));
+    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-rewrite-sentence-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-rewrite-show-first-example="${block.showFirstAsExample}" data-type="rewrite-sentences"></div>`;
+  }
+  if (block.type === 'sortingCategories') {
+    const categories = block.categories.map((category, index) => ({
+      id: category.id ?? `category-${index + 1}`,
+      title: category.title,
+    }));
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `sorting-item-${index + 1}`,
+      text: item.text,
+      categoryId: item.categoryId,
+    }));
+    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-sorting-categories="${escapeAttribute(encodeURIComponent(JSON.stringify(categories)))}" data-sorting-category-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-sorting-color-coding="${block.colorCoding}" data-sorting-show-first-example="${block.showFirstAsExample}" data-type="sorting-categories"></div>`;
+  }
+  if (block.type === 'chooseCorrectWords') {
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `correct-word-${index + 1}`,
+      word: item.word,
+      optionCount: item.optionCount,
+    }));
+    return `<div data-choose-correct-instruction="${escapeAttribute(block.instruction)}" data-choose-correct-keep-left="${block.keepLeft}" data-choose-correct-keep-right="${block.keepRight}" data-choose-correct-show-example="${block.showFirstAsExample}" data-choose-correct-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-choose-correct-generation="${block.generation}" data-type="choose-correct-words"></div>`;
   }
   if (block.type === 'fillInTheBlank') {
     return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-fill-blank-title="${escapeAttribute(block.title)}" data-fill-blank-text="${escapeAttribute(block.items.join('\n'))}" data-fill-blank-distractors="${escapeAttribute(JSON.stringify(block.distractors))}" data-fill-blank-width-factor="${block.widthFactor}" data-fill-blank-hide-numbers="${block.hideBlankNumbers}" data-fill-blank-hide-item-numbers="${block.hideItemNumbers}" data-fill-blank-show-line-numbers="${block.showLineNumbers}" data-fill-blank-show-word-bank="${block.showWordBank}" data-fill-blank-show-first-example="${block.showFirstAsExample}" data-type="fill-in-the-blank"></div>`;

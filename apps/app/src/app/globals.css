@@ -70,7 +70,7 @@
 .tiptap-page-header::after {
   position: absolute;
   top: calc(var(--document-logo-top, 10mm) - var(--document-page-footer-text-offset, 2.5mm));
-  right: var(--document-page-header-right, 15mm);
+  right: calc(var(--document-page-header-right, 15mm) + 2px);
   width: 52px;
   height: 16px;
   background-image: var(

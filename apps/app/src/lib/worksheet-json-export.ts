@@ -28,6 +28,9 @@ import type { GermanVerbTableAttrs } from '@/components/editor/german-verb-table
 import type { DeclinationTableAttrs } from '@/components/editor/declination-table-node';
 import type { WorksheetTableAttrs } from '@/components/editor/worksheet-table-node';
 import type { InformationGapActivityAttrs } from '@/components/editor/information-gap-activity-node';
+import type { RewriteSentencesAttrs } from '@/components/editor/rewrite-sentences-node';
+import type { SortingCategoriesAttrs } from '@/components/editor/sorting-categories-node';
+import type { ChooseCorrectWordsAttrs } from '@/components/editor/choose-correct-words-node';
 import type { WorksheetContext } from '@/lib/worksheet-types';
 
 const DECLENSION_ENDINGS = ['em', 'en', 'er', 'es', 'e'] as const;
@@ -114,6 +117,9 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'declinationTable',
   'worksheetTable',
   'informationGapActivity',
+  'rewriteSentences',
+  'sortingCategories',
+  'chooseCorrectWords',
 ]);
 
 function escapeHtml(value: string) {
@@ -733,6 +739,63 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
           ...row,
           cells: { ...row.cells },
         })),
+      };
+    }
+    case 'rewriteSentences': {
+      const rewriteSentencesAttrs = attrs as RewriteSentencesAttrs;
+      return {
+        type: 'rewriteSentences',
+        instruction: instructionOr(
+          attrs.instruction,
+          DEFAULT_BLOCK_INSTRUCTIONS.rewriteSentences,
+        ),
+        items: rewriteSentencesAttrs.items.map(({ id, input, solution, image }) => ({
+          id,
+          input,
+          solution,
+          image: image ? { src: image.src, alt: image.alt } : undefined,
+        })),
+        showFirstAsExample: rewriteSentencesAttrs.showFirstAsExample,
+      };
+    }
+    case 'sortingCategories': {
+      const sortingCategoriesAttrs = attrs as SortingCategoriesAttrs;
+      return {
+        type: 'sortingCategories',
+        instruction: instructionOr(
+          attrs.instruction,
+          DEFAULT_BLOCK_INSTRUCTIONS.sortingCategories,
+        ),
+        categories: sortingCategoriesAttrs.categories.map(({ id, title }) => ({
+          id,
+          title,
+        })),
+        items: sortingCategoriesAttrs.items.map(({ id, text, categoryId }) => ({
+          id,
+          text,
+          categoryId,
+        })),
+        colorCoding: sortingCategoriesAttrs.colorCoding,
+        showFirstAsExample: sortingCategoriesAttrs.showFirstAsExample,
+      };
+    }
+    case 'chooseCorrectWords': {
+      const chooseCorrectWordsAttrs = attrs as ChooseCorrectWordsAttrs;
+      return {
+        type: 'chooseCorrectWords',
+        instruction: instructionOr(
+          attrs.instruction,
+          'Choose the correctly written words.',
+        ),
+        keepLeft: chooseCorrectWordsAttrs.keepLeft,
+        keepRight: chooseCorrectWordsAttrs.keepRight,
+        showFirstAsExample: chooseCorrectWordsAttrs.showFirstAsExample,
+        items: chooseCorrectWordsAttrs.items.map(({ id, word, optionCount }) => ({
+          id,
+          word,
+          optionCount,
+        })),
+        generation: chooseCorrectWordsAttrs.generation,
       };
     }
     default:

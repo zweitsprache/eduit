@@ -137,6 +137,16 @@ function originalText(parts: FillInTheBlankPart[]) {
   )).join('');
 }
 
+function stableWordBankOrder(items: Array<{ id: string; text: string }>) {
+  const score = (value: string) => Array.from(value).reduce(
+    (hash, character) => ((hash * 31) + (character.codePointAt(0) ?? 0)) | 0,
+    17,
+  );
+  return [...items].sort((left, right) => (
+    score(`${left.id}:${left.text}`) - score(`${right.id}:${right.text}`)
+  ));
+}
+
 function DialogueNodeView({ node, selected }: NodeViewProps) {
   const {
     items,
@@ -176,6 +186,8 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
         : []
     ))
   ));
+  const orderedWordBankItems = stableWordBankOrder(wordBankItems);
+  const firstExampleWordBankItemId = wordBankItems[0]?.id;
   const speakerBadgeWidth = 15;
 
   return (
@@ -193,10 +205,10 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
       )}
       {showWordBank && wordBankItems.length > 0 && (
         <div className="custom-block__word-bank dialogue-node__word-bank">
-          {wordBankItems.map((item) => (
+          {orderedWordBankItems.map((item) => (
             <span className="custom-block__word-bank-item" key={item.id}>
               {item.text}
-              {showFirstAsExample && item === wordBankItems[0] && (
+              {showFirstAsExample && item.id === firstExampleWordBankItemId && (
                 <RoughExampleStrike seed={item.id} />
               )}
             </span>

@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   Image01,
+  Loading01,
   PlusSquare,
   Trash01,
   XClose,
@@ -18,6 +19,7 @@ import {
   Link,
   List as ListIcon,
   ListOrdered,
+  Sparkles,
 } from 'lucide-react';
 import {
   ContentCard,
@@ -32,6 +34,7 @@ import {
   type MediaLayoutAttrs,
   type MediaLayoutItem,
 } from '@/components/editor/media-layout-node';
+import type { UserMedia } from '@/lib/media';
 
 type MediaBlock = { pos: number; type: 'mediaLayout' };
 
@@ -60,6 +63,21 @@ function moveItem(items: MediaLayoutItem[], index: number, direction: -1 | 1) {
 
 const inputClass =
   'h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm text-secondary outline-none placeholder:text-placeholder focus:border-brand focus:ring-2 focus:ring-brand';
+const MAX_AI_PROMPT_LENGTH = 1500;
+
+function textPreview(value: string) {
+  if (typeof document === 'undefined') return value.replace(/<[^>]+>/g, ' ');
+  const element = document.createElement('div');
+  element.innerHTML = value;
+  return element.textContent ?? '';
+}
+
+function mediaDimensions(aspectRatio: MediaLayoutAttrs['aspectRatio']) {
+  if (aspectRatio === 'square') return { width: 1024, height: 1024 };
+  if (aspectRatio === 'wide') return { width: 1024, height: 576 };
+  if (aspectRatio === 'three-two') return { width: 1024, height: 680 };
+  return { width: 1024, height: 768 };
+}
 
 function MediaRichTextEditor({
   onChange,
@@ -141,6 +159,9 @@ export function MediaLayoutEditorModal({
   onClose: () => void;
 }) {
   const [selectingItemId, setSelectingItemId] = useState<string | null>(null);
+  const [aiPrompts, setAiPrompts] = useState<Record<string, string>>({});
+  const [generatingItemId, setGeneratingItemId] = useState<string | null>(null);
+  const [generationError, setGenerationError] = useState('');
   const attrs = useEditorState({
     editor,
     selector: ({ editor: currentEditor }) => {
@@ -171,6 +192,49 @@ export function MediaLayoutEditorModal({
         item.id === id ? { ...item, ...patch } : item
       )),
     });
+  };
+  const promptForItem = (item: MediaLayoutItem) => (
+    Object.prototype.hasOwnProperty.call(aiPrompts, item.id)
+      ? aiPrompts[item.id]
+      : (item.alt || item.caption || textPreview(attrs.text)).slice(0, MAX_AI_PROMPT_LENGTH)
+  );
+  const generateImage = async (item: MediaLayoutItem) => {
+    const prompt = promptForItem(item).trim().slice(0, MAX_AI_PROMPT_LENGTH);
+    if (!prompt) {
+      setGenerationError('Describe the image you want to generate.');
+      return;
+    }
+    setGeneratingItemId(item.id);
+    setGenerationError('');
+    try {
+      const response = await fetch('/api/ai/media-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...mediaDimensions(attrs.aspectRatio),
+          prompt,
+          alt: item.alt || prompt.slice(0, 500),
+          name: item.caption || item.alt || 'AI generated image',
+        }),
+      });
+      const result = await response.json() as {
+        media?: UserMedia;
+        error?: string;
+      };
+      if (!response.ok || !result.media) {
+        throw new Error(result.error ?? 'Could not generate image.');
+      }
+      updateItem(item.id, {
+        src: result.media.src,
+        alt: result.media.alt || item.alt || prompt,
+      });
+    } catch (error) {
+      setGenerationError(error instanceof Error
+        ? error.message
+        : 'Could not generate image.');
+    } finally {
+      setGeneratingItemId(null);
+    }
   };
 
   return createPortal(
@@ -416,6 +480,32 @@ export function MediaLayoutEditorModal({
                           className={`${inputClass} mt-2`}
                           placeholder="Alternative text"
                         />
+                        <div className="mt-2 rounded-md border border-secondary bg-secondary p-2">
+                          <label className="text-xs font-semibold text-tertiary">
+                            Eduit AI prompt
+                            <textarea
+                              value={promptForItem(item)}
+                              onChange={(event) => setAiPrompts((current) => ({
+                                ...current,
+                                [item.id]: event.target.value.slice(0, MAX_AI_PROMPT_LENGTH),
+                              }))}
+                              maxLength={MAX_AI_PROMPT_LENGTH}
+                              className="mt-1.5 min-h-16 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-2 text-sm font-normal text-secondary outline-none placeholder:text-placeholder focus:border-brand focus:ring-2 focus:ring-brand"
+                              placeholder="Illustration of two learners practising German vocabulary"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            disabled={generatingItemId !== null}
+                            onClick={() => void generateImage(item)}
+                            className="mt-2 flex h-9 w-full items-center justify-center gap-2 rounded-md bg-brand-solid px-3 text-sm font-semibold text-white hover:bg-brand-solid_hover disabled:cursor-wait disabled:opacity-60"
+                          >
+                            {generatingItemId === item.id
+                              ? <Loading01 className="size-4 animate-spin" />
+                              : <Sparkles className="size-4" />}
+                            {generatingItemId === item.id ? 'Generating…' : 'Generate image'}
+                          </button>
+                        </div>
                       </div>
                       <div className="flex shrink-0">
                         <button
@@ -535,6 +625,11 @@ export function MediaLayoutEditorModal({
                 <PlusSquare className="size-4" />
                 Add image
               </button>
+              {generationError && (
+                <p className="mt-3 rounded-md border border-error-secondary bg-error-primary/5 px-3 py-2 text-sm text-error-primary">
+                  {generationError}
+                </p>
+              )}
             </div>
 
             <div className="overflow-y-auto bg-primary p-6">

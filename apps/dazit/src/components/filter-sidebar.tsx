@@ -37,11 +37,6 @@ const actionFields = [
   'Weiterbildung',
 ] as const;
 
-const groups = [
-  ['Schwierigkeit', ['Basic', 'Intermediate', 'Advanced'], ['9', '4', '3']],
-  ['Seitenzahl', ['1–4', '5–8', '9+'], ['4', '7', '5']],
-] as const;
-
 export function FilterSidebar({
   onActionCompetencyChange,
   onActionFieldChange,
@@ -71,7 +66,6 @@ export function FilterSidebar({
 }) {
   return (
     <aside className="filters">
-      <h2>Filter</h2>
       <div className="filter-group">
         <h3>Niveau</h3>
         <div className="filter-options-two-cols">
@@ -168,18 +162,6 @@ export function FilterSidebar({
           </label>
         ))}
       </div>
-      {groups.map(([title, options, counts]) => (
-        <div className="filter-group" key={title}>
-          <h3>{title}</h3>
-          {options.map((option, index) => (
-            <label key={option}>
-              <input type="checkbox" />
-              <span>{option}</span>
-              <small>{counts[index]}</small>
-            </label>
-          ))}
-        </div>
-      ))}
       <div className="filter-group">
         <h3>Hinzugefügt</h3>
         {['Jederzeit', 'Letzte 30 Tage', 'Letzte 3 Monate', 'Dieses Jahr'].map((option, index) => (
@@ -195,10 +177,6 @@ export function FilterSidebar({
         <span aria-hidden="true" />
         Mit Lösungsblatt
       </label>
-      <div className="popular-tags">
-        <h3>Beliebte Tags</h3>
-        <div>{['vocabulary', 'game', 'reading', 'grammar', 'fractions', 'phonics', 'geometry', 'numbers'].map((tag) => <button key={tag}>{tag}</button>)}</div>
-      </div>
     </aside>
   );
 }
