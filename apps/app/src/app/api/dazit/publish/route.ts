@@ -28,7 +28,7 @@ type PublishMetadata = {
   description: string;
   subject: string;
   grade: string;
-  documentType: 'Arbeitsblatt' | 'Merkblatt' | 'Verbtabelle' | 'Deklinationstabelle' | 'Kommunikationskarten' | 'Lernkarten' | 'Wechselspiel' | 'Domino' | 'Dialog' | 'Wörterliste';
+  documentType: 'Arbeitsblatt' | 'Merkblatt' | 'Verbtabelle' | 'Deklinationstabelle' | 'Kommunikationskarten' | 'Lernkarten' | 'Wechselspiel' | 'Domino' | 'Dialog' | 'Lesetraining' | 'Wörterliste';
   pages: number;
   language: string;
   difficulty: string;
@@ -122,6 +122,7 @@ const FALLBACK_TAGS: Record<PublishMetadata['documentType'], string[]> = {
   Wechselspiel: ['Wechselspiel', 'Partnerarbeit'],
   Domino: ['Domino'],
   Dialog: ['Dialog', 'Dialogisches Sprechen'],
+  Lesetraining: ['Lesetraining', 'Lesen'],
   Wörterliste: ['Wörterliste', 'Wortschatz'],
 };
 
@@ -637,7 +638,7 @@ export async function POST(request: Request) {
     if (!metadata.worksheetId || !metadata.slug || !metadata.title) {
       return NextResponse.json({ error: 'Invalid worksheet metadata.' }, { status: 400 });
     }
-    const documentTypes = ['Arbeitsblatt', 'Merkblatt', 'Verbtabelle', 'Deklinationstabelle', 'Kommunikationskarten', 'Lernkarten', 'Wechselspiel', 'Domino', 'Dialog', 'Wörterliste'];
+    const documentTypes = ['Arbeitsblatt', 'Merkblatt', 'Verbtabelle', 'Deklinationstabelle', 'Kommunikationskarten', 'Lernkarten', 'Wechselspiel', 'Domino', 'Dialog', 'Lesetraining', 'Wörterliste'];
     if (!documentTypes.includes(metadata.documentType)) {
       return NextResponse.json({ error: 'Invalid Dazit document type.' }, { status: 400 });
     }

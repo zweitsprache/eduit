@@ -22,6 +22,7 @@ export type WorksheetContext = {
     | 'information-gap'
     | 'domino'
     | 'dialog'
+    | 'lesetraining'
     | 'word-list';
   sourceProfileId: string | null;
   subject: string;

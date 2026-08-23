@@ -185,6 +185,7 @@ import {
   type DialogueItem,
   type DialogueSpeaker,
 } from '@/components/editor/dialogue-node';
+import { dialogueLineToSpeechText } from '@/lib/dialogue-audio';
 import {
   Email,
   Messenger,
@@ -290,6 +291,9 @@ import { MediaLayout } from '@/components/editor/media-layout-node';
 import { MediaLayoutEditorModal } from '@/components/editor/media-layout-editor-modal';
 import { BlockHoverToolbar } from '@/components/editor/block-hover-toolbar';
 import { LetterNode } from '@/components/editor/letter-node';
+import { AnagramNode } from '@/components/editor/anagram-node';
+import { LetterCloud } from '@/components/editor/letter-cloud-node';
+import { Lesetraining, type LesetrainingAttrs } from '@/components/editor/lesetraining-node';
 import {
   Crossword,
   type CrosswordAttrs,
@@ -530,6 +534,9 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'instructionBlock',
   'mediaLayout',
   'letterNode',
+  'anagramNode',
+  'letterCloud',
+  'lesetraining',
   'crossword',
   'errorCorrection',
   'familyKinship',
@@ -1484,6 +1491,7 @@ const DAZIT_DOCUMENT_TYPE_BY_WORKSHEET_TYPE: Record<WorksheetContext['worksheetT
   'information-gap': 'Wechselspiel',
   domino: 'Domino',
   dialog: 'Dialog',
+  lesetraining: 'Lesetraining',
   'word-list': 'Wörterliste',
 };
 
@@ -1574,6 +1582,7 @@ export default function EditorPage() {
   const [selectedLearningObjectivePos, setSelectedLearningObjectivePos] = useState<number | null>(null);
   const [selectedCustomHeadingPos, setSelectedCustomHeadingPos] = useState<number | null>(null);
   const [selectedDialoguePos, setSelectedDialoguePos] = useState<number | null>(null);
+  const [selectedLesetrainingPos, setSelectedLesetrainingPos] = useState<number | null>(null);
   const [selectedRewriteSentencesPos, setSelectedRewriteSentencesPos] = useState<number | null>(null);
   const [selectedSortingCategoriesPos, setSelectedSortingCategoriesPos] = useState<number | null>(null);
   const [selectedOrderingPos, setSelectedOrderingPos] = useState<number | null>(null);
@@ -1631,7 +1640,7 @@ export default function EditorPage() {
   const [wordGridCSVBlock, setWordGridCSVBlock] =
     useState<ContentEditorBlock | null>(null);
   const [dialogueAudioBlock, setDialogueAudioBlock] =
-    useState<{ pos: number; type: 'dialogue' } | null>(null);
+    useState<{ pos: number; type: 'dialogue' | 'lesetraining' } | null>(null);
   const [dialogueAIBlock, setDialogueAIBlock] =
     useState<ContentEditorBlock | null>(null);
   const [miniFormAIBlock, setMiniFormAIBlock] =
@@ -1735,6 +1744,9 @@ export default function EditorPage() {
       InstructionBlock,
       MediaLayout,
       LetterNode,
+      AnagramNode,
+      LetterCloud,
+      Lesetraining,
       Crossword,
       ErrorCorrection,
       SelectablePageBreak.configure({
@@ -1825,6 +1837,9 @@ export default function EditorPage() {
       );
       setSelectedDialoguePos(
         selectedNodeName === 'dialogue' ? selection.from : null,
+      );
+      setSelectedLesetrainingPos(
+        selectedNodeName === 'lesetraining' ? selection.from : null,
       );
       setSelectedRewriteSentencesPos(
         selectedNodeName === 'rewriteSentences' ? selection.from : null,
@@ -2308,6 +2323,17 @@ export default function EditorPage() {
       const node = currentEditor.state.doc.nodeAt(selectedDialoguePos);
       return node?.type.name === 'dialogue'
         ? node.attrs as DialogueAttrs
+        : null;
+    },
+  });
+
+  const selectedLesetrainingAttrs = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor || selectedLesetrainingPos === null) return null;
+      const node = currentEditor.state.doc.nodeAt(selectedLesetrainingPos);
+      return node?.type.name === 'lesetraining'
+        ? node.attrs as LesetrainingAttrs
         : null;
     },
   });
@@ -5725,6 +5751,29 @@ export default function EditorPage() {
                       controls
                       preload="none"
                       src={selectedDialogueAttrs.audio.url}
+                      className="w-full"
+                    />
+                  )}
+                </>
+              )}
+              {selectedCustomBlock.type === 'lesetraining' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setDialogueAudioBlock({
+                      pos: selectedCustomBlock.pos,
+                      type: 'lesetraining',
+                    })}
+                    className="flex w-full items-center justify-start gap-2 rounded-lg border border-primary bg-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+                  >
+                    <Volume2 className="size-4" />
+                    {selectedLesetrainingAttrs?.audio ? 'Edit audio' : 'Generate audio'}
+                  </button>
+                  {selectedLesetrainingAttrs?.audio && (
+                    <audio
+                      controls
+                      preload="none"
+                      src={selectedLesetrainingAttrs.audio.url}
                       className="w-full"
                     />
                   )}
@@ -9527,6 +9576,7 @@ export default function EditorPage() {
                     <option value="information-gap">Wechselspiel</option>
                     <option value="domino">Domino</option>
                     <option value="dialog">Dialog</option>
+                    <option value="lesetraining">Lesetraining</option>
                     <option value="word-list">Wörterliste</option>
                   </select>
                 </label>
@@ -11122,11 +11172,27 @@ export default function EditorPage() {
       />
       <DialogueAudioModal
         contentLanguage={documentContext.contentLanguage}
-        initialAudio={selectedDialogueAttrs?.audio ?? null}
-        items={selectedDialogueAttrs?.items ?? []}
+        defaultInstruction={dialogueAudioBlock?.type === 'lesetraining' ? '' : undefined}
+        defaultPauseSeconds={dialogueAudioBlock?.type === 'lesetraining' ? 0.7 : undefined}
+        defaultSpeakingRate={dialogueAudioBlock?.type === 'lesetraining' ? 0.9 : undefined}
+        initialAudio={dialogueAudioBlock?.type === 'lesetraining'
+          ? selectedLesetrainingAttrs?.audio ?? null
+          : selectedDialogueAttrs?.audio ?? null}
+        items={dialogueAudioBlock?.type === 'lesetraining'
+          ? [{
+              id: 'lesetraining-reading-text',
+              speaker: 1,
+              text: selectedLesetrainingAttrs?.html
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim() ?? '',
+            }]
+          : selectedDialogueAttrs?.items ?? []}
         open={dialogueAudioBlock !== null}
         speakerNames={
-          selectedDialogueAttrs?.speakerNames
+          dialogueAudioBlock?.type === 'lesetraining'
+            ? { 1: 'Reading text', 2: '', 3: '', 4: '' }
+            : selectedDialogueAttrs?.speakerNames
           ?? DEFAULT_DIALOGUE_SPEAKER_NAMES
         }
         onClose={() => setDialogueAudioBlock(null)}
@@ -11134,7 +11200,7 @@ export default function EditorPage() {
           const block = dialogueAudioBlock;
           if (!block) return;
           editor.chain().command(({ tr }) => {
-            if (tr.doc.nodeAt(block.pos)?.type.name !== 'dialogue') return false;
+            if (tr.doc.nodeAt(block.pos)?.type.name !== block.type) return false;
             tr.setNodeAttribute(block.pos, 'audio', audio);
             return true;
           }).run();

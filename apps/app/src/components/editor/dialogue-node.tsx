@@ -36,6 +36,7 @@ export type DialogueAudio = {
   instruction: string;
   language: string;
   speakingRate: number;
+  scriptItems: Array<{ speaker: DialogueSpeaker; text: string }>;
   durationSeconds: number;
   updatedAt: string;
 };
@@ -129,6 +130,15 @@ function parseAudio(value: string | null): DialogueAudio | null {
   if (!value) return null;
   try {
     const parsed = JSON.parse(decodeURIComponent(value));
+    const scriptItems = Array.isArray(parsed?.scriptItems)
+      ? parsed.scriptItems.flatMap((item: unknown) => {
+          const candidate = item as { speaker?: unknown; text?: unknown };
+          const speaker = Number(candidate?.speaker);
+          const text = typeof candidate?.text === 'string' ? candidate.text : '';
+          if (!Number.isFinite(speaker) || speaker < 1 || speaker > 4 || !text) return [];
+          return [{ speaker: speaker as DialogueSpeaker, text }];
+        })
+      : [];
     return typeof parsed?.url === 'string' && parsed.url
       ? {
           url: parsed.url,
@@ -136,6 +146,7 @@ function parseAudio(value: string | null): DialogueAudio | null {
           instruction: typeof parsed.instruction === 'string' ? parsed.instruction : '',
           language: typeof parsed.language === 'string' ? parsed.language : '',
           speakingRate: Number(parsed.speakingRate) || 1,
+          scriptItems,
           durationSeconds: Number(parsed.durationSeconds) || 0,
           updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : '',
         }

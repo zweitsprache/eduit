@@ -61,6 +61,25 @@ const richTextSchema = z.object({
   bypassGap: z.boolean().default(false),
 });
 
+const lesetrainingSchema = z.object({
+  type: z.literal('lesetraining'),
+  html: z.string().min(1).max(100_000),
+  bypassGap: z.boolean().default(false),
+  audio: z.object({
+    url: z.string().url(),
+    voices: z.record(z.string(), z.string()).default({}),
+    instruction: z.string().max(1000).default(''),
+    language: z.string().max(100).default(''),
+    speakingRate: z.number().min(0.5).max(1.5).default(1),
+    scriptItems: z.array(z.object({
+      speaker: z.number().int().min(1).max(4),
+      text: z.string().max(5000),
+    })).default([]),
+    durationSeconds: z.number().min(0).default(0),
+    updatedAt: z.string().max(100).default(''),
+  }).nullable().default(null),
+});
+
 const pageBreakSchema = z.object({
   type: z.literal('pageBreak'),
   restartPagination: z.boolean().default(false),
@@ -75,6 +94,35 @@ const writingLinesSchema = z.object({
   type: z.literal('writingLines'),
   lineCount: z.number().int().min(1).max(30).default(4),
   lineHeight: z.number().int().min(16).max(120).default(40),
+});
+
+const letterCloudSchema = z.object({
+  type: z.literal('letterCloud'),
+  instruction: z.string().trim().max(1000).default(
+    'Unscramble the letters and write the word on the line.',
+  ),
+  hideInstructionBadge: z.boolean().default(false),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    word: z.string().trim().min(1).max(100),
+  })).min(1).max(100),
+  showItemNumbers: z.boolean().default(true),
+  columns: z.number().int().min(1).max(4).default(2),
+});
+
+const anagramSchema = z.object({
+  type: z.literal('anagram'),
+  instruction: z.string().trim().max(1000).default(
+    'Put the letters in the correct order and write the word.',
+  ),
+  hideInstructionBadge: z.boolean().default(false),
+  showClues: z.boolean().default(true),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    clue: z.string().max(1000).default(''),
+    answer: z.string().trim().min(1).max(100),
+  })).min(1).max(100),
+  showItemNumbers: z.boolean().default(true),
 });
 
 const crosswordSchema = z.object({
@@ -293,12 +341,16 @@ const articlePluralSchema = z.object({
 const trueFalseRowSchema = z.object({
   id: z.string().trim().min(1).max(100).optional(),
   text: z.string().trim().min(1).max(2000),
-  correctValue: z.enum(['true', 'false', 'na']).nullable().default(null),
+  correctValue: z.union([
+    z.enum(['true', 'false', 'na']),
+    z.boolean().transform((value) => (value ? 'true' : 'false')),
+  ]).nullable().default(null),
 });
 
 const trueFalseSchema = z.object({
   type: z.literal('trueFalse'),
   instruction: z.string().trim().max(1000).default('Mark each statement as true or false.'),
+  hideInstructionBadge: z.boolean().default(false),
   question: z.string().trim().max(2000).default(''),
   trueLabel: z.string().trim().max(100).default('True'),
   falseLabel: z.string().trim().max(100).default('False'),
@@ -607,6 +659,7 @@ const contextSchema = z.object({
     'information-gap',
     'domino',
     'dialog',
+    'lesetraining',
     'word-list',
   ]).default('worksheet'),
   sourceProfileId: z.string().max(100).nullable().default(null),
@@ -653,6 +706,8 @@ export const generatedWorksheetSchema = z.object({
     pageBreakSchema,
     spacerSchema,
     writingLinesSchema,
+    letterCloudSchema,
+    anagramSchema,
     crosswordSchema,
     dialogueSchema,
     messengerSchema,
@@ -668,6 +723,7 @@ export const generatedWorksheetSchema = z.object({
     communicationCardsSchema,
     learningCardsSchema,
     richTextSchema,
+    lesetrainingSchema,
     wordGridSchema,
     wordBankSchema,
     rewriteSentencesSchema,
@@ -740,6 +796,21 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
   if (block.type === 'writingLines') {
     return `<div data-writing-lines-count="${block.lineCount}" data-writing-lines-height="${block.lineHeight}" data-type="writing-lines"></div>`;
   }
+  if (block.type === 'letterCloud') {
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `letter-cloud-item-${index + 1}`,
+      word: item.word,
+    }));
+    return `<div data-letter-cloud-instruction="${escapeAttribute(block.instruction)}" data-letter-cloud-hide-instruction-badge="${block.hideInstructionBadge}" data-letter-cloud-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-letter-cloud-item-numbers="${block.showItemNumbers}" data-letter-cloud-columns="${block.columns}" data-type="letter-cloud"></div>`;
+  }
+  if (block.type === 'anagram') {
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `anagram-item-${index + 1}`,
+      clue: item.clue,
+      answer: item.answer,
+    }));
+    return `<div data-anagram-instruction="${escapeAttribute(block.instruction)}" data-anagram-hide-instruction-badge="${block.hideInstructionBadge}" data-anagram-show-clues="${block.showClues}" data-anagram-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-anagram-item-numbers="${block.showItemNumbers}" data-type="anagram-node"></div>`;
+  }
   if (block.type === 'crossword') {
     return `<div data-crossword-instruction="${escapeAttribute(block.instruction)}" data-crossword-entries="${escapeAttribute(encodeURIComponent(JSON.stringify(block.entries)))}" data-crossword-layout-seed="${block.layoutSeed}" data-crossword-cell-size="${block.cellSize}" data-crossword-cell-aspect-ratio="${block.cellAspectRatio}" data-crossword-show-word-bank="${block.showWordBank}" data-type="crossword"></div>`;
   }
@@ -747,6 +818,10 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     // The node stores its markup URI-encoded; encodeURIComponent also escapes the
     // characters that would break out of the attribute.
     return `<div data-rich-text-html="${encodeURIComponent(block.html)}" data-rich-text-bypass-gap="${block.bypassGap}" data-type="rich-text"></div>`;
+  }
+  if (block.type === 'lesetraining') {
+    const audio = block.audio ? encodeURIComponent(JSON.stringify(block.audio)) : '';
+    return `<div data-lesetraining-html="${encodeURIComponent(block.html)}" data-lesetraining-bypass-gap="${block.bypassGap}" data-lesetraining-audio="${escapeAttribute(audio)}" data-type="lesetraining"></div>`;
   }
   if (block.type === 'worksheetTable') {
     const columns = escapeAttribute(encodeURIComponent(JSON.stringify(block.columns)));

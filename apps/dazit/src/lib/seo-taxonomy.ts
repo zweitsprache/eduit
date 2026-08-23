@@ -10,6 +10,7 @@ export const TYPES = [
   { slug: 'wechselspiel', label: 'Wechselspiel' },
   { slug: 'domino', label: 'Domino' },
   { slug: 'dialog', label: 'Dialog' },
+  { slug: 'lesetraining', label: 'Lesetraining' },
   { slug: 'worterliste', label: 'Wörterliste' },
   { slug: 'leseverstehen', label: 'Leseverstehen' },
 ] as const;

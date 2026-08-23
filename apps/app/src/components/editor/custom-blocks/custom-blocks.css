@@ -2275,6 +2275,186 @@
   font-size: 0.9rem;
 }
 
+/* Anagram activity */
+.anagram-node__items {
+  margin-block-start: var(--custom-block-space-section);
+}
+
+.anagram-node__item {
+  padding: 0.85rem 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.anagram-node__item + .anagram-node__item {
+  border-top: 1px solid var(--color-border-secondary);
+}
+
+.anagram-node__heading {
+  display: flex;
+  min-height: var(--custom-block-row-height);
+  align-items: center;
+  gap: var(--custom-block-inline-gap);
+  font-size: var(--custom-block-body-font-size);
+}
+
+.anagram-node__rows {
+  --letter-cell-gap: 0.35rem;
+  display: grid;
+  gap: var(--letter-cell-gap);
+  margin-top: 0.65rem;
+  padding-left: calc(
+    var(--custom-block-index-size)
+    + var(--custom-block-inline-gap)
+  );
+}
+
+.anagram-node__item[data-show-clues="false"] .anagram-node__rows {
+  grid-column: 2;
+  grid-row: 1;
+  margin-top: 0;
+  padding-left: 0;
+}
+
+.anagram-node__item[data-show-clues="false"] {
+  display: grid;
+  grid-template-columns: var(--custom-block-index-size) minmax(0, 1fr);
+  column-gap: var(--custom-block-inline-gap);
+}
+
+.anagram-node__item[data-show-clues="false"] .anagram-node__heading {
+  min-height: 0;
+  align-items: flex-start;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.anagram-node__item[data-show-clues="false"][data-item-numbers="false"] .anagram-node__rows {
+  grid-column: 1 / -1;
+}
+
+.anagram-node__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--letter-cell-gap);
+}
+
+.anagram-node__cell {
+  display: flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--custom-block-radius-control);
+  background: var(--color-bg-primary);
+}
+
+.anagram-node__cell[data-blank="true"] {
+  background: var(--color-bg-secondary);
+}
+
+.anagram-node__letter {
+  visibility: hidden;
+  color: var(--custom-block-solution-color);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.anagram-node__row:not([data-solution="true"]) .anagram-node__letter {
+  visibility: visible;
+  color: var(--color-text-primary);
+}
+
+.tiptap[data-show-solutions="true"] .anagram-node__row[data-solution="true"] .anagram-node__letter {
+  visibility: visible;
+  font-family: var(--custom-block-solution-font-family);
+  font-size: var(--custom-block-solution-font-size);
+  font-weight: 500;
+}
+
+.anagram-node__item[data-item-numbers="false"] .anagram-node__rows {
+  padding-left: 0;
+}
+
+/* Letter cloud */
+.letter-cloud-node__grid {
+  display: grid;
+  gap: calc(2.5 * var(--custom-block-space-section)) 1.5rem;
+}
+
+.custom-block__instruction + .letter-cloud-node__grid {
+  margin-block-start: calc(2 * var(--custom-block-space-section));
+}
+
+.letter-cloud-node__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-left: calc(
+    var(--custom-block-index-size)
+    + var(--custom-block-inline-gap)
+  );
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.letter-cloud-node__item[data-item-numbers="false"] {
+  padding-left: 0;
+}
+
+.letter-cloud-node__item > .custom-block__row-index {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.letter-cloud-node__card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--custom-block-radius-control);
+  background: var(--color-bg-primary);
+}
+
+.letter-cloud-node__canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.letter-cloud-node__letter {
+  position: absolute;
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.letter-cloud-node__line {
+  position: relative;
+  height: 2.1rem;
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.letter-cloud-node__solution {
+  position: absolute;
+  bottom: 0.35rem;
+  left: 0;
+  visibility: hidden;
+  color: var(--custom-block-solution-color);
+  font-family: var(--custom-block-solution-font-family);
+  font-size: var(--custom-block-solution-font-size);
+  font-weight: 500;
+}
+
+.tiptap[data-show-solutions="true"] .letter-cloud-node__solution {
+  visibility: visible;
+}
+
 /* Crossword */
 .crossword-node {
   break-inside: auto;
@@ -5291,6 +5471,30 @@
   display: block;
   break-inside: auto;
   page-break-inside: auto;
+}
+
+.custom-block.lesetraining-node {
+  position: relative;
+}
+
+.lesetraining-node__audio-qr {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.lesetraining-node__audio-qr-code {
+  width: 64px;
+  height: auto;
+  max-width: 64px;
+}
+
+.lesetraining-node--with-audio .rich-text-node__content {
+  padding-right: calc(96px + var(--custom-block-inline-gap));
 }
 
 .rich-text-node__content {

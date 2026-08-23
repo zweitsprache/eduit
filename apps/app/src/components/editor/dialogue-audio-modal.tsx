@@ -48,8 +48,30 @@ function pickDefaultVoices(
   ])) as Record<DialogueSpeaker, string>;
 }
 
+function scriptFromItems(
+  items: DialogueItem[],
+  saved: DialogueAudio['scriptItems'] | undefined,
+) {
+  const fallback = items.map((item) => ({
+    id: item.id,
+    speaker: item.speaker,
+    text: dialogueLineToSpeechText(item.text),
+  }));
+  if (!saved?.length) return fallback;
+  if (saved.length !== fallback.length) return fallback;
+  const matchingSpeakers = saved.every((line, index) => line.speaker === fallback[index].speaker);
+  if (!matchingSpeakers) return fallback;
+  return fallback.map((line, index) => ({
+    ...line,
+    text: saved[index].text || line.text,
+  }));
+}
+
 export function DialogueAudioModal({
   contentLanguage,
+  defaultInstruction = DEFAULT_DIALOGUE_AUDIO_INSTRUCTION,
+  defaultPauseSeconds = DIALOGUE_AUDIO_PAUSE_SECONDS,
+  defaultSpeakingRate = 0.95,
   initialAudio,
   items,
   onClose,
@@ -58,6 +80,9 @@ export function DialogueAudioModal({
   speakerNames,
 }: {
   contentLanguage: string;
+  defaultInstruction?: string;
+  defaultPauseSeconds?: number;
+  defaultSpeakingRate?: number;
   initialAudio: DialogueAudio | null;
   items: DialogueItem[];
   onClose: () => void;
@@ -67,9 +92,10 @@ export function DialogueAudioModal({
 }) {
   const [voiceCatalog, setVoiceCatalog] = useState<Voice[]>([]);
   const [voices, setVoices] = useState<Record<string, string>>({});
-  const [instruction, setInstruction] = useState(DEFAULT_DIALOGUE_AUDIO_INSTRUCTION);
-  const [speakingRate, setSpeakingRate] = useState(0.95);
-  const [pauseSeconds, setPauseSeconds] = useState(DIALOGUE_AUDIO_PAUSE_SECONDS);
+  const [instruction, setInstruction] = useState(defaultInstruction);
+  const [speakingRate, setSpeakingRate] = useState(defaultSpeakingRate);
+  const [pauseSeconds, setPauseSeconds] = useState(defaultPauseSeconds);
+  const [scriptItems, setScriptItems] = useState<DialogueItem[]>([]);
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('BALANCED');
   const [audio, setAudio] = useState<DialogueAudio | null>(null);
   const [pending, setPending] = useState(false);
@@ -101,9 +127,10 @@ export function DialogueAudioModal({
 
   useEffect(() => {
     if (!open) return;
-    setInstruction(initialAudio?.instruction || DEFAULT_DIALOGUE_AUDIO_INSTRUCTION);
-    setSpeakingRate(initialAudio?.speakingRate || 0.95);
-    setPauseSeconds(DIALOGUE_AUDIO_PAUSE_SECONDS);
+    setInstruction(initialAudio?.instruction || defaultInstruction);
+    setSpeakingRate(initialAudio?.speakingRate || defaultSpeakingRate);
+    setPauseSeconds(defaultPauseSeconds);
+    setScriptItems(scriptFromItems(items, initialAudio?.scriptItems));
     setDeliveryMode('BALANCED');
     setAudio(initialAudio);
     setPending(false);
@@ -112,11 +139,19 @@ export function DialogueAudioModal({
     // Re-initialising on every `initialAudio` identity change would refetch the
     // voice list right after a successful generation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [defaultInstruction, defaultPauseSeconds, defaultSpeakingRate, open]);
 
   async function generate() {
-    if (speakers.some((speaker) => !voices[speaker])) {
-      setError('Choose a voice for every speaker.');
+    const spokenItems = scriptItems
+      .map(({ speaker, text }) => ({ speaker, text: text.trim() }))
+      .filter((item) => item.text.length > 0);
+    if (!spokenItems.length) {
+      setError('Add at least one spoken script line.');
+      return;
+    }
+    const missingVoice = spokenItems.find((item) => !voices[item.speaker]);
+    if (missingVoice) {
+      setError(`Choose a voice for speaker ${missingVoice.speaker}.`);
       return;
     }
     setPending(true);
@@ -126,7 +161,7 @@ export function DialogueAudioModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: items.map(({ speaker, text }) => ({ speaker, text })),
+          items: spokenItems,
           voices,
           instruction: instruction.trim(),
           language,
@@ -148,6 +183,7 @@ export function DialogueAudioModal({
         instruction: instruction.trim(),
         language,
         speakingRate,
+        scriptItems: spokenItems,
         durationSeconds: result.audio.durationSeconds,
         updatedAt: new Date().toISOString(),
       };
@@ -270,16 +306,30 @@ export function DialogueAudioModal({
       </section>
 
       <h3 className="mt-6 text-sm font-semibold text-primary">Script</h3>
-      <ol className="mt-3 space-y-1 rounded-xl border border-secondary bg-secondary p-4 text-sm text-secondary">
-        {items.map((item) => (
-          <li className="flex gap-2" key={item.id}>
-            <span className="shrink-0 text-xs font-semibold text-quaternary">
+      <div className="mt-3 space-y-3 rounded-xl border border-secondary bg-secondary p-4">
+        {scriptItems.map((item, index) => (
+          <label className="block" key={item.id || `script-line-${index + 1}`}>
+            <span className="text-xs font-semibold text-tertiary">
               {speakerNames[item.speaker] || `Speaker ${item.speaker}`}
+              {' '}
+              <span className="font-normal text-quaternary">Line {index + 1}</span>
             </span>
-            <span className="min-w-0">{dialogueLineToSpeechText(item.text)}</span>
-          </li>
+            <textarea
+              rows={2}
+              value={item.text}
+              onChange={(event) => setScriptItems((current) => current.map((line, lineIndex) => (
+                lineIndex === index
+                  ? { ...line, text: event.target.value }
+                  : line
+              )))}
+              className="mt-1.5 w-full resize-y rounded-md border border-primary bg-primary px-3 py-2 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+            />
+          </label>
         ))}
-      </ol>
+        <p className="text-xs text-quaternary">
+          The script is editable for pronunciation and spelling tweaks without changing the block content.
+        </p>
+      </div>
 
       {audio && (
         <section className="mt-6 rounded-xl border border-secondary bg-secondary p-4">

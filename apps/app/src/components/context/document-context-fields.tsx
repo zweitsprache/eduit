@@ -143,6 +143,7 @@ export function DocumentContextFields({
           <option value="information-gap">Wechselspiel</option>
           <option value="domino">Domino</option>
           <option value="dialog">Dialog</option>
+          <option value="lesetraining">Lesetraining</option>
           <option value="word-list">Wörterliste</option>
         </select>
       </label>

@@ -10,6 +10,7 @@ export type DazitPublicationDocumentType =
   | 'Wechselspiel'
   | 'Domino'
   | 'Dialog'
+  | 'Lesetraining'
   | 'Wörterliste'
   | 'Leseverstehen';
 

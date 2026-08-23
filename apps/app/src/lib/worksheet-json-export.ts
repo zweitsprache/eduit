@@ -21,6 +21,9 @@ import type { LearningCardsAttrs } from '@/components/editor/learning-cards-node
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
 import type { SpacerAttrs } from '@/components/editor/spacer-node';
 import type { WritingLinesAttrs } from '@/components/editor/writing-lines-node';
+import type { LetterCloudAttrs } from '@/components/editor/letter-cloud-node';
+import type { AnagramNodeAttrs } from '@/components/editor/anagram-node';
+import type { LesetrainingAttrs } from '@/components/editor/lesetraining-node';
 import type { WordGridAttrs } from '@/components/editor/word-grid-node';
 import type { WordBankAttrs } from '@/components/editor/word-bank-node';
 import type { DominoAttrs } from '@/components/editor/domino-node';
@@ -96,6 +99,9 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'pageBreak',
   'spacer',
   'writingLines',
+  'letterCloud',
+  'anagramNode',
+  'lesetraining',
   'richText',
   'glossaryTerms',
   'fillInTheBlank',
@@ -232,6 +238,44 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     case 'writingLines': {
       const { lineCount, lineHeight } = attrs as WritingLinesAttrs;
       return { type: 'writingLines', lineCount, lineHeight };
+    }
+    case 'letterCloud': {
+      const {
+        instruction,
+        hideInstructionBadge,
+        items,
+        showItemNumbers,
+        columns,
+      } = attrs as LetterCloudAttrs;
+      return {
+        type: 'letterCloud',
+        instruction,
+        hideInstructionBadge,
+        items,
+        showItemNumbers,
+        columns,
+      };
+    }
+    case 'anagramNode': {
+      const {
+        instruction,
+        hideInstructionBadge,
+        showClues,
+        showItemNumbers,
+        items,
+      } = attrs as AnagramNodeAttrs;
+      return {
+        type: 'anagram',
+        instruction,
+        hideInstructionBadge,
+        showClues,
+        showItemNumbers,
+        items,
+      };
+    }
+    case 'lesetraining': {
+      const { html, bypassGap, audio } = attrs as LesetrainingAttrs;
+      return { type: 'lesetraining', html, bypassGap, audio };
     }
     case 'crossword': {
       const {
@@ -497,10 +541,12 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     case 'trueFalse': {
       const {
         question, trueLabel, falseLabel, showNa, naLabel, rows, showFirstAsExample,
+        hideInstructionBadge,
       } = attrs as TrueFalseAttrs;
       return {
         type: 'trueFalse',
         instruction: optionalInstruction(attrs.instruction),
+        hideInstructionBadge,
         question,
         trueLabel,
         falseLabel,

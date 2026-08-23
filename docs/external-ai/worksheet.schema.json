@@ -141,6 +141,7 @@
             "information-gap",
             "domino",
             "dialog",
+            "lesetraining",
             "word-list"
           ]
         },
@@ -392,7 +393,15 @@
               "default": false,
               "type": "boolean"
             },
+            "hideInstructionBadge": {
+              "default": false,
+              "type": "boolean"
+            },
             "showColumnHeaders": {
+              "default": true,
+              "type": "boolean"
+            },
+            "showDefinitionColumn": {
               "default": true,
               "type": "boolean"
             },
@@ -424,74 +433,20 @@
               }
             },
             "termWidth": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "enum": [
-                    "10",
-                    "15",
-                    "20",
-                    "25",
-                    "33",
-                    "50",
-                    "66"
-                  ]
-                },
-                {
-                  "type": "integer",
-                  "minimum": -9007199254740991,
-                  "maximum": 9007199254740991
-                }
-              ]
+              "$ref": "#/$defs/__schema17"
             },
             "definitionWidth": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "enum": [
-                    "10",
-                    "15",
-                    "20",
-                    "25",
-                    "33",
-                    "50",
-                    "66"
-                  ]
-                },
-                {
-                  "type": "integer",
-                  "minimum": -9007199254740991,
-                  "maximum": 9007199254740991
-                }
-              ]
+              "$ref": "#/$defs/__schema17"
             },
             "additionalWidth": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "enum": [
-                    "10",
-                    "15",
-                    "20",
-                    "25",
-                    "33",
-                    "50",
-                    "66"
-                  ]
-                },
-                {
-                  "type": "integer",
-                  "minimum": -9007199254740991,
-                  "maximum": 9007199254740991
-                }
-              ]
+              "$ref": "#/$defs/__schema17"
             },
             "entries": {
               "minItems": 1,
               "maxItems": 500,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema17"
+                "$ref": "#/$defs/__schema18"
               }
             }
           },
@@ -522,7 +477,7 @@
               "maxItems": 500,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema18"
+                "$ref": "#/$defs/__schema19"
               }
             },
             "distractors": {
@@ -530,7 +485,7 @@
               "maxItems": 500,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema19"
+                "$ref": "#/$defs/__schema20"
               }
             },
             "widthFactor": {
@@ -538,6 +493,10 @@
               "type": "number",
               "minimum": 0.25,
               "maximum": 5
+            },
+            "hideInstructionBadge": {
+              "default": false,
+              "type": "boolean"
             },
             "hideBlankNumbers": {
               "default": false,
@@ -605,6 +564,159 @@
           "properties": {
             "type": {
               "type": "string",
+              "const": "writingLines"
+            },
+            "lineCount": {
+              "default": 4,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 30
+            },
+            "lineHeight": {
+              "default": 40,
+              "type": "integer",
+              "minimum": 16,
+              "maximum": 120
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "letterCloud"
+            },
+            "instruction": {
+              "default": "Unscramble the letters and write the word on the line.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "hideInstructionBadge": {
+              "default": false,
+              "type": "boolean"
+            },
+            "items": {
+              "minItems": 1,
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema21"
+              }
+            },
+            "showItemNumbers": {
+              "default": true,
+              "type": "boolean"
+            },
+            "columns": {
+              "default": 2,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "anagram"
+            },
+            "instruction": {
+              "default": "Put the letters in the correct order and write the word.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "hideInstructionBadge": {
+              "default": false,
+              "type": "boolean"
+            },
+            "showClues": {
+              "default": true,
+              "type": "boolean"
+            },
+            "items": {
+              "minItems": 1,
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema22"
+              }
+            },
+            "showItemNumbers": {
+              "default": true,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "crossword"
+            },
+            "instruction": {
+              "default": "Complete the crossword using the clues.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "entries": {
+              "minItems": 1,
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema23"
+              }
+            },
+            "layoutSeed": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "cellSize": {
+              "default": 30,
+              "type": "number",
+              "minimum": 22,
+              "maximum": 40
+            },
+            "cellAspectRatio": {
+              "default": "1.25:1",
+              "type": "string",
+              "enum": [
+                "1:1",
+                "1.25:1"
+              ]
+            },
+            "showWordBank": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "entries"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
               "const": "dialogue"
             },
             "instruction": {
@@ -646,6 +758,10 @@
               "default": true,
               "type": "boolean"
             },
+            "hideInstructionBadge": {
+              "default": false,
+              "type": "boolean"
+            },
             "showSpeakerNames": {
               "default": false,
               "type": "boolean"
@@ -671,7 +787,7 @@
               "maxItems": 500,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema20"
+                "$ref": "#/$defs/__schema24"
               }
             }
           },
@@ -704,7 +820,7 @@
               "maxItems": 500,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema21"
+                "$ref": "#/$defs/__schema25"
               }
             }
           },
@@ -787,6 +903,10 @@
               "default": true,
               "type": "boolean"
             },
+            "hideInstructionBadge": {
+              "default": false,
+              "type": "boolean"
+            },
             "destinationLabel": {
               "default": "Nach",
               "type": "string",
@@ -812,7 +932,7 @@
               "maxItems": 100,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema22"
+                "$ref": "#/$defs/__schema26"
               }
             }
           },
@@ -837,12 +957,16 @@
               "default": true,
               "type": "boolean"
             },
+            "hideInstructionBadge": {
+              "default": false,
+              "type": "boolean"
+            },
             "signs": {
               "minItems": 1,
               "maxItems": 20,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema23"
+                "$ref": "#/$defs/__schema27"
               }
             }
           },
@@ -873,7 +997,7 @@
               "maxItems": 50,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema25"
+                "$ref": "#/$defs/__schema29"
               }
             },
             "questionNumber": {
@@ -901,6 +1025,10 @@
             },
             "showInstruction": {
               "default": true,
+              "type": "boolean"
+            },
+            "hideInstructionBadge": {
+              "default": false,
               "type": "boolean"
             }
           },
@@ -931,7 +1059,7 @@
               "maxItems": 100,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema27"
+                "$ref": "#/$defs/__schema31"
               }
             },
             "showFirstAsExample": {
@@ -965,7 +1093,7 @@
               "maxItems": 1000,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema29"
+                "$ref": "#/$defs/__schema33"
               }
             },
             "order": {
@@ -1039,7 +1167,7 @@
               "maxItems": 100,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema31"
+                "$ref": "#/$defs/__schema35"
               }
             },
             "showFirstAsExample": {
@@ -1074,7 +1202,7 @@
               "maxItems": 100,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema32"
+                "$ref": "#/$defs/__schema36"
               }
             },
             "rightOrder": {
@@ -1162,7 +1290,7 @@
               "maxItems": 100,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema33"
+                "$ref": "#/$defs/__schema37"
               }
             },
             "rightOrder": {
@@ -1191,7 +1319,7 @@
               "maxItems": 60,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema34"
+                "$ref": "#/$defs/__schema38"
               }
             },
             "rangeStart": {
@@ -1268,7 +1396,7 @@
               "maxItems": 400,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema35"
+                "$ref": "#/$defs/__schema39"
               }
             }
           },
@@ -1331,7 +1459,7 @@
               "maxItems": 450,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema36"
+                "$ref": "#/$defs/__schema40"
               }
             }
           },
@@ -1355,6 +1483,84 @@
             "bypassGap": {
               "default": false,
               "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "html"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "lesetraining"
+            },
+            "html": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100000
+            },
+            "bypassGap": {
+              "default": false,
+              "type": "boolean"
+            },
+            "audio": {
+              "default": null,
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "voices": {
+                      "default": {},
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "instruction": {
+                      "default": "",
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "language": {
+                      "default": "",
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "speakingRate": {
+                      "default": 1,
+                      "type": "number",
+                      "minimum": 0.5,
+                      "maximum": 1.5
+                    },
+                    "durationSeconds": {
+                      "default": 0,
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "updatedAt": {
+                      "default": "",
+                      "type": "string",
+                      "maxLength": 100
+                    }
+                  },
+                  "required": [
+                    "url"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
           "required": [
@@ -1452,7 +1658,7 @@
               "maxItems": 100,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema37"
+                "$ref": "#/$defs/__schema41"
               }
             },
             "generation": {
@@ -1479,8 +1685,129 @@
               "maxItems": 500,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema38"
+                "$ref": "#/$defs/__schema42"
               }
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "rewriteSentences"
+            },
+            "instruction": {
+              "default": "Rewrite the sentences correctly.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "items": {
+              "minItems": 1,
+              "maxItems": 200,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema43"
+              }
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "sortingCategories"
+            },
+            "instruction": {
+              "default": "Sort the items into the correct categories.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "categories": {
+              "minItems": 1,
+              "maxItems": 4,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema44"
+              }
+            },
+            "items": {
+              "minItems": 1,
+              "maxItems": 500,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema45"
+              }
+            },
+            "colorCoding": {
+              "default": false,
+              "type": "boolean"
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "categories",
+            "items"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "chooseCorrectWords"
+            },
+            "instruction": {
+              "default": "Choose the correctly written words.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "keepLeft": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "keepRight": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            },
+            "items": {
+              "minItems": 1,
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema46"
+              }
+            },
+            "generation": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
             }
           },
           "required": [
@@ -1500,7 +1827,7 @@
               "maxItems": 500,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema39"
+                "$ref": "#/$defs/__schema47"
               }
             },
             "showFirstAsExample": {
@@ -1508,16 +1835,16 @@
               "type": "boolean"
             },
             "oddTextSize": {
-              "$ref": "#/$defs/__schema40"
+              "$ref": "#/$defs/__schema48"
             },
             "evenTextSize": {
-              "$ref": "#/$defs/__schema40"
+              "$ref": "#/$defs/__schema48"
             },
             "leftRepresentation": {
-              "$ref": "#/$defs/__schema41"
+              "$ref": "#/$defs/__schema49"
             },
             "rightRepresentation": {
-              "$ref": "#/$defs/__schema41"
+              "$ref": "#/$defs/__schema49"
             }
           },
           "required": [
@@ -1585,7 +1912,7 @@
               "maxLength": 200
             },
             "leftForms": {
-              "$ref": "#/$defs/__schema42"
+              "$ref": "#/$defs/__schema50"
             },
             "leftAuxiliary": {
               "default": "sein",
@@ -1616,7 +1943,7 @@
               "maxLength": 200
             },
             "forms": {
-              "$ref": "#/$defs/__schema42"
+              "$ref": "#/$defs/__schema50"
             },
             "rightAuxiliary": {
               "default": "haben",
@@ -1654,7 +1981,7 @@
               "maxItems": 20,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema43"
+                "$ref": "#/$defs/__schema51"
               }
             }
           },
@@ -1739,7 +2066,7 @@
               "maxItems": 4,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema44"
+                "$ref": "#/$defs/__schema52"
               }
             }
           },
@@ -1766,12 +2093,16 @@
               "default": true,
               "type": "boolean"
             },
+            "hideInstructionBadge": {
+              "default": false,
+              "type": "boolean"
+            },
             "columns": {
               "minItems": 1,
               "maxItems": 6,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema46"
+                "$ref": "#/$defs/__schema54"
               }
             },
             "rows": {
@@ -1779,7 +2110,7 @@
               "maxItems": 1000,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema47"
+                "$ref": "#/$defs/__schema55"
               }
             },
             "showHeader": {
@@ -1825,7 +2156,7 @@
               "maxItems": 6,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema46"
+                "$ref": "#/$defs/__schema54"
               }
             },
             "rows": {
@@ -1833,7 +2164,7 @@
               "maxItems": 1000,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema47"
+                "$ref": "#/$defs/__schema55"
               }
             }
           },
@@ -1850,6 +2181,19 @@
       "maxLength": 200
     },
     "__schema17": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        {
+          "type": "string",
+          "pattern": "^\\d+$"
+        }
+      ]
+    },
+    "__schema18": {
       "type": "object",
       "properties": {
         "term": {
@@ -1875,17 +2219,82 @@
         "definition"
       ]
     },
-    "__schema18": {
+    "__schema19": {
       "type": "string",
       "minLength": 1,
       "maxLength": 5000
     },
-    "__schema19": {
+    "__schema20": {
       "type": "string",
       "minLength": 1,
       "maxLength": 500
     },
-    "__schema20": {
+    "__schema21": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "word": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "word"
+      ]
+    },
+    "__schema22": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "clue": {
+          "default": "",
+          "type": "string",
+          "maxLength": 1000
+        },
+        "answer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "answer"
+      ]
+    },
+    "__schema23": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "answer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "clue": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "id",
+        "answer",
+        "clue"
+      ]
+    },
+    "__schema24": {
       "type": "object",
       "properties": {
         "speaker": {
@@ -1904,7 +2313,7 @@
         "text"
       ]
     },
-    "__schema21": {
+    "__schema25": {
       "type": "object",
       "properties": {
         "side": {
@@ -1929,7 +2338,7 @@
         "text"
       ]
     },
-    "__schema22": {
+    "__schema26": {
       "type": "object",
       "properties": {
         "id": {
@@ -1964,7 +2373,7 @@
         }
       }
     },
-    "__schema23": {
+    "__schema27": {
       "type": "object",
       "properties": {
         "id": {
@@ -1986,7 +2395,7 @@
           "maxItems": 50,
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema24"
+            "$ref": "#/$defs/__schema28"
           }
         }
       },
@@ -1995,7 +2404,7 @@
         "rows"
       ]
     },
-    "__schema24": {
+    "__schema28": {
       "type": "object",
       "properties": {
         "id": {
@@ -2015,7 +2424,7 @@
         }
       }
     },
-    "__schema25": {
+    "__schema29": {
       "type": "object",
       "properties": {
         "id": {
@@ -2033,7 +2442,7 @@
           "maxItems": 10,
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema26"
+            "$ref": "#/$defs/__schema30"
           }
         },
         "answerMode": {
@@ -2050,7 +2459,7 @@
         "options"
       ]
     },
-    "__schema26": {
+    "__schema30": {
       "type": "object",
       "properties": {
         "id": {
@@ -2072,7 +2481,7 @@
         "text"
       ]
     },
-    "__schema27": {
+    "__schema31": {
       "type": "object",
       "properties": {
         "id": {
@@ -2090,7 +2499,7 @@
           "maxItems": 3,
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema28"
+            "$ref": "#/$defs/__schema32"
           }
         }
       },
@@ -2099,7 +2508,7 @@
         "options"
       ]
     },
-    "__schema28": {
+    "__schema32": {
       "type": "object",
       "properties": {
         "id": {
@@ -2121,7 +2530,7 @@
         "text"
       ]
     },
-    "__schema29": {
+    "__schema33": {
       "type": "object",
       "properties": {
         "id": {
@@ -2137,13 +2546,13 @@
           "maxItems": 3,
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema30"
+            "$ref": "#/$defs/__schema34"
           }
         },
         "article": {
           "anyOf": [
             {
-              "$ref": "#/$defs/__schema30"
+              "$ref": "#/$defs/__schema34"
             },
             {
               "type": "null"
@@ -2160,7 +2569,7 @@
         "term"
       ]
     },
-    "__schema30": {
+    "__schema34": {
       "type": "string",
       "enum": [
         "der",
@@ -2168,7 +2577,7 @@
         "die"
       ]
     },
-    "__schema31": {
+    "__schema35": {
       "type": "object",
       "properties": {
         "id": {
@@ -2202,7 +2611,7 @@
         "text"
       ]
     },
-    "__schema32": {
+    "__schema36": {
       "type": "object",
       "properties": {
         "id": {
@@ -2226,7 +2635,7 @@
         "right"
       ]
     },
-    "__schema33": {
+    "__schema37": {
       "type": "object",
       "properties": {
         "id": {
@@ -2250,12 +2659,12 @@
         "minute"
       ]
     },
-    "__schema34": {
+    "__schema38": {
       "type": "integer",
       "minimum": 0,
       "maximum": 59
     },
-    "__schema35": {
+    "__schema39": {
       "type": "object",
       "properties": {
         "id": {
@@ -2303,7 +2712,7 @@
         }
       }
     },
-    "__schema36": {
+    "__schema40": {
       "type": "object",
       "properties": {
         "id": {
@@ -2323,17 +2732,122 @@
         }
       }
     },
-    "__schema37": {
+    "__schema41": {
       "type": "string",
       "minLength": 1,
       "maxLength": 100
     },
-    "__schema38": {
+    "__schema42": {
       "type": "string",
       "minLength": 1,
       "maxLength": 500
     },
-    "__schema39": {
+    "__schema43": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "input": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        },
+        "solution": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        },
+        "image": {
+          "type": "object",
+          "properties": {
+            "src": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 5000
+            },
+            "alt": {
+              "default": "",
+              "type": "string",
+              "maxLength": 5000
+            }
+          },
+          "required": [
+            "src"
+          ]
+        }
+      },
+      "required": [
+        "input",
+        "solution"
+      ]
+    },
+    "__schema44": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "title": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    },
+    "__schema45": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "categoryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "text",
+        "categoryId"
+      ]
+    },
+    "__schema46": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "word": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "optionCount": {
+          "default": 8,
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 12
+        }
+      },
+      "required": [
+        "word"
+      ]
+    },
+    "__schema47": {
       "type": "object",
       "properties": {
         "id": {
@@ -2357,7 +2871,7 @@
         "right"
       ]
     },
-    "__schema40": {
+    "__schema48": {
       "default": "m",
       "type": "string",
       "enum": [
@@ -2368,7 +2882,7 @@
         "xl"
       ]
     },
-    "__schema41": {
+    "__schema49": {
       "default": "text",
       "type": "string",
       "enum": [
@@ -2379,7 +2893,7 @@
         "text"
       ]
     },
-    "__schema42": {
+    "__schema50": {
       "type": "object",
       "properties": {
         "ich": {
@@ -2429,7 +2943,7 @@
         }
       }
     },
-    "__schema43": {
+    "__schema51": {
       "type": "object",
       "properties": {
         "verb": {
@@ -2438,7 +2952,7 @@
           "maxLength": 200
         },
         "forms": {
-          "$ref": "#/$defs/__schema42"
+          "$ref": "#/$defs/__schema50"
         },
         "separablePrefix": {
           "default": "",
@@ -2450,7 +2964,7 @@
         "forms"
       ]
     },
-    "__schema44": {
+    "__schema52": {
       "type": "object",
       "properties": {
         "key": {
@@ -2466,16 +2980,16 @@
           "type": "object",
           "properties": {
             "masculine": {
-              "$ref": "#/$defs/__schema45"
+              "$ref": "#/$defs/__schema53"
             },
             "feminine": {
-              "$ref": "#/$defs/__schema45"
+              "$ref": "#/$defs/__schema53"
             },
             "neuter": {
-              "$ref": "#/$defs/__schema45"
+              "$ref": "#/$defs/__schema53"
             },
             "plural": {
-              "$ref": "#/$defs/__schema45"
+              "$ref": "#/$defs/__schema53"
             }
           },
           "required": [
@@ -2491,7 +3005,7 @@
         "values"
       ]
     },
-    "__schema45": {
+    "__schema53": {
       "type": "object",
       "properties": {
         "article": {
@@ -2552,7 +3066,7 @@
         "noun"
       ]
     },
-    "__schema46": {
+    "__schema54": {
       "type": "object",
       "properties": {
         "id": {
@@ -2589,7 +3103,7 @@
         "span"
       ]
     },
-    "__schema47": {
+    "__schema55": {
       "type": "object",
       "properties": {
         "id": {

@@ -203,6 +203,21 @@ import {
   ENGLISH_LETTER_ALPHABET,
   GERMAN_LETTER_ALPHABET,
 } from '@/components/editor/letter-node';
+import type {
+  AnagramNodeAttrs,
+  AnagramNodeItem,
+} from '@/components/editor/anagram-node';
+import { DEFAULT_ANAGRAM_INSTRUCTION } from '@/components/editor/anagram-node';
+import type { LesetrainingAttrs } from '@/components/editor/lesetraining-node';
+import type {
+  LetterCloudAttrs,
+  LetterCloudNodeItem,
+} from '@/components/editor/letter-cloud-node';
+import {
+  DEFAULT_LETTER_CLOUD_INSTRUCTION,
+  MAX_LETTER_CLOUD_COLUMNS,
+  MIN_LETTER_CLOUD_COLUMNS,
+} from '@/components/editor/letter-cloud-node';
 import {
   DEFAULT_CROSSWORD_INSTRUCTION,
   generateCrosswordLayout,
@@ -278,10 +293,13 @@ export type ContentEditorBlock = {
     | 'worksheetTable'
     | 'informationGapActivity'
     | 'richText'
+    | 'lesetraining'
     | 'spacer'
     | 'writingLines'
     | 'instructionBlock'
     | 'letterNode'
+    | 'anagramNode'
+    | 'letterCloud'
     | 'crossword'
     | 'errorCorrection'
     | 'domino';
@@ -318,10 +336,13 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   worksheetTable: 'Table content',
   informationGapActivity: 'Information gap activity',
   richText: 'Rich Text content',
+  lesetraining: 'Lesetraining content',
   spacer: 'Spacer',
   writingLines: 'Writing lines',
   instructionBlock: 'Instruction content',
   letterNode: 'Letter Node content',
+  anagramNode: 'Anagram content',
+  letterCloud: 'Letter Cloud content',
   crossword: 'Crossword content',
   errorCorrection: 'Error correction text content',
   domino: 'Domino content',
@@ -3641,6 +3662,13 @@ function TrueFalseEditor({
       <ContentSectionHeader>Learner support</ContentSectionHeader>
       <ContentSwitchGrid>
         <ContentSwitch
+          label="Hide instruction numbering"
+          isSelected={attrs.hideInstructionBadge}
+          onChange={(hideInstructionBadge) => updateAttrs(editor, block, {
+            hideInstructionBadge,
+          })}
+        />
+        <ContentSwitch
           label="Show N/A"
           isSelected={attrs.showNa}
           onChange={(showNa) => updateAttrs(editor, block, {
@@ -6664,6 +6692,236 @@ function LetterNodeEditor({
   );
 }
 
+function AnagramEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: AnagramNodeAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const setItems = (items: AnagramNodeItem[]) => updateAttrs(editor, block, { items });
+
+  return (
+    <>
+      <ContentFieldLabel>Instruction</ContentFieldLabel>
+      <textarea
+        rows={1}
+        value={attrs.instruction || DEFAULT_ANAGRAM_INSTRUCTION}
+        onChange={(event) => updateAttrs(editor, block, {
+          instruction: event.target.value,
+        })}
+        className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+      <ContentSwitchGrid>
+        <ContentSwitch
+          label="Hide instruction numbering"
+          isSelected={attrs.hideInstructionBadge}
+          onChange={(hideInstructionBadge) => updateAttrs(editor, block, {
+            hideInstructionBadge,
+          })}
+        />
+        <ContentSwitch
+          label="Show clues"
+          isSelected={attrs.showClues}
+          onChange={(showClues) => updateAttrs(editor, block, { showClues })}
+        />
+        <ContentSwitch
+          label="Show item numbers"
+          isSelected={attrs.showItemNumbers}
+          onChange={(showItemNumbers) => updateAttrs(editor, block, {
+            showItemNumbers,
+          })}
+        />
+      </ContentSwitchGrid>
+      <ContentSectionHeader count={`${attrs.items.length} items`}>
+        Items
+      </ContentSectionHeader>
+      <div className="mt-3 space-y-2">
+        {attrs.items.map((item, index) => (
+          <ContentCard key={item.id}>
+            <ContentItemGrid>
+              <ContentItemNumber>{String(index + 1).padStart(2, '0')}</ContentItemNumber>
+              <input
+                aria-label={`Clue ${index + 1}`}
+                value={item.clue}
+                onChange={(event) => setItems(attrs.items.map((current) => (
+                  current.id === item.id ? { ...current, clue: event.target.value } : current
+                )))}
+                className="h-9 min-w-0 w-full rounded-md border border-primary bg-primary px-2.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                placeholder="Clue"
+              />
+              <ContentItemActions
+                label={`item ${index + 1}`}
+                canDelete={attrs.items.length > 1}
+                canMoveUp={index > 0}
+                canMoveDown={index < attrs.items.length - 1}
+                onDelete={() => setItems(attrs.items.filter(({ id }) => id !== item.id))}
+                onMoveUp={() => setItems(moveItem(attrs.items, index, -1))}
+                onMoveDown={() => setItems(moveItem(attrs.items, index, 1))}
+              />
+              <span aria-hidden="true" />
+              <input
+                aria-label={`Answer ${index + 1}`}
+                value={item.answer}
+                onChange={(event) => setItems(attrs.items.map((current) => (
+                  current.id === item.id
+                    ? { ...current, answer: event.target.value.toLocaleUpperCase('de-CH') }
+                    : current
+                )))}
+                className="h-9 min-w-0 w-full rounded-md border border-primary bg-primary px-2.5 text-sm tracking-wide text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                placeholder="Answer"
+              />
+              <span aria-hidden="true" />
+            </ContentItemGrid>
+          </ContentCard>
+        ))}
+      </div>
+      <ContentAddButton onClick={() => setItems([
+        ...attrs.items,
+        { id: `anagram-item-${Date.now()}`, clue: '', answer: '' },
+      ])}>
+        Add item
+      </ContentAddButton>
+    </>
+  );
+}
+
+function LetterCloudEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: LetterCloudAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const setItems = (items: LetterCloudNodeItem[]) => updateAttrs(
+    editor,
+    block,
+    { items },
+  );
+
+  return (
+    <>
+      <ContentFieldLabel
+        action={(
+          <button
+            type="button"
+            aria-label="Reset instruction"
+            title="Reset instruction"
+            disabled={attrs.instruction === DEFAULT_LETTER_CLOUD_INSTRUCTION}
+            onClick={() => updateAttrs(editor, block, {
+              instruction: DEFAULT_LETTER_CLOUD_INSTRUCTION,
+            })}
+            className="flex size-7 items-center justify-center rounded-md text-secondary transition hover:bg-primary_hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            <RotateCcw className="size-4" />
+          </button>
+        )}
+      >
+        Instruction
+      </ContentFieldLabel>
+      <textarea
+        rows={1}
+        value={attrs.instruction || DEFAULT_LETTER_CLOUD_INSTRUCTION}
+        placeholder={DEFAULT_LETTER_CLOUD_INSTRUCTION}
+        onChange={(event) => updateAttrs(editor, block, {
+          instruction: event.target.value,
+        })}
+        className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+
+      <ContentSectionHeader>Layout</ContentSectionHeader>
+      <div className="mt-3 max-w-[12rem]">
+        <label>
+          <ContentFieldLabel>Cards per row</ContentFieldLabel>
+          <input
+            type="number"
+            min={MIN_LETTER_CLOUD_COLUMNS}
+            max={MAX_LETTER_CLOUD_COLUMNS}
+            value={attrs.columns}
+            onChange={(event) => updateAttrs(editor, block, {
+              columns: Math.min(
+                MAX_LETTER_CLOUD_COLUMNS,
+                Math.max(MIN_LETTER_CLOUD_COLUMNS, Number(event.target.value)),
+              ),
+            })}
+            className="mt-1.5 h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm tabular-nums text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          />
+        </label>
+      </div>
+
+      <ContentSectionHeader>Learner support</ContentSectionHeader>
+      <ContentSwitchGrid>
+        <ContentSwitch
+          label="Show item numbers"
+          isSelected={attrs.showItemNumbers}
+          onChange={(showItemNumbers) => updateAttrs(editor, block, {
+            showItemNumbers,
+          })}
+        />
+        <ContentSwitch
+          label="Hide instruction number badge"
+          isSelected={attrs.hideInstructionBadge}
+          onChange={(hideInstructionBadge) => updateAttrs(editor, block, {
+            hideInstructionBadge,
+          })}
+        />
+      </ContentSwitchGrid>
+
+      <ContentSectionHeader count={`${attrs.items.length} words`}>
+        Words
+      </ContentSectionHeader>
+      <div className="mt-3 space-y-2">
+        {attrs.items.map((item, index) => (
+          <ContentCard key={item.id}>
+            <ContentItemGrid>
+              <ContentItemNumber>
+                {String(index + 1).padStart(2, '0')}
+              </ContentItemNumber>
+              <input
+                aria-label={`Word ${index + 1}`}
+                value={item.word}
+                onChange={(event) => setItems(attrs.items.map((current) => (
+                  current.id === item.id
+                    ? { ...current, word: event.target.value }
+                    : current
+                )))}
+                className="h-9 min-w-0 w-full rounded-md border border-primary bg-primary px-2.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                placeholder="Word"
+              />
+              <ContentItemActions
+                label={`word ${index + 1}`}
+                canDelete={attrs.items.length > 1}
+                canMoveUp={index > 0}
+                canMoveDown={index < attrs.items.length - 1}
+                onDelete={() => setItems(
+                  attrs.items.filter(({ id }) => id !== item.id),
+                )}
+                onMoveUp={() => setItems(moveItem(attrs.items, index, -1))}
+                onMoveDown={() => setItems(moveItem(attrs.items, index, 1))}
+              />
+            </ContentItemGrid>
+          </ContentCard>
+        ))}
+      </div>
+      <ContentAddButton
+        onClick={() => setItems([
+          ...attrs.items,
+          {
+            id: `letter-cloud-item-${Date.now()}`,
+            word: '',
+          },
+        ])}
+      >
+        Add word
+      </ContentAddButton>
+    </>
+  );
+}
+
 function CrosswordEditor({
   attrs,
   block,
@@ -8286,10 +8544,13 @@ export function BlockContentEditorModal({
             {block.type === 'worksheetTable' && <WorksheetTableEditor attrs={attrs as unknown as WorksheetTableAttrs} block={block} editor={editor} />}
             {block.type === 'informationGapActivity' && <InformationGapActivityEditor attrs={attrs as unknown as InformationGapActivityAttrs} block={block} editor={editor} />}
             {block.type === 'richText' && <RichTextEditor attrs={attrs as unknown as RichTextAttrs} block={block} editor={editor} />}
+            {block.type === 'lesetraining' && <RichTextEditor attrs={attrs as unknown as RichTextAttrs} block={block} editor={editor} />}
             {block.type === 'spacer' && <SpacerEditor attrs={attrs as unknown as SpacerAttrs} block={block} editor={editor} />}
             {block.type === 'writingLines' && <WritingLinesEditor attrs={attrs as unknown as WritingLinesAttrs} block={block} editor={editor} />}
             {block.type === 'instructionBlock' && <StandaloneInstructionEditor attrs={attrs as unknown as InstructionBlockAttrs} block={block} editor={editor} />}
             {block.type === 'letterNode' && <LetterNodeEditor attrs={attrs as unknown as LetterNodeAttrs} block={block} editor={editor} />}
+            {block.type === 'anagramNode' && <AnagramEditor attrs={attrs as unknown as AnagramNodeAttrs} block={block} editor={editor} />}
+            {block.type === 'letterCloud' && <LetterCloudEditor attrs={attrs as unknown as LetterCloudAttrs} block={block} editor={editor} />}
             {block.type === 'crossword' && <CrosswordEditor attrs={attrs as unknown as CrosswordAttrs} block={block} editor={editor} />}
             {block.type === 'errorCorrection' && <ErrorCorrectionEditor attrs={attrs as unknown as ErrorCorrectionAttrs} block={block} editor={editor} />}
             {block.type === 'domino' && <DominoEditor attrs={attrs as unknown as DominoAttrs} block={block} editor={editor} />}

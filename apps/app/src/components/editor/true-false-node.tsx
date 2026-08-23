@@ -25,6 +25,7 @@ export type TrueFalseRow = {
 };
 
 export type TrueFalseAttrs = {
+  hideInstructionBadge: boolean;
   question: string;
   trueLabel: string;
   falseLabel: string;
@@ -56,6 +57,7 @@ function parseRows(value: string | null): TrueFalseRow[] {
 
 function TrueFalseNodeView({ node, selected }: NodeViewProps) {
   const {
+    hideInstructionBadge,
     question,
     trueLabel,
     falseLabel,
@@ -88,7 +90,7 @@ function TrueFalseNodeView({ node, selected }: NodeViewProps) {
           preserveAspectRatio="none"
           ref={solutionsRef}
         />
-        <BlockInstruction>
+        <BlockInstruction hideBadge={hideInstructionBadge}>
           {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.trueFalse}
         </BlockInstruction>
         <BlockQuestion>{question}</BlockQuestion>
@@ -145,6 +147,13 @@ export const TrueFalse = Node.create({
 
   addAttributes() {
     return {
+      hideInstructionBadge: {
+        default: false,
+        parseHTML: (element) => element.getAttribute('data-true-false-hide-instruction-badge') === 'true',
+        renderHTML: (attributes) => ({
+          'data-true-false-hide-instruction-badge': String(attributes.hideInstructionBadge),
+        }),
+      },
       question: {
         default: '',
         parseHTML: (element) => element.getAttribute('data-true-false-question')
@@ -214,6 +223,7 @@ export const TrueFalse = Node.create({
           commands.insertContent({
             type: this.name,
             attrs: {
+              hideInstructionBadge: attrs.hideInstructionBadge ?? false,
               question: attrs.question ?? '',
               trueLabel: attrs.trueLabel ?? 'True',
               falseLabel: attrs.falseLabel ?? 'False',

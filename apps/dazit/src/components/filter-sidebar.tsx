@@ -10,6 +10,7 @@ const worksheetTypes = [
   'Wechselspiel',
   'Domino',
   'Dialog',
+  'Lesetraining',
   'Wörterliste',
   'Leseverstehen',
 ] as const;

@@ -23,6 +23,7 @@ export type Worksheet = {
     | 'Wechselspiel'
     | 'Domino'
     | 'Dialog'
+    | 'Lesetraining'
     | 'Wörterliste'
     | 'Leseverstehen';
   pages: number;
@@ -123,6 +124,7 @@ function baseWorksheet(row: DazitPublicationCardRow | DazitPublicationRow): Work
     'Wechselspiel',
     'Domino',
     'Dialog',
+    'Lesetraining',
     'Wörterliste',
     'Leseverstehen',
   ];

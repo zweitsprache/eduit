@@ -10,11 +10,14 @@ export const maxDuration = 60;
 // viewport width/height are the paper size in CSS pixels (mm * 96 / 25.4).
 // The print viewport must match the @page width, otherwise Chromium's
 // page.pdf() scales the whole document down to fit the paper width.
+// `sheetCopies` > 1 imposes several identical copies of the whole document on
+// one physical sheet: A5 landscape prints as A4 portrait with two stacked copies.
 const PAGE_FORMATS = {
-  'a4-portrait': { cssSize: '210mm 297mm', pageHeight: '297mm', viewport: { width: 794, height: 1123 } },
-  'a4-landscape': { cssSize: '297mm 210mm', pageHeight: '210mm', viewport: { width: 1123, height: 794 } },
-  'letter-portrait': { cssSize: '215.9mm 279.4mm', pageHeight: '279.4mm', viewport: { width: 816, height: 1056 } },
-  'letter-landscape': { cssSize: '279.4mm 215.9mm', pageHeight: '215.9mm', viewport: { width: 1056, height: 816 } },
+  'a4-portrait': { cssSize: '210mm 297mm', pageHeight: '297mm', viewport: { width: 794, height: 1123 }, sheetCopies: 1 },
+  'a4-landscape': { cssSize: '297mm 210mm', pageHeight: '210mm', viewport: { width: 1123, height: 794 }, sheetCopies: 1 },
+  'a5-landscape': { cssSize: '210mm 297mm', pageHeight: '148.4mm', viewport: { width: 794, height: 1123 }, sheetCopies: 2 },
+  'letter-portrait': { cssSize: '215.9mm 279.4mm', pageHeight: '279.4mm', viewport: { width: 816, height: 1056 }, sheetCopies: 1 },
+  'letter-landscape': { cssSize: '279.4mm 215.9mm', pageHeight: '215.9mm', viewport: { width: 1056, height: 816 }, sheetCopies: 1 },
 };
 
 const PDF_FONTS = [
@@ -182,7 +185,7 @@ export async function POST(request: Request) {
     // printable document.
     await page.goto(renderShellUrl, { waitUntil: 'domcontentloaded' });
     await page.setContent(html, { waitUntil: 'domcontentloaded' });
-    await page.evaluate(async ({ pageHeight }) => {
+    await page.evaluate(async ({ pageHeight, sheetCopies }) => {
       // Force layout, then explicitly request every font descriptor used by
       // printable content. This includes body, heading, example, and solution
       // fonts selected through brand CSS variables.
@@ -228,8 +231,15 @@ export async function POST(request: Request) {
         editor.style.height = 'auto';
         editor.style.maxHeight = 'none';
         editor.style.overflow = 'visible';
+
+        // Ids are intentionally kept: duplicated SVG defs/`use` references then
+        // still resolve to the (identical) first copy in the document.
+        const container = editor.parentElement;
+        for (let copy = 1; container && copy < sheetCopies; copy += 1) {
+          container.appendChild(editor.cloneNode(true));
+        }
       }
-    }, { pageHeight: pageFormat.pageHeight });
+    }, { pageHeight: pageFormat.pageHeight, sheetCopies: pageFormat.sheetCopies });
     const pdf = await page.pdf({
       printBackground: true,
       margin: { top: 0, right: 0, bottom: 0, left: 0 },

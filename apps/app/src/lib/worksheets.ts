@@ -70,6 +70,8 @@ function mapRow(row: WorksheetRow): Worksheet {
                 ? 'domino'
               : row.context?.worksheetType === 'dialog'
                 ? 'dialog'
+              : row.context?.worksheetType === 'lesetraining'
+                ? 'lesetraining'
               : row.context?.worksheetType === 'word-list'
                 ? 'word-list'
         : 'worksheet',
@@ -275,6 +277,8 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
                 ? 'domino'
               : context.worksheetType === 'dialog'
                 ? 'dialog'
+              : context.worksheetType === 'lesetraining'
+                ? 'lesetraining'
               : context.worksheetType === 'word-list'
                 ? 'word-list'
         : 'worksheet',
