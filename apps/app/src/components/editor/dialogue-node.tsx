@@ -95,7 +95,19 @@ function defaultSpeakerNames(): DialogueSpeakerNames {
 
 function buildListenUrl(audioUrl: string): string | null {
   if (typeof window === 'undefined') return null;
-  return `${window.location.origin}/listen?src=${encodeURIComponent(audioUrl)}`;
+  const base = window.location.origin;
+  try {
+    const parsed = new URL(audioUrl, base);
+    if (parsed.pathname === '/api/public/dialogue-audio') {
+      const path = parsed.searchParams.get('path');
+      if (path) {
+        return `${base}/listen?path=${encodeURIComponent(path)}`;
+      }
+    }
+  } catch {
+    // Fall back to legacy src-based link for malformed or unexpected values.
+  }
+  return `${base}/listen?src=${encodeURIComponent(audioUrl)}`;
 }
 
 function parseSpeakerNames(value: string | null): DialogueSpeakerNames {

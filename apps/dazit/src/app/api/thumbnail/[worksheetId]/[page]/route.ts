@@ -30,7 +30,14 @@ export async function GET(
     return new Response('Thumbnail not found.', { status: 404 });
   }
 
-  const result = await get(thumbnailPath, { access: 'private', token, useCache: false });
+  let result;
+  try {
+    result = await get(thumbnailPath, { access: 'private', token, useCache: false });
+  } catch (error) {
+    // A store/auth error here means BLOB_READ_WRITE_TOKEN is misconfigured, not that the file is missing.
+    console.error('Dazit thumbnail blob store request failed.', thumbnailPath, error);
+    return new Response('Thumbnail store unavailable.', { status: 502 });
+  }
   if (!result || result.statusCode !== 200) return new Response('Thumbnail not found.', { status: 404 });
   return new Response(result.stream, {
     headers: {

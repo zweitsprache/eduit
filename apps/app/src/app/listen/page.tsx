@@ -9,13 +9,22 @@ function isAllowedAudioSrc(src: string): boolean {
   return src.startsWith('/api/public/dialogue-audio?path=');
 }
 
+function audioSrcFromPath(path: string): string | null {
+  if (!path.startsWith('dialogue-audio-public/') || !path.endsWith('.mp3')) {
+    return null;
+  }
+  return `/api/public/dialogue-audio?path=${encodeURIComponent(path)}`;
+}
+
 export default async function ListenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ src?: string }>;
+  searchParams: Promise<{ path?: string; src?: string }>;
 }) {
-  const { src } = await searchParams;
-  const audioSrc = typeof src === 'string' && isAllowedAudioSrc(src) ? src : null;
+  const { path, src } = await searchParams;
+  const audioFromPath = typeof path === 'string' ? audioSrcFromPath(path) : null;
+  const audioFromSrc = typeof src === 'string' && isAllowedAudioSrc(src) ? src : null;
+  const audioSrc = audioFromPath || audioFromSrc;
 
   return (
     <main

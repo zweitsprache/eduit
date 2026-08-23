@@ -34,13 +34,20 @@ export async function GET(
     return new Response('PDF not found.', { status: 404 });
   }
   if (!blobPath) return new Response('PDF not found.', { status: 404 });
-  const result = await get(blobPath, {
-    access: 'private',
-    token,
-    // Republishing overwrites the same path, so a cached read would serve the
-    // previous PDF.
-    useCache: false,
-  });
+  let result;
+  try {
+    result = await get(blobPath, {
+      access: 'private',
+      token,
+      // Republishing overwrites the same path, so a cached read would serve the
+      // previous PDF.
+      useCache: false,
+    });
+  } catch (error) {
+    // A store/auth error here means BLOB_READ_WRITE_TOKEN is misconfigured, not that the file is missing.
+    console.error('Dazit PDF blob store request failed.', blobPath, error);
+    return new Response('PDF store unavailable.', { status: 502 });
+  }
   if (!result || result.statusCode !== 200) return new Response('PDF not found.', { status: 404 });
   if (!worksheet.worksheetId) {
     return Response.json({ error: 'download_unavailable' }, { status: 503 });
