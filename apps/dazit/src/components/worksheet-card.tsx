@@ -43,6 +43,11 @@ export function WorksheetCard({
           href={`/documents/${worksheet.slug}`}
           aria-label={`${worksheet.title} ansehen`}
         >
+          {worksheet.actionField && (
+            <span className={`card-action-field level-${worksheet.color}`} title={`Handlungsfeld: ${worksheet.actionField}`}>
+              {worksheet.actionField}
+            </span>
+          )}
           {worksheet.thumbnailUrls?.[0]
             ? (
               <img

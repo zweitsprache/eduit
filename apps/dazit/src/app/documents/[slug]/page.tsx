@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Download01, Plus } from '@untitledui/icons';
+import { Check } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
 import { WorksheetCard } from '@/components/worksheet-card';
@@ -107,6 +108,7 @@ export default async function WorksheetDetailPage({ params }: Props) {
   ]);
   const worksheetUrl = absoluteDazitUrl(`/documents/${worksheet.slug}`);
   const snippetUrl = worksheetUrl.replace(/^https?:\/\//, '');
+  const detailLevelLabel = worksheet.level || worksheet.grade;
   const webpageId = `${worksheetUrl}#webpage`;
   const resourceId = `${worksheetUrl}#learning-resource`;
   const structuredData = [
@@ -231,8 +233,15 @@ export default async function WorksheetDetailPage({ params }: Props) {
                 </section>
               </AdminOnly>
               <div className="detail-flags">
+                {detailLevelLabel && detailLevelLabel !== '—' && (
+                  <span className={`level-badge level-${worksheet.color}`}>{detailLevelLabel}</span>
+                )}
                 <span className={`subject subject-${worksheet.color}`}>{worksheet.documentType.toUpperCase()}</span>
-                {worksheet.hasAnswerKey && <span className="answer-key">✓ Lösungsblatt enthalten</span>}
+                {worksheet.hasAnswerKey && (
+                  <span className="answer-key" aria-label="Lösungsblatt" title="Lösungsblatt">
+                    <Check aria-hidden="true" />
+                  </span>
+                )}
               </div>
               <h1>{worksheet.title}</h1>
               <p className="lead">{worksheet.description}</p>

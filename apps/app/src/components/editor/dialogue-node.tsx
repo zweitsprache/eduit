@@ -191,6 +191,8 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
   ));
   const orderedWordBankItems = stableWordBankOrder(wordBankItems);
   const firstExampleWordBankItemId = wordBankItems[0]?.id;
+  const hasContext = context.trim().length > 0;
+  const hasWordBank = showWordBank && wordBankItems.length > 0;
   const speakerBadgeWidth = 15;
 
   return (
@@ -203,10 +205,10 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
           {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.dialogue}
         </BlockInstruction>
       )}
-      {context && (
+      {hasContext && (
         <p className="dialogue-node__context">{context}</p>
       )}
-      {showWordBank && wordBankItems.length > 0 && (
+      {hasWordBank && (
         <div className="custom-block__word-bank dialogue-node__word-bank">
           {orderedWordBankItems.map((item) => (
             <span className="custom-block__word-bank-item" key={item.id}>
@@ -221,7 +223,11 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
       <div
         className={`dialogue-node__rows${
           showSpeakerNames ? ' dialogue-node__rows--speaker-names' : ''
-        }${listenUrl ? ' dialogue-node__rows--with-audio' : ''}`}
+        }${listenUrl ? ' dialogue-node__rows--with-audio' : ''}${
+          !showInstruction && !hasContext && !hasWordBank
+            ? ' dialogue-node__rows--no-instruction'
+            : ''
+        }`}
         style={{
           '--dialogue-speaker-badge-width': `${speakerBadgeWidth}ch`,
         } as CSSProperties}

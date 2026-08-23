@@ -4,7 +4,6 @@ import {
   createWorksheet,
   deleteWorksheet,
   getWorksheet,
-  getWorksheetPreviewLocation,
   listWorksheets,
   updateWorksheet,
   validateWorksheetPatch,
@@ -90,11 +89,6 @@ export async function DELETE(request: Request) {
     const deleteFromDazit = new URL(request.url).searchParams.get('deleteFromDazit') === 'true';
     const worksheet = await getWorksheet(id, user.id, user.isAdmin);
     if (!worksheet) throw new Error('Worksheet not found.');
-    const preview = await getWorksheetPreviewLocation(
-      id,
-      user.id,
-      user.isAdmin,
-    );
     if (deleteFromDazit) {
       const token = process.env.BLOB_READ_WRITE_TOKEN;
       if (!token) throw new Error('Dazit storage is not configured.');
@@ -110,9 +104,6 @@ export async function DELETE(request: Request) {
       await sql`delete from dazit_publications where worksheet_id = ${id}`;
     }
     await deleteWorksheet(id, user.id, user.isAdmin);
-    if (preview?.blobPath) {
-      await del(preview.blobPath).catch(() => undefined);
-    }
     return new Response(null, { status: 204 });
   } catch (error) {
     return errorResponse(error);

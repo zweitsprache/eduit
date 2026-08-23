@@ -134,13 +134,14 @@ const SELECT_WORKSHEET = `
     w.show_solutions,
     w.context,
     w.status,
-    (w.preview_blob_path is not null) as has_preview,
-    w.preview_updated_at,
+    (dp.thumbnail_paths->>0 is not null) as has_preview,
+    dp.updated_at as preview_updated_at,
     w.created_at,
     w.updated_at
     , w.source_revision
   from worksheets w
   left join brand_profiles b on b.id = w.brand_profile_id
+  left join dazit_publications dp on dp.worksheet_id = w.id
 `;
 
 export async function listWorksheets(ownerUserId: string, includeAll = false) {
@@ -442,22 +443,23 @@ export async function getWorksheetPreviewLocation(
 ) {
   const rows = await sql(
     `select
-       preview_blob_path,
-       preview_updated_at
-     from worksheets
-     where id = $1
-       and ($2 or owner_user_id = $3)
-       and preview_blob_path is not null`,
+       dp.thumbnail_paths->>0 as thumbnail_path,
+       dp.updated_at
+     from worksheets w
+     join dazit_publications dp on dp.worksheet_id = w.id
+     where w.id = $1
+       and ($2 or w.owner_user_id = $3)
+       and dp.thumbnail_paths->>0 is not null`,
     [id, includeAll, ownerUserId],
   ) as Array<{
-    preview_blob_path: string;
-    preview_updated_at: Date | string | null;
+    thumbnail_path: string;
+    updated_at: Date | string | null;
   }>;
   if (!rows[0]) return null;
   return {
-    blobPath: rows[0].preview_blob_path,
-    updatedAt: rows[0].preview_updated_at
-      ? new Date(rows[0].preview_updated_at).toISOString()
+    blobPath: rows[0].thumbnail_path,
+    updatedAt: rows[0].updated_at
+      ? new Date(rows[0].updated_at).toISOString()
       : null,
   };
 }

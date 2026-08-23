@@ -3739,6 +3739,15 @@
     var(--custom-block-row-border-color);
 }
 
+.dialogue-node__rows--no-instruction {
+  margin-block-start: 0 !important;
+  border-top: none;
+}
+
+.dialogue-node__rows--no-instruction > .dialogue-node__row:first-child {
+  padding-block-start: 0;
+}
+
 .dialogue-node__rows--with-audio {
   /* Stop the top divider short of the QR code instead of running under it. */
   position: relative;

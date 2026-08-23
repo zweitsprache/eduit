@@ -1,11 +1,12 @@
-// One-off migration: copy all DAZIT blobs from the OLD Vercel Blob store into
-// the NEW store, preserving pathnames and content types. Idempotent and
-// non-destructive (never deletes from the old store).
+// One-off migration: copy all DAZIT and editor blobs from the OLD Vercel Blob
+// store into the NEW store, preserving pathnames and content types. Idempotent
+// and non-destructive (never deletes from the old store).
 //
 // Usage:
 //   export OLD_BLOB_READ_WRITE_TOKEN="vercel_blob_rw_<oldstore>_..."
 //   node apps/dazit/scripts/migrate-blobs.mjs            # copy
 //   DRY_RUN=1 node apps/dazit/scripts/migrate-blobs.mjs  # count only
+//   PREFIXES=worksheet-previews/ node ...                # limit prefixes
 //
 // NEW store token is read automatically from apps/app/.env.local.
 import * as blob from '@vercel/blob';
@@ -92,10 +93,19 @@ const listAll = async (prefix) => {
   return all;
 };
 
-const worksheets = await listAll('worksheets/');
-const library = await listAll('library/');
-const items = [...worksheets, ...library];
-console.log(`OLD store blobs: worksheets=${worksheets.length} library=${library.length} total=${items.length}`);
+const PREFIXES = (process.env.PREFIXES || 'worksheets/,library/,worksheet-previews/,user-media/')
+  .split(',')
+  .map((prefix) => prefix.trim())
+  .filter(Boolean);
+
+const counted = [];
+const items = [];
+for (const prefix of PREFIXES) {
+  const blobs = await listAll(prefix);
+  counted.push([prefix, blobs.length]);
+  items.push(...blobs);
+}
+console.log('OLD store blobs:', Object.fromEntries(counted), 'total=', items.length);
 
 if (DRY_RUN) {
   let present = 0;

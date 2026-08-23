@@ -4,9 +4,14 @@ import { ForgotPasswordForm } from '@/components/forgot-password-form';
 import { OAuthError } from '@/components/oauth-error';
 import { ResetPasswordForm } from '@/components/reset-password-form';
 
-function AuthCard({ children }: { children: React.ReactNode }) {
+function AuthCard({ children, showLogo = false }: { children: React.ReactNode; showLogo?: boolean }) {
   return (
     <section className="standalone-auth-card">
+      {showLogo && (
+        <header className="standalone-auth-card-header">
+          <img alt="DaZit" src="/dazit_icon_orange.svg" />
+        </header>
+      )}
       <div className="standalone-auth-card-view">{children}</div>
     </section>
   );
@@ -32,7 +37,7 @@ export function AuthPage({ errorCode, path }: { errorCode?: string; path: string
   if (path === 'sign-in' || path === 'sign-up' || path === 'email-otp') {
     return (
       <main className="auth-page">
-        <AuthCard><AuthSurface initialMode={path} /></AuthCard>
+        <AuthCard showLogo><AuthSurface initialMode={path} showLogo={false} /></AuthCard>
       </main>
     );
   }
