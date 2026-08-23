@@ -96,8 +96,7 @@ export async function DELETE(request: Request) {
       user.isAdmin,
     );
     if (deleteFromDazit) {
-      const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN
-        ?? process.env.BLOB_READ_WRITE_TOKEN;
+      const token = process.env.BLOB_READ_WRITE_TOKEN;
       if (!token) throw new Error('Dazit storage is not configured.');
       const publicationBlobs = await list({
         prefix: `worksheets/${id}/`,

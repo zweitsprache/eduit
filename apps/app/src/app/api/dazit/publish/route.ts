@@ -583,11 +583,10 @@ export async function POST(request: Request) {
     if (user && !user.isAdmin && !isWorkflowRequest) {
       return NextResponse.json({ error: 'Only administrators can publish worksheets.' }, { status: 403 });
     }
-    const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN
-      ?? process.env.BLOB_READ_WRITE_TOKEN;
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) {
       return NextResponse.json(
-        { error: 'Dazit publishing is not configured. Add DAZIT_BLOB_READ_WRITE_TOKEN (or BLOB_READ_WRITE_TOKEN) to the editor environment.' },
+        { error: 'Dazit publishing is not configured. Add BLOB_READ_WRITE_TOKEN to the editor environment.' },
         { status: 503 },
       );
     }
