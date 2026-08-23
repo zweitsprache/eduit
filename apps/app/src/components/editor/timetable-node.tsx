@@ -21,6 +21,7 @@ export type TimetableRow = {
 export type TimetableAttrs = {
   instruction?: string | null;
   showInstruction: boolean;
+  hideInstructionBadge: boolean;
   destinationLabel: string;
   platformLabel: string;
   noticeLabel: string;
@@ -66,6 +67,7 @@ export const DEFAULT_TIMETABLE_ROWS: TimetableRow[] = [
 export const DEFAULT_TIMETABLE_ATTRS: TimetableAttrs = {
   instruction: null,
   showInstruction: true,
+  hideInstructionBadge: false,
   destinationLabel: 'Nach',
   platformLabel: 'Gleis',
   noticeLabel: 'Hinweis',
@@ -117,7 +119,7 @@ function TimetableNodeView({ node, selected }: NodeViewProps) {
   return (
     <CustomBlockRoot selected={selected} className="timetable-node">
       {attrs.showInstruction && (
-        <BlockInstruction>
+        <BlockInstruction hideBadge={attrs.hideInstructionBadge}>
           {attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.timetable}
         </BlockInstruction>
       )}
@@ -172,6 +174,15 @@ export const Timetable = Node.create({
         ),
         renderHTML: (attributes) => ({
           'data-show-instruction': String(attributes.showInstruction),
+        }),
+      },
+      hideInstructionBadge: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-hide-instruction-badge') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-hide-instruction-badge': String(attributes.hideInstructionBadge),
         }),
       },
       destinationLabel: textAttribute(

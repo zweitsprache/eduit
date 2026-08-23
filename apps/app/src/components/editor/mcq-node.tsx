@@ -47,6 +47,7 @@ export type MCQAttrs = {
   shuffleAnswers: boolean;
   questionNumber: number | null;
   showInstruction: boolean;
+  hideInstructionBadge: boolean;
 };
 
 export const DEFAULT_MCQ_INSTRUCTION = 'Choose the correct answer.';
@@ -140,6 +141,7 @@ function MCQNodeView({ node, selected }: NodeViewProps) {
     questionNumber,
     shuffleAnswers,
     showInstruction,
+    hideInstructionBadge,
   } = node.attrs as MCQAttrs;
   const questions = getMCQQuestions(node.attrs as MCQAttrs);
   const hasBlockQuestion = blockQuestion.trim().length > 0;
@@ -156,7 +158,7 @@ function MCQNodeView({ node, selected }: NodeViewProps) {
           ref={solutionsRef}
         />
         {showInstruction && (
-          <BlockInstruction>
+          <BlockInstruction hideBadge={hideInstructionBadge}>
             {instruction || DEFAULT_MCQ_INSTRUCTION}
           </BlockInstruction>
         )}
@@ -305,6 +307,17 @@ export const MCQ = Node.create({
           'data-mcq-show-instruction': String(attributes.showInstruction),
         }),
       },
+      hideInstructionBadge: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-mcq-hide-instruction-badge') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-mcq-hide-instruction-badge': String(
+            attributes.hideInstructionBadge,
+          ),
+        }),
+      },
       blockQuestion: {
         default: '',
         parseHTML: (element) => (
@@ -415,6 +428,7 @@ export const MCQ = Node.create({
               shuffleAnswers: attrs.shuffleAnswers ?? false,
               questionNumber: attrs.questionNumber ?? null,
               showInstruction: attrs.showInstruction ?? true,
+              hideInstructionBadge: attrs.hideInstructionBadge ?? false,
             },
           }),
     };

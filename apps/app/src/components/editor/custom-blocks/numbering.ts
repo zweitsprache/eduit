@@ -67,6 +67,7 @@ function buildNumberingDecorations(
     if (!isCustomBlock(node)) return true;
     if (node.type.name === 'messenger') return false;
     if (node.attrs.showInstruction === false) return false;
+    if (node.attrs.hideInstructionBadge === true) return false;
 
     const isArticlePluralContinuation = (
       node.type.name === 'articlePlural'

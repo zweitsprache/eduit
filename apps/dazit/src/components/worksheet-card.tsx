@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Download01, File02, Loading01, Trash01 } from '@untitledui/icons';
-import { ArrowDownToLine, Files, TextAlignJustify } from 'lucide-react';
+import { ArrowDownToLine, Check, Files, TextAlignJustify } from 'lucide-react';
 import type { Worksheet } from '@/lib/worksheets';
 import { DownloadAuthGate } from '@/components/download-auth-gate';
 
@@ -17,15 +17,24 @@ export function WorksheetCard({
   deleting?: boolean;
   onDelete?: (worksheet: Worksheet) => void;
 }) {
+  const levelLabel = worksheet.level || worksheet.grade;
+
   return (
     <article className={`worksheet-card${compact ? ' worksheet-card--compact' : ''}`}>
       <div className="card-body">
         <div className="card-flags">
+          {levelLabel && levelLabel !== '—' && (
+            <span className={`level-badge level-${worksheet.color}`}>{levelLabel}</span>
+          )}
           <span className={`subject subject-${worksheet.color}`}>{worksheet.documentType}</span>
           {Boolean(worksheet.relationships?.length) && (
             <span className="related-badge">Arbeitsblatt-Reihe</span>
           )}
-          {worksheet.hasAnswerKey && <span className="answer-key">Lösungsblatt</span>}
+          {worksheet.hasAnswerKey && (
+            <span className="answer-key" aria-label="Lösungsblatt" title="Lösungsblatt">
+              <Check aria-hidden="true" />
+            </span>
+          )}
           <time className="card-created-date" dateTime={worksheet.publishedAt}>{worksheet.added}</time>
         </div>
         <h2><Link href={`/documents/${worksheet.slug}`}>{worksheet.title}</Link></h2>

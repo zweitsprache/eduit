@@ -409,7 +409,7 @@ function generatedWordGridHtml(
 }
 
 function generatedFillInTheBlankHtml(sentences: string[]) {
-  return `<div data-block-instruction="Schreiben Sie die korrekte Verbform in die Lücke." data-fill-blank-title="" data-fill-blank-text="${escapeAttribute(sentences.join('\n'))}" data-fill-blank-distractors="[]" data-fill-blank-width-factor="1" data-fill-blank-hide-numbers="false" data-fill-blank-hide-item-numbers="false" data-fill-blank-show-line-numbers="false" data-fill-blank-show-word-bank="false" data-fill-blank-show-first-example="false" data-type="fill-in-the-blank"></div>`;
+  return `<div data-block-instruction="Schreiben Sie die korrekte Verbform in die Lücke." data-fill-blank-title="" data-fill-blank-text="${escapeAttribute(sentences.join('\n'))}" data-fill-blank-distractors="[]" data-fill-blank-width-factor="1" data-fill-blank-hide-instruction-badge="false" data-fill-blank-hide-numbers="false" data-fill-blank-hide-item-numbers="false" data-fill-blank-show-line-numbers="false" data-fill-blank-show-word-bank="false" data-fill-blank-show-first-example="false" data-type="fill-in-the-blank"></div>`;
 }
 
 const SelectablePageBreak = PageBreak.extend({
@@ -2482,6 +2482,8 @@ export default function EditorPage() {
   const selectedBrandProfile = brandProfiles.find(
     ({ id }) => id === brandProfileId,
   );
+  const brandProfileReadyForPublish = brandProfilesLoaded
+    && (brandProfileId === null || Boolean(selectedBrandProfile));
   const defaultBrandProfile = brandProfiles.find(({ isDefault }) => isDefault);
   const activeBrand = selectedBrandProfile
     ?? defaultBrandProfile
@@ -3016,7 +3018,7 @@ export default function EditorPage() {
       || !editor
       || !worksheetId
       || !saved
-      || !brandProfilesLoaded
+      || !brandProfileReadyForPublish
       || publishingPDF
     ) return;
     automationPublishStartedRef.current = true;
@@ -3080,9 +3082,12 @@ export default function EditorPage() {
     return () => window.clearTimeout(timer);
   }, [
     brandProfilesLoaded,
+    brandProfileId,
+    brandProfileReadyForPublish,
     editor,
     publishingPDF,
     republishScope,
+    selectedBrandProfile,
     saved,
     worksheetId,
   ]);
@@ -5312,6 +5317,7 @@ export default function EditorPage() {
             isDisabled={
               publishingPDF
               || exportingPDF
+              || !brandProfileReadyForPublish
               || !saved
               || !worksheetId
               || !currentUserRole?.split(',').map((role) => role.trim()).includes('admin')
@@ -7596,6 +7602,19 @@ export default function EditorPage() {
                   />
                 </label>
                 <label className="flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                  <span>Hide instruction number badge</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedWorksheetTableAttrs.hideInstructionBadge}
+                    onChange={(event) => setWorksheetTableAttr(
+                      editor,
+                      selectedWorksheetTablePos,
+                      'hideInstructionBadge',
+                      event.target.checked,
+                    )}
+                  />
+                </label>
+                <label className="flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
                   <span>Hide blank numbers</span>
                   <input
                     type="checkbox"
@@ -8451,6 +8470,39 @@ export default function EditorPage() {
                 </button>
               </div>
 
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold text-tertiary">Hide instruction number badge</p>
+                  <p className="mt-0.5 text-xs text-quaternary">Keeps instruction text but removes the numbered badge.</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={selectedGlossaryTermsAttrs.hideInstructionBadge}
+                  onClick={() => setGlossaryTermsAttr(
+                    editor,
+                    selectedGlossaryTermsPos,
+                    'hideInstructionBadge',
+                    !selectedGlossaryTermsAttrs.hideInstructionBadge,
+                  )}
+                  className={cx(
+                    'relative h-6 w-11 shrink-0 border transition',
+                    selectedGlossaryTermsAttrs.hideInstructionBadge
+                      ? 'border-brand bg-brand-solid'
+                      : 'border-primary bg-quaternary',
+                  )}
+                >
+                  <span
+                    className={cx(
+                      'absolute top-0.5 size-4.5 bg-primary shadow-xs transition-transform',
+                      selectedGlossaryTermsAttrs.hideInstructionBadge
+                        ? 'translate-x-4.5'
+                        : 'translate-x-0.5',
+                    )}
+                  />
+                </button>
+              </div>
+
               <label htmlFor="glossary-preset" className="mt-4 block text-xs font-semibold text-tertiary">
                 Preset
               </label>
@@ -8505,6 +8557,39 @@ export default function EditorPage() {
                 </div>
               )}
 
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold text-tertiary">Show definition column</p>
+                  <p className="mt-0.5 text-xs text-quaternary">Hide it to show only the remaining glossary columns.</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={selectedGlossaryTermsAttrs.showDefinitionColumn}
+                  onClick={() => setGlossaryTermsAttr(
+                    editor,
+                    selectedGlossaryTermsPos,
+                    'showDefinitionColumn',
+                    !selectedGlossaryTermsAttrs.showDefinitionColumn,
+                  )}
+                  className={cx(
+                    'relative h-6 w-11 shrink-0 border transition',
+                    selectedGlossaryTermsAttrs.showDefinitionColumn
+                      ? 'border-brand bg-brand-solid'
+                      : 'border-primary bg-quaternary',
+                  )}
+                >
+                  <span
+                    className={cx(
+                      'absolute top-0.5 size-4.5 bg-primary shadow-xs transition-transform',
+                      selectedGlossaryTermsAttrs.showDefinitionColumn
+                        ? 'translate-x-4.5'
+                        : 'translate-x-0.5',
+                    )}
+                  />
+                </button>
+              </div>
+
               <label htmlFor="glossary-term-width" className="mt-4 block text-xs font-semibold text-tertiary">
                 Term column width
               </label>
@@ -8522,7 +8607,11 @@ export default function EditorPage() {
                 {GLOSSARY_COLUMN_WIDTHS.map((width) => (
                   <option
                     disabled={glossaryColumnWidths(selectedGlossaryTermsAttrs).hasExample
-                      && width + selectedGlossaryTermsAttrs.definitionWidth >= 100}
+                      && width + (
+                        selectedGlossaryTermsAttrs.showDefinitionColumn
+                          ? selectedGlossaryTermsAttrs.definitionWidth
+                          : 0
+                      ) >= 100}
                     value={width}
                     key={width}
                   >
@@ -8531,7 +8620,8 @@ export default function EditorPage() {
                 ))}
               </select>
 
-              {glossaryColumnWidths(selectedGlossaryTermsAttrs).hasExample && (
+              {glossaryColumnWidths(selectedGlossaryTermsAttrs).hasExample
+                && selectedGlossaryTermsAttrs.showDefinitionColumn && (
                 <>
                   <label htmlFor="glossary-definition-width" className="mt-4 block text-xs font-semibold text-tertiary">
                     Definition column width
@@ -8582,24 +8672,26 @@ export default function EditorPage() {
                         <Trash01 className="size-4" />
                       </button>
                     </div>
-                    <textarea
-                      aria-label={`${GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[1]} ${itemIndex + 1}`}
-                      rows={2}
-                      value={viewLanguage === ORIGINAL_VIEW_LANGUAGE
-                        ? item.definition
-                        : item.definitionTranslations?.[viewLanguage] ?? ''}
-                      onChange={(event) => (viewLanguage === ORIGINAL_VIEW_LANGUAGE
-                        ? updateGlossaryTerm(item.id, { definition: event.target.value })
-                        : updateGlossaryDefinitionTranslation(
-                          item.id,
-                          viewLanguage,
-                          event.target.value,
-                        ))}
-                      placeholder={viewLanguage === ORIGINAL_VIEW_LANGUAGE
-                        ? GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[1]
-                        : item.definition || GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[1]}
-                      className="mt-2 ml-7 w-[calc(100%_-_1.75rem)] resize-y rounded-md border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-                    />
+                    {selectedGlossaryTermsAttrs.showDefinitionColumn && (
+                      <textarea
+                        aria-label={`${GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[1]} ${itemIndex + 1}`}
+                        rows={2}
+                        value={viewLanguage === ORIGINAL_VIEW_LANGUAGE
+                          ? item.definition
+                          : item.definitionTranslations?.[viewLanguage] ?? ''}
+                        onChange={(event) => (viewLanguage === ORIGINAL_VIEW_LANGUAGE
+                          ? updateGlossaryTerm(item.id, { definition: event.target.value })
+                          : updateGlossaryDefinitionTranslation(
+                            item.id,
+                            viewLanguage,
+                            event.target.value,
+                          ))}
+                        placeholder={viewLanguage === ORIGINAL_VIEW_LANGUAGE
+                          ? GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[1]
+                          : item.definition || GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[1]}
+                        className="mt-2 ml-7 w-[calc(100%_-_1.75rem)] resize-y rounded-md border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                      />
+                    )}
                     {glossaryColumnWidths(selectedGlossaryTermsAttrs).hasExample && <textarea
                       aria-label={`${GLOSSARY_PRESETS[selectedGlossaryTermsAttrs.preset].headers[2]} ${itemIndex + 1}`}
                       rows={2}
@@ -9121,6 +9213,20 @@ export default function EditorPage() {
                     editor,
                     selectedFillInTheBlankPos,
                     'showWordBank',
+                    event.target.checked,
+                  )}
+                />
+              </label>
+
+              <label className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                <span>Hide instruction number badge</span>
+                <input
+                  type="checkbox"
+                  checked={selectedFillInTheBlankAttrs.hideInstructionBadge}
+                  onChange={(event) => setFillInTheBlankAttr(
+                    editor,
+                    selectedFillInTheBlankPos,
+                    'hideInstructionBadge',
                     event.target.checked,
                   )}
                 />

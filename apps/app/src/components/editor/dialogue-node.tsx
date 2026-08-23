@@ -17,6 +17,7 @@ import {
   parseFillInTheBlankText,
   isSingleLetterBlankAnswer,
   shouldAttachBlankToPreviousText,
+  textWithBlankBoundaryJoiners,
   type FillInTheBlankPart,
 } from '@/components/editor/fill-in-the-blank-node';
 
@@ -44,6 +45,7 @@ export type DialogueAttrs = {
   speakerNames: DialogueSpeakerNames;
   context: string;
   showInstruction: boolean;
+  hideInstructionBadge: boolean;
   showSpeakerNames: boolean;
   showOriginal: boolean;
   showWordBank: boolean;
@@ -153,6 +155,7 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
     speakerNames,
     context,
     showInstruction,
+    hideInstructionBadge,
     showSpeakerNames,
     showOriginal,
     showWordBank,
@@ -196,7 +199,7 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
       className={showOriginal ? 'dialogue-node dialogue-node--with-original' : 'dialogue-node'}
     >
       {showInstruction && (
-        <BlockInstruction>
+        <BlockInstruction hideBadge={hideInstructionBadge}>
           {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.dialogue}
         </BlockInstruction>
       )}
@@ -263,7 +266,7 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
               {parts.map((part, partIndex) => (
                 <Fragment key={`${part.type}-${partIndex}`}>
                   {part.type === 'text' ? (
-                    <InlineFormattedText text={part.value} />
+                    <InlineFormattedText text={textWithBlankBoundaryJoiners(part.value, parts, partIndex)} />
                   ) : (
                     <span
                       aria-label={`Blank ${part.index}`}
@@ -365,6 +368,17 @@ export const Dialogue = Node.create({
           'data-dialogue-show-instruction': String(attributes.showInstruction),
         }),
       },
+      hideInstructionBadge: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-dialogue-hide-instruction-badge') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-dialogue-hide-instruction-badge': String(
+            attributes.hideInstructionBadge,
+          ),
+        }),
+      },
       showOriginal: {
         default: false,
         parseHTML: (element) => element.getAttribute('data-dialogue-show-original') === 'true',
@@ -453,6 +467,7 @@ export const Dialogue = Node.create({
               speakerNames: attrs.speakerNames ?? defaultSpeakerNames(),
               context: attrs.context ?? '',
               showInstruction: attrs.showInstruction ?? true,
+              hideInstructionBadge: attrs.hideInstructionBadge ?? false,
               showSpeakerNames: attrs.showSpeakerNames ?? false,
               showOriginal: attrs.showOriginal ?? false,
               showWordBank: attrs.showWordBank ?? false,

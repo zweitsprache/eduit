@@ -3,7 +3,10 @@ import { neon } from '@neondatabase/serverless';
 import fs from 'node:fs';
 
 const appEnv = fs.readFileSync(new URL('../../app/.env.local', import.meta.url), 'utf8');
-const token = appEnv.match(/^BLOB_READ_WRITE_TOKEN="?([^"\n]+)"?/m)[1].trim();
+const token = (
+  appEnv.match(/^DAZIT_BLOB_READ_WRITE_TOKEN="?([^"\n]+)"?/m)
+  ?? appEnv.match(/^BLOB_READ_WRITE_TOKEN="?([^"\n]+)"?/m)
+)[1].trim();
 const dbUrl = fs
   .readFileSync(new URL('../.env.local', import.meta.url), 'utf8')
   .match(/^DATABASE_URL=(.*)$/m)[1]

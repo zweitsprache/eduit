@@ -2952,6 +2952,17 @@ function MCQEditor({
       <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3">
         <div className="flex items-center gap-2 text-left text-sm font-semibold text-secondary">
           <Toggle
+            aria-label="Hide instruction number badge"
+            size="md"
+            isSelected={attrs.hideInstructionBadge}
+            onChange={(hideInstructionBadge) => updateAttrs(editor, block, {
+              hideInstructionBadge,
+            })}
+          />
+          <span>Hide instruction number badge</span>
+        </div>
+        <div className="flex items-center gap-2 text-left text-sm font-semibold text-secondary">
+          <Toggle
             aria-label="Shuffle answers"
             size="md"
             isSelected={attrs.shuffleAnswers}
@@ -4105,6 +4116,13 @@ function FillInTheBlankEditor({
           })}
         />
         <ContentSwitch
+          label="Hide instruction number badge"
+          isSelected={attrs.hideInstructionBadge}
+          onChange={(hideInstructionBadge) => updateAttrs(editor, block, {
+            hideInstructionBadge,
+          })}
+        />
+        <ContentSwitch
           label="Hide blank numbers"
           isSelected={attrs.hideBlankNumbers}
           onChange={(hideBlankNumbers) => updateAttrs(editor, block, {
@@ -4239,7 +4257,12 @@ function GlossaryTermsEditor({
     }
   };
   const presetConfig = GLOSSARY_PRESETS[attrs.preset];
-  const { hasExample, hasAdditionalColumn } = glossaryColumnWidths(attrs);
+  const {
+    hasExample,
+    hasAdditionalColumn,
+    showDefinitionColumn,
+  } = glossaryColumnWidths(attrs);
+  const visibleDefinitionWidth = showDefinitionColumn ? attrs.definitionWidth : 0;
   const headers = glossaryHeaders(attrs);
   const presetHeaders = presetConfig.headers.slice(0, headers.length);
   const canShowAdditionalColumn = hasGlossaryAdditionalColumn({
@@ -4280,13 +4303,19 @@ function GlossaryTermsEditor({
         throw new Error('No data rows found after removing an optional header row.');
       }
 
-      const importedTerms = rows.map((row, index) => ({
-        id: `term-import-${Date.now()}-${index}`,
-        term: row[0] ?? '',
-        definition: row[1] ?? '',
-        additional: hasAdditionalColumn ? (row[2] ?? '') : '',
-        example: hasExample ? (row[hasAdditionalColumn ? 3 : 2] ?? '') : '',
-      }));
+      const importedTerms = rows.map((row, index) => {
+        let nextColumnIndex = 1;
+        const definitionColumnIndex = showDefinitionColumn ? nextColumnIndex++ : null;
+        const additionalColumnIndex = hasAdditionalColumn ? nextColumnIndex++ : null;
+        const exampleColumnIndex = hasExample ? nextColumnIndex++ : null;
+        return {
+          id: `term-import-${Date.now()}-${index}`,
+          term: row[0] ?? '',
+          definition: definitionColumnIndex === null ? '' : (row[definitionColumnIndex] ?? ''),
+          additional: additionalColumnIndex === null ? '' : (row[additionalColumnIndex] ?? ''),
+          example: exampleColumnIndex === null ? '' : (row[exampleColumnIndex] ?? ''),
+        };
+      });
 
       setTerms(importedTerms);
       setCsvImportText('');
@@ -4357,10 +4386,24 @@ function GlossaryTermsEditor({
         })}
       />
       <ContentSwitch
+        label="Hide instruction number badge"
+        isSelected={attrs.hideInstructionBadge}
+        onChange={(hideInstructionBadge) => updateAttrs(editor, block, {
+          hideInstructionBadge,
+        })}
+      />
+      <ContentSwitch
         label="Show header columns"
         isSelected={attrs.showColumnHeaders}
         onChange={(showColumnHeaders) => updateAttrs(editor, block, {
           showColumnHeaders,
+        })}
+      />
+      <ContentSwitch
+        label="Show definition column"
+        isSelected={attrs.showDefinitionColumn}
+        onChange={(showDefinitionColumnValue) => updateAttrs(editor, block, {
+          showDefinitionColumn: showDefinitionColumnValue,
         })}
       />
       {presetConfig.headers.length === 3 && (
@@ -4427,7 +4470,7 @@ function GlossaryTermsEditor({
           >
             {GLOSSARY_COLUMN_WIDTHS.map((width) => (
               <option
-                disabled={hasExample && width + attrs.definitionWidth + (
+                disabled={hasExample && width + visibleDefinitionWidth + (
                   hasAdditionalColumn ? attrs.additionalWidth : 0
                 ) >= 100}
                 value={width}
@@ -4437,7 +4480,7 @@ function GlossaryTermsEditor({
               </option>
             ))}
           </select>
-          {hasExample && (
+          {hasExample && showDefinitionColumn && (
             <>
               <ContentFieldLabel>Definition column width</ContentFieldLabel>
               <select
@@ -4473,7 +4516,7 @@ function GlossaryTermsEditor({
                   >
                     {GLOSSARY_COLUMN_WIDTHS.map((width) => (
                       <option
-                        disabled={width + attrs.termWidth + attrs.definitionWidth >= 100}
+                        disabled={width + attrs.termWidth + visibleDefinitionWidth >= 100}
                         value={width}
                         key={width}
                       >
@@ -4530,8 +4573,9 @@ function GlossaryTermsEditor({
       </ContentSectionHeader>
       {isTranslationMode && (
         <p className="mt-2 text-xs leading-5 text-secondary">
-          Übersetzungsmodus: {translationLanguageLabel(activeLanguage)}. Nur die
-          Definition kann bearbeitet werden.
+          {showDefinitionColumn
+            ? `Übersetzungsmodus: ${translationLanguageLabel(activeLanguage)}. Nur die Definition kann bearbeitet werden.`
+            : 'Übersetzungsmodus ist aktiv, aber die Definitionsspalte ist ausgeblendet.'}
         </p>
       )}
       <div className="mt-3 space-y-2">
@@ -4558,29 +4602,31 @@ function GlossaryTermsEditor({
                 onMoveUp={() => setTerms(moveItem(attrs.terms, index, -1))}
                 onMoveDown={() => setTerms(moveItem(attrs.terms, index, 1))}
               />
-              <textarea
-                aria-label={isTranslationMode
-                  ? `${headers[1]} ${index + 1} – ${translationLanguageLabel(activeLanguage)}`
-                  : `${headers[1]} ${index + 1}`}
-                rows={2}
-                value={isTranslationMode
-                  ? (term.definitionTranslations?.[activeLanguage] ?? '')
-                  : term.definition}
-                onChange={(event) => (isTranslationMode
-                  ? setDefinitionTranslation(term.id, activeLanguage, event.target.value)
-                  : updateTerm(term.id, { definition: event.target.value }))}
-                placeholder={isTranslationMode ? term.definition : headers[1]}
-                className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-              />
+              {showDefinitionColumn && (
+                <textarea
+                  aria-label={isTranslationMode
+                    ? `${headers[1]} ${index + 1} – ${translationLanguageLabel(activeLanguage)}`
+                    : `${headers[1]} ${index + 1}`}
+                  rows={2}
+                  value={isTranslationMode
+                    ? (term.definitionTranslations?.[activeLanguage] ?? '')
+                    : term.definition}
+                  onChange={(event) => (isTranslationMode
+                    ? setDefinitionTranslation(term.id, activeLanguage, event.target.value)
+                    : updateTerm(term.id, { definition: event.target.value }))}
+                  placeholder={isTranslationMode ? term.definition : headers[1]}
+                  className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                />
+              )}
               {hasAdditionalColumn && <textarea
-                aria-label={`${headers[2]} ${index + 1}`}
+                aria-label={`${headers[showDefinitionColumn ? 2 : 1]} ${index + 1}`}
                 rows={2}
                 value={term.additional ?? ''}
                 disabled={isTranslationMode}
                 onChange={(event) => updateTerm(term.id, {
                   additional: event.target.value,
                 })}
-                placeholder={headers[2]}
+                placeholder={headers[showDefinitionColumn ? 2 : 1]}
                 className="col-start-2 w-full resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand disabled:cursor-not-allowed disabled:opacity-60"
               />}
               {hasExample && <textarea
@@ -4828,6 +4874,13 @@ function TimetableEditor({
           showInstruction,
         })}
       />
+      <ContentSwitch
+        label="Hide instruction number badge"
+        isSelected={attrs.hideInstructionBadge}
+        onChange={(hideInstructionBadge) => updateAttrs(editor, block, {
+          hideInstructionBadge,
+        })}
+      />
       <ContentSectionHeader className="mt-0">Board labels</ContentSectionHeader>
       <div className="grid grid-cols-3 gap-3">
         {headerFields.map((field) => (
@@ -4930,6 +4983,13 @@ function OpeningHoursEditor({
         isSelected={attrs.showInstruction}
         onChange={(showInstruction) => updateAttrs(editor, block, {
           showInstruction,
+        })}
+      />
+      <ContentSwitch
+        label="Hide instruction number badge"
+        isSelected={attrs.hideInstructionBadge}
+        onChange={(hideInstructionBadge) => updateAttrs(editor, block, {
+          hideInstructionBadge,
         })}
       />
       <ContentSectionHeader className="mt-0" count={`${attrs.signs.length} signs`}>
@@ -5270,6 +5330,13 @@ function DialogueEditor({
         isSelected={attrs.showInstruction !== false}
         onChange={(showInstruction) => updateAttrs(editor, block, {
           showInstruction,
+        })}
+      />
+      <ContentSwitch
+        label="Hide instruction number badge"
+        isSelected={attrs.hideInstructionBadge}
+        onChange={(hideInstructionBadge) => updateAttrs(editor, block, {
+          hideInstructionBadge,
         })}
       />
       <label className="mt-0 block text-sm font-semibold text-primary">
@@ -7270,6 +7337,13 @@ function WorksheetTableEditor({
               showInstruction,
             })}
           />
+          <ContentSwitch
+            label="Hide instruction number badge"
+            isSelected={attrs.hideInstructionBadge}
+            onChange={(hideInstructionBadge) => updateAttrs(editor, block, {
+              hideInstructionBadge,
+            })}
+          />
           <ContentSectionHeader>Default blank width</ContentSectionHeader>
           <ContentOptionButtonGroup
             ariaLabel="Default blank width"
@@ -7543,6 +7617,7 @@ function InformationGapActivityEditor({
   const tableAttrs: WorksheetTableAttrs = {
     instruction: '',
     showInstruction: false,
+    hideInstructionBadge: false,
     columns: attrs.columns,
     rows: attrs.rows,
     showHeader: false,

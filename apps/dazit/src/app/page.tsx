@@ -22,7 +22,7 @@ import { getHomepageStats, getWorksheetCards } from '@/lib/worksheets';
 import { SearchTrackingForm } from '@/components/search-tracking-form';
 import { absoluteDazitUrl } from '@/lib/site-url';
 
-export const revalidate = 3600;
+export const revalidate = 30;
 
 export const metadata: Metadata = {
   title: 'DaZ Arbeitsblätter, Dialoge und Lernkarten',

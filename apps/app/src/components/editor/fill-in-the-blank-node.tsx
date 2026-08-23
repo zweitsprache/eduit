@@ -23,6 +23,7 @@ export type FillInTheBlankAttrs = {
   text: string;
   distractors: string[];
   widthFactor: number;
+  hideInstructionBadge: boolean;
   compactSingleLetterBlanks: boolean;
   hideBlankNumbers: boolean;
   hideItemNumbers: boolean;
@@ -107,6 +108,29 @@ export function shouldAttachBlankToPreviousText(
   const previousPart = partIndex > 0 ? parts[partIndex - 1] : null;
   return previousPart?.type === 'text' && /\S$/.test(previousPart.value);
 }
+const WORD_JOINER = '\u2060';
+const openingQuoteBeforeBlankPattern = /[«‹]$/;
+const closingQuoteAfterBlankPattern = /^[»›]/;
+
+export function textWithBlankBoundaryJoiners(
+  value: string,
+  parts: FillInTheBlankPart[],
+  partIndex: number,
+) {
+  let joinedValue = value;
+  const previousPart = partIndex > 0 ? parts[partIndex - 1] : null;
+  const nextPart = partIndex < parts.length - 1 ? parts[partIndex + 1] : null;
+
+  if (nextPart?.type === 'blank' && openingQuoteBeforeBlankPattern.test(joinedValue)) {
+    joinedValue += WORD_JOINER;
+  }
+
+  if (previousPart?.type === 'blank' && closingQuoteAfterBlankPattern.test(joinedValue)) {
+    joinedValue = `${WORD_JOINER}${joinedValue}`;
+  }
+
+  return joinedValue;
+}
 
 function parseParagraphs(text: string, defaultWidthFactor: number) {
   let blankOffset = 0;
@@ -172,7 +196,7 @@ function FillInTheBlankParts({
       }`;
     return (
     <Fragment key={`${part.type}-${index}`}>
-      {part.type === 'text' ? renderText(part.value) : (
+      {part.type === 'text' ? renderText(textWithBlankBoundaryJoiners(part.value, parts, index)) : (
         <span
           aria-label={`Blank ${blankLabel}`}
           className={`fill-in-the-blank-node__blank${
@@ -211,6 +235,7 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
     title,
     text,
     widthFactor,
+    hideInstructionBadge,
     compactSingleLetterBlanks,
     hideBlankNumbers,
     hideItemNumbers,
@@ -345,7 +370,7 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
 
   return (
     <CustomBlockRoot selected={selected} className="fill-in-the-blank-node">
-      <BlockInstruction>
+      <BlockInstruction hideBadge={hideInstructionBadge}>
         {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.fillInTheBlank}
       </BlockInstruction>
       {showWordBank && orderedWordBankItems.length > 0 && (
@@ -471,6 +496,17 @@ export const FillInTheBlank = Node.create({
           'data-fill-blank-width-factor': attributes.widthFactor,
         }),
       },
+      hideInstructionBadge: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-fill-blank-hide-instruction-badge') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-fill-blank-hide-instruction-badge': String(
+            attributes.hideInstructionBadge,
+          ),
+        }),
+      },
       compactSingleLetterBlanks: {
         default: true,
         parseHTML: (element) => (
@@ -561,6 +597,7 @@ export const FillInTheBlank = Node.create({
               text: attrs.text ?? 'The {{blank:answer}} is the correct word.',
               distractors: attrs.distractors ?? [],
               widthFactor: attrs.widthFactor ?? 1,
+              hideInstructionBadge: attrs.hideInstructionBadge ?? false,
               compactSingleLetterBlanks: attrs.compactSingleLetterBlanks ?? true,
               hideBlankNumbers: attrs.hideBlankNumbers ?? false,
               hideItemNumbers: attrs.hideItemNumbers ?? false,

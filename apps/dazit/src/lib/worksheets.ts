@@ -1,4 +1,3 @@
-import { cache } from 'react';
 import { getDazitHomepageStatsFromDb, getFamilyWorksheetCardsFromDb, getPublishedWorksheetBySlugFromDb, getPublishedWorksheetCardsFromDb, getPublishedWorksheetsFromDb, getRelatedWorksheetCardsFromDb } from '@/lib/db';
 import type { DazitHomepageStatsRow, DazitPublicationCardRow, DazitPublicationRelationship, DazitPublicationRow } from '@/lib/db';
 
@@ -287,12 +286,12 @@ async function loadRelatedWorksheetCards(
   }
 }
 
-export const getWorksheetCards = cache(loadWorksheetCards);
-export const getWorksheets = cache(loadWorksheets);
-export const getHomepageStats = cache(loadHomepageStats);
-export const getWorksheetBySlug = cache(loadWorksheetBySlug);
-export const getFamilyWorksheetCards = cache(loadFamilyWorksheetCards);
-export const getRelatedWorksheetCards = cache(loadRelatedWorksheetCards);
+export const getWorksheetCards = loadWorksheetCards;
+export const getWorksheets = loadWorksheets;
+export const getHomepageStats = loadHomepageStats;
+export const getWorksheetBySlug = loadWorksheetBySlug;
+export const getFamilyWorksheetCards = loadFamilyWorksheetCards;
+export const getRelatedWorksheetCards = loadRelatedWorksheetCards;
 
 export async function worksheetBySlug(slug: string) {
   const worksheet = await getWorksheetBySlug(slug);

@@ -5,7 +5,7 @@ import { SiteHeader } from '@/components/site-header';
 import { getWorksheetCards } from '@/lib/worksheets';
 import { absoluteDazitUrl } from '@/lib/site-url';
 
-export const revalidate = 1800;
+export const revalidate = 30;
 
 export const metadata: Metadata = {
   title: 'DaZ Arbeitsblätter & Unterrichtsmaterial',

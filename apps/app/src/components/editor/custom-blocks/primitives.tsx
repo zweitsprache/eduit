@@ -138,8 +138,10 @@ export function CustomBlockRoot({
 
 export function BlockInstruction({
   children,
+  hideBadge = false,
 }: {
   children: ReactNode;
+  hideBadge?: boolean;
 }) {
   const englishInstruction = typeof children === 'string'
     ? children.trim()
@@ -148,7 +150,7 @@ export function BlockInstruction({
 
   return (
     <header className="custom-block__instruction">
-      <span aria-hidden="true" className="custom-block__badge" />
+      {!hideBadge && <span aria-hidden="true" className="custom-block__badge" />}
       <strong className="custom-block__instruction-text">
         {germanInstruction ? (
           <>

@@ -1,6 +1,5 @@
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/instructions';
-import { GLOSSARY_COLUMN_WIDTHS } from '@/components/editor/glossary-terms-node';
 import { getMCQQuestions, type MCQAttrs } from '@/components/editor/mcq-node';
 import type { CustomHeadingAttrs } from '@/components/editor/heading-node';
 import type { GlossaryTermsAttrs } from '@/components/editor/glossary-terms-node';
@@ -204,7 +203,7 @@ const optionalInstruction = (value: unknown) => {
 };
 
 const glossaryWidth = (value: unknown) => (
-  GLOSSARY_COLUMN_WIDTHS.includes(Number(value) as typeof GLOSSARY_COLUMN_WIDTHS[number])
+  Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 100
     ? Number(value)
     : undefined
 );
@@ -266,7 +265,9 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         terms,
         preset,
         showInstruction,
+        hideInstructionBadge,
         showColumnHeaders,
+        showDefinitionColumn,
         showExample,
         showAdditionalColumn,
         termWidth,
@@ -279,7 +280,9 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         type: 'glossary',
         preset,
         showInstruction,
+        hideInstructionBadge,
         showColumnHeaders,
+        showDefinitionColumn,
         showExample,
         showAdditionalColumn,
         instruction: optionalInstruction(attrs.instruction),
@@ -303,7 +306,8 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     case 'fillInTheBlank': {
       const {
         title, text, distractors, widthFactor, hideBlankNumbers,
-        hideItemNumbers, showLineNumbers, showWordBank, showFirstAsExample,
+        hideInstructionBadge, hideItemNumbers, showLineNumbers,
+        showWordBank, showFirstAsExample,
       } = attrs as FillInTheBlankAttrs;
       return {
         type: 'fillInTheBlank',
@@ -312,6 +316,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         items: text.split('\n').map((item) => item.trim()).filter(Boolean),
         distractors,
         widthFactor,
+        hideInstructionBadge,
         hideBlankNumbers,
         hideItemNumbers,
         showLineNumbers,
@@ -321,7 +326,8 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     }
     case 'dialogue': {
       const {
-        items, speakerNames, context, showInstruction, showSpeakerNames,
+        items, speakerNames, context, showInstruction, hideInstructionBadge,
+        showSpeakerNames,
         showOriginal, showWordBank, hideBlankNumbers, showFirstAsExample,
       } = attrs as DialogueAttrs;
       return {
@@ -330,6 +336,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         context,
         speakerNames,
         showInstruction,
+        hideInstructionBadge,
         showSpeakerNames,
         showOriginal,
         showWordBank,
@@ -374,6 +381,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
       const {
         instruction,
         showInstruction,
+        hideInstructionBadge,
         destinationLabel,
         platformLabel,
         noticeLabel,
@@ -387,6 +395,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
           DEFAULT_BLOCK_INSTRUCTIONS.timetable,
         ),
         showInstruction,
+        hideInstructionBadge,
         destinationLabel,
         platformLabel,
         noticeLabel,
@@ -402,7 +411,12 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
       };
     }
     case 'openingHours': {
-      const { instruction, showInstruction, signs } = attrs as OpeningHoursAttrs;
+      const {
+        instruction,
+        showInstruction,
+        hideInstructionBadge,
+        signs,
+      } = attrs as OpeningHoursAttrs;
       return {
         type: 'openingHours',
         instruction: instructionOr(
@@ -410,6 +424,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
           DEFAULT_BLOCK_INSTRUCTIONS.openingHours,
         ),
         showInstruction,
+        hideInstructionBadge,
         signs: signs.map(({ id, title, abbreviateWeekdays, rows }) => ({
           id,
           title,
@@ -432,6 +447,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         columns: mcqAttrs.columns,
         shuffleAnswers: mcqAttrs.shuffleAnswers,
         showInstruction: mcqAttrs.showInstruction,
+        hideInstructionBadge: mcqAttrs.hideInstructionBadge,
         // Folds pre-multi-question documents into a single question.
         questions: getMCQQuestions(mcqAttrs).map(({ question, options, answerMode }) => ({
           question,
@@ -738,6 +754,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         type: 'worksheetTable',
         instruction: tableAttrs.instruction,
         showInstruction: tableAttrs.showInstruction,
+        hideInstructionBadge: tableAttrs.hideInstructionBadge,
         columns: tableAttrs.columns.map((column) => ({
           id: column.id,
           label: column.label,

@@ -3,7 +3,7 @@ import { getWorksheets } from '@/lib/worksheets';
 import { absoluteDazitUrl } from '@/lib/site-url';
 import { LEVELS, TYPES } from '@/lib/seo-taxonomy';
 
-export const revalidate = 3600;
+export const revalidate = 300;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const worksheets = await getWorksheets();

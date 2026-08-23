@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import {
   CreditCard01,
   DotsVertical,
@@ -12,14 +13,19 @@ import { useI18n } from '@/components/i18n/locale-provider';
 export function SidebarAccountCard() {
   const { t } = useI18n();
   const { data: session, isPending } = authClient.useSession();
+  const [hasHydrated, setHasHydrated] = useState(false);
   const user = session?.user;
+
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
 
   async function signOut() {
     await authClient.signOut();
     window.location.assign('/');
   }
 
-  if (isPending || !user) {
+  if (!hasHydrated || isPending || !user) {
     return (
       <details className="group relative mt-auto border-t border-secondary pt-4">
         <summary className="flex cursor-pointer list-none items-center gap-3 rounded-lg p-2 outline-none transition hover:bg-primary_hover focus-visible:ring-2 focus-visible:ring-brand [&::-webkit-details-marker]:hidden">

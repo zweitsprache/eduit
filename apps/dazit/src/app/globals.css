@@ -975,13 +975,13 @@ button { color: inherit; }
 .preview-pink { background: #f8ddec; color: #a62b67; }
 .card-body { display: flex; flex: 1; flex-direction: column; padding: 14px 14px 12px; }
 .card-flags, .detail-flags { display: flex; min-height: 22px; align-items: center; gap: 8px; }
-.level-badge { display: inline-flex; width: 44px; box-sizing: border-box; align-items: center; justify-content: center; padding: 3px 8px; border: 1px solid currentColor; border-radius: 5px; background: transparent; font-size: 10px; font-weight: 800; white-space: nowrap; }
-.level-blue { color: #276792; }
-.level-blue-light { color: #2a71b9; }
-.level-green { color: #269266; }
-.level-green-light { color: #269266; }
-.level-orange { color: #c76400; }
-.level-orange-light { color: #c76400; }
+.level-badge { display: inline-flex; width: 44px; height: 25px; box-sizing: border-box; align-items: center; justify-content: center; padding: 4px 8px; border: 1px solid #5d4388; border-radius: 5px; background: #5d4388; color: #fff; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.level-blue { border-color: #276792; background: #276792; }
+.level-blue-light { border-color: #2a71b9; background: #2a71b9; }
+.level-green { border-color: #269266; background: #269266; }
+.level-green-light { border-color: #269266; background: #269266; }
+.level-orange { border-color: #c76400; background: #c76400; }
+.level-orange-light { border-color: #c76400; background: #c76400; }
 .subject { padding: 4px 9px; border: 1px solid currentColor; border-radius: 5px; background: transparent; color: #5d4388; font-size: 10px; font-weight: 800; text-transform: uppercase; }
 .subject-peach { color: #a24c24; }
 .subject-blue { color: #276792; }
@@ -993,7 +993,7 @@ button { color: inherit; }
 .subject-mint { color: #267b59; }
 .subject-yellow { color: #7b6500; }
 .subject-pink { color: #a32c66; }
-.answer-key { display: inline-flex; width: 44px; height: 22px; align-items: center; justify-content: center; padding: 0; border: 1px solid #2e815d; border-radius: 5px; color: #2e815d; }
+.answer-key { display: inline-flex; width: 25px; height: 25px; box-sizing: border-box; align-items: center; justify-content: center; padding: 0; border: 1px solid #2e815d; border-radius: 5px; color: #2e815d; }
 .answer-key svg { width: 14px; height: 14px; }
 .card-created-date { margin-left: auto; color: #777988; font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .card-body h2 { margin: 7px 0 4px; font-size: 16px; font-weight: 700; line-height: 1.25; }

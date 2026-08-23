@@ -16,7 +16,7 @@ import {
 } from '@/components/editor/worksheet-view-language';
 
 export const GLOSSARY_COLUMN_WIDTHS = [10, 15, 20, 25, 33, 50, 66] as const;
-export type GlossaryTermWidth = typeof GLOSSARY_COLUMN_WIDTHS[number];
+export type GlossaryTermWidth = number;
 export type GlossaryPreset = 'default' | 'verbs' | 'nouns' | 'adjectives';
 
 export const GLOSSARY_PRESETS: Record<GlossaryPreset, {
@@ -51,7 +51,9 @@ export type GlossaryTermsAttrs = {
   preset: GlossaryPreset;
   headerLabels: GlossaryHeaderLabels;
   showColumnHeaders: boolean;
+  showDefinitionColumn: boolean;
   showInstruction: boolean;
+  hideInstructionBadge: boolean;
   showExample: boolean;
   showAdditionalColumn: boolean;
 };
@@ -78,45 +80,60 @@ export function hasGlossaryAdditionalColumn(
 }
 
 export function glossaryHeaders(
-  attrs: Pick<GlossaryTermsAttrs, 'preset' | 'headerLabels' | 'showExample' | 'showAdditionalColumn'>,
+  attrs: Pick<GlossaryTermsAttrs, 'preset' | 'headerLabels' | 'showDefinitionColumn' | 'showExample' | 'showAdditionalColumn'>,
 ) {
+  const showDefinitionColumn = attrs.showDefinitionColumn !== false;
   const presetHeaders = GLOSSARY_PRESETS[attrs.preset].headers;
-  const headers = presetHeaders.length === 3 && attrs.showExample
-    ? hasGlossaryAdditionalColumn(attrs)
-      ? [presetHeaders[0], presetHeaders[1], 'Zusatz', presetHeaders[2]]
-      : [presetHeaders[0], presetHeaders[1], presetHeaders[2]]
-    : [presetHeaders[0], presetHeaders[1]];
+  const hasExample = presetHeaders.length === 3 && attrs.showExample;
+  const hasAdditionalColumn = hasGlossaryAdditionalColumn(attrs);
+  const headers = hasExample
+    ? showDefinitionColumn
+      ? hasAdditionalColumn
+        ? [presetHeaders[0], presetHeaders[1], 'Zusatz', presetHeaders[2]]
+        : [presetHeaders[0], presetHeaders[1], presetHeaders[2]]
+      : hasAdditionalColumn
+        ? [presetHeaders[0], 'Zusatz', presetHeaders[2]]
+        : [presetHeaders[0], presetHeaders[2]]
+    : showDefinitionColumn
+      ? [presetHeaders[0], presetHeaders[1]]
+      : [presetHeaders[0]];
   return headers.map((header, index) => {
     const customLabel = attrs.headerLabels[index]?.trim();
     return customLabel?.length ? customLabel : header;
   });
 }
 
-/** Two-column layouts give the definition whatever the term column leaves over. */
+/** Glossary widths reserve fixed columns and assign any remainder to the trailing visible column. */
 export function glossaryColumnWidths(
-  attrs: Pick<GlossaryTermsAttrs, 'preset' | 'termWidth' | 'definitionWidth' | 'additionalWidth' | 'showExample' | 'showAdditionalColumn'>,
+  attrs: Pick<GlossaryTermsAttrs, 'preset' | 'termWidth' | 'definitionWidth' | 'additionalWidth' | 'showDefinitionColumn' | 'showExample' | 'showAdditionalColumn'>,
 ) {
   const presetConfig = GLOSSARY_PRESETS[attrs.preset];
   const hasExample = presetConfig.headers.length === 3 && attrs.showExample;
   const hasAdditionalColumn = hasGlossaryAdditionalColumn(attrs);
+  const showDefinitionColumn = attrs.showDefinitionColumn !== false;
   const termWidth = attrs.preset === 'default' ? attrs.termWidth : presetConfig.termWidth;
   const definitionWidth = attrs.preset === 'default'
     ? attrs.definitionWidth
     : presetConfig.definitionWidth;
   const additionalWidth = attrs.preset === 'default' ? attrs.additionalWidth : 20;
+  const widths = [termWidth];
+
+  if (hasExample) {
+    if (showDefinitionColumn) widths.push(definitionWidth);
+    if (hasAdditionalColumn) widths.push(additionalWidth);
+    const used = widths.reduce((total, width) => total + width, 0);
+    widths.push(Math.max(1, 100 - used));
+  } else if (showDefinitionColumn) {
+    widths.push(Math.max(1, 100 - termWidth));
+  } else {
+    widths[0] = 100;
+  }
+
   return {
     hasExample,
     hasAdditionalColumn,
-    widths: hasExample
-      ? hasAdditionalColumn
-        ? [
-            termWidth,
-            definitionWidth,
-            additionalWidth,
-            Math.max(1, 100 - termWidth - definitionWidth - additionalWidth),
-          ]
-        : [termWidth, definitionWidth, Math.max(1, 100 - termWidth - definitionWidth)]
-      : [termWidth, Math.max(1, 100 - termWidth)],
+    showDefinitionColumn,
+    widths,
   };
 }
 
@@ -173,8 +190,8 @@ function parseTerms(value: string | null): GlossaryTerm[] {
 
 function parseTermWidth(value: string | null): GlossaryTermWidth {
   const width = Number(value);
-  return GLOSSARY_COLUMN_WIDTHS.includes(width as GlossaryTermWidth)
-    ? width as GlossaryTermWidth
+  return Number.isInteger(width) && width >= 0 && width <= 100
+    ? width
     : 33;
 }
 
@@ -198,6 +215,7 @@ function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
   const {
     hasAdditionalColumn,
     hasExample,
+    showDefinitionColumn,
     widths: columnWidths,
   } = glossaryColumnWidths(attrs);
   const columnStyle = (index: number) => ({
@@ -212,32 +230,47 @@ function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
       viewLanguage,
     );
     const definitionIsRtl = startsWithRtlScript(renderedDefinition);
+    const showTopDivider = !attrs.showColumnHeaders && index === 0;
+    let nextColumnIndex = 1;
+    const definitionColumnIndex = showDefinitionColumn ? nextColumnIndex++ : null;
+    const additionalColumnIndex = hasAdditionalColumn ? nextColumnIndex++ : null;
+    const exampleColumnIndex = hasExample ? nextColumnIndex++ : null;
     return (
-      <div className="glossary-terms-node__row" key={item.id}>
+      <div
+        className="glossary-terms-node__row"
+        key={item.id}
+        style={showTopDivider
+          ? {
+              borderTop: 'var(--custom-block-row-border-width) solid var(--custom-block-row-border-color)',
+            }
+          : undefined}
+      >
       <span className="custom-block__row-index">
         {String(index + 1).padStart(2, '0')}
       </span>
       <span className="glossary-terms-node__columns">
         <span className="glossary-terms-node__cell" style={columnStyle(0)}>{item.term}</span>
-        <span
-          className={[
-            'glossary-terms-node__cell',
-            'glossary-terms-node__cell--definition',
-            definitionIsRtl ? 'glossary-terms-node__cell--definition-rtl' : '',
-          ].filter(Boolean).join(' ')}
-          dir="auto"
-          lang={definitionLang}
-          style={columnStyle(1)}
-        >
-          {renderedDefinition}
-        </span>
-        {hasAdditionalColumn && (
-          <span className="glossary-terms-node__cell" style={columnStyle(2)}>
+        {showDefinitionColumn && definitionColumnIndex !== null && (
+          <span
+            className={[
+              'glossary-terms-node__cell',
+              'glossary-terms-node__cell--definition',
+              definitionIsRtl ? 'glossary-terms-node__cell--definition-rtl' : '',
+            ].filter(Boolean).join(' ')}
+            dir="auto"
+            lang={definitionLang}
+            style={columnStyle(definitionColumnIndex)}
+          >
+            {renderedDefinition}
+          </span>
+        )}
+        {hasAdditionalColumn && additionalColumnIndex !== null && (
+          <span className="glossary-terms-node__cell" style={columnStyle(additionalColumnIndex)}>
             {item.additional}
           </span>
         )}
-        {hasExample && (
-          <span className="glossary-terms-node__cell" style={columnStyle(hasAdditionalColumn ? 3 : 2)}>
+        {hasExample && exampleColumnIndex !== null && (
+          <span className="glossary-terms-node__cell" style={columnStyle(exampleColumnIndex)}>
             {item.example}
           </span>
         )}
@@ -249,12 +282,15 @@ function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
   return (
     <CustomBlockRoot selected={selected} className="glossary-terms-node">
       {node.attrs.showInstruction && (
-        <BlockInstruction>
+        <BlockInstruction hideBadge={attrs.hideInstructionBadge}>
           {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.glossaryTerms}
         </BlockInstruction>
       )}
       <div
-        className="glossary-terms-node__table"
+        className={[
+          'glossary-terms-node__table',
+          attrs.showColumnHeaders ? '' : 'glossary-terms-node__table--without-header',
+        ].filter(Boolean).join(' ')}
       >
         {attrs.showColumnHeaders && (
           <div className="glossary-terms-node__header">
@@ -353,6 +389,17 @@ export const GlossaryTerms = Node.create({
           'data-glossary-show-instruction': String(attributes.showInstruction),
         }),
       },
+      hideInstructionBadge: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-glossary-hide-instruction-badge') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-glossary-hide-instruction-badge': String(
+            attributes.hideInstructionBadge,
+          ),
+        }),
+      },
       showColumnHeaders: {
         default: true,
         parseHTML: (element) => (
@@ -361,6 +408,17 @@ export const GlossaryTerms = Node.create({
         renderHTML: (attributes) => ({
           'data-glossary-show-column-headers': String(
             attributes.showColumnHeaders,
+          ),
+        }),
+      },
+      showDefinitionColumn: {
+        default: true,
+        parseHTML: (element) => (
+          element.getAttribute('data-glossary-show-definition-column') !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-glossary-show-definition-column': String(
+            attributes.showDefinitionColumn,
           ),
         }),
       },
@@ -418,7 +476,9 @@ export const GlossaryTerms = Node.create({
               preset: attrs.preset ?? 'default',
               headerLabels: attrs.headerLabels ?? [],
               showInstruction: attrs.showInstruction ?? true,
+              hideInstructionBadge: attrs.hideInstructionBadge ?? false,
               showColumnHeaders: attrs.showColumnHeaders ?? true,
+              showDefinitionColumn: attrs.showDefinitionColumn ?? true,
               showExample: attrs.showExample ?? true,
               showAdditionalColumn: attrs.showAdditionalColumn ?? false,
             },

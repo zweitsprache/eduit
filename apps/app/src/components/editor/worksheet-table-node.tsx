@@ -18,6 +18,7 @@ import {
   isSingleLetterBlankAnswer,
   parseFillInTheBlankText,
   shouldAttachBlankToPreviousText,
+  textWithBlankBoundaryJoiners,
   type FillInTheBlankPart,
 } from '@/components/editor/fill-in-the-blank-node';
 import {
@@ -42,6 +43,7 @@ export type WorksheetTableRow = {
 export type WorksheetTableAttrs = {
   instruction: string;
   showInstruction: boolean;
+  hideInstructionBadge: boolean;
   columns: WorksheetTableColumn[];
   rows: WorksheetTableRow[];
   showHeader: boolean;
@@ -235,7 +237,7 @@ function TableCellContent({
       {parts.map((part, index) => (
         <Fragment key={`${part.type}-${index}`}>
           {part.type === 'text' ? (
-            part.value.split(/\r?\n/).map((line, lineIndex) => (
+            textWithBlankBoundaryJoiners(part.value, parts, index).split(/\r?\n/).map((line, lineIndex) => (
               <Fragment key={`${lineIndex}-${line}`}>
                 {lineIndex > 0 && <br />}
                 <InlineFormattedText text={line} />
@@ -387,7 +389,7 @@ function WorksheetTableNodeView({ node, selected }: NodeViewProps) {
   return (
     <CustomBlockRoot selected={selected} className="worksheet-table-node">
       {attrs.showInstruction && (
-        <BlockInstruction>{attrs.instruction}</BlockInstruction>
+        <BlockInstruction hideBadge={attrs.hideInstructionBadge}>{attrs.instruction}</BlockInstruction>
       )}
       <div
         className="worksheet-table-node__frame"
@@ -546,6 +548,17 @@ export const WorksheetTable = Node.create({
           ),
         }),
       },
+      hideInstructionBadge: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-worksheet-table-hide-instruction-badge') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-worksheet-table-hide-instruction-badge': String(
+            attributes.hideInstructionBadge,
+          ),
+        }),
+      },
       columns: {
         default: DEFAULT_WORKSHEET_TABLE_COLUMNS,
         parseHTML: (element) => parseColumns(
@@ -650,6 +663,7 @@ export const WorksheetTable = Node.create({
             attrs: {
               instruction: attrs.instruction ?? 'Complete the table.',
               showInstruction: attrs.showInstruction ?? true,
+              hideInstructionBadge: attrs.hideInstructionBadge ?? false,
               columns: attrs.columns ?? defaultColumns(),
               rows: attrs.rows ?? defaultRows(),
               showHeader: attrs.showHeader ?? false,

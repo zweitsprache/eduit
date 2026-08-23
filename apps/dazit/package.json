@@ -6,7 +6,8 @@
     "dev": "PORT=3001 next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "repair:thumbnail-blobs": "node scripts/repair-thumbnail-blobs.mjs"
   },
   "dependencies": {
     "@neondatabase/auth": "^0.4.2-beta",

@@ -26,6 +26,7 @@ export type OpeningHoursSign = {
 export type OpeningHoursAttrs = {
   instruction?: string | null;
   showInstruction: boolean;
+  hideInstructionBadge: boolean;
   signs: OpeningHoursSign[];
 };
 
@@ -134,7 +135,7 @@ function OpeningHoursNodeView({ node, selected }: NodeViewProps) {
   return (
     <CustomBlockRoot selected={selected} className="opening-hours-node">
       {attrs.showInstruction && (
-        <BlockInstruction>
+        <BlockInstruction hideBadge={attrs.hideInstructionBadge}>
           {attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.openingHours}
         </BlockInstruction>
       )}
@@ -186,6 +187,15 @@ export const OpeningHours = Node.create({
           'data-show-instruction': String(attributes.showInstruction),
         }),
       },
+      hideInstructionBadge: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-hide-instruction-badge') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-hide-instruction-badge': String(attributes.hideInstructionBadge),
+        }),
+      },
       signs: {
         default: DEFAULT_OPENING_HOURS_SIGNS,
         parseHTML: (element) => parseSigns(element.getAttribute('data-signs')),
@@ -217,6 +227,7 @@ export const OpeningHours = Node.create({
         type: this.name,
         attrs: {
           showInstruction: attrs.showInstruction ?? true,
+          hideInstructionBadge: attrs.hideInstructionBadge ?? false,
           signs: attrs.signs ?? defaultSigns(),
         },
       }),

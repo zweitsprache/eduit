@@ -18,24 +18,25 @@ const glossaryEntrySchema = z.object({
   example: z.string().trim().max(3000).optional(),
 });
 
+const glossaryWidthSchema = z.union([
+  z.number().int().min(0).max(100),
+  z.string().trim().regex(/^\d+$/).transform((value) => Number(value)),
+]);
+
 const glossarySchema = z.object({
   type: z.literal('glossary'),
   preset: z.enum(['default', 'verbs', 'nouns', 'adjectives']).default('default'),
   showInstruction: z.boolean().default(false),
+  hideInstructionBadge: z.boolean().default(false),
   showColumnHeaders: z.boolean().default(true),
+  showDefinitionColumn: z.boolean().default(true),
   showExample: z.boolean().default(true),
   showAdditionalColumn: z.boolean().default(false),
   instruction: z.string().trim().max(1000).nullable().optional(),
   headerLabels: z.array(z.string().trim().max(200)).max(4).default([]),
-  termWidth: z.enum(['10', '15', '20', '25', '33', '50', '66']).or(
-    z.number().int().refine((value) => [10, 15, 20, 25, 33, 50, 66].includes(value)),
-  ).optional(),
-  definitionWidth: z.enum(['10', '15', '20', '25', '33', '50', '66']).or(
-    z.number().int().refine((value) => [10, 15, 20, 25, 33, 50, 66].includes(value)),
-  ).optional(),
-  additionalWidth: z.enum(['10', '15', '20', '25', '33', '50', '66']).or(
-    z.number().int().refine((value) => [10, 15, 20, 25, 33, 50, 66].includes(value)),
-  ).optional(),
+  termWidth: glossaryWidthSchema.optional(),
+  definitionWidth: glossaryWidthSchema.optional(),
+  additionalWidth: glossaryWidthSchema.optional(),
   entries: z.array(glossaryEntrySchema).min(1).max(500),
 });
 
@@ -46,6 +47,7 @@ const fillInTheBlankSchema = z.object({
   items: z.array(z.string().trim().min(1).max(5000)).min(1).max(500),
   distractors: z.array(z.string().trim().min(1).max(500)).max(500).default([]),
   widthFactor: z.number().min(0.25).max(5).default(1),
+  hideInstructionBadge: z.boolean().default(false),
   hideBlankNumbers: z.boolean().default(false),
   hideItemNumbers: z.boolean().default(false),
   showLineNumbers: z.boolean().default(false),
@@ -107,6 +109,7 @@ const worksheetTableSchema = z.object({
   type: z.literal('worksheetTable'),
   instruction: z.string().max(1000).default('Complete the table.'),
   showInstruction: z.boolean().default(true),
+  hideInstructionBadge: z.boolean().default(false),
   columns: z.array(worksheetTableColumnSchema).min(1).max(6),
   rows: z.array(worksheetTableRowSchema).min(1).max(1000),
   showHeader: z.boolean().default(false),
@@ -133,6 +136,7 @@ const dialogueSchema = z.object({
     4: z.string().trim().max(100).default('Speaker 4'),
   }),
   showInstruction: z.boolean().default(true),
+  hideInstructionBadge: z.boolean().default(false),
   showSpeakerNames: z.boolean().default(false),
   showOriginal: z.boolean().default(false),
   showWordBank: z.boolean().default(false),
@@ -179,6 +183,7 @@ const timetableSchema = z.object({
     'Read the timetable and answer the questions.',
   ),
   showInstruction: z.boolean().default(true),
+  hideInstructionBadge: z.boolean().default(false),
   destinationLabel: z.string().max(100).default('Nach'),
   platformLabel: z.string().max(100).default('Gleis'),
   noticeLabel: z.string().max(100).default('Hinweis'),
@@ -199,6 +204,7 @@ const openingHoursSchema = z.object({
     'Read the opening hours and answer the questions.',
   ),
   showInstruction: z.boolean().default(true),
+  hideInstructionBadge: z.boolean().default(false),
   signs: z.array(z.object({
     id: z.string().trim().min(1).max(100).optional(),
     title: z.string().trim().min(1).max(200),
@@ -233,6 +239,7 @@ const mcqSchema = z.object({
   columns: z.number().int().min(1).max(3).default(1),
   shuffleAnswers: z.boolean().default(false),
   showInstruction: z.boolean().default(true),
+  hideInstructionBadge: z.boolean().default(false),
 });
 
 const mcmOptionSchema = z.object({
@@ -744,7 +751,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
   if (block.type === 'worksheetTable') {
     const columns = escapeAttribute(encodeURIComponent(JSON.stringify(block.columns)));
     const rows = escapeAttribute(encodeURIComponent(JSON.stringify(block.rows)));
-    return `<div data-type="worksheet-table" data-worksheet-table-instruction="${escapeAttribute(block.instruction)}" data-worksheet-table-show-instruction="${block.showInstruction}" data-worksheet-table-columns="${columns}" data-worksheet-table-rows="${rows}" data-worksheet-table-show-header="${block.showHeader}" data-worksheet-table-hide-blank-numbers="${block.hideBlankNumbers}" data-worksheet-table-blank-width="${block.blankWidthFactor}" data-worksheet-table-show-first-example="${block.showFirstAsExample}"></div>`;
+    return `<div data-type="worksheet-table" data-worksheet-table-instruction="${escapeAttribute(block.instruction)}" data-worksheet-table-show-instruction="${block.showInstruction}" data-worksheet-table-hide-instruction-badge="${block.hideInstructionBadge}" data-worksheet-table-columns="${columns}" data-worksheet-table-rows="${rows}" data-worksheet-table-show-header="${block.showHeader}" data-worksheet-table-hide-blank-numbers="${block.hideBlankNumbers}" data-worksheet-table-blank-width="${block.blankWidthFactor}" data-worksheet-table-show-first-example="${block.showFirstAsExample}"></div>`;
   }
   if (block.type === 'informationGapActivity') {
     const activityId = crypto.randomUUID();
@@ -812,7 +819,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     return `<div data-choose-correct-instruction="${escapeAttribute(block.instruction)}" data-choose-correct-keep-left="${block.keepLeft}" data-choose-correct-keep-right="${block.keepRight}" data-choose-correct-show-example="${block.showFirstAsExample}" data-choose-correct-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-choose-correct-generation="${block.generation}" data-type="choose-correct-words"></div>`;
   }
   if (block.type === 'fillInTheBlank') {
-    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-fill-blank-title="${escapeAttribute(block.title)}" data-fill-blank-text="${escapeAttribute(block.items.join('\n'))}" data-fill-blank-distractors="${escapeAttribute(JSON.stringify(block.distractors))}" data-fill-blank-width-factor="${block.widthFactor}" data-fill-blank-hide-numbers="${block.hideBlankNumbers}" data-fill-blank-hide-item-numbers="${block.hideItemNumbers}" data-fill-blank-show-line-numbers="${block.showLineNumbers}" data-fill-blank-show-word-bank="${block.showWordBank}" data-fill-blank-show-first-example="${block.showFirstAsExample}" data-type="fill-in-the-blank"></div>`;
+    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-fill-blank-title="${escapeAttribute(block.title)}" data-fill-blank-text="${escapeAttribute(block.items.join('\n'))}" data-fill-blank-distractors="${escapeAttribute(JSON.stringify(block.distractors))}" data-fill-blank-width-factor="${block.widthFactor}" data-fill-blank-hide-instruction-badge="${block.hideInstructionBadge}" data-fill-blank-hide-numbers="${block.hideBlankNumbers}" data-fill-blank-hide-item-numbers="${block.hideItemNumbers}" data-fill-blank-show-line-numbers="${block.showLineNumbers}" data-fill-blank-show-word-bank="${block.showWordBank}" data-fill-blank-show-first-example="${block.showFirstAsExample}" data-type="fill-in-the-blank"></div>`;
   }
   if (block.type === 'dialogue') {
     const items = block.items.map((item, index) => ({
@@ -820,7 +827,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       speaker: item.speaker,
       text: item.text,
     }));
-    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-dialogue-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-dialogue-speaker-names="${escapeAttribute(encodeURIComponent(JSON.stringify(block.speakerNames)))}" data-dialogue-show-instruction="${block.showInstruction}" data-dialogue-show-speaker-names="${block.showSpeakerNames}" data-dialogue-show-original="${block.showOriginal}" data-dialogue-show-word-bank="${block.showWordBank}" data-dialogue-hide-blank-numbers="${block.hideBlankNumbers}" data-dialogue-show-first-example="${block.showFirstAsExample}" data-dialogue-context="${escapeAttribute(encodeURIComponent(block.context))}" data-type="dialogue"></div>`;
+    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-dialogue-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-dialogue-speaker-names="${escapeAttribute(encodeURIComponent(JSON.stringify(block.speakerNames)))}" data-dialogue-show-instruction="${block.showInstruction}" data-dialogue-hide-instruction-badge="${block.hideInstructionBadge}" data-dialogue-show-speaker-names="${block.showSpeakerNames}" data-dialogue-show-original="${block.showOriginal}" data-dialogue-show-word-bank="${block.showWordBank}" data-dialogue-hide-blank-numbers="${block.hideBlankNumbers}" data-dialogue-show-first-example="${block.showFirstAsExample}" data-dialogue-context="${escapeAttribute(encodeURIComponent(block.context))}" data-type="dialogue"></div>`;
   }
   if (block.type === 'messenger') {
     const messages = block.messages.map((message, index) => ({
@@ -837,7 +844,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       ...row,
       id: row.id ?? `timetable-row-${index + 1}`,
     }));
-    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-show-instruction="${block.showInstruction}" data-destination-label="${escapeAttribute(encodeURIComponent(block.destinationLabel))}" data-platform-label="${escapeAttribute(encodeURIComponent(block.platformLabel))}" data-notice-label="${escapeAttribute(encodeURIComponent(block.noticeLabel))}" data-footer="${escapeAttribute(encodeURIComponent(block.footer))}" data-rows="${escapeAttribute(encodeURIComponent(JSON.stringify(rows)))}" data-type="timetable"></div>`;
+    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-show-instruction="${block.showInstruction}" data-hide-instruction-badge="${block.hideInstructionBadge}" data-destination-label="${escapeAttribute(encodeURIComponent(block.destinationLabel))}" data-platform-label="${escapeAttribute(encodeURIComponent(block.platformLabel))}" data-notice-label="${escapeAttribute(encodeURIComponent(block.noticeLabel))}" data-footer="${escapeAttribute(encodeURIComponent(block.footer))}" data-rows="${escapeAttribute(encodeURIComponent(JSON.stringify(rows)))}" data-type="timetable"></div>`;
   }
   if (block.type === 'openingHours') {
     const signs = block.signs.map((sign, signIndex) => ({
@@ -848,7 +855,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
         id: row.id ?? `opening-hours-row-${signIndex + 1}-${rowIndex + 1}`,
       })),
     }));
-    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-show-instruction="${block.showInstruction}" data-signs="${escapeAttribute(encodeURIComponent(JSON.stringify(signs)))}" data-type="opening-hours"></div>`;
+    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-show-instruction="${block.showInstruction}" data-hide-instruction-badge="${block.hideInstructionBadge}" data-signs="${escapeAttribute(encodeURIComponent(JSON.stringify(signs)))}" data-type="opening-hours"></div>`;
   }
   if (block.type === 'mcq') {
     const questions = block.questions.map((question, index) => ({
@@ -864,7 +871,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     const questionNumber = block.questionNumber === null
       ? ''
       : ` data-mcq-question-number="${block.questionNumber}"`;
-    return `<div data-mcq-instruction="${escapeAttribute(block.instruction)}" data-mcq-block-question="${escapeAttribute(encodeURIComponent(block.blockQuestion))}" data-mcq-questions="${escapeAttribute(encodeURIComponent(JSON.stringify(questions)))}" data-mcq-columns="${block.columns}" data-mcq-shuffle-answers="${block.shuffleAnswers}" data-mcq-show-instruction="${block.showInstruction}"${questionNumber} data-type="mcq"></div>`;
+    return `<div data-mcq-instruction="${escapeAttribute(block.instruction)}" data-mcq-block-question="${escapeAttribute(encodeURIComponent(block.blockQuestion))}" data-mcq-questions="${escapeAttribute(encodeURIComponent(JSON.stringify(questions)))}" data-mcq-columns="${block.columns}" data-mcq-shuffle-answers="${block.shuffleAnswers}" data-mcq-show-instruction="${block.showInstruction}" data-mcq-hide-instruction-badge="${block.hideInstructionBadge}"${questionNumber} data-type="mcq"></div>`;
   }
   if (block.type === 'mcm') {
     const rows = block.rows.map((row, rowIndex) => ({
@@ -1020,7 +1027,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
   const instruction = block.instruction
     ? ` data-block-instruction="${escapeAttribute(block.instruction)}"`
     : '';
-  return `<div data-glossary-terms="${escapeAttribute(encodeURIComponent(JSON.stringify(terms)))}" data-glossary-term-width="${widths.term}" data-glossary-definition-width="${widths.definition}" data-glossary-additional-width="${additionalWidth}" data-glossary-preset="${block.preset}" data-glossary-header-labels="${escapeAttribute(encodeURIComponent(JSON.stringify(headerLabels)))}" data-glossary-show-instruction="${block.showInstruction}" data-glossary-show-column-headers="${block.showColumnHeaders}" data-glossary-show-example="${block.showExample}" data-glossary-show-additional-column="${block.showAdditionalColumn}"${instruction} data-type="glossary-terms"></div>`;
+  return `<div data-glossary-terms="${escapeAttribute(encodeURIComponent(JSON.stringify(terms)))}" data-glossary-term-width="${widths.term}" data-glossary-definition-width="${widths.definition}" data-glossary-additional-width="${additionalWidth}" data-glossary-preset="${block.preset}" data-glossary-header-labels="${escapeAttribute(encodeURIComponent(JSON.stringify(headerLabels)))}" data-glossary-show-instruction="${block.showInstruction}" data-glossary-hide-instruction-badge="${block.hideInstructionBadge}" data-glossary-show-column-headers="${block.showColumnHeaders}" data-glossary-show-definition-column="${block.showDefinitionColumn}" data-glossary-show-example="${block.showExample}" data-glossary-show-additional-column="${block.showAdditionalColumn}"${instruction} data-type="glossary-terms"></div>`;
 }
 
 function extractSingleWorksheetValue(value: unknown) {

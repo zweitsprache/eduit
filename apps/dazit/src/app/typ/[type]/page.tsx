@@ -11,7 +11,7 @@ type Props = {
   params: Promise<{ type: string }>;
 };
 
-export const revalidate = 1800;
+export const revalidate = 30;
 
 export function generateStaticParams() {
   return TYPES.map((item) => ({ type: item.slug }));

@@ -11,7 +11,7 @@ type Props = {
   params: Promise<{ level: string }>;
 };
 
-export const revalidate = 1800;
+export const revalidate = 30;
 
 export function generateStaticParams() {
   return LEVELS.map((level) => ({ level }));

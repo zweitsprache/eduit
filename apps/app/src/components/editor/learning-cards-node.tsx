@@ -14,6 +14,7 @@ import { getEditorPageAreas } from '@/components/editor/page-layout';
 import {
   isSingleLetterBlankAnswer,
   shouldAttachBlankToPreviousText,
+  textWithBlankBoundaryJoiners,
 } from '@/components/editor/fill-in-the-blank-node';
 
 export type LearningCardItem = {
@@ -410,7 +411,12 @@ export function LearningCardContent({
       <div className="learning-cards-node__body">
         {parts.map((part, index) => {
           if (part.type === 'text') {
-            return <InlineFormattedText key={`text-${index}`} text={part.value} />;
+            return (
+              <InlineFormattedText
+                key={`text-${index}`}
+                text={textWithBlankBoundaryJoiners(part.value, parts, index)}
+              />
+            );
           }
 
           blankIndex += 1;
