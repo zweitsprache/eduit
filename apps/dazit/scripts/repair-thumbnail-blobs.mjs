@@ -25,7 +25,10 @@ async function listedPaths(token) {
 const apply = process.argv.includes('--apply');
 const appEnv = fs.readFileSync(new URL('../../app/.env.local', import.meta.url), 'utf8');
 const dazitEnv = fs.readFileSync(new URL('../.env.local', import.meta.url), 'utf8');
-const sourceToken = required(envValue(appEnv, 'BLOB_READ_WRITE_TOKEN'), 'source BLOB_READ_WRITE_TOKEN');
+const sourceTokens = [
+  ['current editor store', required(envValue(appEnv, 'BLOB_READ_WRITE_TOKEN'), 'source BLOB_READ_WRITE_TOKEN')],
+  ['old Dazit store', envValue(dazitEnv, 'OLD_BLOB_READ_WRITE_TOKEN')],
+].filter(([, token]) => typeof token === 'string' && token.length > 0);
 const destinationToken = required(
   envValue(appEnv, 'DAZIT_BLOB_READ_WRITE_TOKEN') ?? envValue(dazitEnv, 'BLOB_READ_WRITE_TOKEN'),
   'destination DAZIT_BLOB_READ_WRITE_TOKEN',
@@ -40,8 +43,12 @@ const rows = await sql`
     and jsonb_array_length(thumbnail_paths) > 0
   order by published_at asc
 `;
-const [sourcePaths, destinationPaths] = await Promise.all([
-  listedPaths(sourceToken),
+const [sourcePathSets, destinationPaths] = await Promise.all([
+  Promise.all(sourceTokens.map(async ([label, token]) => ({
+    label,
+    token,
+    paths: await listedPaths(token),
+  }))),
   listedPaths(destinationToken),
 ]);
 const missingPaths = rows.flatMap((row) => (
@@ -50,12 +57,19 @@ const missingPaths = rows.flatMap((row) => (
     .filter((path) => destinationPaths.has(path) === false)
     .map((path) => ({ path, worksheetId: row.worksheet_id, slug: row.slug }))
 ));
-const copyablePaths = missingPaths.filter(({ path }) => sourcePaths.has(path));
-const absentPaths = missingPaths.filter(({ path }) => sourcePaths.has(path) === false);
+const copyablePaths = missingPaths.flatMap((item) => {
+  const source = sourcePathSets.find(({ paths }) => paths.has(item.path));
+  return source ? [{ ...item, sourceLabel: source.label, sourceToken: source.token }] : [];
+});
+const absentPaths = missingPaths.filter(({ path }) => (
+  sourcePathSets.every(({ paths }) => paths.has(path) === false)
+));
 
 console.log('missing thumbnail paths in Dazit store:', missingPaths.length);
-console.log('copyable from generic store:', copyablePaths.length);
-console.log('absent in both stores:', absentPaths.length);
+for (const source of sourcePathSets) {
+  console.log(`copyable from ${source.label}:`, copyablePaths.filter((item) => item.sourceLabel === source.label).length);
+}
+console.log('absent in all source stores:', absentPaths.length);
 
 if (absentPaths.length) {
   for (const item of absentPaths.slice(0, 10)) {
@@ -72,7 +86,7 @@ let copied = 0;
 for (const item of copyablePaths) {
   const source = await blob.get(item.path, {
     access: 'private',
-    token: sourceToken,
+    token: item.sourceToken,
     useCache: false,
   });
   if (source?.statusCode !== 200 || !source.stream) {

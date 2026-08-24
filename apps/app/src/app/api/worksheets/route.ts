@@ -90,7 +90,8 @@ export async function DELETE(request: Request) {
     const worksheet = await getWorksheet(id, user.id, user.isAdmin);
     if (!worksheet) throw new Error('Worksheet not found.');
     if (deleteFromDazit) {
-      const token = process.env.BLOB_READ_WRITE_TOKEN;
+      const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN
+        ?? process.env.BLOB_READ_WRITE_TOKEN;
       if (!token) throw new Error('Dazit storage is not configured.');
       const publicationBlobs = await list({
         prefix: `worksheets/${id}/`,

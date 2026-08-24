@@ -39,7 +39,13 @@ App:
 ```text
 NEXT_PUBLIC_SITE_URL=https://domain.com
 NEXT_PUBLIC_APP_URL=https://app.domain.com
+DAZIT_BLOB_READ_WRITE_TOKEN=...
 ```
+
+`DAZIT_BLOB_READ_WRITE_TOKEN` must point at the same Vercel Blob store used by
+the Dazit project. The editor uses it when publishing PDFs, thumbnails, and
+manifests to Dazit. If it is omitted, the editor falls back to
+`BLOB_READ_WRITE_TOKEN` for local/single-store setups.
 
 Dazit:
 
