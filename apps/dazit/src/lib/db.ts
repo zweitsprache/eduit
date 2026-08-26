@@ -66,6 +66,7 @@ export type DazitPublicationCardRow = {
   answerKeyPdfPath: string | null;
   documentSize: string;
   context: null;
+  blockTypes: string[];
 };
 
 export type DazitHomepageStatsRow = {
@@ -307,7 +308,12 @@ export async function getPublishedWorksheetCardsFromDb() {
       p.download_count::int as downloads,
       coalesce(p.has_answer_key, w.show_solutions, false) as "hasAnswerKey",
       w.document_size as "documentSize",
-      null as context
+      null as context,
+      (
+        select coalesce(array_agg(distinct m[1]), '{}')
+        from regexp_matches(w.content_html, 'data-type="([a-zA-Z0-9-]+)"', 'g') as m
+        where not (m[1] = any(array['custom-heading', 'spacer', 'rich-text', 'media-layout', 'instruction-block', 'pageBreak']))
+      ) as "blockTypes"
     from dazit_publications p
     join worksheets w on w.id = p.worksheet_id
     order by p.published_at desc
@@ -352,7 +358,12 @@ export async function getFamilyWorksheetCardsFromDb(worksheetId: string) {
       p.download_count::int as downloads,
       coalesce(p.has_answer_key, w.show_solutions, false) as "hasAnswerKey",
       w.document_size as "documentSize",
-      null as context
+      null as context,
+      (
+        select coalesce(array_agg(distinct m[1]), '{}')
+        from regexp_matches(w.content_html, 'data-type="([a-zA-Z0-9-]+)"', 'g') as m
+        where not (m[1] = any(array['custom-heading', 'spacer', 'rich-text', 'media-layout', 'instruction-block', 'pageBreak']))
+      ) as "blockTypes"
     from family_ids family
     join dazit_publications p on p.worksheet_id = family.worksheet_id
     join worksheets w on w.id = p.worksheet_id
@@ -402,7 +413,12 @@ export async function getRelatedWorksheetCardsFromDb(
       p.download_count::int as downloads,
       coalesce(p.has_answer_key, w.show_solutions, false) as "hasAnswerKey",
       w.document_size as "documentSize",
-      null as context
+      null as context,
+      (
+        select coalesce(array_agg(distinct m[1]), '{}')
+        from regexp_matches(w.content_html, 'data-type="([a-zA-Z0-9-]+)"', 'g') as m
+        where not (m[1] = any(array['custom-heading', 'spacer', 'rich-text', 'media-layout', 'instruction-block', 'pageBreak']))
+      ) as "blockTypes"
     from dazit_publications p
     join worksheets w on w.id = p.worksheet_id
     cross join query_params params

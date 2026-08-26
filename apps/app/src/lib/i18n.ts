@@ -40,6 +40,7 @@ export const messages = {
       media: 'Media',
       settings: 'Settings',
       brandProfiles: 'Brand profiles',
+      worksheetsAdmin: 'Worksheets (Admin)',
       accountSettings: 'Account settings',
     },
     documents: {
@@ -187,6 +188,7 @@ export const messages = {
       media: 'Medien',
       settings: 'Einstellungen',
       brandProfiles: 'Markenprofile',
+      worksheetsAdmin: 'Arbeitsblätter (Admin)',
       accountSettings: 'Kontoeinstellungen',
     },
     documents: {

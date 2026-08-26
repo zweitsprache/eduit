@@ -30,8 +30,8 @@ export function getSectionStartsFromPageBreaks(
     }
     const breakPage = getPageForPosition?.(pos);
     if (breakPage && breakPage >= 1) {
-      const restartPage = Math.min(pageCount, breakPage);
-      if (restartPage > 1) restartPages.push(restartPage);
+      const restartPage = breakPage + 1;
+      if (restartPage > 1 && restartPage <= pageCount) restartPages.push(restartPage);
     }
     return false;
   });

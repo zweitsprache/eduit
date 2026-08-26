@@ -118,7 +118,11 @@ export function InsertBlockPalette({
       onStartJsonImport(workflowInsertAt);
       return;
     }
-    if (block.type === 'learningCards' || block.type === 'communicationCards') {
+    if (
+      block.type === 'learningCards'
+      || block.type === 'communicationCards'
+      || block.type === 'articlePluralCards'
+    ) {
       if (!block.insert(editor)) return;
       const nextRecent = [
         block.type,

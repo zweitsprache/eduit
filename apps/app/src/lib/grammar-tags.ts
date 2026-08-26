@@ -16,6 +16,16 @@ type GrammarTaxonomy = {
   grammar?: GrammarTagNode[];
 };
 
+const LEGACY_GRAMMAR_TAG_ALIASES: Record<string, string> = {
+  // Legacy IDs used in older worksheet JSON exports.
+  'verbgrammatik.valenz.praepositionalobjekt': 'syntax.valenz.praepositionalobjekt',
+  'verbgrammatik.reflexiv.echt': 'verbgrammatik.reflexiv.obligatorisch',
+};
+
+export function normalizeGrammarTagId(id: string) {
+  return LEGACY_GRAMMAR_TAG_ALIASES[id] ?? id;
+}
+
 function collectGrammarTagOptions(
   nodes: GrammarTagNode[],
   path: string[],

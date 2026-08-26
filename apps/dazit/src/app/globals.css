@@ -1006,8 +1006,15 @@ button { color: inherit; }
 .answer-key { display: inline-flex; width: 25px; height: 25px; box-sizing: border-box; align-items: center; justify-content: center; padding: 0; border: 1px solid #2e815d; border-radius: 5px; color: #2e815d; }
 .answer-key svg { width: 14px; height: 14px; }
 .card-created-date { margin-left: auto; color: #777988; font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.card-body h2 { margin: 7px 0 4px; font-size: 16px; font-weight: 700; line-height: 1.25; }
+.card-body h2 { margin: 7px 0 8px; font-size: 16px; font-weight: 700; line-height: 1.25; }
 .card-body h2 a:hover { color: var(--orange); }
+.card-node-badges { display: grid; gap: 4px; margin: 0 0 4px; width: 100%; }
+.node-badge {
+  display: inline-flex; height: 25px; box-sizing: border-box; align-items: center;
+  justify-content: center; padding: 4px 8px; border-radius: 5px; background: #eef0f5;
+  color: var(--navy); font-size: 10px; font-weight: 400; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis;
+}
 .card-body > p { margin: 0; color: #8a8c98; font-size: 12px; }
 .card-body .card-excerpt {
   display: -webkit-box; overflow: hidden; min-height: 38px; margin-top: 7px;

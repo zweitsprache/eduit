@@ -125,6 +125,10 @@ import type {
 } from '@/components/editor/learning-cards-node';
 import { LearningCardContent } from '@/components/editor/learning-cards-node';
 import type {
+  ArticlePluralCardItem,
+  ArticlePluralCardsAttrs,
+} from '@/components/editor/article-plural-cards-node';
+import type {
   DialogueAttrs,
   DialogueItem,
   DialogueSpeaker,
@@ -278,6 +282,7 @@ export type ContentEditorBlock = {
     | 'learningObjective'
     | 'communicationCards'
     | 'learningCards'
+    | 'articlePluralCards'
     | 'dialogue'
     | 'messenger'
     | 'email'
@@ -321,6 +326,7 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   learningObjective: 'Learning objective content',
   communicationCards: 'Communication Cards',
   learningCards: 'Learning cards',
+  articlePluralCards: 'Article/Plural Cards',
   dialogue: 'Dialogue content',
   messenger: 'Messenger content',
   email: 'E-Mail content',
@@ -846,6 +852,181 @@ function LearningCardsEditor({
       </ContentAddButton>
       </>
       )}
+    </>
+  );
+}
+
+function ArticlePluralCardsEditor({
+  attrs,
+  block,
+  editor,
+  groupIndex,
+  onGroupIndexChange,
+}: {
+  attrs: ArticlePluralCardsAttrs;
+  block: ContentEditorBlock & { type: 'articlePluralCards' };
+  editor: Editor;
+  groupIndex: number;
+  onGroupIndexChange: (index: number) => void;
+}) {
+  const updateArticlePluralCards = (patch: Partial<ArticlePluralCardsAttrs>) => {
+    editor.chain().command(({ tr }) => {
+      const next = {
+        ...attrs,
+        ...patch,
+        sidedness: 'double' as const,
+        format: 'a8-landscape' as const,
+      };
+      const cardType = tr.doc.type.schema.nodes.articlePluralCards;
+      const pageBreakType = tr.doc.type.schema.nodes.pageBreak;
+      if (!cardType) return false;
+      const groupCount = Math.max(1, Math.ceil(next.items.length / 9));
+      const sheets = Array.from({ length: groupCount }, (_, nextGroupIndex) => ([
+        cardType.create({
+          ...next,
+          groupIndex: nextGroupIndex,
+          sheetSide: 'front',
+        }),
+        cardType.create({
+          ...next,
+          groupIndex: nextGroupIndex,
+          sheetSide: 'back',
+        }),
+      ])).flat();
+      const documentNodes = sheets.flatMap((sheet, index) => (
+        index < sheets.length - 1 && pageBreakType
+          ? [sheet, pageBreakType.create({ restartPagination: false })]
+          : [sheet]
+      ));
+      tr.replaceWith(0, tr.doc.content.size, documentNodes);
+      return true;
+    }).run();
+  };
+
+  const groupCount = Math.max(1, Math.ceil(attrs.items.length / 9));
+  const groupStart = groupIndex * 9;
+  const groupItems = attrs.items.slice(groupStart, groupStart + 9);
+
+  const updateCard = (
+    id: string,
+    patch: Partial<ArticlePluralCardItem>,
+  ) => updateArticlePluralCards({
+    items: attrs.items.map((item) => (
+      item.id === id ? { ...item, ...patch } : item
+    )),
+  });
+
+  return (
+    <>
+      <ContentFieldLabel>Title</ContentFieldLabel>
+      <input
+        aria-label="Article/plural cards title"
+        className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+        onChange={(event) => updateArticlePluralCards({ title: event.target.value })}
+        type="text"
+        value={attrs.title}
+      />
+
+      <div className="mt-5">
+        <ContentFieldLabel>Format</ContentFieldLabel>
+        <select
+          aria-label="Article/plural card format"
+          className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          onChange={() => undefined}
+          value={attrs.format}
+        >
+          <option value="a8-landscape">DIN A8 Landscape - 74 x 52 mm</option>
+        </select>
+      </div>
+
+      <div className="mt-5">
+        <ContentFieldLabel>Printing</ContentFieldLabel>
+        <select
+          aria-label="Article/plural cards printing mode"
+          className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          onChange={() => undefined}
+          value={attrs.sidedness}
+        >
+          <option value="double">Double sided - short edge</option>
+        </select>
+      </div>
+
+      <div className="mt-6 rounded-lg border border-secondary bg-secondary p-4">
+        <ContentFieldLabel>Front page</ContentFieldLabel>
+        <select
+          aria-label="Article/plural cards page group"
+          className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          onChange={(event) => onGroupIndexChange(Number(event.target.value))}
+          value={Math.min(groupIndex, groupCount - 1)}
+        >
+          {Array.from({ length: groupCount }, (_, index) => (
+            <option key={index} value={index}>
+              Page {index * 2 + 1} - cards {index * 9 + 1}-{Math.min((index + 1) * 9, attrs.items.length)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mt-6 space-y-4">
+        {groupItems.map((item, itemIndex) => (
+          <ContentCard key={item.id}>
+            <ContentSectionHeader>
+              Card {groupStart + itemIndex + 1}
+            </ContentSectionHeader>
+            <div className="mt-3">
+              <ContentFieldLabel>Article</ContentFieldLabel>
+              <input
+                aria-label={`Card ${groupStart + itemIndex + 1} article`}
+                className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                onChange={(event) => updateCard(item.id, { article: event.target.value })}
+                placeholder="der / die / das"
+                type="text"
+                value={item.article}
+              />
+            </div>
+            <div className="mt-3">
+              <ContentFieldLabel>Singular</ContentFieldLabel>
+              <input
+                aria-label={`Card ${groupStart + itemIndex + 1} singular`}
+                className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                onChange={(event) => updateCard(item.id, { singular: event.target.value })}
+                placeholder="Substantiv"
+                type="text"
+                value={item.singular}
+              />
+            </div>
+            <div className="mt-3">
+              <ContentFieldLabel>Plural</ContentFieldLabel>
+              <input
+                aria-label={`Card ${groupStart + itemIndex + 1} plural`}
+                className="mt-2 h-10 w-full rounded-md border border-primary bg-primary px-3 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                onChange={(event) => updateCard(item.id, { plural: event.target.value })}
+                placeholder="Plural"
+                type="text"
+                value={item.plural}
+              />
+            </div>
+          </ContentCard>
+        ))}
+      </div>
+
+      <ContentAddButton
+        onClick={() => {
+          const nextIndex = attrs.items.length;
+          const id = `article-plural-card-${Date.now()}`;
+          updateArticlePluralCards({
+            items: [...attrs.items, {
+              id,
+              article: '',
+              singular: '',
+              plural: '',
+            }],
+          });
+          onGroupIndexChange(Math.floor(nextIndex / 9));
+        }}
+      >
+        Add card
+      </ContentAddButton>
     </>
   );
 }
@@ -1959,6 +2140,7 @@ function Preview({
   editor,
   learningCardsGroupIndex = 0,
   learningCardsSelectedCardId = null,
+  articlePluralCardsGroupIndex = 0,
   communicationCardsGroupIndex = 0,
   communicationCardsSelectedCardId = null,
 }: {
@@ -1967,16 +2149,23 @@ function Preview({
   editor: Editor;
   learningCardsGroupIndex?: number;
   learningCardsSelectedCardId?: string | null;
+  articlePluralCardsGroupIndex?: number;
   communicationCardsGroupIndex?: number;
   communicationCardsSelectedCardId?: string | null;
 }) {
   const previewRef = useRef<HTMLDivElement>(null);
   const learningCardsFrontRef = useRef<HTMLDivElement>(null);
   const learningCardsBackRef = useRef<HTMLDivElement>(null);
+  const articlePluralCardsFrontRef = useRef<HTMLDivElement>(null);
+  const articlePluralCardsBackRef = useRef<HTMLDivElement>(null);
   const communicationCardsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (block.type === 'learningCards' || block.type === 'communicationCards') {
+    if (
+      block.type === 'learningCards'
+      || block.type === 'communicationCards'
+      || block.type === 'articlePluralCards'
+    ) {
       if (block.type === 'communicationCards') {
         let sheetPos: number | null = null;
         editor.state.doc.forEach((node, pos) => {
@@ -2005,6 +2194,42 @@ function Preview({
           clone.style.setProperty('transform', 'scale(0.3)');
           clone.style.setProperty('transform-origin', 'top left');
           target.appendChild(clone);
+        });
+        return () => cancelAnimationFrame(frame);
+      }
+
+      if (block.type === 'articlePluralCards') {
+        let frontPos: number | null = null;
+        let backPos: number | null = null;
+        editor.state.doc.forEach((node, pos) => {
+          if (
+            node.type.name !== 'articlePluralCards'
+            || Number(node.attrs.groupIndex) !== articlePluralCardsGroupIndex
+          ) return;
+          if (node.attrs.sheetSide === 'back') backPos = pos;
+          else frontPos = pos;
+        });
+        const renderSheet = (target: HTMLDivElement | null, pos: number | null) => {
+          if (!target) return;
+          target.replaceChildren();
+          if (pos === null) return;
+          const nodeDom = editor.view.nodeDOM(pos);
+          if (!(nodeDom instanceof HTMLElement)) return;
+          const clone = nodeDom.cloneNode(true) as HTMLElement;
+          clone.classList.remove('ProseMirror-selectednode', 'custom-block--selected');
+          clone.style.setProperty('margin', '0', 'important');
+          clone.style.setProperty(
+            'font-family',
+            window.getComputedStyle(nodeDom).fontFamily,
+            'important',
+          );
+          clone.style.setProperty('transform', 'scale(0.36)');
+          clone.style.setProperty('transform-origin', 'top left');
+          target.appendChild(clone);
+        };
+        const frame = requestAnimationFrame(() => {
+          renderSheet(articlePluralCardsFrontRef.current, frontPos);
+          renderSheet(articlePluralCardsBackRef.current, backPos);
         });
         return () => cancelAnimationFrame(frame);
       }
@@ -2066,6 +2291,7 @@ function Preview({
     };
   }, [
     attrs,
+    articlePluralCardsGroupIndex,
     block.pos,
     block.type,
     communicationCardsGroupIndex,
@@ -2074,7 +2300,11 @@ function Preview({
   ]);
 
   useEffect(() => {
-    if (block.type === 'learningCards' || block.type === 'communicationCards') return;
+    if (
+      block.type === 'learningCards'
+      || block.type === 'communicationCards'
+      || block.type === 'articlePluralCards'
+    ) return;
     const preview = previewRef.current;
     if (!preview) return;
     const source = editor.view.dom;
@@ -2213,6 +2443,26 @@ function Preview({
         <div className="h-[360px] overflow-hidden rounded-lg border border-secondary bg-white p-3">
           <div ref={communicationCardsRef} />
         </div>
+      </div>
+    );
+  }
+
+  if (block.type === 'articlePluralCards') {
+    return (
+      <div className="sticky top-0 grid grid-cols-2 gap-4">
+        {([
+          ['Front', articlePluralCardsFrontRef],
+          ['Back', articlePluralCardsBackRef],
+        ] as const).map(([label, ref]) => (
+          <div key={label}>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-quaternary">
+              {label}
+            </p>
+            <div className="h-[360px] overflow-hidden rounded-lg border border-secondary bg-white p-3">
+              <div ref={ref} />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -5539,6 +5789,13 @@ function RewriteSentencesEditor({
       <ContentSectionHeader className="mt-0">Learner support</ContentSectionHeader>
       <ContentSwitchGrid>
         <ContentSwitch
+          label="Show instruction"
+          isSelected={attrs.showInstruction !== false}
+          onChange={(showInstruction) => updateAttrs(editor, block, {
+            showInstruction,
+          })}
+        />
+        <ContentSwitch
           label="Show example"
           isSelected={attrs.showFirstAsExample}
           onChange={(showFirstAsExample) => updateAttrs(editor, block, {
@@ -5874,6 +6131,13 @@ function WordGridEditor({
       />
       <ContentSectionHeader>Learner support</ContentSectionHeader>
       <ContentSwitchGrid>
+        <ContentSwitch
+          label="Hide instruction numbering"
+          isSelected={attrs.hideInstructionBadge}
+          onChange={(hideInstructionBadge) => updateAttrs(editor, block, {
+            hideInstructionBadge,
+          })}
+        />
         <ContentSwitch
           label="Show word list"
           isSelected={attrs.showWordList}
@@ -8426,6 +8690,7 @@ export function BlockContentEditorModal({
   const [learningCardsGroupIndex, setLearningCardsGroupIndex] = useState(0);
   const [learningCardsSelectedCardId, setLearningCardsSelectedCardId] =
     useState<string | null>(null);
+  const [articlePluralCardsGroupIndex, setArticlePluralCardsGroupIndex] = useState(0);
   const [communicationCardsGroupIndex, setCommunicationCardsGroupIndex] = useState(0);
   const [communicationCardsSelectedCardId, setCommunicationCardsSelectedCardId] =
     useState<string | null>(null);
@@ -8459,7 +8724,14 @@ export function BlockContentEditorModal({
   });
 
   useEffect(() => {
-    if (!block || (block.type !== 'learningCards' && block.type !== 'communicationCards')) {
+    if (
+      !block
+      || (
+        block.type !== 'learningCards'
+        && block.type !== 'communicationCards'
+        && block.type !== 'articlePluralCards'
+      )
+    ) {
       return;
     }
     const node = editor.state.doc.nodeAt(block.pos);
@@ -8467,6 +8739,8 @@ export function BlockContentEditorModal({
     if (block.type === 'learningCards') {
       setLearningCardsGroupIndex(nextGroupIndex);
       setLearningCardsSelectedCardId(null);
+    } else if (block.type === 'articlePluralCards') {
+      setArticlePluralCardsGroupIndex(nextGroupIndex);
     } else {
       setCommunicationCardsGroupIndex(nextGroupIndex);
       setCommunicationCardsSelectedCardId(null);
@@ -8529,6 +8803,7 @@ export function BlockContentEditorModal({
             {block.type === 'learningObjective' && <LearningObjectiveEditor attrs={attrs as unknown as LearningObjectiveAttrs} block={block} editor={editor} />}
             {block.type === 'communicationCards' && <CommunicationCardsEditor attrs={attrs as unknown as CommunicationCardsAttrs} block={block as ContentEditorBlock & { type: 'communicationCards' }} editor={editor} groupIndex={communicationCardsGroupIndex} onGroupIndexChange={setCommunicationCardsGroupIndex} selectedCardId={communicationCardsSelectedCardId} onSelectedCardIdChange={setCommunicationCardsSelectedCardId} />}
             {block.type === 'learningCards' && <LearningCardsEditor attrs={attrs as unknown as LearningCardsAttrs} block={block as ContentEditorBlock & { type: 'learningCards' }} editor={editor} groupIndex={learningCardsGroupIndex} onGroupIndexChange={setLearningCardsGroupIndex} selectedCardId={learningCardsSelectedCardId} onSelectedCardIdChange={setLearningCardsSelectedCardId} />}
+            {block.type === 'articlePluralCards' && <ArticlePluralCardsEditor attrs={attrs as unknown as ArticlePluralCardsAttrs} block={block as ContentEditorBlock & { type: 'articlePluralCards' }} editor={editor} groupIndex={articlePluralCardsGroupIndex} onGroupIndexChange={setArticlePluralCardsGroupIndex} />}
             {block.type === 'dialogue' && <DialogueEditor attrs={attrs as unknown as DialogueAttrs} block={block} editor={editor} />}
             {block.type === 'messenger' && <MessengerEditor attrs={attrs as unknown as MessengerAttrs} block={block} editor={editor} />}
             {block.type === 'email' && <EmailEditor attrs={attrs as unknown as EmailAttrs} block={block} editor={editor} />}
@@ -8557,7 +8832,7 @@ export function BlockContentEditorModal({
           </div>
           {block.type !== 'writingLines' && (
             <div className="overflow-y-auto bg-primary p-6">
-              <Preview attrs={attrs} block={effectiveBlock as ContentEditorBlock} editor={editor} learningCardsGroupIndex={learningCardsGroupIndex} learningCardsSelectedCardId={learningCardsSelectedCardId} communicationCardsGroupIndex={communicationCardsGroupIndex} communicationCardsSelectedCardId={communicationCardsSelectedCardId} />
+              <Preview attrs={attrs} block={effectiveBlock as ContentEditorBlock} editor={editor} learningCardsGroupIndex={learningCardsGroupIndex} learningCardsSelectedCardId={learningCardsSelectedCardId} articlePluralCardsGroupIndex={articlePluralCardsGroupIndex} communicationCardsGroupIndex={communicationCardsGroupIndex} communicationCardsSelectedCardId={communicationCardsSelectedCardId} />
             </div>
           )}
         </div>

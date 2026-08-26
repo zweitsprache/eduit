@@ -6,6 +6,7 @@ import {
   type Worksheet,
   type WorksheetContext,
   type WorksheetPatch,
+  type WorksheetStatus,
 } from '@/lib/worksheet-types';
 import { GRAMMAR_TAG_ID_SET } from '@/lib/grammar-tags';
 import { requireOwnedWorksheetFolder } from '@/lib/worksheet-folders';
@@ -154,6 +155,150 @@ export async function listWorksheets(ownerUserId: string, includeAll = false) {
       [ownerUserId],
     ) as WorksheetRow[];
   return rows.map(mapRow);
+}
+
+export type WorksheetAdminListItem = {
+  id: string;
+  title: string;
+  status: Worksheet['status'];
+  languageLevel: string;
+  actionField: string;
+  blockTypes: string[];
+  headingText: string | null;
+  updatedAt: string;
+};
+
+export type WorksheetAdminListResult = {
+  items: WorksheetAdminListItem[];
+  total: number;
+};
+
+// Structural/chrome node types that aren't a "main" exercise block for badge display.
+const BADGE_EXCLUDED_BLOCK_TYPES = [
+  'custom-heading',
+  'spacer',
+  'rich-text',
+  'media-layout',
+  'instruction-block',
+  'pageBreak',
+];
+
+function decodeHtmlAttributeEntities(value: string): string {
+  return value
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+}
+
+function encodeHtmlAttributeEntities(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+// Custom-heading nodes render as <div data-type="custom-heading" data-heading-text="..."
+// data-heading-level="..." ...>; pull the text of the first level-1 heading, if any.
+function extractFirstH1HeadingText(headingTags: string[] | null): string | null {
+  if (!headingTags) return null;
+  const h1Tag = headingTags.find((tag) => /data-heading-level="1"/.test(tag));
+  if (!h1Tag) return null;
+  const textMatch = h1Tag.match(/data-heading-text="([^"]*)"/);
+  return textMatch ? decodeHtmlAttributeEntities(textMatch[1]) : '';
+}
+
+// Lightweight, paginated listing (no content_html) for the admin worksheets table.
+export async function listWorksheetsForAdmin(params: {
+  search?: string;
+  level?: string;
+  actionField?: string;
+  status?: WorksheetStatus;
+  page?: number;
+  pageSize?: number;
+}): Promise<WorksheetAdminListResult> {
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 25));
+  const offset = (page - 1) * pageSize;
+
+  const conditions: string[] = [];
+  const values: unknown[] = [];
+
+  if (params.search) {
+    values.push(`%${params.search.replace(/[%_]/g, (char) => `\\${char}`)}%`);
+    conditions.push(`w.title ilike $${values.length}`);
+  }
+  if (params.level) {
+    values.push(params.level);
+    conditions.push(`w.context->>'languageLevel' = $${values.length}`);
+  }
+  if (params.actionField) {
+    values.push(params.actionField);
+    conditions.push(`w.context->>'actionField' = $${values.length}`);
+  }
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`w.status = $${values.length}`);
+  }
+
+  const whereClause = conditions.length ? `where ${conditions.join(' and ')}` : '';
+
+  const countRows = await sql(
+    `select count(*)::int as count from worksheets w ${whereClause}`,
+    values,
+  ) as Array<{ count: number }>;
+
+  const excludedIndex = values.length + 1;
+  const limitIndex = values.length + 2;
+  const offsetIndex = values.length + 3;
+  const rows = await sql(
+    `
+      select
+        w.id,
+        w.title,
+        w.status,
+        w.context,
+        w.updated_at,
+        (
+          select coalesce(array_agg(distinct m[1]), '{}')
+          from regexp_matches(w.content_html, 'data-type="([a-zA-Z0-9-]+)"', 'g') as m
+          where not (m[1] = any($${excludedIndex}::text[]))
+        ) as block_types,
+        (
+          select coalesce(array_agg(m[1]), '{}')
+          from regexp_matches(w.content_html, '(<div[^>]*data-type="custom-heading"[^>]*>)', 'g') as m
+        ) as heading_tags
+      from worksheets w
+      ${whereClause}
+      order by w.updated_at desc
+      limit $${limitIndex} offset $${offsetIndex}
+    `,
+    [...values, BADGE_EXCLUDED_BLOCK_TYPES, pageSize, offset],
+  ) as Array<{
+    id: string;
+    title: string;
+    status: Worksheet['status'];
+    context: WorksheetContext | null;
+    updated_at: Date | string;
+    block_types: string[] | null;
+    heading_tags: string[] | null;
+  }>;
+
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      status: row.status,
+      languageLevel: row.context?.languageLevel ?? '',
+      actionField: row.context?.actionField ?? '',
+      blockTypes: row.block_types ?? [],
+      headingText: extractFirstH1HeadingText(row.heading_tags),
+      updatedAt: new Date(row.updated_at).toISOString(),
+    })),
+    total: countRows[0]?.count ?? 0,
+  };
 }
 
 export async function getWorksheet(id: string, ownerUserId: string, includeAll = false) {
@@ -398,6 +543,29 @@ export async function updateWorksheet(
       and (${includeAll} or owner_user_id = ${ownerUserId})
   `;
   return getWorksheet(id, ownerUserId, includeAll);
+}
+
+// Rewrites the first level-1 custom-heading node's text in content_html and
+// persists it through the normal update path (bumps source_revision, etc.).
+export async function updateWorksheetHeadingText(
+  id: string,
+  ownerUserId: string,
+  headingText: string,
+  includeAll = false,
+) {
+  const current = await getWorksheet(id, ownerUserId, includeAll);
+  if (!current) throw new Error('Worksheet not found.');
+  const headingTags = current.contentHtml.match(
+    /<div[^>]*data-type="custom-heading"[^>]*>/g,
+  );
+  const targetTag = headingTags?.find((tag) => /data-heading-level="1"/.test(tag));
+  if (!targetTag) throw new Error('This worksheet has no H1 heading to edit.');
+  const updatedTag = targetTag.replace(
+    /data-heading-text="[^"]*"/,
+    `data-heading-text="${encodeHtmlAttributeEntities(headingText)}"`,
+  );
+  const updatedHtml = current.contentHtml.replace(targetTag, updatedTag);
+  return updateWorksheet(id, ownerUserId, { contentHtml: updatedHtml }, includeAll);
 }
 
 export async function deleteWorksheet(id: string, ownerUserId: string, includeAll = false) {

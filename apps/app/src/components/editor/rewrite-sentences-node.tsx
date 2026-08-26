@@ -22,6 +22,7 @@ export type RewriteSentenceItem = {
 
 export type RewriteSentencesAttrs = {
   items: RewriteSentenceItem[];
+  showInstruction: boolean;
   showFirstAsExample: boolean;
 };
 
@@ -111,13 +112,18 @@ function shuffledSegments(
 }
 
 function RewriteSentencesNodeView({ node, selected }: NodeViewProps) {
-  const { items, showFirstAsExample } = node.attrs as RewriteSentencesAttrs;
+  const { items, showInstruction, showFirstAsExample } = node.attrs as RewriteSentencesAttrs;
 
   return (
-    <CustomBlockRoot selected={selected} className="rewrite-sentences-node">
-      <BlockInstruction>
-        {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.rewriteSentences}
-      </BlockInstruction>
+    <CustomBlockRoot
+      selected={selected}
+      className={`rewrite-sentences-node${showInstruction ? '' : ' rewrite-sentences-node--without-instruction'}`}
+    >
+      {showInstruction && (
+        <BlockInstruction>
+          {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.rewriteSentences}
+        </BlockInstruction>
+      )}
       <div className="rewrite-sentences-node__items">
         {items.map((item, index) => {
           const wordBankMode = rewriteWordBankMode(item.input);
@@ -223,6 +229,15 @@ export const RewriteSentences = Node.create({
           ),
         }),
       },
+      showInstruction: {
+        default: true,
+        parseHTML: (element) => (
+          element.getAttribute('data-rewrite-show-instruction') !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-rewrite-show-instruction': String(attributes.showInstruction),
+        }),
+      },
     };
   },
 
@@ -250,6 +265,7 @@ export const RewriteSentences = Node.create({
             type: this.name,
             attrs: {
               items: attrs.items ?? defaultItems(),
+              showInstruction: attrs.showInstruction ?? true,
               showFirstAsExample: attrs.showFirstAsExample ?? false,
             },
           }),

@@ -61,6 +61,15 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
     insert: (editor) => editor.chain().focus().insertLearningCards().run(),
   },
   {
+    type: 'articlePluralCards',
+    label: 'Article/Plural Cards',
+    description: 'Double-sided DIN A8 cards for article and plural noun training.',
+    category: 'Layout',
+    keywords: ['article', 'plural', 'cards', 'a8', 'duplex', 'nouns'],
+    Icon: Grid01,
+    insert: (editor) => editor.chain().focus().insertArticlePluralCards().run(),
+  },
+  {
     type: 'pageBreak',
     label: 'Page break',
     description: 'Continue the following content on a new page.',

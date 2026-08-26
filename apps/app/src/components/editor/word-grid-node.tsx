@@ -25,6 +25,7 @@ export type WordGridDirections = Record<WordGridDirection, boolean>;
 
 export type WordGridAttrs = {
   instruction: string;
+  hideInstructionBadge: boolean;
   columns: number;
   rows: number;
   rowHeight: number;
@@ -57,6 +58,7 @@ export const DEFAULT_WORD_GRID_WORDS = [
 
 const DEFAULT_ATTRS: WordGridAttrs = {
   instruction: 'Find the words in the grid.',
+  hideInstructionBadge: false,
   columns: 10,
   rows: 10,
   rowHeight: 1,
@@ -106,6 +108,9 @@ function normalizeAttrs(value: Partial<WordGridAttrs>): WordGridAttrs {
     instruction: typeof value.instruction === 'string'
       ? value.instruction
       : DEFAULT_ATTRS.instruction,
+    hideInstructionBadge: typeof value.hideInstructionBadge === 'boolean'
+      ? value.hideInstructionBadge
+      : DEFAULT_ATTRS.hideInstructionBadge,
     columns: Math.round(clamp(value.columns, 3, 20, DEFAULT_ATTRS.columns)),
     rows: Math.round(clamp(value.rows, 3, 20, DEFAULT_ATTRS.rows)),
     rowHeight: Math.round(
@@ -355,7 +360,7 @@ function WordGridNodeView({ node, selected }: NodeViewProps) {
 
   return (
     <CustomBlockRoot selected={selected} className="word-grid-node">
-      <BlockInstruction>{attrs.instruction}</BlockInstruction>
+      <BlockInstruction hideBadge={attrs.hideInstructionBadge}>{attrs.instruction}</BlockInstruction>
       {attrs.showWordList && (
         <div className="custom-block__word-bank word-grid-node__word-list">
           {attrs.words.map((word, index) => (
@@ -427,6 +432,12 @@ export const WordGrid = Node.create({
         parseHTML: (element) => parseAttrs(
           element.getAttribute('data-word-grid-attrs'),
         ).instruction,
+      },
+      hideInstructionBadge: {
+        default: DEFAULT_ATTRS.hideInstructionBadge,
+        parseHTML: (element) => parseAttrs(
+          element.getAttribute('data-word-grid-attrs'),
+        ).hideInstructionBadge,
       },
       columns: {
         default: DEFAULT_ATTRS.columns,

@@ -46,6 +46,36 @@ function normalizeCardItems(value: unknown) {
     .slice(0, 450);
 }
 
+function normalizeArticlePluralCardItems(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .flatMap((item, index): LearningCardSnapshotItem[] => {
+      const record = asRecord(item);
+      if (!record) return [];
+      const singular = typeof record.singular === 'string'
+        ? record.singular.trim()
+        : '';
+      const article = typeof record.article === 'string'
+        ? record.article.trim()
+        : '';
+      const plural = typeof record.plural === 'string'
+        ? record.plural.trim()
+        : '';
+      const fallbackSingular = `Substantiv ${index + 1}`;
+      const frontSingular = singular || fallbackSingular;
+      const backLine1 = `${article || 'der/die/das'} ${frontSingular}`.trim();
+      const backLine2 = plural ? `die ${plural}` : 'die';
+      return [{
+        id: typeof record.id === 'string' && record.id.trim()
+          ? record.id.trim()
+          : `card-${index + 1}`,
+        front: `Artikel und Plural?\n${frontSingular}`,
+        back: `${backLine1}\n${backLine2}`,
+      }];
+    })
+    .slice(0, 450);
+}
+
 export function extractLearningCardsSnapshotFromWorksheetJson(
   worksheetJson: string,
 ): LearningCardPublicationSnapshot | null {
@@ -57,11 +87,14 @@ export function extractLearningCardsSnapshotFromWorksheetJson(
     if (!firstWorksheet || !Array.isArray(firstWorksheet.blocks)) return null;
     const block = firstWorksheet.blocks.find((entry) => {
       const record = asRecord(entry);
-      return record?.type === 'learningCards';
+      return record?.type === 'learningCards' || record?.type === 'articlePluralCards';
     });
     const learningCards = asRecord(block);
     if (!learningCards) return null;
-    const items = normalizeCardItems(learningCards.items);
+    const isArticlePluralCards = learningCards.type === 'articlePluralCards';
+    const items = isArticlePluralCards
+      ? normalizeArticlePluralCardItems(learningCards.items)
+      : normalizeCardItems(learningCards.items);
     if (!items.length) return null;
     const blankWidthFactorRaw = typeof learningCards.blankWidthFactor === 'number'
       ? learningCards.blankWidthFactor
@@ -73,7 +106,7 @@ export function extractLearningCardsSnapshotFromWorksheetJson(
     return {
       title: typeof learningCards.title === 'string' && learningCards.title.trim()
         ? learningCards.title.trim().slice(0, 200)
-        : 'Learning cards',
+        : (isArticlePluralCards ? 'Article/Plural Cards' : 'Learning cards'),
       items,
       frontTextSize: normalizeTextSize(learningCards.frontTextSize, 'm'),
       backTextSize: normalizeTextSize(learningCards.backTextSize, 'm'),

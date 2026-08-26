@@ -37,8 +37,8 @@ export async function POST(request: Request) {
         ? [container.worksheet]
         : [data];
 
-    if (rawWorksheets.length !== 1) {
-      throw new Error('Provide exactly 1 worksheet.');
+    if (!rawWorksheets.length || rawWorksheets.length > 100) {
+      throw new Error('Provide between 1 and 100 worksheets.');
     }
 
     const value = rawWorksheets[0];

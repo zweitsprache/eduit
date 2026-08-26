@@ -54,6 +54,7 @@ export type Worksheet = {
   format?: string;
   ageGroups?: string[];
   relationships?: DazitPublicationRelationship[];
+  blockTypes?: string[];
 };
 
 function formatSize(bytes = 0) {
@@ -208,6 +209,7 @@ function publishedWorksheetCard(row: DazitPublicationCardRow): Worksheet | null 
     languageCompetencies: Array.isArray(row.languageCompetencies) ? row.languageCompetencies : [],
     grammarTags: Array.isArray(row.grammarTags) ? row.grammarTags : [],
     actionField: row.actionField || undefined,
+    blockTypes: Array.isArray(row.blockTypes) ? row.blockTypes : [],
   };
 }
 

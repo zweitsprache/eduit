@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Download01, File02, Loading01, Trash01 } from '@untitledui/icons';
 import { ArrowDownToLine, Check, Files, TextAlignJustify } from 'lucide-react';
 import type { Worksheet } from '@/lib/worksheets';
+import { BLOCK_TYPE_LABELS } from '@/lib/block-type-labels';
 import { DownloadAuthGate } from '@/components/download-auth-gate';
 
 export function WorksheetCard({
@@ -18,6 +19,7 @@ export function WorksheetCard({
   onDelete?: (worksheet: Worksheet) => void;
 }) {
   const levelLabel = worksheet.level || worksheet.grade;
+  const nodeBadges = worksheet.blockTypes?.slice(0, 3) ?? [];
 
   return (
     <article className={`worksheet-card${compact ? ' worksheet-card--compact' : ''}`}>
@@ -38,6 +40,16 @@ export function WorksheetCard({
           <time className="card-created-date" dateTime={worksheet.publishedAt}>{worksheet.added}</time>
         </div>
         <h2><Link href={`/documents/${worksheet.slug}`}>{worksheet.title}</Link></h2>
+        {Boolean(nodeBadges.length) && (
+          <div
+            className="card-node-badges"
+            style={{ gridTemplateColumns: `repeat(${nodeBadges.length}, 1fr)` }}
+          >
+            {nodeBadges.map((type) => (
+              <span key={type} className="node-badge">{BLOCK_TYPE_LABELS[type] ?? type}</span>
+            ))}
+          </div>
+        )}
         <Link
           className={`card-preview preview-${worksheet.color}`}
           href={`/documents/${worksheet.slug}`}

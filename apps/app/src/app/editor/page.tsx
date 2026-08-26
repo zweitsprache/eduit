@@ -170,6 +170,7 @@ import {
   DEFAULT_LEARNING_CARDS_ATTRS,
   LearningCards,
 } from '@/components/editor/learning-cards-node';
+import { ArticlePluralCards } from '@/components/editor/article-plural-cards-node';
 import { LearningCardsAIModal } from '@/components/editor/learning-cards-ai-modal';
 import {
   CustomHeading,
@@ -396,6 +397,7 @@ function generatedWordGridHtml(
     rowHeight: 1,
     showWordList,
     showFirstAsExample: false,
+    hideInstructionBadge: false,
     directions: {
       leftToRight: true,
       rightToLeft: false,
@@ -514,6 +516,7 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'learningObjective',
   'communicationCards',
   'learningCards',
+  'articlePluralCards',
   'dialogue',
   'messenger',
   'email',
@@ -1722,6 +1725,7 @@ export default function EditorPage() {
       LearningObjective,
       CommunicationCards,
       LearningCards,
+      ArticlePluralCards,
       CustomHeading,
       Dialogue,
       Messenger,
@@ -2056,7 +2060,9 @@ export default function EditorPage() {
       if (!currentEditor) return false;
       let found = false;
       currentEditor.state.doc.forEach((node) => {
-        if (node.type.name === 'learningCards') found = true;
+        if (node.type.name === 'learningCards' || node.type.name === 'articlePluralCards') {
+          found = true;
+        }
       });
       return found;
     },
@@ -2069,8 +2075,8 @@ export default function EditorPage() {
       let found = false;
       currentEditor.state.doc.forEach((node) => {
         if (
-          node.type.name === 'learningCards'
-          && node.attrs.sidedness === 'double'
+          (node.type.name === 'learningCards' && node.attrs.sidedness === 'double')
+          || node.type.name === 'articlePluralCards'
         ) {
           found = true;
         }
@@ -5352,7 +5358,9 @@ export default function EditorPage() {
             onPress={() => {
               let containsLearningCards = false;
               editor?.state.doc.descendants((node) => {
-                if (node.type.name === 'learningCards') containsLearningCards = true;
+                if (node.type.name === 'learningCards' || node.type.name === 'articlePluralCards') {
+                  containsLearningCards = true;
+                }
               });
               let containsCommunicationCards = false;
               editor?.state.doc.descendants((node) => {
@@ -6713,6 +6721,19 @@ export default function EditorPage() {
                       editor,
                       selectedWordGridPos,
                       'showFirstAsExample',
+                      event.target.checked,
+                    )}
+                  />
+                </label>
+                <label className="flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                  <span>Hide instruction number badge</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedWordGridAttrs.hideInstructionBadge}
+                    onChange={(event) => setWordGridAttr(
+                      editor,
+                      selectedWordGridPos,
+                      'hideInstructionBadge',
                       event.target.checked,
                     )}
                   />

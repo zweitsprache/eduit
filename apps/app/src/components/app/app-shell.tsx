@@ -16,7 +16,7 @@ import { useI18n } from '@/components/i18n/locale-provider';
 import { EduitLogo } from '@eduit/ui';
 
 type AppShellProps = {
-  active: 'documents' | 'brands' | 'automations' | 'video-editor';
+  active: 'documents' | 'brands' | 'worksheets-admin' | 'automations' | 'video-editor';
   title: string;
   isAdmin?: boolean;
   userRole?: string;
@@ -54,6 +54,8 @@ export function AppShell({
       ? t('navigation.videoEditor')
     : active === 'brands'
       ? t('navigation.brandProfiles')
+    : active === 'worksheets-admin'
+      ? t('navigation.worksheetsAdmin')
       : title;
 
   return (
@@ -119,6 +121,21 @@ export function AppShell({
                     active === 'brands' ? 'text-fg-brand-primary' : 'text-fg-quaternary',
                   )} />
                   {t('navigation.brandProfiles')}
+                </a>
+                <a
+                  href="/worksheets-admin"
+                  className={cx(
+                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition',
+                    active === 'worksheets-admin'
+                      ? 'bg-brand-primary text-brand-secondary'
+                      : 'text-secondary hover:bg-primary_hover',
+                  )}
+                >
+                  <File02 className={cx(
+                    'size-5',
+                    active === 'worksheets-admin' ? 'text-fg-brand-primary' : 'text-fg-quaternary',
+                  )} />
+                  {t('navigation.worksheetsAdmin')}
                 </a>
               </nav>
             </div>

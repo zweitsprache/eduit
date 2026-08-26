@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { EMPTY_WORKSHEET_CONTEXT, type WorksheetPatch } from './worksheet-types';
-import { GRAMMAR_TAG_ID_SET } from './grammar-tags';
+import { GRAMMAR_TAG_ID_SET, normalizeGrammarTagId } from './grammar-tags';
 
 const headingSchema = z.object({
   type: z.literal('heading'),
@@ -402,6 +402,21 @@ const learningCardsSchema = z.object({
   items: z.array(learningCardSchema).min(1).max(450),
 });
 
+const articlePluralCardSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  article: z.string().trim().max(100).default(''),
+  singular: z.string().trim().max(500).default(''),
+  plural: z.string().trim().max(500).default(''),
+});
+
+const articlePluralCardsSchema = z.object({
+  type: z.literal('articlePluralCards'),
+  title: z.string().trim().max(200).default('Article/Plural Cards'),
+  format: z.literal('a8-landscape').default('a8-landscape'),
+  sidedness: z.literal('double').default('double'),
+  items: z.array(articlePluralCardSchema).min(1).max(450),
+});
+
 const matchingPairSchema = z.object({
   id: z.string().trim().min(1).max(100).optional(),
   left: z.string().trim().min(1).max(2000),
@@ -461,6 +476,7 @@ const wordGridDirectionsSchema = z.object({
 const wordGridSchema = z.object({
   type: z.literal('wordGrid'),
   instruction: z.string().trim().max(1000).default('Find the words in the grid.'),
+  hideInstructionBadge: z.boolean().default(false),
   columns: z.number().int().min(3).max(20).default(10),
   rows: z.number().int().min(3).max(20).default(10),
   rowHeight: z.number().min(0.5).max(2).default(1),
@@ -502,6 +518,7 @@ const rewriteSentencesSchema = z.object({
   type: z.literal('rewriteSentences'),
   instruction: z.string().trim().max(1000).default('Rewrite the sentences correctly.'),
   items: z.array(rewriteSentenceItemSchema).min(1).max(200),
+  showInstruction: z.boolean().default(true),
   showFirstAsExample: z.boolean().default(false),
 });
 
@@ -679,9 +696,11 @@ const contextSchema = z.object({
   actionCompetencies: z.array(z.string().max(80)).max(10).default([]),
   languageCompetencies: z.array(z.string().max(80)).max(10).default([]),
   grammarTags: z.array(
-    z.string().max(150).refine((value) => GRAMMAR_TAG_ID_SET.has(value), {
-      message: 'Unknown grammar tag ID.',
-    }),
+    z.string().max(150)
+      .transform((value) => normalizeGrammarTagId(value))
+      .refine((value) => GRAMMAR_TAG_ID_SET.has(value), {
+        message: 'Unknown grammar tag ID.',
+      }),
   ).max(80).default([]),
   learnerContext: z.string().max(1000).default(''),
   hinweis: z.string().max(2000).default(''),
@@ -689,6 +708,18 @@ const contextSchema = z.object({
   contextPdfText: z.string().max(1_000_000).default(''),
   contextPdfPageCount: z.number().int().positive().nullable().default(null),
 }).partial();
+
+function normalizeGeneratedBlockType(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const record = value as Record<string, unknown>;
+  const rawType = typeof record.type === 'string' ? record.type.trim() : '';
+  if (!rawType) return value;
+  const compactType = rawType.replaceAll('-', '').toLowerCase();
+  if (compactType === 'articlepluralcards') {
+    return { ...record, type: 'articlePluralCards' };
+  }
+  return { ...record, type: rawType };
+}
 
 export const generatedWorksheetSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
@@ -699,7 +730,10 @@ export const generatedWorksheetSchema = z.object({
   folderId: z.string().uuid().nullable().optional(),
   sourceWorksheetId: z.string().uuid().nullable().optional(),
   context: contextSchema.default({}),
-  blocks: z.array(z.discriminatedUnion('type', [
+  blocks: z.preprocess((raw) => {
+    if (!Array.isArray(raw)) return raw;
+    return raw.map((entry) => normalizeGeneratedBlockType(entry));
+  }, z.array(z.discriminatedUnion('type', [
     headingSchema,
     glossarySchema,
     fillInTheBlankSchema,
@@ -722,6 +756,7 @@ export const generatedWorksheetSchema = z.object({
     timeMatchingSchema,
     communicationCardsSchema,
     learningCardsSchema,
+    articlePluralCardsSchema,
     richTextSchema,
     lesetrainingSchema,
     wordGridSchema,
@@ -734,7 +769,7 @@ export const generatedWorksheetSchema = z.object({
     declinationTableSchema,
     worksheetTableSchema,
     informationGapActivitySchema,
-  ])).max(1000).default([]),
+  ])).max(1000)).default([]),
 }).refine((value) => Boolean(value.sourceWorksheetId) || value.blocks.length >= 1, {
   message: 'Provide blocks or a sourceWorksheetId.',
   path: ['blocks'],
@@ -751,6 +786,12 @@ export const generatedWorksheetSchema = z.object({
   return cards === 0 || (cards === 1 && value.blocks.length === 1);
 }, {
   message: 'A communicationCards block must be the only block of its worksheet.',
+  path: ['blocks'],
+}).refine((value) => {
+  const cards = value.blocks.filter((block) => block.type === 'articlePluralCards').length;
+  return cards === 0 || (cards === 1 && value.blocks.length === 1);
+}, {
+  message: 'An articlePluralCards block must be the only block of its worksheet.',
   path: ['blocks'],
 });
 
@@ -850,6 +891,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     };
     const attrs = {
       instruction: block.instruction,
+      hideInstructionBadge: block.hideInstructionBadge,
       columns: block.columns,
       rows: block.rows,
       rowHeight: block.rowHeight,
@@ -871,7 +913,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       solution: item.solution,
       image: item.image,
     }));
-    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-rewrite-sentence-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-rewrite-show-first-example="${block.showFirstAsExample}" data-type="rewrite-sentences"></div>`;
+    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-rewrite-sentence-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-rewrite-show-instruction="${block.showInstruction}" data-rewrite-show-first-example="${block.showFirstAsExample}" data-type="rewrite-sentences"></div>`;
   }
   if (block.type === 'sortingCategories') {
     const categories = block.categories.map((category, index) => ({
@@ -1025,6 +1067,23 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       html += `<div data-restart-pagination="true" data-type="pageBreak"></div>${solutionSheet}`;
     }
     return html;
+  }
+  if (block.type === 'articlePluralCards') {
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `article-plural-card-${index + 1}`,
+      article: item.article,
+      singular: item.singular,
+      plural: item.plural,
+    }));
+    const groupCount = Math.ceil(items.length / LEARNING_CARDS_PER_GROUP);
+    const encodedItems = escapeAttribute(encodeURIComponent(JSON.stringify(items)));
+    const sheets = Array.from({ length: groupCount }, (_, groupIndex) => (
+      ([
+        `<div data-title="${escapeAttribute(block.title)}" data-format="a8-landscape" data-sidedness="double" data-items="${encodedItems}" data-group-index="${groupIndex}" data-sheet-side="front" data-type="article-plural-cards"></div>`,
+        `<div data-title="${escapeAttribute(block.title)}" data-format="a8-landscape" data-sidedness="double" data-items="${encodedItems}" data-group-index="${groupIndex}" data-sheet-side="back" data-type="article-plural-cards"></div>`,
+      ])
+    )).flat();
+    return sheets.join('<div data-restart-pagination="false" data-type="pageBreak"></div>');
   }
   if (block.type === 'communicationCards') {
     const items = block.items.map((item, index) => ({

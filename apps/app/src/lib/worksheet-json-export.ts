@@ -18,6 +18,7 @@ import type { MatchingPairsAttrs } from '@/components/editor/matching-pairs-node
 import type { TimeMatchingAttrs } from '@/components/editor/time-matching-node';
 import type { CommunicationCardsAttrs } from '@/components/editor/communication-cards-node';
 import type { LearningCardsAttrs } from '@/components/editor/learning-cards-node';
+import type { ArticlePluralCardsAttrs } from '@/components/editor/article-plural-cards-node';
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
 import type { SpacerAttrs } from '@/components/editor/spacer-node';
 import type { WritingLinesAttrs } from '@/components/editor/writing-lines-node';
@@ -120,6 +121,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'wordGrid',
   'wordBank',
   'learningCards',
+  'articlePluralCards',
   'domino',
   'crossword',
   'germanVerbTable',
@@ -636,12 +638,13 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     }
     case 'wordGrid': {
       const {
-        instruction, columns, rows, rowHeight, showWordList,
+        instruction, hideInstructionBadge, columns, rows, rowHeight, showWordList,
         showFirstAsExample, directions, words, generation,
       } = attrs as WordGridAttrs;
       return {
         type: 'wordGrid',
         instruction,
+        hideInstructionBadge,
         columns,
         rows,
         rowHeight,
@@ -676,6 +679,24 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         // Ids are kept because the node view uses an `-empty` suffix to decide
         // whether a blank card renders a "Card N" placeholder.
         items: items.map(({ id, front, back }) => ({ id, front, back })),
+      };
+    }
+    case 'articlePluralCards': {
+      const {
+        title,
+        items,
+      } = attrs as ArticlePluralCardsAttrs;
+      return {
+        type: 'articlePluralCards',
+        title,
+        format: 'a8-landscape',
+        sidedness: 'double',
+        items: items.map(({ id, article, singular, plural }) => ({
+          id,
+          article,
+          singular,
+          plural,
+        })),
       };
     }
     case 'domino': {
@@ -845,6 +866,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
           solution,
           image: image ? { src: image.src, alt: image.alt } : undefined,
         })),
+        showInstruction: rewriteSentencesAttrs.showInstruction !== false,
         showFirstAsExample: rewriteSentencesAttrs.showFirstAsExample,
       };
     }
@@ -925,6 +947,7 @@ export function worksheetJsonFromDoc(
   // list, separated by page breaks, and the node's filterTransaction keeps anything
   // else out. Collapse it back into the single block the import expands again.
   let learningCardsSeen = false;
+  let articlePluralCardsSeen = false;
   let communicationCardsSeen = false;
 
   let dominoSeen = false;
@@ -947,6 +970,13 @@ export function worksheetJsonFromDoc(
       return;
     }
     if (learningCardsSeen && node.type.name === 'pageBreak') return;
+    if (node.type.name === 'articlePluralCards') {
+      if (articlePluralCardsSeen) return;
+      articlePluralCardsSeen = true;
+      blocks.push(blockJson(node)!);
+      return;
+    }
+    if (articlePluralCardsSeen && node.type.name === 'pageBreak') return;
     if (node.type.name === 'communicationCards') {
       if (communicationCardsSeen) return;
       communicationCardsSeen = true;
