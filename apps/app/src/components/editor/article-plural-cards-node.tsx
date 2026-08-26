@@ -227,18 +227,18 @@ function joinSheetsWithBreaks(
 }
 
 function rebuildSheets(
-  extension: ReturnType<typeof Node.create>,
+  cardType: ProseMirrorNode['type'],
   attrs: ArticlePluralCardsAttrs,
   pageBreakType: ProseMirrorNode['type'] | undefined,
 ) {
   const groups = groupsOfNine(attrs.items);
   const sheets = groups.flatMap((_, groupIndex) => ([
-    extension.type.create({
+    cardType.create({
       ...attrs,
       groupIndex,
       sheetSide: 'front',
     }),
-    extension.type.create({
+    cardType.create({
       ...attrs,
       groupIndex,
       sheetSide: 'back',
@@ -365,7 +365,7 @@ export const ArticlePluralCards = Node.create({
         if (structureOk && pageBreaksOk) return null;
 
         const pageBreakType = newState.schema.nodes.pageBreak;
-        const rebuilt = rebuildSheets(this, baseAttrs, pageBreakType);
+        const rebuilt = rebuildSheets(this.type, baseAttrs, pageBreakType);
         return newState.tr.replaceWith(0, newState.doc.content.size, rebuilt);
       },
     })];
@@ -390,7 +390,8 @@ export const ArticlePluralCards = Node.create({
         };
 
         const pageBreakType = state.schema.nodes.pageBreak;
-        const nodes = rebuildSheets(this, baseAttrs, pageBreakType);
+        const cardType = state.schema.nodes.articlePluralCards;
+        const nodes = rebuildSheets(cardType, baseAttrs, pageBreakType);
         if (dispatch) dispatch(state.tr.replaceWith(0, state.doc.content.size, nodes));
         return true;
       },
