@@ -10,6 +10,7 @@ import {
 } from '@/lib/worksheets';
 import { getCurrentAppUser } from '@/lib/auth/authorization';
 import { sql } from '@/lib/neon';
+import { dazitBlobToken } from '@/lib/dazit-blob';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -90,8 +91,7 @@ export async function DELETE(request: Request) {
     const worksheet = await getWorksheet(id, user.id, user.isAdmin);
     if (!worksheet) throw new Error('Worksheet not found.');
     if (deleteFromDazit) {
-      const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN
-        ?? process.env.BLOB_READ_WRITE_TOKEN;
+      const token = dazitBlobToken();
       if (!token) throw new Error('Dazit storage is not configured.');
       const publicationBlobs = await list({
         prefix: `worksheets/${id}/`,

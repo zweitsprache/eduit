@@ -101,12 +101,23 @@ export function isSingleLetterBlankAnswer(answer: string) {
     && characters[0].toLocaleLowerCase() !== characters[0].toLocaleUpperCase();
 }
 
-export function shouldAttachBlankToPreviousText(
+export function isStartOfLineBlank(
   parts: FillInTheBlankPart[],
   partIndex: number,
 ) {
-  const previousPart = partIndex > 0 ? parts[partIndex - 1] : null;
-  return previousPart?.type === 'text' && /\S$/.test(previousPart.value);
+  if (partIndex <= 0) return true;
+  for (let i = partIndex - 1; i >= 0; i--) {
+    const part = parts[i];
+    if (part.type === 'blank') return false;
+    if (part.type === 'text') {
+      if (/\n/.test(part.value)) {
+        const afterLastNewline = part.value.slice(part.value.lastIndexOf('\n') + 1);
+        return afterLastNewline.trim().length === 0;
+      }
+      if (part.value.trim().length > 0) return false;
+    }
+  }
+  return true;
 }
 const WORD_JOINER = '\u2060';
 const openingQuoteBeforeBlankPattern = /[«‹]$/;
@@ -187,8 +198,8 @@ function FillInTheBlankParts({
   let blankOrdinal = 0;
   return parts.map((part, index) => {
     if (part.type === 'blank') blankOrdinal += 1;
-    const isSuffixBlank = part.type === 'blank'
-      && shouldAttachBlankToPreviousText(parts, index);
+    const isStartBlank = part.type === 'blank'
+      && isStartOfLineBlank(parts, index);
     const blankLabel = itemNumber === undefined
       ? String(part.type === 'blank' ? part.index : 0).padStart(2, '0')
       : `${String(itemNumber).padStart(2, '0')}${
@@ -204,8 +215,8 @@ function FillInTheBlankParts({
               ? ' fill-in-the-blank-node__blank--single-letter'
               : ''
           }${
-            isSuffixBlank
-              ? ' fill-in-the-blank-node__blank--suffix'
+            isStartBlank
+              ? ' fill-in-the-blank-node__blank--start'
               : ''
           }`}
           data-answer={part.answer}

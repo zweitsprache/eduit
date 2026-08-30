@@ -16,7 +16,7 @@ import { RoughExampleStrike } from '@/components/editor/custom-blocks/rough-exam
 import {
   parseFillInTheBlankText,
   isSingleLetterBlankAnswer,
-  shouldAttachBlankToPreviousText,
+  isStartOfLineBlank,
   textWithBlankBoundaryJoiners,
   type FillInTheBlankPart,
 } from '@/components/editor/fill-in-the-blank-node';
@@ -305,8 +305,8 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
                           ? ' fill-in-the-blank-node__blank--single-letter'
                           : ''
                       }${
-                        shouldAttachBlankToPreviousText(parts, partIndex)
-                          ? ' fill-in-the-blank-node__blank--suffix'
+                        isStartOfLineBlank(parts, partIndex)
+                          ? ' fill-in-the-blank-node__blank--start'
                           : ''
                       }`}
                       data-answer={part.answer}

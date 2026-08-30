@@ -39,7 +39,8 @@ App:
 ```text
 NEXT_PUBLIC_SITE_URL=https://domain.com
 NEXT_PUBLIC_APP_URL=https://app.domain.com
-DAZIT_BLOB_READ_WRITE_TOKEN=...
+DAZIT_BLOB_STORE_ID=store_...
+DAZIT_BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
 ```
 
 `DAZIT_BLOB_READ_WRITE_TOKEN` must point at the same Vercel Blob store used by
@@ -54,11 +55,38 @@ NEXT_PUBLIC_DAZIT_URL=https://www.dazit.io
 DATABASE_URL=postgresql://...
 NEON_AUTH_BASE_URL=https://<your-neon-auth-host>/neondb/auth
 NEON_AUTH_COOKIE_SECRET=...
-BLOB_READ_WRITE_TOKEN=...
+DAZIT_BLOB_STORE_ID=store_...
+DAZIT_BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
 ```
 
 The app project additionally needs the database, Neon Auth, Polar, and Tiptap
 variables documented in `apps/app/.env.example`.
+
+## Blob stores
+
+Two distinct concerns share Vercel Blob:
+
+- **Editor storage** (`worksheet-previews/`, `user-media/`, `media/`,
+  dialogue audio) belongs to the app project alone and uses the ambient
+  `BLOB_READ_WRITE_TOKEN` that Vercel injects for the store connected to that
+  project.
+- **Dazit publications** (`worksheets/`, `library/`) are written by the editor
+  and read by Dazit, so both projects must address the *same* store. That store
+  is never taken from `BLOB_READ_WRITE_TOKEN` — Vercel injects that name per
+  project and it silently diverged between the two projects. It is addressed
+  through `DAZIT_BLOB_READ_WRITE_TOKEN`, guarded by `DAZIT_BLOB_STORE_ID`.
+
+`DAZIT_BLOB_STORE_ID` must equal the store ID embedded in the token
+(`vercel_blob_rw_<storeId>_...` maps to `store_<storeId>`). On mismatch the
+publication routes fail with a logged configuration error instead of reading or
+writing the wrong store. Set both variables, with identical values, in the app
+and the Dazit project for every environment.
+
+Check the wiring and the publication assets with:
+
+```text
+npm run verify:blobs --workspace=@eduit/dazit
+```
 
 ## Local development
 

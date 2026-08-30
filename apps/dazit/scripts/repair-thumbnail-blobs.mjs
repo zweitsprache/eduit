@@ -30,7 +30,7 @@ const sourceTokens = [
   ['old Dazit store', envValue(dazitEnv, 'OLD_BLOB_READ_WRITE_TOKEN')],
 ].filter(([, token]) => typeof token === 'string' && token.length > 0);
 const destinationToken = required(
-  envValue(appEnv, 'DAZIT_BLOB_READ_WRITE_TOKEN') ?? envValue(dazitEnv, 'BLOB_READ_WRITE_TOKEN'),
+  envValue(appEnv, 'DAZIT_BLOB_READ_WRITE_TOKEN') ?? envValue(dazitEnv, 'DAZIT_BLOB_READ_WRITE_TOKEN'),
   'destination DAZIT_BLOB_READ_WRITE_TOKEN',
 );
 const dbUrl = required(envValue(dazitEnv, 'DATABASE_URL'), 'DATABASE_URL');

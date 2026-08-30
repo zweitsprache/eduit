@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { replaceClockPlaceholders } from '@/lib/clock-placeholder';
 import { launchRenderingBrowser } from '@/lib/server-chromium';
 
 export const runtime = 'nodejs';
@@ -71,12 +72,14 @@ export async function POST(request: Request) {
           }
         </style>
       </head>
-      <body><div class="png-stage">${payload.content}</div></body>
+      <body><div class="png-stage">${replaceClockPlaceholders(payload.content)}</div></body>
     </html>`;
 
   let browser: import('playwright-core').Browser;
   try {
-    browser = await launchRenderingBrowser();
+    browser = await launchRenderingBrowser({
+      preferLocal: ['localhost', '127.0.0.1'].includes(new URL(origin).hostname),
+    });
   } catch (error) {
     return NextResponse.json(
       {
@@ -114,15 +117,25 @@ export async function POST(request: Request) {
     await page.goto(renderShellUrl, { waitUntil: 'domcontentloaded' });
     await page.setContent(html, { waitUntil: 'domcontentloaded' });
     await page.evaluate(async () => {
-      await document.fonts.ready;
-      await Promise.all(Array.from(document.images).map((image) => (
-        image.complete
-          ? image.decode().catch(() => undefined)
-          : new Promise<void>((resolve) => {
-              image.addEventListener('load', () => resolve(), { once: true });
-              image.addEventListener('error', () => resolve(), { once: true });
-            })
-      )));
+      try {
+        await Promise.race([
+          document.fonts.ready,
+          new Promise((resolve) => setTimeout(resolve, 3000)),
+        ]);
+      } catch {
+        // Continue if font loading fails
+      }
+      await Promise.race([
+        Promise.all(Array.from(document.images).map((image) => (
+          image.complete
+            ? image.decode().catch(() => undefined)
+            : new Promise<void>((resolve) => {
+                image.addEventListener('load', () => resolve(), { once: true });
+                image.addEventListener('error', () => resolve(), { once: true });
+              })
+        ))),
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+      ]);
     });
     const stage = page.locator('.png-stage');
     const png = await stage.screenshot({
@@ -137,8 +150,14 @@ export async function POST(request: Request) {
         'Content-Disposition': 'attachment; filename="eduit-block.png"',
       },
     });
-  } catch {
-    return NextResponse.json({ error: 'Chrome could not render the PNG.' }, { status: 500 });
+  } catch (error) {
+    console.error('PNG export failed:', error);
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Chrome could not render the PNG.',
+      },
+      { status: 500 },
+    );
   } finally {
     await browser.close();
   }

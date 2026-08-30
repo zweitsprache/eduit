@@ -17,7 +17,7 @@ import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbe
 import {
   isSingleLetterBlankAnswer,
   parseFillInTheBlankText,
-  shouldAttachBlankToPreviousText,
+  isStartOfLineBlank,
   textWithBlankBoundaryJoiners,
   type FillInTheBlankPart,
 } from '@/components/editor/fill-in-the-blank-node';
@@ -252,8 +252,8 @@ function TableCellContent({
                   ? ' fill-in-the-blank-node__blank--single-letter'
                   : ''
               }${
-                shouldAttachBlankToPreviousText(parts, index)
-                  ? ' fill-in-the-blank-node__blank--suffix'
+                isStartOfLineBlank(parts, index)
+                  ? ' fill-in-the-blank-node__blank--start'
                   : ''
               }`}
               data-answer={part.answer}

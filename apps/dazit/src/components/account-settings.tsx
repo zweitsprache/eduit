@@ -4,12 +4,135 @@ import { FormEvent, useState } from 'react';
 import { authClient } from '@/lib/auth/client';
 import { authErrorMessage } from '@/lib/auth/error-message';
 import { PasswordStrengthMeter } from '@/components/password-strength-meter';
+import type { Tier } from '@/lib/dazit-billing';
+import type { CurrentUsage } from '@/lib/download-entitlements';
 
 function messageFrom(error: unknown, fallback: string) {
   return authErrorMessage(error, fallback);
 }
 
-export function AccountSettings({ email, initialName }: { email: string; initialName: string }) {
+const TIER_LABEL: Record<Tier, string> = {
+  free: 'Kostenlos',
+  plus: 'Plus',
+  unlimited: 'Unlimited',
+};
+
+function SubscriptionSection({ tier, hasPolarCustomer, usage }: {
+  tier: Tier;
+  hasPolarCustomer: boolean;
+  usage: CurrentUsage;
+}) {
+  const [pending, setPending] = useState<'plus' | 'unlimited' | 'portal' | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function checkout(nextTier: 'plus' | 'unlimited') {
+    setPending(nextTier);
+    setMessage(null);
+    try {
+      const response = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier: nextTier }),
+      });
+      const result = await response.json() as { url?: string; error?: string };
+      if (result.url) {
+        window.location.assign(result.url);
+        return;
+      }
+      setMessage(result.error ?? 'Checkout konnte nicht gestartet werden.');
+    } finally {
+      setPending(null);
+    }
+  }
+
+  async function openPortal() {
+    setPending('portal');
+    setMessage(null);
+    try {
+      const response = await fetch('/api/billing/portal', { method: 'POST' });
+      const result = await response.json() as { url?: string; error?: string };
+      if (result.url) {
+        window.location.assign(result.url);
+        return;
+      }
+      setMessage(result.error ?? 'Abo-Verwaltung konnte nicht geöffnet werden.');
+    } finally {
+      setPending(null);
+    }
+  }
+
+  const resetsAtLabel = usage.resetsAt
+    ? new Intl.DateTimeFormat('de-CH', {
+      dateStyle: usage.periodKind === 'month' ? 'medium' : undefined,
+      timeStyle: usage.periodKind === 'day' ? 'short' : undefined,
+    }).format(new Date(usage.resetsAt))
+    : null;
+
+  return (
+    <section className="account-settings-section">
+      <h2>Abonnement</h2>
+      <p>
+        Aktueller Plan: <strong>{TIER_LABEL[tier]}</strong>
+      </p>
+      {usage.limit !== null && (
+        <p>
+          Downloads in diesem Zeitraum: {usage.used} / {usage.limit}
+          {resetsAtLabel && (usage.periodKind === 'month'
+            ? ` (Zurücksetzung am ${resetsAtLabel})`
+            : ` (Zurücksetzung um ${resetsAtLabel})`)}
+        </p>
+      )}
+      {usage.limit === null && <p>Unbegrenzte Downloads.</p>}
+      {message && <p className="account-settings-message" role="status">{message}</p>}
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        {tier !== 'plus' && tier !== 'unlimited' && (
+          <button
+            className="registration-submit"
+            disabled={pending !== null}
+            onClick={() => void checkout('plus')}
+            type="button"
+          >
+            {pending === 'plus' ? 'Wird geladen...' : 'Auf Plus upgraden'}
+          </button>
+        )}
+        {tier !== 'unlimited' && (
+          <button
+            className="registration-submit"
+            disabled={pending !== null}
+            onClick={() => void checkout('unlimited')}
+            type="button"
+          >
+            {pending === 'unlimited' ? 'Wird geladen...' : 'Auf Unlimited upgraden'}
+          </button>
+        )}
+        {hasPolarCustomer && (
+          <button
+            className="account-settings-secondary"
+            disabled={pending !== null}
+            onClick={() => void openPortal()}
+            type="button"
+          >
+            {pending === 'portal' ? 'Wird geladen...' : 'Abo verwalten'}
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+export function AccountSettings({
+  email,
+  initialName,
+  tier,
+  hasPolarCustomer,
+  usage,
+}: {
+  email: string;
+  initialName: string;
+  tier: Tier;
+  hasPolarCustomer: boolean;
+  usage: CurrentUsage;
+}) {
   const [name, setName] = useState(initialName);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -138,6 +261,8 @@ export function AccountSettings({ email, initialName }: { email: string; initial
         <h2>Sitzung</h2>
         <button className="account-settings-secondary" onClick={() => void signOut()} type="button">Abmelden</button>
       </section>
+
+      <SubscriptionSection hasPolarCustomer={hasPolarCustomer} tier={tier} usage={usage} />
 
       <section className="account-settings-section account-settings-danger">
         <h2>Konto löschen</h2>

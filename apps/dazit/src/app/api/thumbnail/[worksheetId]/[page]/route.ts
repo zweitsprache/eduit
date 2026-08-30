@@ -1,4 +1,5 @@
 import { get } from '@vercel/blob';
+import { dazitBlobToken } from '@/lib/dazit-blob';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -7,7 +8,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ worksheetId: string; page: string }> },
 ) {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const token = dazitBlobToken();
   if (!token) return new Response('Dazit Blob is not configured.', { status: 503 });
   const { worksheetId, page } = await params;
   const explicitPath = new URL(request.url).searchParams.get('path');
@@ -34,7 +35,7 @@ export async function GET(
   try {
     result = await get(thumbnailPath, { access: 'private', token, useCache: false });
   } catch (error) {
-    // A store/auth error here means BLOB_READ_WRITE_TOKEN is misconfigured, not that the file is missing.
+    // A store/auth error here means the Dazit blob store is unreachable, not that the file is missing.
     console.error('Dazit thumbnail blob store request failed.', thumbnailPath, error);
     return new Response('Thumbnail store unavailable.', { status: 502 });
   }

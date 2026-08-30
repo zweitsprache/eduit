@@ -3,6 +3,7 @@ import { get } from '@vercel/blob';
 import { PassThrough, Readable } from 'node:stream';
 import { getCurrentDazitUser } from '@/lib/auth/authorization';
 import { worksheetBySlug } from '@/lib/worksheets';
+import { dazitBlobToken } from '@/lib/dazit-blob';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
   const slugs = [...new Set(payload.slugs.filter(
     (slug): slug is string => typeof slug === 'string' && slug.length <= 200,
   ))];
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const token = dazitBlobToken();
   if (!token) return new Response('Dazit Blob is not configured.', { status: 503 });
 
   const output = new PassThrough();

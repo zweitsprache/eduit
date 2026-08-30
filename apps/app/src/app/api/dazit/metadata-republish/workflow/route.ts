@@ -1,6 +1,7 @@
 import { get } from '@vercel/blob';
 import { serve } from '@upstash/workflow/nextjs';
 import { sql } from '@/lib/neon';
+import { dazitBlobToken } from '@/lib/dazit-blob';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -18,8 +19,7 @@ export const { POST } = serve<WorkflowPayload>(async (context) => {
   const { worksheetId, origin } = context.requestPayload;
 
   await context.run('regenerate-dazit-metadata', async () => {
-    const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN
-      ?? process.env.BLOB_READ_WRITE_TOKEN;
+    const token = dazitBlobToken();
     const workflowToken = process.env.QSTASH_TOKEN;
     if (!token || !workflowToken) throw new Error('Dazit or workflow credentials are missing.');
 

@@ -3640,7 +3640,7 @@
   );
   height: var(--custom-block-control-size);
   align-items: center;
-  margin-inline: 0 0.25rem;
+  margin-inline: 0.25rem;
   padding-inline: 0.625rem;
   border-radius: var(--custom-block-radius-control);
   background: var(--color-bg-tertiary);
@@ -3660,7 +3660,7 @@
   padding-inline: 0;
 }
 
-.fill-in-the-blank-node__blank--suffix {
+.fill-in-the-blank-node__blank--start {
   margin-inline-start: 0;
 }
 
@@ -5497,7 +5497,7 @@
   );
   min-width: 0;
   max-width: 100%;
-  margin-inline: 0;
+  margin-inline: 0.25rem;
 }
 
 .worksheet-table-node__cell--tabular-nums {

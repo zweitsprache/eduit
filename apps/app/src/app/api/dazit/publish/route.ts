@@ -16,6 +16,7 @@ import {
   type WorksheetSemanticManifest,
 } from '@/lib/worksheet-semantic-manifest';
 import { GRAMMAR_TAG_ID_SET } from '@/lib/grammar-tags';
+import { dazitBlobToken } from '@/lib/dazit-blob';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -584,11 +585,12 @@ export async function POST(request: Request) {
     if (user && !user.isAdmin && !isWorkflowRequest) {
       return NextResponse.json({ error: 'Only administrators can publish worksheets.' }, { status: 403 });
     }
-    const token = process.env.DAZIT_BLOB_READ_WRITE_TOKEN
-      ?? process.env.BLOB_READ_WRITE_TOKEN;
+    const token = dazitBlobToken();
     if (!token) {
       return NextResponse.json(
-        { error: 'Dazit publishing is not configured. Add DAZIT_BLOB_READ_WRITE_TOKEN (or BLOB_READ_WRITE_TOKEN) to the editor environment.' },
+        {
+          error: 'Dazit publishing is not configured. Add DAZIT_BLOB_READ_WRITE_TOKEN and DAZIT_BLOB_STORE_ID to the editor environment.',
+        },
         { status: 503 },
       );
     }

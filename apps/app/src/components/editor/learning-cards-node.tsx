@@ -13,7 +13,7 @@ import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbe
 import { getEditorPageAreas } from '@/components/editor/page-layout';
 import {
   isSingleLetterBlankAnswer,
-  shouldAttachBlankToPreviousText,
+  isStartOfLineBlank,
   textWithBlankBoundaryJoiners,
 } from '@/components/editor/fill-in-the-blank-node';
 
@@ -429,8 +429,8 @@ export function LearningCardContent({
                   ? ' fill-in-the-blank-node__blank--single-letter'
                   : ''
               }${
-                shouldAttachBlankToPreviousText(parts, index)
-                  ? ' fill-in-the-blank-node__blank--suffix'
+                isStartOfLineBlank(parts, index)
+                  ? ' fill-in-the-blank-node__blank--start'
                   : ''
               }`}
               data-answer={part.answer}

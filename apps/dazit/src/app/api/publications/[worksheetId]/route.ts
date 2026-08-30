@@ -2,6 +2,7 @@ import { neon } from '@neondatabase/serverless';
 import { del, get, list, put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import { getCurrentDazitUser } from '@/lib/auth/authorization';
+import { dazitBlobToken } from '@/lib/dazit-blob';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -62,7 +63,7 @@ export async function PATCH(request: Request, { params }: Props) {
     if (!title || !excerpt || !documentTypes.includes(documentType) || !levels.includes(level)) {
       return NextResponse.json({ error: 'Required metadata is invalid.' }, { status: 400 });
     }
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    const token = dazitBlobToken();
     const databaseUrl = process.env.DATABASE_URL;
     if (!token || !databaseUrl) return NextResponse.json({ error: 'Dazit storage is not configured.' }, { status: 500 });
     const sql = neon(databaseUrl);
@@ -110,7 +111,7 @@ export async function DELETE(_request: Request, { params }: Props) {
     if (!/^[0-9a-f-]{36}$/i.test(worksheetId)) {
       return NextResponse.json({ error: 'Invalid worksheet ID.' }, { status: 400 });
     }
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    const token = dazitBlobToken();
     const databaseUrl = process.env.DATABASE_URL;
     if (!token || !databaseUrl) {
       return NextResponse.json(

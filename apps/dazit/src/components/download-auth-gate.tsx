@@ -59,7 +59,10 @@ function AuthRequiredModal({
           </button>
         </header>
         {error ? (
-          <p className="auth-required-modal-error" role="alert">{error}</p>
+          <div>
+            <p className="auth-required-modal-error" role="alert">{error}</p>
+            <p><a href="/account">Zum Konto &amp; Upgrade</a></p>
+          </div>
         ) : (
           <div className="auth-required-modal-view">
             <AuthSurface showLogo={false} />
@@ -114,12 +117,24 @@ export function DownloadAuthGate({
         return;
       }
       if (response.status === 429) {
-        const payload = await response.json().catch(() => null) as { resetsAt?: string } | null;
+        const payload = await response.json().catch(() => null) as {
+          tier?: string;
+          periodKind?: 'day' | 'month';
+          limit?: number;
+          resetsAt?: string;
+        } | null;
         const reset = payload?.resetsAt
-          ? new Intl.DateTimeFormat('de-CH', { hour: '2-digit', minute: '2-digit' })
+          ? new Intl.DateTimeFormat('de-CH', payload.periodKind === 'month'
+            ? { dateStyle: 'medium' }
+            : { hour: '2-digit', minute: '2-digit' })
             .format(new Date(payload.resetsAt))
-          : 'Mitternacht';
-        setError(`Ihre drei kostenlosen Downloads sind heute aufgebraucht. Neue Downloads sind ab ${reset} verfügbar.`);
+          : null;
+        const limit = payload?.limit ?? 1;
+        if (payload?.periodKind === 'month') {
+          setError(`Sie haben Ihre ${limit} Downloads für diesen Monat aufgebraucht.${reset ? ` Neue Downloads sind ab ${reset} verfügbar.` : ''} Upgraden Sie auf Unlimited für unbegrenzte Downloads.`);
+        } else {
+          setError(`Ihr${limit === 1 ? '' : 'e'} kostenlose${limit === 1 ? 'r' : 'n'} Download${limit === 1 ? '' : 's'} ${limit === 1 ? 'ist' : 'sind'} heute aufgebraucht.${reset ? ` Neue Downloads sind ab ${reset} verfügbar.` : ''} Upgraden Sie auf Plus oder Unlimited für mehr Downloads.`);
+        }
         setOpen(true);
         return;
       }

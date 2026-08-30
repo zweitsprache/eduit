@@ -21,7 +21,7 @@ if (!OLD) {
   process.exit(1);
 }
 const appEnv = fs.readFileSync(new URL('../../app/.env.local', import.meta.url), 'utf8');
-const NEW = appEnv.match(/^BLOB_READ_WRITE_TOKEN="?([^"\n]+)"?/m)[1].trim();
+const NEW = appEnv.match(/^DAZIT_BLOB_READ_WRITE_TOKEN="?([^"\n]+)"?/m)[1].trim();
 if (OLD === NEW) {
   console.error('OLD and NEW tokens are the same store. Aborting.');
   process.exit(1);
