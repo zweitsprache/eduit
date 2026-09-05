@@ -1803,7 +1803,7 @@
   border-top: var(--custom-block-row-border-width) solid
     var(--custom-block-row-border-color);
   border-right: var(--custom-block-row-border-width) solid
-    var(--custom-block-row-border-color);
+    #fff !important;
   border-bottom: var(--custom-block-row-border-width) solid
     var(--custom-block-row-border-color);
   background: transparent;
@@ -1843,9 +1843,28 @@
   align-items: center;
 }
 
+.german-verb-table-node__multiple-header
+  > .german-verb-table-node__cell:has(> .german-verb-table-node__infinitive-badge) {
+  padding-inline: 0;
+  border-top: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  border-right: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  background: #cc6600;
+  color: #fff;
+}
+
+.german-verb-table-node__multiple-header
+  .german-verb-table-node__infinitive-badge {
+  background: transparent;
+  color: inherit;
+}
+
 .german-verb-table-node__multiple-grid[data-badge-style="light"]
   .german-verb-table-node__multiple-header
-  .german-verb-table-node__infinitive-badge {
+  > .german-verb-table-node__cell:has(> .german-verb-table-node__infinitive-badge) {
   background: color-mix(in srgb, #cc6600 10%, #fff);
   color: var(--color-text-primary);
 }
