@@ -131,6 +131,183 @@
   background: transparent;
 }
 
+@font-face {
+  font-family: "Alpharama Light";
+  src: url('/fonts/Alpharama/AlpharamaLight.otf?v=2') format('opentype');
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+}
+
+.alpharama-term-node {
+  display: flex;
+  flex-direction: column;
+  gap: calc(2 * var(--custom-block-space-section));
+  width: 100%;
+}
+
+.alpharama-term__item {
+  display: grid;
+  grid-template-columns: var(--custom-block-index-size) auto minmax(0, 1fr);
+  column-gap: var(--custom-block-column-gap);
+  align-items: start;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.alpharama-term__item-number {
+  display: inline-flex;
+  width: var(--custom-block-index-size);
+  height: var(--custom-block-index-size);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--custom-block-radius-control);
+  color: var(--color-text-primary);
+  font-size: var(--custom-block-meta-font-size);
+  line-height: 1;
+}
+
+.alpharama-term__item--page-break {
+  break-before: auto;
+  page-break-before: auto;
+}
+
+@media print {
+  .alpharama-term__item--page-break {
+    break-before: page;
+    page-break-before: always;
+  }
+}
+
+.alpharama-term__image-wrap {
+  width: auto;
+  height: calc(12mm + (2 * var(--custom-block-space-section)));
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--color-bg-secondary);
+}
+
+.alpharama-term__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.alpharama-term__exercise {
+  display: flex;
+  flex-direction: column;
+  gap: calc(2 * var(--custom-block-space-section));
+}
+
+.alpharama-term__writing-lines {
+  --alpharama-rule-gap: calc((6mm - 4px) / 3);
+  position: relative;
+  display: grid;
+  grid-template-rows: repeat(4, 1px);
+  row-gap: var(--alpharama-rule-gap);
+  height: 6mm;
+  width: 100%;
+}
+
+.alpharama-term__line {
+  box-sizing: border-box;
+  min-height: 1px;
+  border-bottom: var(--custom-block-row-border-width) solid var(--custom-block-row-border-color);
+}
+
+.alpharama-term__line--middle {
+  border-bottom-style: dashed;
+}
+
+.alpharama-term__term {
+  position: absolute;
+  display: inline-flex;
+  gap: 0;
+  top: calc(2px + var(--alpharama-rule-gap) + var(--alpharama-rule-gap) - 4mm);
+  left: 0;
+  z-index: 1;
+  font-size: 5.5mm;
+  line-height: 1;
+  font-family: "Alpharama Light", sans-serif !important;
+  font-weight: 300;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.alpharama-term__syllable {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  vertical-align: baseline;
+}
+
+.alpharama-term__syllable-text {
+  display: block;
+}
+
+.alpharama-term__syllable-arches {
+  position: absolute;
+  top: calc(100% + 1mm);
+  left: 0;
+  display: flex;
+  gap: 0;
+  align-items: flex-start;
+  font-size: 5.5mm;
+  line-height: 1;
+  font-family: "Alpharama Light", sans-serif !important;
+  font-weight: 300;
+}
+
+.alpharama-term__arch-syllable {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.alpharama-term__arch-width {
+  display: block;
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.alpharama-term__syllable-arch {
+  display: block;
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 0.22em;
+  border-top: 0.5px solid currentColor;
+  border-radius: 50% 50% 0 0;
+  transform: rotate(180deg);
+}
+
+@media (max-width: 640px) {
+  .alpharama-term__item {
+    grid-template-columns: var(--custom-block-index-size) 1fr;
+  }
+
+  .alpharama-term__image-wrap {
+    grid-column: 2;
+  }
+
+  .alpharama-term__exercise {
+    grid-column: 1 / -1;
+  }
+}
+
+.custom-block--selected .alpharama-term-node {
+  outline: 1px dashed var(--color-border-brand, currentColor);
+  outline-offset: 0.25rem;
+}
+
+.pdf-exporting .custom-block--selected .alpharama-term-node {
+  outline: 0;
+}
+
 /* Each learning-card sheet is a separate ProseMirror node. The coordinates
    below are relative to A4 portrait's content origin (25 mm from the left,
    25 mm from the top), but target the physical page center (105 × 148.5 mm).

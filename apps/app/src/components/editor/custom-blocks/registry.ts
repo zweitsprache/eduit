@@ -97,6 +97,15 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
     insert: (editor) => editor.chain().focus().insertWritingLines().run(),
   },
   {
+    type: 'alpharamaTerm',
+    label: 'Alpharama Term',
+    description: 'A picture-based literacy exercise with two handwriting line blocks.',
+    category: 'Content',
+    keywords: ['alpharama', 'term', 'literacy', 'writing', 'image', 'handwriting'],
+    Icon: Image01,
+    insert: (editor) => editor.chain().focus().insertAlpharamaTerm().run(),
+  },
+  {
     type: 'customHeading',
     label: 'Heading',
     description: 'A branded heading with optional document numbering.',

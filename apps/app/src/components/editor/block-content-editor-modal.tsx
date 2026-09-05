@@ -123,6 +123,11 @@ import type {
   LearningCardItem,
   LearningCardTextSize,
 } from '@/components/editor/learning-cards-node';
+import {
+  DEFAULT_ALPHARAMA_TERM_ATTRS,
+  type AlpharamaTermAttrs,
+  type AlpharamaTermItem,
+} from '@/components/editor/alpharama-term-node';
 import { LearningCardContent } from '@/components/editor/learning-cards-node';
 import type {
   ArticlePluralCardItem,
@@ -301,6 +306,7 @@ export type ContentEditorBlock = {
     | 'lesetraining'
     | 'spacer'
     | 'writingLines'
+    | 'alpharamaTerm'
     | 'instructionBlock'
     | 'letterNode'
     | 'anagramNode'
@@ -345,6 +351,7 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   lesetraining: 'Lesetraining content',
   spacer: 'Spacer',
   writingLines: 'Writing lines',
+  alpharamaTerm: 'Alpharama Term content',
   instructionBlock: 'Instruction content',
   letterNode: 'Letter Node content',
   anagramNode: 'Anagram content',
@@ -2130,6 +2137,107 @@ function WritingLinesEditor({
         max={MAX_WRITING_LINE_HEIGHT}
         onCommit={(lineHeight) => updateAttrs(editor, block, { lineHeight })}
       />
+    </div>
+  );
+}
+
+function AlpharamaTermEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: AlpharamaTermAttrs;
+  block: ContentEditorBlock & { type: 'alpharamaTerm' };
+  editor: Editor;
+}) {
+  const items = attrs.items.length ? attrs.items : DEFAULT_ALPHARAMA_TERM_ATTRS.items;
+  const updateItems = (nextItems: AlpharamaTermItem[]) => updateAttrs(editor, block, {
+    items: nextItems,
+  });
+  const updateItem = (id: string, patch: Partial<AlpharamaTermItem>) => {
+    updateItems(items.map((item) => item.id === id ? { ...item, ...patch } : item));
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      <label className="flex items-start gap-3 text-sm text-secondary">
+        <input
+          type="checkbox"
+          checked={attrs.pageBreakBetweenItems}
+          onChange={(event) => updateAttrs(editor, block, {
+            pageBreakBetweenItems: event.target.checked,
+          })}
+          className="mt-0.5 size-4 rounded border-primary text-brand-solid focus:ring-brand"
+        />
+        <span>
+          <strong className="block font-semibold text-primary">Page break between items</strong>
+          <span className="text-tertiary">Start every term on a new page.</span>
+        </span>
+      </label>
+      <div className="flex flex-col gap-4">
+        {items.map((item, index) => (
+          <section key={item.id} className="rounded-lg border border-secondary bg-secondary p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-primary">Item {index + 1}</h3>
+              <button
+                type="button"
+                aria-label={`Remove item ${index + 1}`}
+                disabled={items.length <= 1}
+                onClick={() => updateItems(items.filter(({ id }) => id !== item.id))}
+                className="flex size-8 items-center justify-center rounded-md text-quaternary hover:bg-primary_hover hover:text-secondary disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Trash01 className="size-4" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-3">
+              <label className="text-xs font-semibold text-tertiary">
+                Image URL
+                <input
+                  type="url"
+                  value={item.image}
+                  onChange={(event) => updateItem(item.id, { image: event.target.value })}
+                  className="mt-1 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  placeholder="https://..."
+                />
+              </label>
+              <label className="text-xs font-semibold text-tertiary">
+                Image description
+                <input
+                  type="text"
+                  value={item.alt}
+                  onChange={(event) => updateItem(item.id, { alt: event.target.value })}
+                  className="mt-1 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  placeholder="Describe the image"
+                />
+              </label>
+              <label className="text-xs font-semibold text-tertiary">
+                Term
+                <input
+                  type="text"
+                  value={item.term}
+                  onChange={(event) => updateItem(item.id, { term: event.target.value })}
+                  className="mt-1 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  placeholder="Enter the term"
+                />
+              </label>
+            </div>
+          </section>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={() => updateItems([
+          ...items,
+          {
+            ...DEFAULT_ALPHARAMA_TERM_ATTRS.items[0],
+            id: `alpharama-term-${Date.now()}`,
+          },
+        ])}
+        className="flex items-center justify-center gap-2 rounded-md border border-secondary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover"
+      >
+        <PlusSquare className="size-4" />
+        Add item
+      </button>
     </div>
   );
 }
@@ -8822,6 +8930,7 @@ export function BlockContentEditorModal({
             {block.type === 'lesetraining' && <RichTextEditor attrs={attrs as unknown as RichTextAttrs} block={block} editor={editor} />}
             {block.type === 'spacer' && <SpacerEditor attrs={attrs as unknown as SpacerAttrs} block={block} editor={editor} />}
             {block.type === 'writingLines' && <WritingLinesEditor attrs={attrs as unknown as WritingLinesAttrs} block={block} editor={editor} />}
+            {block.type === 'alpharamaTerm' && <AlpharamaTermEditor attrs={attrs as unknown as AlpharamaTermAttrs} block={block as ContentEditorBlock & { type: 'alpharamaTerm' }} editor={editor} />}
             {block.type === 'instructionBlock' && <StandaloneInstructionEditor attrs={attrs as unknown as InstructionBlockAttrs} block={block} editor={editor} />}
             {block.type === 'letterNode' && <LetterNodeEditor attrs={attrs as unknown as LetterNodeAttrs} block={block} editor={editor} />}
             {block.type === 'anagramNode' && <AnagramEditor attrs={attrs as unknown as AnagramNodeAttrs} block={block} editor={editor} />}

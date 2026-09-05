@@ -81,10 +81,20 @@ export async function POST(request: Request) {
   }
 
   const origin = new URL(request.url).origin;
-  const safeHead = (payload.head ?? '')
+  let safeHead = (payload.head ?? '')
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
     .replace(/<base\b[^>]*>/gi, '')
     .replace(/<meta\b[^>]*http-equiv=["']?refresh["']?[^>]*>/gi, '');
+  try {
+    const alpharamaFont = await readFile(
+      path.join(process.cwd(), 'public', 'fonts', 'Alpharama', 'AlpharamaLight.otf'),
+    );
+    if (!alpharamaFont.length) {
+      safeHead = safeHead.replace(/@font-face\s*\{[^}]*Alpharama Light[^}]*\}/gi, '');
+    }
+  } catch {
+    safeHead = safeHead.replace(/@font-face\s*\{[^}]*Alpharama Light[^}]*\}/gi, '');
+  }
   const pageFormat = PAGE_FORMATS[payload.docSize as keyof typeof PAGE_FORMATS]
     ?? PAGE_FORMATS['a4-portrait'];
   let embeddedFontCss: string;

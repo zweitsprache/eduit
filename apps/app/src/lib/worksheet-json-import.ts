@@ -96,6 +96,17 @@ const writingLinesSchema = z.object({
   lineHeight: z.number().int().min(16).max(120).default(40),
 });
 
+const alpharamaTermSchema = z.object({
+  type: z.literal('alpharamaTerm'),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    image: z.string().trim().max(2000).default(''),
+    alt: z.string().trim().max(500).default(''),
+    term: z.string().trim().max(200).default(''),
+  })).min(1).max(100),
+  pageBreakBetweenItems: z.boolean().default(false),
+});
+
 const letterCloudSchema = z.object({
   type: z.literal('letterCloud'),
   instruction: z.string().trim().max(1000).default(
@@ -740,6 +751,7 @@ export const generatedWorksheetSchema = z.object({
     pageBreakSchema,
     spacerSchema,
     writingLinesSchema,
+    alpharamaTermSchema,
     letterCloudSchema,
     anagramSchema,
     crosswordSchema,
@@ -836,6 +848,15 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
   }
   if (block.type === 'writingLines') {
     return `<div data-writing-lines-count="${block.lineCount}" data-writing-lines-height="${block.lineHeight}" data-type="writing-lines"></div>`;
+  }
+  if (block.type === 'alpharamaTerm') {
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `alpharama-term-${index + 1}`,
+      image: item.image,
+      alt: item.alt,
+      term: item.term,
+    }));
+    return `<div data-alpharama-term-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-alpharama-term-page-break-between-items="${block.pageBreakBetweenItems}" data-type="alpharama-term"></div>`;
   }
   if (block.type === 'letterCloud') {
     const items = block.items.map((item, index) => ({

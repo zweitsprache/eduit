@@ -22,6 +22,7 @@ import type { ArticlePluralCardsAttrs } from '@/components/editor/article-plural
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
 import type { SpacerAttrs } from '@/components/editor/spacer-node';
 import type { WritingLinesAttrs } from '@/components/editor/writing-lines-node';
+import type { AlpharamaTermAttrs } from '@/components/editor/alpharama-term-node';
 import type { LetterCloudAttrs } from '@/components/editor/letter-cloud-node';
 import type { AnagramNodeAttrs } from '@/components/editor/anagram-node';
 import type { LesetrainingAttrs } from '@/components/editor/lesetraining-node';
@@ -100,6 +101,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'pageBreak',
   'spacer',
   'writingLines',
+  'alpharamaTerm',
   'letterCloud',
   'anagramNode',
   'lesetraining',
@@ -240,6 +242,10 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     case 'writingLines': {
       const { lineCount, lineHeight } = attrs as WritingLinesAttrs;
       return { type: 'writingLines', lineCount, lineHeight };
+    }
+    case 'alpharamaTerm': {
+      const { items, pageBreakBetweenItems } = attrs as AlpharamaTermAttrs;
+      return { type: 'alpharamaTerm', items, pageBreakBetweenItems };
     }
     case 'letterCloud': {
       const {

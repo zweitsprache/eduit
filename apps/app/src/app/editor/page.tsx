@@ -287,6 +287,7 @@ import {
 import { RichText } from '@/components/editor/rich-text-node';
 import { Spacer } from '@/components/editor/spacer-node';
 import { WritingLines } from '@/components/editor/writing-lines-node';
+import { AlpharamaTerm } from '@/components/editor/alpharama-term-node';
 import { InstructionBlock } from '@/components/editor/instruction-node';
 import { MediaLayout } from '@/components/editor/media-layout-node';
 import { MediaLayoutEditorModal } from '@/components/editor/media-layout-editor-modal';
@@ -534,6 +535,7 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'richText',
   'spacer',
   'writingLines',
+  'alpharamaTerm',
   'instructionBlock',
   'mediaLayout',
   'letterNode',
@@ -788,16 +790,20 @@ function documentFooter(
     Pick<BrandProfile, 'footer1Html' | 'footer2Html'>
   >,
   worksheetId?: string | null,
+  translationLanguage?: string | null,
 ) {
   const footer1 = inlineFooterHtml(brand.footer1Html ?? brand.name);
   const footer2 = inlineFooterHtml(
     brand.footer2Html ?? DOCUMENT_CREATOR,
   );
   const leftLines = [footer1, footer2].filter(Boolean).join('<br>');
+  const idLine = translationLanguage && translationLanguage !== ORIGINAL_VIEW_LANGUAGE
+    ? `${worksheetId ?? DOCUMENT_ID} ${translationLanguage.toUpperCase()}`
+    : worksheetId ?? DOCUMENT_ID;
   return [
     `<p>${leftLines}</p>`,
     '<p>{page}/{total}</p>',
-    `<p>${worksheetId ?? DOCUMENT_ID}<br>${formatBrandDate(new Date(), brand.dateFormat)}</p>`,
+    `<p>${idLine}<br>${formatBrandDate(new Date(), brand.dateFormat)}</p>`,
   ].join('');
 }
 
@@ -1745,6 +1751,7 @@ export default function EditorPage() {
       RichText,
       Spacer,
       WritingLines,
+      AlpharamaTerm,
       InstructionBlock,
       MediaLayout,
       LetterNode,
@@ -2725,11 +2732,11 @@ export default function EditorPage() {
       instructionNumberFormat: activeBrand.instructionNumberFormat,
       headingNumberFormats: activeBrand.headingNumberFormats,
     });
-    editor.commands.setFooter(documentFooter(activeBrand, worksheetId));
+    editor.commands.setFooter(documentFooter(activeBrand, worksheetId, viewLanguage));
     return () => {
       measurementCancelled = true;
     };
-  }, [activeBrand, brandProfileId, editor, selectedBrandProfile, worksheetId]);
+  }, [activeBrand, brandProfileId, editor, selectedBrandProfile, viewLanguage, worksheetId]);
 
   useEffect(() => {
     if (!editor) return;
