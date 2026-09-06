@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 import {
@@ -20,6 +21,8 @@ export type AnagramNodeAttrs = {
   hideInstructionBadge: boolean;
   showClues: boolean;
   showItemNumbers: boolean;
+  showFirstAsExample: boolean;
+  pageBreakBetweenItems: boolean;
   items: AnagramNodeItem[];
 };
 
@@ -79,13 +82,22 @@ function shuffleLetters(value: string, seedText: string) {
 
 function AnagramSquares({
   letters,
+  prefix,
   solution = false,
+  example = false,
 }: {
   letters: string[];
+  prefix?: React.ReactNode;
   solution?: boolean;
+  example?: boolean;
 }) {
   return (
-    <div className="anagram-node__row" data-solution={solution}>
+    <span
+      className="anagram-node__line"
+      data-example={example}
+      data-solution={solution}
+    >
+      {prefix}
       {letters.map((letter, index) => (
         <span
           className="anagram-node__cell"
@@ -97,11 +109,74 @@ function AnagramSquares({
           )}
         </span>
       ))}
-    </div>
+    </span>
   );
 }
 
-function AnagramNodeView({ node, selected }: NodeViewProps) {
+function AnagramPageBreakSpacer({ editor }: Pick<NodeViewProps, 'editor'>) {
+  const spacerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const spacer = spacerRef.current;
+    const pagesStorage = editor.storage?.pages;
+    if (
+      !spacer
+      || !pagesStorage
+      || typeof pagesStorage !== 'object'
+      || !(pagesStorage.onAfterPageLayoutCallbacks instanceof Map)
+    ) return;
+
+    let lastHeight = 0;
+    const updateSpacer = () => {
+      const editorDom = editor.view.dom;
+      if (!(editorDom instanceof HTMLElement)) return;
+      const paginationContainer = editorDom.querySelector('[data-tiptap-pagination]');
+      if (!paginationContainer) return;
+      const footers = Array.from(
+        paginationContainer.querySelectorAll<HTMLElement>('.tiptap-page-footer'),
+      );
+      const spacerTop = spacer.getBoundingClientRect().top;
+      const nextFooter = footers.find(
+        (footer) => footer.getBoundingClientRect().top > spacerTop,
+      );
+      if (!nextFooter) return;
+      const editorRect = editorDom.getBoundingClientRect();
+      const widthRatio = editorDom.offsetWidth > 0
+        ? editorRect.width / editorDom.offsetWidth
+        : 0;
+      const heightRatio = editorDom.offsetHeight > 0
+        ? editorRect.height / editorDom.offsetHeight
+        : 0;
+      const zoomRatio = widthRatio || heightRatio
+        || Number.parseFloat(editorDom.style.zoom || '1')
+        || 1;
+      const nextHeight = Math.max(
+        0,
+        nextFooter.getBoundingClientRect().top - spacerTop,
+      ) / zoomRatio;
+      const appliedHeight = nextHeight < 1 ? 0 : nextHeight;
+      if (Math.abs(lastHeight - appliedHeight) < 1) return;
+      lastHeight = appliedHeight;
+      spacer.style.height = `${appliedHeight}px`;
+    };
+
+    pagesStorage.onAfterPageLayoutCallbacks.set(spacer, updateSpacer);
+    return () => {
+      pagesStorage.onAfterPageLayoutCallbacks.delete(spacer);
+    };
+  }, [editor]);
+
+  return (
+    <div
+      ref={spacerRef}
+      aria-hidden="true"
+      className="tiptap-page-break-node tiptap-page-break-node--pages-mode anagram-node__page-break-spacer"
+      data-type="pageBreak"
+    />
+  );
+}
+
+function AnagramNodeView({ editor, node, selected }: NodeViewProps) {
   const attrs = node.attrs as AnagramNodeAttrs;
 
   return (
@@ -113,25 +188,43 @@ function AnagramNodeView({ node, selected }: NodeViewProps) {
         {attrs.items.map((item, index) => {
           const answerLetters = Array.from(item.answer);
           return (
-            <div
-              className="anagram-node__item"
-              data-item-numbers={attrs.showItemNumbers}
-              data-show-clues={attrs.showClues}
-              key={item.id}
-            >
-              {(attrs.showClues || attrs.showItemNumbers) && (
-                <div className="anagram-node__heading">
-                  {attrs.showItemNumbers && (
-                    <span className="custom-block__row-index">
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                  )}
-                  {attrs.showClues && <BlockRowLabel>{item.clue}</BlockRowLabel>}
-                </div>
+            <div key={item.id}>
+              {attrs.pageBreakBetweenItems && index > 0 && (
+                <AnagramPageBreakSpacer editor={editor} />
               )}
-              <div className="anagram-node__rows">
-                <AnagramSquares letters={shuffleLetters(item.answer, item.id)} />
-                <AnagramSquares letters={answerLetters} solution />
+              <div
+                className="anagram-node__item"
+                data-item-numbers={attrs.showItemNumbers}
+                data-show-clues={attrs.showClues}
+              >
+                {attrs.showClues && (
+                  <div className="anagram-node__heading">
+                    {attrs.showItemNumbers && (
+                      <span className="custom-block__row-index">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                    )}
+                    {attrs.showClues && <BlockRowLabel>{item.clue}</BlockRowLabel>}
+                  </div>
+                )}
+                <div className="anagram-node__row">
+                  <span className="anagram-node__rows">
+                    <AnagramSquares
+                      letters={shuffleLetters(item.answer, item.id)}
+                      prefix={!attrs.showClues && attrs.showItemNumbers ? (
+                        <span className="custom-block__row-index">
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                      ) : undefined}
+                    />
+                    <br />
+                    <AnagramSquares
+                      example={attrs.showFirstAsExample && index === 0}
+                      letters={answerLetters}
+                      solution
+                    />
+                  </span>
+                </div>
               </div>
             </div>
           );
@@ -197,6 +290,24 @@ export const AnagramNode = Node.create({
           'data-anagram-item-numbers': String(attributes.showItemNumbers),
         }),
       },
+      showFirstAsExample: {
+        default: false,
+        parseHTML: (element: HTMLElement) => element.getAttribute(
+          'data-anagram-show-first-as-example',
+        ) === 'true',
+        renderHTML: (attributes: AnagramNodeAttrs) => ({
+          'data-anagram-show-first-as-example': String(attributes.showFirstAsExample),
+        }),
+      },
+      pageBreakBetweenItems: {
+        default: false,
+        parseHTML: (element: HTMLElement) => element.getAttribute(
+          'data-anagram-page-break-between-items',
+        ) === 'true',
+        renderHTML: (attributes: AnagramNodeAttrs) => ({
+          'data-anagram-page-break-between-items': String(attributes.pageBreakBetweenItems),
+        }),
+      },
       items: {
         default: DEFAULT_ANAGRAM_ITEMS,
         parseHTML: (element: HTMLElement) => (
@@ -232,6 +343,8 @@ export const AnagramNode = Node.create({
             hideInstructionBadge: attrs.hideInstructionBadge ?? false,
             showClues: attrs.showClues ?? true,
             showItemNumbers: attrs.showItemNumbers ?? true,
+            showFirstAsExample: attrs.showFirstAsExample ?? false,
+            pageBreakBetweenItems: attrs.pageBreakBetweenItems ?? false,
             items: attrs.items
               ?? DEFAULT_ANAGRAM_ITEMS.map((item) => ({ ...item })),
           },

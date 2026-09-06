@@ -7170,6 +7170,20 @@ function AnagramEditor({
             showItemNumbers,
           })}
         />
+        <ContentSwitch
+          label="Show first as example"
+          isSelected={attrs.showFirstAsExample}
+          onChange={(showFirstAsExample) => updateAttrs(editor, block, {
+            showFirstAsExample,
+          })}
+        />
+        <ContentSwitch
+          label="Page break between items"
+          isSelected={attrs.pageBreakBetweenItems}
+          onChange={(pageBreakBetweenItems) => updateAttrs(editor, block, {
+            pageBreakBetweenItems,
+          })}
+        />
       </ContentSwitchGrid>
       <ContentSectionHeader count={`${attrs.items.length} items`}>
         Items

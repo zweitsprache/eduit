@@ -270,6 +270,8 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         hideInstructionBadge,
         showClues,
         showItemNumbers,
+        showFirstAsExample,
+        pageBreakBetweenItems,
         items,
       } = attrs as AnagramNodeAttrs;
       return {
@@ -278,6 +280,8 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         hideInstructionBadge,
         showClues,
         showItemNumbers,
+        showFirstAsExample,
+        pageBreakBetweenItems,
         items,
       };
     }

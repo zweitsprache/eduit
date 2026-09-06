@@ -134,6 +134,8 @@ const anagramSchema = z.object({
     answer: z.string().trim().min(1).max(100),
   })).min(1).max(100),
   showItemNumbers: z.boolean().default(true),
+  showFirstAsExample: z.boolean().default(false),
+  pageBreakBetweenItems: z.boolean().default(false),
 });
 
 const crosswordSchema = z.object({
@@ -871,7 +873,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       clue: item.clue,
       answer: item.answer,
     }));
-    return `<div data-anagram-instruction="${escapeAttribute(block.instruction)}" data-anagram-hide-instruction-badge="${block.hideInstructionBadge}" data-anagram-show-clues="${block.showClues}" data-anagram-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-anagram-item-numbers="${block.showItemNumbers}" data-type="anagram-node"></div>`;
+    return `<div data-anagram-instruction="${escapeAttribute(block.instruction)}" data-anagram-hide-instruction-badge="${block.hideInstructionBadge}" data-anagram-show-clues="${block.showClues}" data-anagram-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-anagram-item-numbers="${block.showItemNumbers}" data-anagram-show-first-as-example="${block.showFirstAsExample}" data-anagram-page-break-between-items="${block.pageBreakBetweenItems}" data-type="anagram-node"></div>`;
   }
   if (block.type === 'crossword') {
     return `<div data-crossword-instruction="${escapeAttribute(block.instruction)}" data-crossword-entries="${escapeAttribute(encodeURIComponent(JSON.stringify(block.entries)))}" data-crossword-layout-seed="${block.layoutSeed}" data-crossword-cell-size="${block.cellSize}" data-crossword-cell-aspect-ratio="${block.cellAspectRatio}" data-crossword-show-word-bank="${block.showWordBank}" data-type="crossword"></div>`;
