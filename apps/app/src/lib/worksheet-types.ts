@@ -3,6 +3,7 @@ export const WORKSHEET_DOCUMENT_SIZES = [
   'a4-portrait',
   'a4-landscape',
   'a5-landscape',
+  'a5-fotokarten',
   'letter-portrait',
   'letter-landscape',
 ] as const;

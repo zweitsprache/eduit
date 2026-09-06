@@ -81,6 +81,7 @@ Exercise text can contain answer-bearing blanks:
 
 - `{{blank:answer}}` creates a blank whose solution is `answer`.
 - `{{blank:answer|1.5}}` creates the same blank with a width factor of `1.5`.
+- `{{blank:|1.5}}` creates a width-controlled blank without a predefined answer, for example for personal information.
 - Width factors are clamped by the editor; use values from `0.5` to `5`.
 - Do not place `{` or `}` inside an answer.
 - Preserve punctuation outside the token: `Ich kaufe {{blank:einen Mantel}}.`

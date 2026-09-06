@@ -96,7 +96,9 @@ function rowDifficulty(level: string | null): Worksheet['difficulty'] {
 }
 
 function rowFormat(documentSize: string): string | undefined {
-  if (documentSize === 'a5-landscape') return 'PDF · A4 druckfertig · 2 x A5';
+  if (documentSize === 'a5-landscape' || documentSize === 'a5-fotokarten') {
+    return 'PDF · A4 druckfertig · 2 x A5';
+  }
   if (documentSize === 'letter-portrait' || documentSize === 'letter-landscape') {
     return 'PDF · US Letter druckfertig';
   }

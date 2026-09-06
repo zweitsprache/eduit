@@ -736,7 +736,7 @@ function normalizeGeneratedBlockType(value: unknown) {
 
 export const generatedWorksheetSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
-  documentSize: z.enum(['a4-portrait', 'a4-landscape', 'a5-landscape', 'letter-portrait', 'letter-landscape']).default('a4-portrait'),
+  documentSize: z.enum(['a4-portrait', 'a4-landscape', 'a5-landscape', 'a5-fotokarten', 'letter-portrait', 'letter-landscape']).default('a4-portrait'),
   showSolutions: z.boolean().default(false),
   status: z.enum(['draft', 'published']).default('draft'),
   brandProfileId: z.string().uuid().nullable().optional(),

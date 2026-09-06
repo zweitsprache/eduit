@@ -169,6 +169,7 @@ async function ensureA5DocumentSizeConstraint() {
           'a4-portrait',
           'a4-landscape',
           'a5-landscape',
+          'a5-fotokarten',
           'letter-portrait',
           'letter-landscape'
         )

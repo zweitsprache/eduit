@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { launchRenderingBrowser } from '@/lib/server-chromium';
+import {
+  fulfillPrivateMediaRequest,
+  launchRenderingBrowser,
+} from '@/lib/server-chromium';
 import { replaceClockPlaceholders } from '@/lib/clock-placeholder';
 
 export const runtime = 'nodejs';
@@ -16,6 +19,7 @@ const PAGE_FORMATS = {
   'a4-portrait': { cssSize: '210mm 297mm', pageHeight: '297mm', viewport: { width: 794, height: 1123 }, sheetCopies: 1 },
   'a4-landscape': { cssSize: '297mm 210mm', pageHeight: '210mm', viewport: { width: 1123, height: 794 }, sheetCopies: 1 },
   'a5-landscape': { cssSize: '210mm 297mm', pageHeight: '148.4mm', viewport: { width: 794, height: 1123 }, sheetCopies: 2 },
+  'a5-fotokarten': { cssSize: '210mm 297mm', pageHeight: '148.4mm', viewport: { width: 794, height: 1123 }, sheetCopies: 1 },
   'letter-portrait': { cssSize: '215.9mm 279.4mm', pageHeight: '279.4mm', viewport: { width: 816, height: 1056 }, sheetCopies: 1 },
   'letter-landscape': { cssSize: '279.4mm 215.9mm', pageHeight: '215.9mm', viewport: { width: 1056, height: 816 }, sheetCopies: 1 },
 };
@@ -81,6 +85,7 @@ export async function POST(request: Request) {
   }
 
   const origin = new URL(request.url).origin;
+  const sessionCookie = request.headers.get('cookie');
   let safeHead = (payload.head ?? '')
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
     .replace(/<base\b[^>]*>/gi, '')
@@ -179,6 +184,7 @@ export async function POST(request: Request) {
         });
         return;
       }
+      if (await fulfillPrivateMediaRequest(route, origin, sessionCookie)) return;
 
       const url = new URL(route.request().url());
       const allowed = url.origin === origin
@@ -227,6 +233,9 @@ export async function POST(request: Request) {
           })
         )),
       );
+      if (Array.from(document.images).some((image) => image.naturalWidth === 0)) {
+        throw new Error('An image could not be loaded for PDF export.');
+      }
       const editor = document.querySelector<HTMLElement>('.editor-content .tiptap');
       if (editor) {
         const pageCount = Math.max(

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { launchRenderingBrowser } from '@/lib/server-chromium';
+import {
+  fulfillPrivateMediaRequest,
+  launchRenderingBrowser,
+} from '@/lib/server-chromium';
 import { replaceClockPlaceholders } from '@/lib/clock-placeholder';
 
 export const runtime = 'nodejs';
@@ -9,6 +12,7 @@ const PAGE_FORMATS = {
   'a4-portrait': { width: 794, height: 1123 },
   'a4-landscape': { width: 1123, height: 794 },
   'a5-landscape': { width: 794, height: 561 },
+  'a5-fotokarten': { width: 794, height: 561 },
   'letter-portrait': { width: 816, height: 1056 },
   'letter-landscape': { width: 1056, height: 816 },
 };
@@ -24,6 +28,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'The rendered document is missing or too large.' }, { status: 400 });
   }
   const origin = new URL(request.url).origin;
+  const sessionCookie = request.headers.get('cookie');
   const format = PAGE_FORMATS[payload.docSize as keyof typeof PAGE_FORMATS]
     ?? PAGE_FORMATS['a4-portrait'];
   const pageCount = Math.min(100, Math.max(1, Math.round(payload.pageCount || 1)));
@@ -90,6 +95,7 @@ export async function POST(request: Request) {
         await route.fulfill({ contentType: 'text/html', body: '<!doctype html><html><body></body></html>' });
         return;
       }
+      if (await fulfillPrivateMediaRequest(route, origin, sessionCookie)) return;
       const url = new URL(route.request().url());
       const allowed = url.origin === origin
         || url.hostname === 'fonts.googleapis.com'
@@ -104,8 +110,16 @@ export async function POST(request: Request) {
     await page.evaluate(async () => {
       await document.fonts.ready;
       await Promise.all(Array.from(document.images).map((image) => (
-        image.complete ? image.decode().catch(() => undefined) : Promise.resolve()
+        image.complete
+          ? image.decode().catch(() => undefined)
+          : new Promise<void>((resolve) => {
+              image.addEventListener('load', () => resolve(), { once: true });
+              image.addEventListener('error', () => resolve(), { once: true });
+            })
       )));
+      if (Array.from(document.images).some((image) => image.naturalWidth === 0)) {
+        throw new Error('An image could not be loaded for thumbnail export.');
+      }
     });
     const cropHeight = Math.min(format.height, Math.round(format.width * 9 / 16));
     await page.setViewportSize({ width: format.width, height: cropHeight });

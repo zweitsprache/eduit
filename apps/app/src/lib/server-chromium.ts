@@ -1,7 +1,31 @@
 import { access, mkdir, readdir, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { Browser } from 'playwright-core';
+import type { Browser, Route } from 'playwright-core';
+
+export async function fulfillPrivateMediaRequest(
+  route: Route,
+  origin: string,
+  cookie: string | null,
+) {
+  const url = new URL(route.request().url());
+  if (url.origin !== origin || !url.pathname.startsWith('/api/media/')) {
+    return false;
+  }
+  if (!cookie) {
+    await route.abort('blockedbyclient');
+    return true;
+  }
+
+  const response = await fetch(url, { headers: { cookie } });
+  const body = Buffer.from(await response.arrayBuffer());
+  await route.fulfill({
+    status: response.status,
+    contentType: response.headers.get('content-type') ?? 'application/octet-stream',
+    body,
+  });
+  return true;
+}
 
 const CHROME_PATHS = [
   process.env.CHROMIUM_EXECUTABLE_PATH,

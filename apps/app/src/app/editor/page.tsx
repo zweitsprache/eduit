@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
   type CSSProperties,
@@ -825,6 +826,7 @@ function documentFooter(
   >,
   worksheetId?: string | null,
   translationLanguage?: string | null,
+  showPageNumbers = true,
 ) {
   const footer1 = inlineFooterHtml(brand.footer1Html ?? brand.name);
   const footer2 = inlineFooterHtml(
@@ -836,8 +838,8 @@ function documentFooter(
     : worksheetId ?? DOCUMENT_ID;
   return [
     `<p>${leftLines}</p>`,
-    '<p>{page}/{total}</p>',
-    `<p>${idLine}<br>${formatBrandDate(new Date(), brand.dateFormat)}</p>`,
+    showPageNumbers ? '<p>{page}/{total}</p>' : '<p></p>',
+    `<p><span data-footer-document-id>${idLine}</span><br>${formatBrandDate(new Date(), brand.dateFormat)}</p>`,
   ].join('');
 }
 
@@ -1395,10 +1397,22 @@ const A5_LANDSCAPE_FORMAT: PageFormatSpec = {
   margins: A4_PORTRAIT_MARGINS,
 };
 
+const A5_FOTOKARTEN_FORMAT: PageFormatSpec = {
+  ...A5_LANDSCAPE_FORMAT,
+  id: 'A5-fotokarten-eduit',
+  margins: {
+    ...A5_LANDSCAPE_FORMAT.margins,
+    bottom: mmToPixels(23),
+    left: mmToPixels(20),
+    right: mmToPixels(20),
+  },
+};
+
 const DOC_SIZES: { id: string; label: string; format: () => PageFormatSpec }[] = [
   { id: 'a4-portrait', label: 'DIN A4 Portrait', format: () => documentFormat(PAGE_FORMATS.A4) },
   { id: 'a4-landscape', label: 'DIN A4 Landscape', format: () => documentFormat(PAGE_FORMATS.A4, 'landscape') },
   { id: 'a5-landscape', label: 'DIN A5 Landscape', format: () => A5_LANDSCAPE_FORMAT },
+  { id: 'a5-fotokarten', label: 'A5 Fotokarten', format: () => A5_FOTOKARTEN_FORMAT },
   { id: 'letter-portrait', label: 'US Letter Portrait', format: () => documentFormat(PAGE_FORMATS.Letter) },
   { id: 'letter-landscape', label: 'US Letter Landscape', format: () => documentFormat(PAGE_FORMATS.Letter, 'landscape') },
 ];
@@ -1413,6 +1427,7 @@ const DAZIT_PDF_FORMAT_BY_DOC_SIZE: Record<string, string> = {
   'a4-portrait': 'PDF · A4 druckfertig',
   'a4-landscape': 'PDF · A4 druckfertig',
   'a5-landscape': 'PDF · A4 druckfertig · 2 x A5',
+  'a5-fotokarten': 'PDF · A4 druckfertig · 2 x A5',
   'letter-portrait': 'PDF · US Letter druckfertig',
   'letter-landscape': 'PDF · US Letter druckfertig',
 };
@@ -1604,6 +1619,11 @@ export default function EditorPage() {
       : null,
   );
   const [worksheetId, setWorksheetId] = useState<string | null>(null);
+  const getFooterPaginationContext = useEffectEvent(() => ({
+    docSize,
+    viewLanguage,
+    worksheetId,
+  }));
   const worksheetSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const worksheetTitleSaveTimerRef =
     useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1802,7 +1822,7 @@ export default function EditorPage() {
           ?? documentFormat(PAGE_FORMATS.A4),
         header: DOCUMENT_HEADER,
         headerTopMargin: mmToPixels(PAGE_HEADER_TOP_MARGIN_MM),
-        footer: documentFooter(DEFAULT_DOCUMENT_BRAND),
+        footer: documentFooter(DEFAULT_DOCUMENT_BRAND, null, null, docSize !== 'a5-fotokarten'),
         editableFooter: false,
         pageGapBackground: 'var(--color-bg-tertiary)',
       }),
@@ -2576,12 +2596,17 @@ export default function EditorPage() {
 
   useEffect(() => {
     if (!editor) return;
+    const format = DOC_SIZES.find(({ id }) => id === docSize)?.format();
+    if (format) editor.commands.setPageFormat(format);
+    editor.view.dom.setAttribute('data-doc-size', docSize);
     editor.view.dom.style.setProperty(
       '--document-logo-top',
       docSize.startsWith('a4-') ? '15mm' : '10mm',
     );
     if (docSize === 'a4-landscape') {
       editor.commands.setFooterBottomMargin(mmToPixels(7.5));
+    } else if (docSize === 'a5-fotokarten') {
+      editor.commands.setFooterBottomMargin(mmToPixels(12.5));
     } else {
       editor.commands.resetFooterBottomMargin();
     }
@@ -2775,11 +2800,16 @@ export default function EditorPage() {
       instructionNumberFormat: activeBrand.instructionNumberFormat,
       headingNumberFormats: activeBrand.headingNumberFormats,
     });
-    editor.commands.setFooter(documentFooter(activeBrand, worksheetId, viewLanguage));
+    editor.commands.setFooter(documentFooter(
+      activeBrand,
+      worksheetId,
+      viewLanguage,
+      docSize !== 'a5-fotokarten',
+    ));
     return () => {
       measurementCancelled = true;
     };
-  }, [activeBrand, brandProfileId, editor, selectedBrandProfile, viewLanguage, worksheetId]);
+  }, [activeBrand, brandProfileId, docSize, editor, selectedBrandProfile, viewLanguage, worksheetId]);
 
   useEffect(() => {
     if (!editor) return;
@@ -2788,6 +2818,11 @@ export default function EditorPage() {
     let innerFrame = 0;
 
     const applySectionPageNumbers = () => {
+      const {
+        docSize: currentDocSize,
+        viewLanguage: currentViewLanguage,
+        worksheetId: currentWorksheetId,
+      } = getFooterPaginationContext();
       const footers = Array.from(
         editorElement.querySelectorAll<HTMLElement>('.tiptap-page-footer'),
       );
@@ -2814,9 +2849,31 @@ export default function EditorPage() {
         const displayedPage = physicalPage - sectionStart + 1;
         const sectionTotal = sectionEnd - sectionStart + 1;
         const pageLabel = footer.querySelector<HTMLElement>('p:nth-child(2)');
-        const label = `${displayedPage}/${sectionTotal}`;
+        const fotokarten = currentDocSize === 'a5-fotokarten';
+        const label = fotokarten ? '' : `${displayedPage}/${sectionTotal}`;
         if (pageLabel && pageLabel.textContent !== label) {
           pageLabel.textContent = label;
+        }
+        const documentIdLabel = footer.querySelector<HTMLElement>(
+          '[data-footer-document-id]',
+        );
+        const legacyDocumentIdText = footer.querySelector('p:nth-child(3)')?.firstChild;
+        const translatedId = currentViewLanguage !== ORIGINAL_VIEW_LANGUAGE
+          ? `${currentWorksheetId ?? DOCUMENT_ID} ${currentViewLanguage.toUpperCase()}`
+          : currentWorksheetId ?? DOCUMENT_ID;
+        const numberedId = fotokarten
+          ? `${translatedId}-${String(displayedPage).padStart(2, '0')}-${String(sectionTotal).padStart(2, '0')}`
+          : translatedId;
+        if (documentIdLabel) {
+          if (documentIdLabel.textContent !== numberedId) {
+            documentIdLabel.textContent = numberedId;
+          }
+        } else if (
+          legacyDocumentIdText
+          && legacyDocumentIdText.nodeType === 3
+          && legacyDocumentIdText.textContent !== numberedId
+        ) {
+          legacyDocumentIdText.textContent = numberedId;
         }
       });
     };
@@ -2830,12 +2887,18 @@ export default function EditorPage() {
         });
       });
     };
+    const footerObserver = new MutationObserver(schedulePageNumbers);
+    footerObserver.observe(editorElement, {
+      childList: true,
+      subtree: true,
+    });
     editor.on('update', schedulePageNumbers);
     schedulePageNumbers();
 
     return () => {
       cancelAnimationFrame(outerFrame);
       cancelAnimationFrame(innerFrame);
+      footerObserver.disconnect();
       editor.off('update', schedulePageNumbers);
     };
   }, [editor]);
@@ -4527,6 +4590,7 @@ export default function EditorPage() {
         }
       }).join('\n');
       const exportContent = editorElement.cloneNode(true) as HTMLElement;
+      exportContent.setAttribute('data-doc-size', docSize);
       if (options?.showSolutions) {
         exportContent.setAttribute('data-show-solutions', 'true');
       } else {
@@ -4544,7 +4608,6 @@ export default function EditorPage() {
       exportContent.querySelectorAll(
         '.rich-text-node__selection-fragment',
       ).forEach((element) => element.remove());
-      await inlinePrivateMediaImages(exportContent);
       const pageCount = Math.max(
         1,
         exportContent.querySelectorAll('.tiptap-page-footer').length,
@@ -4588,9 +4651,13 @@ export default function EditorPage() {
     try {
       const { pdf: blob } = await renderPDF();
       const url = URL.createObjectURL(blob);
+      const filename = worksheetTitle
+        .trim()
+        .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '-')
+        .replace(/[. ]+$/g, '') || 'worksheet';
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = 'eduit-document.pdf';
+      anchor.download = `${filename}.pdf`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();

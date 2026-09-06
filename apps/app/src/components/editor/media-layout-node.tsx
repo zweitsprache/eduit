@@ -109,6 +109,13 @@ function textToHtml(value: string) {
 
 export function MediaLayoutContent({ attrs }: { attrs: MediaLayoutAttrs }) {
   const imageWidth = Math.min(99, Math.max(1, Number(attrs.imageWidth) || 50));
+  const imageOnly = attrs.layout === 'full'
+    && !attrs.text
+    && attrs.items.length === 1
+    && (
+      !attrs.showCaptions
+      || (!attrs.items[0].caption && !attrs.items[0].credit)
+    );
   const splitStyle = attrs.layout === 'image-left'
     ? { gridTemplateColumns: `${imageWidth}% minmax(0, 1fr)` }
     : attrs.layout === 'image-right'
@@ -159,6 +166,7 @@ export function MediaLayoutContent({ attrs }: { attrs: MediaLayoutAttrs }) {
       data-aspect-ratio={attrs.aspectRatio}
       data-fit={attrs.fit}
       data-gap={attrs.gap}
+      data-image-only={imageOnly}
       data-layout={attrs.layout}
       data-radius={attrs.radius}
       data-text-vertical={attrs.textVertical}

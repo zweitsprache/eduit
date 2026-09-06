@@ -44,10 +44,6 @@ function parseBlankPayload(payload: string, defaultWidthFactor: number) {
 
   const answer = payload.slice(0, separatorIndex).trim();
   const parsedFactor = Number(payload.slice(separatorIndex + 1).trim());
-  if (!answer) {
-    return { answer: payload.trim(), widthFactor: defaultWidthFactor };
-  }
-
   if (!Number.isFinite(parsedFactor) || parsedFactor < 0.25) {
     return { answer, widthFactor: defaultWidthFactor };
   }

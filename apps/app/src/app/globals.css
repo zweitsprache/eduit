@@ -86,6 +86,13 @@
   pointer-events: none;
 }
 
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .tiptap-page-header::after {
+  right: calc(var(--document-page-header-right, 15mm) + 2px - 5mm);
+}
+
 .tiptap[data-learning-cards-double] .tiptap-page-header::before {
   position: absolute;
   top: calc(var(--document-logo-top, 10mm) + 8px);

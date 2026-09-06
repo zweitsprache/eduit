@@ -1040,6 +1040,51 @@
   aspect-ratio: 16 / 9;
 }
 
+:is(
+  .editor-app[data-doc-size="a5-landscape"] .tiptap,
+  .tiptap[data-doc-size="a5-landscape"],
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+)
+  .media-layout-node__layout[data-image-only="true"] {
+  position: relative;
+  height: calc(var(--page-max-height) + 12px);
+}
+
+:is(
+  .editor-app[data-doc-size="a5-landscape"] .tiptap,
+  .tiptap[data-doc-size="a5-landscape"],
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+)
+  .media-layout-node__layout[data-image-only="true"]
+  > .media-layout-node__media {
+  position: absolute;
+  inset: -10px 0 auto;
+}
+
+:is(
+  .editor-app[data-doc-size="a5-landscape"] .tiptap,
+  .tiptap[data-doc-size="a5-landscape"],
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+)
+  .media-layout-node__layout[data-image-only="true"]
+  > .media-layout-node__media
+  .media-layout-node__image {
+  height: calc(var(--page-max-height) + 70px);
+  aspect-ratio: auto;
+}
+
+:is(
+  .editor-app[data-doc-size="a5-landscape"] .tiptap,
+  .tiptap[data-doc-size="a5-landscape"],
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .media-layout-node {
+  margin-block: 0 !important;
+}
+
 .media-layout-node__layout[data-fit="contain"] .media-layout-node__image {
   object-fit: contain;
   background: var(--color-bg-secondary);
@@ -3073,13 +3118,18 @@
   ) !important;
 }
 
-.instruction-node--bypass-gap,
-.rich-text-node--bypass-gap {
+.instruction-node--bypass-gap {
   margin-block-end: calc(
     -1 * (
       var(--custom-block-space-after)
       + var(--custom-block-space-before)
     )
+  ) !important;
+}
+
+.rich-text-node--bypass-gap {
+  margin-block-end: calc(
+    4px - var(--custom-block-space-after) - var(--custom-block-space-before)
   ) !important;
 }
 
