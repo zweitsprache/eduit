@@ -345,10 +345,11 @@
   overflow: hidden;
 }
 
-.learning-cards-node__title {
+.tiptap[data-brand] .learning-cards-node__title {
   position: relative;
   z-index: 1;
   margin: 0 0 calc(2 * var(--custom-block-space-section)) !important;
+  color: var(--brand-heading-h1-text-color, #101828);
   font-size: var(--brand-heading-1-font-size, 2rem);
   font-weight: var(--brand-heading-1-font-weight, 700);
   line-height: var(--brand-heading-1-line-height, 1.2);
@@ -466,6 +467,7 @@
 }
 
 .learning-cards-node__card {
+  position: relative;
   display: flex;
   box-sizing: border-box;
   width: 74mm;
@@ -476,6 +478,51 @@
   padding: 5mm;
   text-align: center;
   border: 0;
+}
+
+.learning-cards-node__card-logo {
+  position: absolute;
+  top: 3mm;
+  right: 3mm;
+  width: 13mm;
+  height: 4mm;
+  background-image: var(
+    --document-brand-logo,
+    url("/logo/eduit_logo.svg")
+  );
+  background-position: top right;
+  background-repeat: no-repeat;
+  background-size: contain;
+  pointer-events: none;
+}
+
+.learning-cards-node__card-footer {
+  position: absolute;
+  right: 3mm;
+  bottom: 2.5mm;
+  left: 3mm;
+  display: flex;
+  justify-content: space-between;
+  gap: 3mm;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+  font-size: 6pt;
+  line-height: 1.2;
+  text-align: left;
+  white-space: pre-line;
+  pointer-events: none;
+}
+
+.learning-cards-node__card-footer > :last-child {
+  margin-left: auto;
+  text-align: right;
+}
+
+.learning-cards-node__card-footer > :first-child::before {
+  content: var(--learning-card-footer-left, "");
+}
+
+.learning-cards-node__card-footer > :last-child::before {
+  content: var(--learning-card-footer-right, "");
 }
 
 .learning-cards-node__rotated-grid[data-side="front"]

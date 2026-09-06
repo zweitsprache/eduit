@@ -785,6 +785,40 @@ function inlineFooterHtml(value: string) {
     .replace(/^(?:\s*<br\s*\/?>)+/gi, '');
 }
 
+function inlineFooterText(value: string) {
+  const container = document.createElement('div');
+  container.innerHTML = inlineFooterHtml(value);
+  container.querySelectorAll('br').forEach((lineBreak) => {
+    lineBreak.replaceWith('\n');
+  });
+  return (container.textContent ?? '')
+    .split('\n')
+    .map((line) => line.replace(/[\t ]+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n');
+}
+
+function learningCardFooterTexts(
+  brand: Pick<BrandProfile, 'dateFormat' | 'name'> & Partial<
+    Pick<BrandProfile, 'footer1Html' | 'footer2Html'>
+  >,
+  worksheetId?: string | null,
+) {
+  const footer1 = inlineFooterText(brand.footer1Html ?? brand.name);
+  const footer2 = inlineFooterText(brand.footer2Html ?? DOCUMENT_CREATOR);
+  return {
+    left: [footer1, footer2].filter(Boolean).join('\n'),
+    right: `${worksheetId ?? DOCUMENT_ID}\n${formatBrandDate(new Date(), brand.dateFormat)}`,
+  };
+}
+
+function cssContent(value: string) {
+  return `"${value
+    .replaceAll('\\', '\\\\')
+    .replaceAll('"', '\\"')
+    .replaceAll('\n', '\\A ')}"`;
+}
+
 function documentFooter(
   brand: Pick<BrandProfile, 'dateFormat' | 'name'> & Partial<
     Pick<BrandProfile, 'footer1Html' | 'footer2Html'>
@@ -2615,6 +2649,15 @@ export default function EditorPage() {
     editorElement.style.setProperty(
       '--document-brand-logo-scale',
       String(activeBrand.logoScale),
+    );
+    const learningCardFooter = learningCardFooterTexts(activeBrand, worksheetId);
+    editorElement.style.setProperty(
+      '--learning-card-footer-left',
+      cssContent(learningCardFooter.left),
+    );
+    editorElement.style.setProperty(
+      '--learning-card-footer-right',
+      cssContent(learningCardFooter.right),
     );
     editorElement.setAttribute(
       'data-instruction-badge-style',

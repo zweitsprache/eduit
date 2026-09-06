@@ -320,6 +320,15 @@ function LearningCardsGrid({
             data-solution-key={showCardNumbers ? 'true' : 'false'}
             key={item?.id ?? `empty-${index}`}
           >
+            {!back ? (
+              <>
+                <span aria-hidden="true" className="learning-cards-node__card-logo" />
+                <span className="learning-cards-node__card-footer">
+                  <span />
+                  <span />
+                </span>
+              </>
+            ) : null}
             {showCardNumbers && item ? (
               <span className="custom-block__row-index learning-cards-node__solution-badge learning-cards-node__number">{String(globalIndex).padStart(2, '0')}</span>
             ) : null}
