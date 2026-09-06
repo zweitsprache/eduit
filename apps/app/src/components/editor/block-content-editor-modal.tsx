@@ -1866,6 +1866,14 @@ function StandaloneInstructionEditor({
   );
 }
 
+const FONT_SIZE_OPTIONS = [
+  { label: 'Small', value: '13px' },
+  { label: 'Normal', value: '16px' },
+  { label: 'Large', value: '20px' },
+  { label: 'X-Large', value: '24px' },
+  { label: 'XX-Large', value: '32px' },
+];
+
 function RichTextEditor({
   attrs,
   block,
@@ -1876,6 +1884,7 @@ function RichTextEditor({
   editor: Editor;
 }) {
   const inputRef = useRef<HTMLDivElement>(null);
+  const savedRangeRef = useRef<Range | null>(null);
 
   useEffect(() => {
     const input = inputRef.current;
@@ -1887,6 +1896,23 @@ function RichTextEditor({
       input.innerHTML = attrs.html;
     }
   }, [attrs.html]);
+
+  useEffect(() => {
+    // The font-size <select> steals focus/selection on interaction, so keep
+    // track of the last selection made inside the editable area.
+    function handleSelectionChange() {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+      const range = selection.getRangeAt(0);
+      if (inputRef.current?.contains(range.commonAncestorContainer)) {
+        savedRangeRef.current = range.cloneRange();
+      }
+    }
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => (
+      document.removeEventListener('selectionchange', handleSelectionChange)
+    );
+  }, []);
 
   function saveContent() {
     const input = inputRef.current;
@@ -1931,6 +1957,26 @@ function RichTextEditor({
       false,
       event.clipboardData.getData('text/plain'),
     );
+    saveContent();
+  }
+
+  function applyFontSize(size: string) {
+    const input = inputRef.current;
+    const range = savedRangeRef.current;
+    if (!input || !range) return;
+    input.focus();
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    // execCommand only supports legacy size steps 1-7; swap the resulting
+    // <font size="7"> tags for spans with the actual CSS font-size value.
+    document.execCommand('fontSize', false, '7');
+    input.querySelectorAll('font[size="7"]').forEach((legacyFontEl) => {
+      const span = document.createElement('span');
+      span.style.fontSize = size;
+      span.innerHTML = legacyFontEl.innerHTML;
+      legacyFontEl.replaceWith(span);
+    });
     saveContent();
   }
 
@@ -1981,7 +2027,7 @@ function RichTextEditor({
     <>
       <ContentFieldLabel>Text</ContentFieldLabel>
       <div className="mt-2 overflow-hidden rounded-md border border-primary bg-primary focus-within:border-brand focus-within:ring-2 focus-within:ring-brand">
-        <div className="flex flex-wrap gap-1 border-b border-secondary bg-secondary p-2">
+        <div className="flex flex-wrap items-center gap-1 border-b border-secondary bg-secondary p-2">
           {tools.map((tool) => (
             <button
               key={tool.label}
@@ -1995,6 +2041,24 @@ function RichTextEditor({
               {tool.icon}
             </button>
           ))}
+          <select
+            title="Font size"
+            aria-label="Font size"
+            defaultValue=""
+            onChange={(event) => {
+              const { value } = event.target;
+              if (value) applyFontSize(value);
+              event.target.value = '';
+            }}
+            className="h-8 rounded border border-primary bg-primary px-1.5 text-xs text-secondary outline-none hover:bg-primary_hover"
+          >
+            <option value="" disabled>Size</option>
+            {FONT_SIZE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
         <div
           ref={inputRef}
