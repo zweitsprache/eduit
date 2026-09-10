@@ -425,6 +425,13 @@ const SelectablePageBreak = PageBreak.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
+      layoutKey: {
+        default: '',
+        parseHTML: (element) => element.getAttribute('data-page-break-layout-key') ?? '',
+        renderHTML: (attributes) => ({
+          'data-page-break-layout-key': attributes.layoutKey,
+        }),
+      },
       restartPagination: {
         default: false,
         parseHTML: (element) => (
@@ -437,7 +444,7 @@ const SelectablePageBreak = PageBreak.extend({
     };
   },
   addNodeView() {
-    return ({ editor, getPos }) => {
+    return ({ editor, getPos, node }) => {
       const dom = document.createElement('div');
       dom.setAttribute('data-type', 'pageBreak');
       dom.classList.add('tiptap-page-break-node');
@@ -452,8 +459,14 @@ const SelectablePageBreak = PageBreak.extend({
       // the height to 0, which silently turned every manual page break into
       // a non-functional dashed divider.
       let lastHeight = 0;
+      let active = true;
       const updatePageBreakSpacer = () => {
         if (getPos() === undefined) return;
+        if (!active) {
+          lastHeight = 0;
+          dom.style.height = '0px';
+          return;
+        }
         const editorDom = editor.view.dom;
         if (!(editorDom instanceof HTMLElement)) return;
         const paginationContainer = editorDom.querySelector('[data-tiptap-pagination]');
@@ -484,14 +497,46 @@ const SelectablePageBreak = PageBreak.extend({
         pagesStorage.onAfterPageLayoutCallbacks.set(dom, updatePageBreakSpacer);
       }
 
+      const updateLayout = (event: Event) => {
+        const activeKeys = (event as CustomEvent<string[] | null>).detail;
+        active = activeKeys === null || activeKeys.includes(node.attrs.layoutKey);
+        dom.dataset.layoutActive = String(active);
+        updatePageBreakSpacer();
+      };
+      let editorDom: HTMLElement | null = null;
+      let destroyed = false;
+      const bindLayoutListener = () => {
+        if (destroyed) return;
+        try {
+          editorDom = editor.view.dom;
+          editorDom.addEventListener('worksheet-page-break-layout-change', updateLayout);
+        } catch {
+          requestAnimationFrame(bindLayoutListener);
+        }
+      };
+      requestAnimationFrame(bindLayoutListener);
+
       return {
         dom,
         destroy() {
+          destroyed = true;
+          editorDom?.removeEventListener('worksheet-page-break-layout-change', updateLayout);
           if (pagesStorage && typeof pagesStorage === 'object' && pagesStorage.onAfterPageLayoutCallbacks instanceof Map) {
             pagesStorage.onAfterPageLayoutCallbacks.delete(dom);
           }
         },
       };
+    };
+  },
+  addCommands() {
+    return {
+      ...this.parent?.(),
+      insertPageBreak: () => ({ commands }) => commands.insertContent({
+        type: this.name,
+        attrs: {
+          layoutKey: globalThis.crypto.randomUUID(),
+        },
+      }),
     };
   },
 });
@@ -2905,6 +2950,55 @@ export default function EditorPage() {
 
   useEffect(() => {
     if (!editor) return;
+    editor.view.dom.dataset.viewLanguage = viewLanguage;
+    editor.view.dom.dispatchEvent(new CustomEvent('worksheet-view-language-change', {
+      detail: viewLanguage,
+    }));
+  }, [editor, viewLanguage]);
+
+  useEffect(() => {
+    if (!editor) return;
+    const ensurePageBreakLayoutKeys = () => {
+      const missingPositions: number[] = [];
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === 'pageBreak' && !node.attrs.layoutKey) {
+          missingPositions.push(pos);
+        }
+      });
+      if (!missingPositions.length) return;
+      editor.chain().command(({ tr }) => {
+        missingPositions.forEach((pos) => {
+          tr.setNodeAttribute(pos, 'layoutKey', globalThis.crypto.randomUUID());
+        });
+        return true;
+      }).run();
+    };
+    ensurePageBreakLayoutKeys();
+    editor.on('update', ensurePageBreakLayoutKeys);
+    return () => {
+      editor.off('update', ensurePageBreakLayoutKeys);
+    };
+  }, [editor]);
+
+  useEffect(() => {
+    if (!editor) return;
+    const sourceKeys = documentContext.sourcePageBreakKeys;
+    const layout = viewLanguage === ORIGINAL_VIEW_LANGUAGE
+      ? { mode: 'source' as const, pageBreakKeys: sourceKeys }
+      : documentContext.translationLayouts[viewLanguage]
+        ?? { mode: 'reflow' as const, pageBreakKeys: [] };
+    const activeKeys = layout.mode === 'reflow'
+      ? []
+      : layout.mode === 'source'
+        ? (sourceKeys.length ? sourceKeys : null)
+        : layout.pageBreakKeys;
+    editor.view.dom.dispatchEvent(new CustomEvent('worksheet-page-break-layout-change', {
+      detail: activeKeys,
+    }));
+  }, [documentContext.sourcePageBreakKeys, documentContext.translationLayouts, editor, viewLanguage]);
+
+  useEffect(() => {
+    if (!editor) return;
     editor.view.dom.setAttribute(
       'data-show-solutions',
       String(showSolutions),
@@ -3411,6 +3505,11 @@ export default function EditorPage() {
       const updatesByPosition = new Map(
         (result?.updates ?? []).map((update) => [update.position, update.terms]),
       );
+      const translationCount = Array.from(updatesByPosition.values())
+        .reduce((count, terms) => count + terms.length, 0);
+      if (translationCount === 0) {
+        throw new Error('Keine Glossar-Definitionen wurden übersetzt. Bitte erneut versuchen.');
+      }
       if (updatesByPosition.size > 0) {
         editor
           .chain()

@@ -38,7 +38,8 @@ const requestSchema = z.object({
 
 const resultSchema = z.object({
   translations: z.array(z.object({
-    key: z.string().trim().min(1).max(200),
+    position: z.number().int().min(0).max(5_000_000),
+    id: z.string().trim().min(1).max(100),
     definition: z.string().max(2_000),
   })),
 });
@@ -81,6 +82,9 @@ export async function POST(request: Request) {
       return Response.json({ updates: [] });
     }
 
+    const submittedEntries = new Set(
+      glossaryEntries.map((entry) => `${entry.position}::${entry.id}`),
+    );
     const updateMap = new Map<string, Record<string, string>>();
 
     for (const language of languageSet) {
@@ -92,7 +96,8 @@ export async function POST(request: Request) {
       if (translatableEntries.length === 0) continue;
 
       const payloadEntries = translatableEntries.map((entry) => ({
-        key: `${entry.position}::${entry.id}`,
+        position: entry.position,
+        id: entry.id,
         definition: entry.definition,
       }));
 
@@ -113,7 +118,7 @@ ${languageProficiencyInstruction(context?.languageLevel ?? '')}
 Rules:
 - Only translate the definition text. Do not add notes, quotes, or explanations.
 - Keep the translation concise and appropriate for the learner level.
-- Return the exact same key for every definition you translate.
+- Return the exact same position and id for every definition you translate.
 ${localeSpellingInstruction(language)}
 
 Definitions to translate (JSON):
@@ -123,9 +128,11 @@ ${JSON.stringify(chunk)}`,
         for (const translated of output.translations) {
           const normalized = normalizeLocaleSpelling(translated.definition, language).trim();
           if (!normalized) continue;
-          const previous = updateMap.get(translated.key) ?? {};
+          const key = `${translated.position}::${translated.id}`;
+          if (!submittedEntries.has(key)) continue;
+          const previous = updateMap.get(key) ?? {};
           previous[language] = normalized;
-          updateMap.set(translated.key, previous);
+          updateMap.set(key, previous);
         }
       }
     }

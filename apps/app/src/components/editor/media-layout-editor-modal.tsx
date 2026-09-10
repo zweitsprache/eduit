@@ -296,6 +296,12 @@ export function MediaLayoutEditorModal({
                       label: String(value),
                     }))}
                   />
+                  <Toggle
+                    className="mt-4"
+                    isSelected={attrs.maximize}
+                    onChange={(value) => set({ maximize: value })}
+                    label="Maximize images"
+                  />
                 </>
               )}
 

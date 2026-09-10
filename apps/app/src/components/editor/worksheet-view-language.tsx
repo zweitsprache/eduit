@@ -44,12 +44,15 @@ export const TRANSLATION_LANGUAGE_OPTIONS: [string, string][] = [
   ['he', 'Hebräisch'],
   ['ur', 'Urdu'],
   ['hi', 'Hindi'],
+  ['bn', 'Bengalisch (Bangla)'],
   ['ta', 'Tamilisch'],
   ['zh', 'Chinesisch'],
   ['vi', 'Vietnamesisch'],
   ['th', 'Thailändisch'],
   ['ja', 'Japanisch'],
   ['ko', 'Koreanisch'],
+  ['id', 'Bahasa Indonesia'],
+  ['tl', 'Tagalog (Filipino)'],
 ];
 
 export function translationLanguageLabel(code: string) {

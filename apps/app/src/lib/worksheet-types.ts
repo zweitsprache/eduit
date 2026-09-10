@@ -11,6 +11,13 @@ export const WORKSHEET_DOCUMENT_SIZES = [
 export type WorksheetStatus = typeof WORKSHEET_STATUSES[number];
 export type WorksheetDocumentSize = typeof WORKSHEET_DOCUMENT_SIZES[number];
 
+export type TranslationLayoutMode = 'source' | 'reflow' | 'custom';
+
+export type TranslationLayout = {
+  mode: TranslationLayoutMode;
+  pageBreakKeys: string[];
+};
+
 export type WorksheetContext = {
   worksheetLanguage: 'en' | 'de-formal' | 'de-informal';
   worksheetType:
@@ -35,6 +42,10 @@ export type WorksheetContext = {
   contentLanguage: string;
   // Document-level list of translation target language codes (e.g. ['fr', 'en']).
   translationLanguages: string[];
+  // Manual page-break layouts keyed by translation language code.
+  translationLayouts: Record<string, TranslationLayout>;
+  // Page breaks that belong to the source-language layout.
+  sourcePageBreakKeys: string[];
   country: string;
   localLevel: string;
   curriculum: string;
@@ -62,6 +73,8 @@ export const EMPTY_WORKSHEET_CONTEXT: WorksheetContext = {
   ageMax: null,
   contentLanguage: 'de-CH',
   translationLanguages: [],
+  translationLayouts: {},
+  sourcePageBreakKeys: [],
   country: '',
   localLevel: '',
   curriculum: '',

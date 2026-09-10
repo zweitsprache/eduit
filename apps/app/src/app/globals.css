@@ -127,8 +127,12 @@
   transform: translateY(var(--document-page-footer-text-offset, 2.5mm));
 }
 
-.editor-app[data-doc-size="a4-landscape"] .tiptap-page-footer p {
-  transform: translateY(calc(var(--document-page-footer-text-offset, 2.5mm) - 2.5mm));
+/* PDF export clones only .tiptap, so the doc-size selector must match both hosts. */
+:is(
+  .editor-app[data-doc-size="a4-landscape"] .tiptap,
+  .tiptap[data-doc-size="a4-landscape"]
+) .tiptap-page-footer p {
+  transform: translateY(calc(var(--document-page-footer-text-offset, 2.5mm) - 4mm));
 }
 
 .tiptap-page-footer p:nth-child(2) {
@@ -233,6 +237,14 @@
   font-weight: 600;
   line-height: 1.5rem;
   transform: translate(-50%, -50%);
+}
+
+.editor-content .tiptap-page-break-node--pages-mode[data-layout-active="false"] {
+  border-top-color: transparent;
+}
+
+.editor-content .tiptap-page-break-node--pages-mode[data-layout-active="false"]::before {
+  display: none;
 }
 
 /* Learning-card grids extend 12.5 mm below their pagination measurement box

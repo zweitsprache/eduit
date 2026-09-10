@@ -450,6 +450,43 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
           .filter(Boolean)
           .slice(0, 20)
         : EMPTY_WORKSHEET_CONTEXT.translationLanguages,
+      translationLayouts: context.translationLayouts
+        && typeof context.translationLayouts === 'object'
+        && !Array.isArray(context.translationLayouts)
+        ? Object.fromEntries(
+          Object.entries(context.translationLayouts)
+            .filter(([language, layout]) => (
+              language.trim().length > 0
+              && language.length <= 20
+              && layout
+              && typeof layout === 'object'
+              && !Array.isArray(layout)
+            ))
+            .slice(0, 20)
+            .map(([language, layout]) => {
+              const value = layout as Record<string, unknown>;
+              return [language, {
+                mode: value.mode === 'source' || value.mode === 'custom'
+                  ? value.mode
+                  : 'reflow',
+                pageBreakKeys: Array.isArray(value.pageBreakKeys)
+                  ? value.pageBreakKeys
+                    .filter((key): key is string => typeof key === 'string')
+                    .map((key) => key.trim().slice(0, 100))
+                    .filter(Boolean)
+                    .slice(0, 500)
+                  : [],
+              }];
+            }),
+        )
+        : EMPTY_WORKSHEET_CONTEXT.translationLayouts,
+      sourcePageBreakKeys: Array.isArray(context.sourcePageBreakKeys)
+        ? context.sourcePageBreakKeys
+          .filter((key): key is string => typeof key === 'string')
+          .map((key) => key.trim().slice(0, 100))
+          .filter(Boolean)
+          .slice(0, 500)
+        : EMPTY_WORKSHEET_CONTEXT.sourcePageBreakKeys,
       country: text('country', 100),
       localLevel: text('localLevel', 150),
       curriculum: text('curriculum', 250),

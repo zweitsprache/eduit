@@ -2,7 +2,7 @@
 
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
-import type { CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import {
   BlockInstruction,
   CustomBlockRoot,
@@ -12,7 +12,6 @@ import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/in
 import {
   ORIGINAL_VIEW_LANGUAGE,
   resolveTranslatedText,
-  useWorksheetViewLanguage,
 } from '@/components/editor/worksheet-view-language';
 
 export const GLOSSARY_COLUMN_WIDTHS = [10, 15, 20, 25, 33, 50, 66] as const;
@@ -207,10 +206,23 @@ function startsWithRtlScript(value: string) {
   return /^[\u0590-\u05FF\u0600-\u08FF\uFB1D-\uFDFD\uFE70-\uFEFC]/.test(text);
 }
 
-function GlossaryTermsNodeView({ node, selected }: NodeViewProps) {
+function GlossaryTermsNodeView({ editor, node, selected }: NodeViewProps) {
   const attrs = node.attrs as GlossaryTermsAttrs;
   const { terms } = attrs;
-  const viewLanguage = useWorksheetViewLanguage();
+  const [viewLanguage, setViewLanguage] = useState(
+    () => editor.view.dom.dataset.viewLanguage ?? ORIGINAL_VIEW_LANGUAGE,
+  );
+
+  useEffect(() => {
+    const handleViewLanguageChange = (event: Event) => {
+      const language = (event as CustomEvent<string>).detail;
+      setViewLanguage(language || ORIGINAL_VIEW_LANGUAGE);
+    };
+    editor.view.dom.addEventListener('worksheet-view-language-change', handleViewLanguageChange);
+    return () => {
+      editor.view.dom.removeEventListener('worksheet-view-language-change', handleViewLanguageChange);
+    };
+  }, [editor]);
   const headers = glossaryHeaders(attrs);
   const {
     hasAdditionalColumn,

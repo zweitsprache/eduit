@@ -1085,6 +1085,81 @@
   margin-block: 0 !important;
 }
 
+:is(
+  .editor-app[data-doc-size="a5-landscape"] .tiptap,
+  .tiptap[data-doc-size="a5-landscape"],
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+)
+  .media-layout-node__layout[data-layout="grid"][data-maximize="true"]
+  > .media-layout-node__media {
+  height: calc(var(--page-max-height) + 12px);
+}
+
+:is(
+  .editor-app[data-doc-size="a5-landscape"] .tiptap,
+  .tiptap[data-doc-size="a5-landscape"],
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+)
+  .media-layout-node__layout[data-layout="grid"][data-maximize="true"]
+  .media-layout-node__item,
+:is(
+  .editor-app[data-doc-size="a5-landscape"] .tiptap,
+  .tiptap[data-doc-size="a5-landscape"],
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+)
+  .media-layout-node__layout[data-layout="grid"][data-maximize="true"]
+  .media-layout-node__item > a {
+  min-height: 0;
+  height: 100%;
+}
+
+:is(
+  .editor-app[data-doc-size="a5-landscape"] .tiptap,
+  .tiptap[data-doc-size="a5-landscape"],
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+)
+  .media-layout-node__layout[data-layout="grid"][data-maximize="true"]
+  .media-layout-node__item {
+  display: flex;
+  flex-direction: column;
+}
+
+:is(
+  .editor-app[data-doc-size="a5-landscape"] .tiptap,
+  .tiptap[data-doc-size="a5-landscape"],
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+)
+  .media-layout-node__layout[data-layout="grid"][data-maximize="true"]
+  .media-layout-node__item > a,
+:is(
+  .editor-app[data-doc-size="a5-landscape"] .tiptap,
+  .tiptap[data-doc-size="a5-landscape"],
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+)
+  .media-layout-node__layout[data-layout="grid"][data-maximize="true"]
+  .media-layout-node__item > .media-layout-node__image {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+:is(
+  .editor-app[data-doc-size="a5-landscape"] .tiptap,
+  .tiptap[data-doc-size="a5-landscape"],
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+)
+  .media-layout-node__layout[data-layout="grid"][data-maximize="true"]
+  .media-layout-node__image {
+  height: 100%;
+  aspect-ratio: auto;
+}
+
 .media-layout-node__layout[data-fit="contain"] .media-layout-node__image {
   object-fit: contain;
   background: var(--color-bg-secondary);

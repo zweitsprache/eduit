@@ -33,6 +33,7 @@ export type MediaLayoutAttrs = {
   aspectRatio: MediaLayoutRatio;
   fit: 'cover' | 'contain';
   radius: MediaLayoutRadius;
+  maximize: boolean;
   showCaptions: boolean;
   text: string;
   textVertical: 'start' | 'center' | 'end';
@@ -58,6 +59,7 @@ export const DEFAULT_MEDIA_LAYOUT_ATTRS: MediaLayoutAttrs = {
   aspectRatio: 'wide',
   fit: 'cover',
   radius: 'small',
+  maximize: false,
   showCaptions: true,
   text: '',
   textVertical: 'start',
@@ -109,6 +111,8 @@ function textToHtml(value: string) {
 
 export function MediaLayoutContent({ attrs }: { attrs: MediaLayoutAttrs }) {
   const imageWidth = Math.min(99, Math.max(1, Number(attrs.imageWidth) || 50));
+  const maximizedGrid = attrs.layout === 'grid' && attrs.maximize;
+  const gridRows = Math.ceil(attrs.items.length / attrs.columns);
   const imageOnly = attrs.layout === 'full'
     && !attrs.text
     && attrs.items.length === 1
@@ -122,7 +126,13 @@ export function MediaLayoutContent({ attrs }: { attrs: MediaLayoutAttrs }) {
       ? { gridTemplateColumns: `minmax(0, 1fr) ${imageWidth}%` }
       : undefined;
   const media = (
-    <div className="media-layout-node__media" data-columns={attrs.columns}>
+    <div
+      className="media-layout-node__media"
+      data-columns={attrs.columns}
+      style={maximizedGrid
+        ? { gridTemplateRows: `repeat(${gridRows}, minmax(0, 1fr))` }
+        : undefined}
+    >
       {attrs.items.map((item) => {
         const href = safeLink(item.href);
         const image = item.src.trim() ? (
@@ -168,6 +178,7 @@ export function MediaLayoutContent({ attrs }: { attrs: MediaLayoutAttrs }) {
       data-gap={attrs.gap}
       data-image-only={imageOnly}
       data-layout={attrs.layout}
+      data-maximize={maximizedGrid}
       data-radius={attrs.radius}
       data-text-vertical={attrs.textVertical}
       style={splitStyle}
@@ -267,6 +278,13 @@ export const MediaLayout = Node.create({
         default: 'small',
         parseHTML: (element) => element.getAttribute('data-media-radius') ?? 'small',
         renderHTML: (attributes) => ({ 'data-media-radius': attributes.radius }),
+      },
+      maximize: {
+        default: false,
+        parseHTML: (element) => element.getAttribute('data-media-maximize') === 'true',
+        renderHTML: (attributes) => ({
+          'data-media-maximize': String(attributes.maximize),
+        }),
       },
       showCaptions: {
         default: true,
