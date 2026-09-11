@@ -6,6 +6,7 @@ import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from '@tip
 export type WritingLinesAttrs = {
   lineCount: number;
   lineHeight: number;
+  showLineNumbers: boolean;
 };
 
 export const DEFAULT_WRITING_LINES_COUNT = 4;
@@ -38,6 +39,7 @@ function WritingLinesNodeView({ editor, getPos, node, selected }: NodeViewProps)
   const attrs = node.attrs as WritingLinesAttrs;
   const lineCount = parseLineCount(attrs.lineCount);
   const lineHeight = parseLineHeight(attrs.lineHeight);
+  const showLineNumbers = attrs.showLineNumbers === true;
 
   return (
     <NodeViewWrapper
@@ -49,11 +51,17 @@ function WritingLinesNodeView({ editor, getPos, node, selected }: NodeViewProps)
       }}
     >
       {Array.from({ length: lineCount }, (_, index) => (
-        <div
-          className="writing-lines-node__line"
-          key={index}
-          style={{ height: `${lineHeight}px` }}
-        />
+        <div className="writing-lines-node__row" key={index}>
+          {showLineNumbers && (
+            <span className="custom-block__row-index" aria-hidden="true">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+          )}
+          <div
+            className="writing-lines-node__line"
+            style={{ height: `${lineHeight}px` }}
+          />
+        </div>
       ))}
     </NodeViewWrapper>
   );
@@ -94,6 +102,17 @@ export const WritingLines = Node.create({
           'data-writing-lines-height': parseLineHeight(attributes.lineHeight),
         }),
       },
+      showLineNumbers: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-writing-lines-show-line-numbers') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-writing-lines-show-line-numbers': String(
+            attributes.showLineNumbers,
+          ),
+        }),
+      },
     };
   },
 
@@ -126,6 +145,7 @@ export const WritingLines = Node.create({
               lineHeight: parseLineHeight(
                 attrs.lineHeight ?? DEFAULT_WRITING_LINE_HEIGHT,
               ),
+              showLineNumbers: attrs.showLineNumbers ?? false,
             },
           }),
     };

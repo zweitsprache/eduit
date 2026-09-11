@@ -37,8 +37,12 @@ function safeFilename(value: string) {
 export async function GET(request: Request) {
   const user = await getCurrentAppUser();
   if (!user) return errorResponse('Unauthorized.', 401);
-  const query = new URL(request.url).searchParams.get('q') ?? '';
-  return NextResponse.json({ media: await listUserMedia(user.id, query) });
+  const params = new URL(request.url).searchParams;
+  const query = params.get('q') ?? '';
+  const offset = Number(params.get('offset') ?? 0);
+  return NextResponse.json({
+    ...(await listUserMedia(user.id, query, Number.isFinite(offset) ? offset : 0)),
+  });
 }
 
 export async function POST(request: Request) {

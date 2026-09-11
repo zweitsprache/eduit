@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 import { CustomBlockRoot } from '@/components/editor/custom-blocks/primitives';
@@ -13,6 +14,9 @@ export type MediaLayoutColumns = 1 | 2 | 3 | 4;
 export type MediaLayoutRatio = 'auto' | 'square' | 'four-three' | 'three-two' | 'wide';
 export type MediaLayoutGap = 'none' | 'small' | 'medium' | 'large';
 export type MediaLayoutRadius = 'none' | 'small' | 'medium' | 'large';
+export type MediaLayoutBorder = 'none' | 'light' | 'medium';
+export type MediaLayoutCaptionSize = 'small' | 'medium' | 'large';
+export type MediaLayoutCaptionStyle = 'normal' | 'italic' | 'bold';
 
 export type MediaLayoutItem = {
   id: string;
@@ -33,8 +37,11 @@ export type MediaLayoutAttrs = {
   aspectRatio: MediaLayoutRatio;
   fit: 'cover' | 'contain';
   radius: MediaLayoutRadius;
+  border: MediaLayoutBorder;
   maximize: boolean;
   showCaptions: boolean;
+  captionSize: MediaLayoutCaptionSize;
+  captionStyle: MediaLayoutCaptionStyle;
   text: string;
   textVertical: 'start' | 'center' | 'end';
   items: MediaLayoutItem[];
@@ -59,8 +66,11 @@ export const DEFAULT_MEDIA_LAYOUT_ATTRS: MediaLayoutAttrs = {
   aspectRatio: 'wide',
   fit: 'cover',
   radius: 'small',
+  border: 'none',
   maximize: false,
   showCaptions: true,
+  captionSize: 'small',
+  captionStyle: 'normal',
   text: '',
   textVertical: 'start',
   items: [DEFAULT_ITEM],
@@ -100,16 +110,28 @@ function safeLink(value: string) {
   return /^(?:https?:|mailto:|tel:)/i.test(normalized) ? normalized : '';
 }
 
+function editorImageSrc(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('/api/media/') || trimmed.includes('?')) return trimmed;
+  return `${trimmed}?preview=1`;
+}
+
 function textToHtml(value: string) {
-  if (/<(?:p|div|br|strong|b|em|i|ul|ol|li|a)\b/i.test(value)) return value;
-  return value
+  const normalized = value
+    .replace(/\sdir\s*=\s*["'][^"']*["']/gi, ' dir="ltr"')
+    .replace(/direction\s*:\s*(?:ltr|rtl|inherit|initial|unset)\s*;?/gi, 'direction: ltr;')
+    .replace(/unicode-bidi\s*:\s*[^;"']+\s*;?/gi, '');
+  if (/<(?:p|div|br|strong|b|em|i|ul|ol|li|a|font|span)\b/i.test(normalized)) return normalized;
+  return normalized
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
     .replaceAll('\n', '<br>');
 }
 
-export function MediaLayoutContent({ attrs }: { attrs: MediaLayoutAttrs }) {
+export const MediaLayoutContent = memo(function MediaLayoutContent({
+  attrs,
+}: { attrs: MediaLayoutAttrs }) {
   const imageWidth = Math.min(99, Math.max(1, Number(attrs.imageWidth) || 50));
   const maximizedGrid = attrs.layout === 'grid' && attrs.maximize;
   const gridRows = Math.ceil(attrs.items.length / attrs.columns);
@@ -139,7 +161,9 @@ export function MediaLayoutContent({ attrs }: { attrs: MediaLayoutAttrs }) {
           <img
             alt={item.alt}
             className="media-layout-node__image"
-            src={item.src}
+            decoding="async"
+            loading="lazy"
+            src={editorImageSrc(item.src)}
             style={{ objectPosition: `${item.focalX}% ${item.focalY}%` }}
           />
         ) : null;
@@ -152,7 +176,12 @@ export function MediaLayoutContent({ attrs }: { attrs: MediaLayoutAttrs }) {
             ) : image}
             {attrs.showCaptions && (item.caption || item.credit) && (
               <figcaption className="media-layout-node__caption">
-                {item.caption && <span>{item.caption}</span>}
+                {item.caption && (
+                  <div
+                    className="media-layout-node__caption-content"
+                    dangerouslySetInnerHTML={{ __html: textToHtml(item.caption) }}
+                  />
+                )}
                 {item.credit && (
                   <span className="media-layout-node__credit">{item.credit}</span>
                 )}
@@ -179,6 +208,9 @@ export function MediaLayoutContent({ attrs }: { attrs: MediaLayoutAttrs }) {
       data-image-only={imageOnly}
       data-layout={attrs.layout}
       data-maximize={maximizedGrid}
+      data-border={attrs.border}
+      data-caption-size={attrs.captionSize}
+      data-caption-style={attrs.captionStyle}
       data-radius={attrs.radius}
       data-text-vertical={attrs.textVertical}
       style={splitStyle}
@@ -186,7 +218,7 @@ export function MediaLayoutContent({ attrs }: { attrs: MediaLayoutAttrs }) {
       {attrs.layout === 'image-right' ? <>{text}{media}</> : <>{media}{text}</>}
     </div>
   );
-}
+});
 
 function MediaLayoutNodeView({ node, selected }: NodeViewProps) {
   return (
@@ -279,6 +311,11 @@ export const MediaLayout = Node.create({
         parseHTML: (element) => element.getAttribute('data-media-radius') ?? 'small',
         renderHTML: (attributes) => ({ 'data-media-radius': attributes.radius }),
       },
+      border: {
+        default: 'none',
+        parseHTML: (element) => element.getAttribute('data-media-border') ?? 'none',
+        renderHTML: (attributes) => ({ 'data-media-border': attributes.border }),
+      },
       maximize: {
         default: false,
         parseHTML: (element) => element.getAttribute('data-media-maximize') === 'true',
@@ -291,6 +328,20 @@ export const MediaLayout = Node.create({
         parseHTML: (element) => element.getAttribute('data-media-captions') !== 'false',
         renderHTML: (attributes) => ({
           'data-media-captions': String(attributes.showCaptions),
+        }),
+      },
+      captionSize: {
+        default: 'small',
+        parseHTML: (element) => element.getAttribute('data-media-caption-size') ?? 'small',
+        renderHTML: (attributes) => ({
+          'data-media-caption-size': attributes.captionSize,
+        }),
+      },
+      captionStyle: {
+        default: 'normal',
+        parseHTML: (element) => element.getAttribute('data-media-caption-style') ?? 'normal',
+        renderHTML: (attributes) => ({
+          'data-media-caption-style': attributes.captionStyle,
         }),
       },
       text: encoded('text'),

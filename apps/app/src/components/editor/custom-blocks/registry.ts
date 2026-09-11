@@ -97,6 +97,15 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
     insert: (editor) => editor.chain().focus().insertWritingLines().run(),
   },
   {
+    type: 'dictationLines',
+    label: 'Dictation lines',
+    description: 'Numbered ruled lines with answers shown only in the solution key.',
+    category: 'Content',
+    keywords: ['dictation', 'lines', 'listening', 'spelling', 'solution', 'answers'],
+    Icon: Rows01,
+    insert: (editor) => editor.chain().focus().insertDictationLines().run(),
+  },
+  {
     type: 'alpharamaTerm',
     label: 'Alpharama Term',
     description: 'A picture-based literacy exercise with two handwriting line blocks.',

@@ -22,6 +22,7 @@ import type { ArticlePluralCardsAttrs } from '@/components/editor/article-plural
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
 import type { SpacerAttrs } from '@/components/editor/spacer-node';
 import type { WritingLinesAttrs } from '@/components/editor/writing-lines-node';
+import type { DictationLinesAttrs } from '@/components/editor/dictation-lines-node';
 import type { AlpharamaTermAttrs } from '@/components/editor/alpharama-term-node';
 import type { LetterCloudAttrs } from '@/components/editor/letter-cloud-node';
 import type { AnagramNodeAttrs } from '@/components/editor/anagram-node';
@@ -101,6 +102,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'pageBreak',
   'spacer',
   'writingLines',
+  'dictationLines',
   'alpharamaTerm',
   'letterCloud',
   'anagramNode',
@@ -240,8 +242,31 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
       return { type: 'spacer', height };
     }
     case 'writingLines': {
-      const { lineCount, lineHeight } = attrs as WritingLinesAttrs;
-      return { type: 'writingLines', lineCount, lineHeight };
+      const { lineCount, lineHeight, showLineNumbers } = attrs as WritingLinesAttrs;
+      return { type: 'writingLines', lineCount, lineHeight, showLineNumbers };
+    }
+    case 'dictationLines': {
+      const {
+        items,
+        variant,
+        twoColumns,
+        linesPerItem,
+        lineHeight,
+        showLineNumbers,
+        audioTracks,
+        audioPlaylistUrl,
+      } = attrs as DictationLinesAttrs;
+      return {
+        type: 'dictationLines',
+        items,
+        variant,
+        twoColumns,
+        linesPerItem,
+        lineHeight,
+        showLineNumbers,
+        audioTracks,
+        audioPlaylistUrl,
+      };
     }
     case 'alpharamaTerm': {
       const { items, pageBreakBetweenItems } = attrs as AlpharamaTermAttrs;

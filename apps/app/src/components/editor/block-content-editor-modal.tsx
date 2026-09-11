@@ -200,6 +200,18 @@ import {
   type WritingLinesAttrs,
 } from '@/components/editor/writing-lines-node';
 import {
+  MAX_DICTATION_LINE_HEIGHT,
+  MAX_DICTATION_LINES_PER_ITEM,
+  MAX_DICTATION_LINES_COUNT,
+  MIN_DICTATION_LINES_PER_ITEM,
+  MIN_DICTATION_LINE_HEIGHT,
+  MIN_DICTATION_LINES_COUNT,
+  DEFAULT_DICTATION_LINES_PER_ITEM,
+    type DictationLinesVariant,
+  type DictationLineItem,
+  type DictationLinesAttrs,
+} from '@/components/editor/dictation-lines-node';
+import {
   DEFAULT_STANDALONE_INSTRUCTION,
   type InstructionBlockAttrs,
 } from '@/components/editor/instruction-node';
@@ -306,6 +318,7 @@ export type ContentEditorBlock = {
     | 'lesetraining'
     | 'spacer'
     | 'writingLines'
+    | 'dictationLines'
     | 'alpharamaTerm'
     | 'instructionBlock'
     | 'letterNode'
@@ -351,6 +364,7 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   lesetraining: 'Lesetraining content',
   spacer: 'Spacer',
   writingLines: 'Writing lines',
+  dictationLines: 'Dictation lines',
   alpharamaTerm: 'Alpharama Term content',
   instructionBlock: 'Instruction content',
   letterNode: 'Letter Node content',
@@ -2201,6 +2215,149 @@ function WritingLinesEditor({
         max={MAX_WRITING_LINE_HEIGHT}
         onCommit={(lineHeight) => updateAttrs(editor, block, { lineHeight })}
       />
+      <label className="flex items-center gap-2 text-sm text-secondary">
+        <input
+          type="checkbox"
+          checked={attrs.showLineNumbers}
+          onChange={(event) => updateAttrs(editor, block, {
+            showLineNumbers: event.target.checked,
+          })}
+          className="h-4 w-4 rounded border-primary accent-brand"
+        />
+        <span>Show line number badges</span>
+      </label>
+    </div>
+  );
+}
+
+function DictationLinesEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: DictationLinesAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const items = attrs.items?.length
+    ? attrs.items
+    : [{ id: 'dictation-line-1', text: '' }];
+  const updateItems = (nextItems: DictationLineItem[]) => {
+    const previousItems = new Map((attrs.items ?? []).map((item) => [item.id, item.text]));
+    const audioTracks = (attrs.audioTracks ?? []).filter((track) => (
+      nextItems.some((item) => item.id === track.itemId && item.text === previousItems.get(item.id))
+    ));
+    updateAttrs(editor, block, { items: nextItems, audioTracks });
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <label className="text-xs font-semibold text-tertiary">
+        Layout
+        <select
+          value={attrs.variant ?? 'itemized'}
+          onChange={(event) => updateAttrs(editor, block, {
+            variant: event.target.value as DictationLinesVariant,
+          })}
+          className="mt-1 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm font-normal text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+        >
+          <option value="itemized">Item-based</option>
+          <option value="ongoingText">Ongoing text</option>
+        </select>
+      </label>
+      <ClampedNumberField
+        label="Lines per item"
+        value={attrs.linesPerItem ?? DEFAULT_DICTATION_LINES_PER_ITEM}
+        min={MIN_DICTATION_LINES_PER_ITEM}
+        max={MAX_DICTATION_LINES_PER_ITEM}
+        onCommit={(linesPerItem) => updateAttrs(editor, block, { linesPerItem })}
+      />
+      <ClampedNumberField
+        label="Line height (px)"
+        value={attrs.lineHeight}
+        min={MIN_DICTATION_LINE_HEIGHT}
+        max={MAX_DICTATION_LINE_HEIGHT}
+        onCommit={(lineHeight) => updateAttrs(editor, block, { lineHeight })}
+      />
+      <label className="flex items-center gap-2 text-sm text-secondary">
+        <input
+          type="checkbox"
+          checked={attrs.showLineNumbers}
+          onChange={(event) => updateAttrs(editor, block, {
+            showLineNumbers: event.target.checked,
+          })}
+          className="h-4 w-4 rounded border-primary accent-brand"
+        />
+        <span>Show line number badges</span>
+      </label>
+      <label className="flex items-center gap-2 text-sm text-secondary">
+        <input
+          type="checkbox"
+          checked={attrs.twoColumns}
+          disabled={attrs.variant === 'ongoingText'}
+          onChange={(event) => updateAttrs(editor, block, {
+            twoColumns: event.target.checked,
+          })}
+          className="h-4 w-4 rounded border-primary accent-brand"
+        />
+        <span>Display items in two columns</span>
+      </label>
+      <div className="flex flex-col gap-2">
+        <div className="text-xs font-semibold text-tertiary">Dictation answers</div>
+        {items.map((item, index) => (
+          <div className="flex items-center gap-2" key={item.id}>
+            <span className="w-7 shrink-0 text-center text-xs font-semibold text-tertiary">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            {attrs.variant === 'ongoingText' ? (
+              <textarea
+                rows={3}
+                value={item.text}
+                placeholder={`Text ${index + 1}`}
+                onChange={(event) => updateItems(items.map((currentItem) => (
+                  currentItem.id === item.id
+                    ? { ...currentItem, text: event.target.value }
+                    : currentItem
+                )))}
+                className="min-w-0 flex-1 resize-y rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm leading-6 text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+            ) : (
+              <input
+                type="text"
+                value={item.text}
+                placeholder={`Answer ${index + 1}`}
+                onChange={(event) => updateItems(items.map((currentItem) => (
+                  currentItem.id === item.id
+                    ? { ...currentItem, text: event.target.value }
+                    : currentItem
+                )))}
+                className="min-w-0 flex-1 rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+            )}
+            <ItemActions
+              canDelete={items.length > MIN_DICTATION_LINES_COUNT}
+              canMoveUp={index > 0}
+              canMoveDown={index < items.length - 1}
+              label={`answer ${index + 1}`}
+              onDelete={() => updateItems(items.filter((currentItem) => currentItem.id !== item.id))}
+              onMoveUp={() => updateItems(moveItem(items, index, -1))}
+              onMoveDown={() => updateItems(moveItem(items, index, 1))}
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          disabled={items.length >= MAX_DICTATION_LINES_COUNT}
+          onClick={() => updateItems([
+            ...items,
+            { id: `dictation-line-${Date.now()}`, text: '' },
+          ])}
+          className="flex items-center gap-2 self-start rounded-md px-2 py-1.5 text-sm font-semibold text-brand hover:bg-primary_hover disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <PlusSquare className="size-4" />
+          <span>Add line</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -6426,19 +6583,30 @@ function WordBankEditor({
   block: ContentEditorBlock;
   editor: Editor;
 }) {
+  const [draft, setDraft] = useState(() => attrs.items.join('\n'));
+
+  useEffect(() => {
+    setDraft(attrs.items.join('\n'));
+  }, [block.pos]);
+
+  const commitDraft = () => {
+    updateAttrs(editor, block, {
+      items: draft
+        .split(/\r?\n/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    });
+  };
+
   return (
     <>
       <ContentFieldLabel>Items</ContentFieldLabel>
       <textarea
         aria-label="Word bank items"
         rows={12}
-        value={attrs.items.join('\n')}
-        onChange={(event) => updateAttrs(editor, block, {
-          items: event.target.value
-            .split(/\r?\n/)
-            .map((item) => item.trim())
-            .filter(Boolean),
-        })}
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={commitDraft}
         placeholder={'One item per line\nExample item\nAnother item'}
         className="mt-2 min-h-72 w-full resize-y rounded-md border border-primary bg-primary px-3 py-2 text-sm leading-6 text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
       />
@@ -8958,12 +9126,14 @@ export function BlockContentEditorModal({
           </button>
         </header>
         <div className={`grid min-h-0 flex-1 overflow-hidden ${
-          block.type === 'writingLines'
+          (block.type === 'writingLines' || block.type === 'dictationLines')
             ? 'grid-cols-1'
             : 'grid-cols-[minmax(22rem,0.85fr)_minmax(30rem,1.15fr)]'
         }`}>
           <div className={`overflow-y-auto p-6 ${
-            block.type === 'writingLines' ? '' : 'border-r border-secondary'
+            block.type === 'writingLines' || block.type === 'dictationLines'
+              ? ''
+              : 'border-r border-secondary'
           }`}>
             {block.type in DEFAULT_BLOCK_INSTRUCTIONS && (
               <InstructionOverrideEditor
@@ -9008,6 +9178,7 @@ export function BlockContentEditorModal({
             {block.type === 'lesetraining' && <RichTextEditor attrs={attrs as unknown as RichTextAttrs} block={block} editor={editor} />}
             {block.type === 'spacer' && <SpacerEditor attrs={attrs as unknown as SpacerAttrs} block={block} editor={editor} />}
             {block.type === 'writingLines' && <WritingLinesEditor attrs={attrs as unknown as WritingLinesAttrs} block={block} editor={editor} />}
+            {block.type === 'dictationLines' && <DictationLinesEditor attrs={attrs as unknown as DictationLinesAttrs} block={block} editor={editor} />}
             {block.type === 'alpharamaTerm' && <AlpharamaTermEditor attrs={attrs as unknown as AlpharamaTermAttrs} block={block as ContentEditorBlock & { type: 'alpharamaTerm' }} editor={editor} />}
             {block.type === 'instructionBlock' && <StandaloneInstructionEditor attrs={attrs as unknown as InstructionBlockAttrs} block={block} editor={editor} />}
             {block.type === 'letterNode' && <LetterNodeEditor attrs={attrs as unknown as LetterNodeAttrs} block={block} editor={editor} />}
@@ -9017,7 +9188,7 @@ export function BlockContentEditorModal({
             {block.type === 'errorCorrection' && <ErrorCorrectionEditor attrs={attrs as unknown as ErrorCorrectionAttrs} block={block} editor={editor} />}
             {block.type === 'domino' && <DominoEditor attrs={attrs as unknown as DominoAttrs} block={block} editor={editor} />}
           </div>
-          {block.type !== 'writingLines' && (
+          {block.type !== 'writingLines' && block.type !== 'dictationLines' && (
             <div className="overflow-y-auto bg-primary p-6">
               <Preview attrs={attrs} block={effectiveBlock as ContentEditorBlock} editor={editor} learningCardsGroupIndex={learningCardsGroupIndex} learningCardsSelectedCardId={learningCardsSelectedCardId} articlePluralCardsGroupIndex={articlePluralCardsGroupIndex} communicationCardsGroupIndex={communicationCardsGroupIndex} communicationCardsSelectedCardId={communicationCardsSelectedCardId} />
             </div>

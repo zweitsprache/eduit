@@ -42,6 +42,7 @@ export function MediaLibraryModal({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -51,20 +52,25 @@ export function MediaLibraryModal({
   const [draftAlt, setDraftAlt] = useState('');
   const selected = media.find(({ id }) => id === selectedId) ?? null;
 
-  const loadMedia = useCallback(async (search = '') => {
+  const loadMedia = useCallback(async (search = '', offset = 0) => {
     setLoading(true);
     setError('');
     try {
       const response = await fetch(
-        `/api/media${search ? `?q=${encodeURIComponent(search)}` : ''}`,
+        `/api/media?${new URLSearchParams({
+          ...(search ? { q: search } : {}),
+          ...(offset ? { offset: String(offset) } : {}),
+        })}`,
         { cache: 'no-store' },
       );
       const result = await response.json() as {
         media?: UserMedia[];
+        hasMore?: boolean;
         error?: string;
       };
       if (!response.ok) throw new Error(result.error ?? 'Could not load media.');
-      setMedia(result.media ?? []);
+      setMedia((current) => offset ? [...current, ...(result.media ?? [])] : (result.media ?? []));
+      setHasMore(result.hasMore === true);
     } catch (loadError) {
       setError(loadError instanceof Error
         ? loadError.message
@@ -78,7 +84,6 @@ export function MediaLibraryModal({
     if (!open) return;
     setQuery('');
     setSelectedId(null);
-    void loadMedia();
   }, [loadMedia, open]);
 
   useEffect(() => {
@@ -128,7 +133,7 @@ export function MediaLibraryModal({
         mostRecent = result.media;
       }
       setQuery('');
-      await loadMedia();
+      await loadMedia('', 0);
       if (mostRecent) setSelectedId(mostRecent.id);
     } catch (uploadError) {
       setError(uploadError instanceof Error
@@ -299,8 +304,9 @@ export function MediaLibraryModal({
                   <Loading01 className="size-6 animate-spin text-quaternary" />
                 </div>
               ) : media.length ? (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                  {media.map((item) => (
+                <>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {media.map((item) => (
                     <button
                       type="button"
                       key={item.id}
@@ -320,14 +326,25 @@ export function MediaLibraryModal({
                         alt={item.alt || item.name}
                         className="aspect-[4/3] w-full object-cover"
                         loading="lazy"
-                        src={item.src}
+                        src={`${item.src}?thumb=1`}
                       />
                       <span className="block truncate border-t border-primary px-2.5 py-2 text-xs font-semibold text-secondary">
                         {item.name}
                       </span>
                     </button>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                  {hasMore && (
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => void loadMedia(query, media.length)}
+                      className="mx-auto mt-4 rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover disabled:cursor-wait disabled:opacity-50"
+                    >
+                      {loading ? 'Loading…' : 'Load more'}
+                    </button>
+                  )}
+                </>
               ) : (
                 <button
                   className="flex flex-1 flex-col items-center justify-center px-6 text-center"

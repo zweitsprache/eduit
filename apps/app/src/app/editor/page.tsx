@@ -288,6 +288,9 @@ import {
 import { RichText } from '@/components/editor/rich-text-node';
 import { Spacer } from '@/components/editor/spacer-node';
 import { WritingLines } from '@/components/editor/writing-lines-node';
+import { DictationLines } from '@/components/editor/dictation-lines-node';
+import type { DictationLinesAttrs } from '@/components/editor/dictation-lines-node';
+import { DictationAudioModal } from '@/components/editor/dictation-audio-modal';
 import { AlpharamaTerm } from '@/components/editor/alpharama-term-node';
 import { InstructionBlock } from '@/components/editor/instruction-node';
 import { MediaLayout } from '@/components/editor/media-layout-node';
@@ -581,6 +584,7 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'richText',
   'spacer',
   'writingLines',
+  'dictationLines',
   'alpharamaTerm',
   'instructionBlock',
   'mediaLayout',
@@ -723,12 +727,15 @@ function serializedDocumentHead() {
 async function inlinePrivateMediaImages(root: HTMLElement) {
   const images = Array.from(root.querySelectorAll<HTMLImageElement>('img'))
     .filter((image) => {
-      const src = image.getAttribute('src') ?? '';
+      const source = image.getAttribute('src') ?? '';
+      const src = source.replace(/[?&]preview=1\b/, '').replace(/[?&]thumb=1\b/, '');
       return src.startsWith('/api/media/')
         || src.startsWith(`${window.location.origin}/api/media/`);
     });
   await Promise.all(images.map(async (image) => {
-    const response = await fetch(image.src);
+    const source = image.getAttribute('src') ?? '';
+    const originalSrc = source.replace(/[?&]preview=1\b/, '').replace(/[?&]thumb=1\b/, '');
+    const response = await fetch(new URL(originalSrc, window.location.origin));
     if (!response.ok) throw new Error('A media-library image could not be loaded.');
     const blob = await response.blob();
     const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -774,6 +781,9 @@ async function generateWorksheetPreview(
   clone.querySelectorAll('.rich-text-node__selection-fragment').forEach(
     (element) => element.remove(),
   );
+  clone.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((image) => {
+    image.setAttribute('loading', 'eager');
+  });
   await inlinePrivateMediaImages(clone);
   const response = await fetch('/api/worksheets/preview', {
     method: 'POST',
@@ -1691,6 +1701,7 @@ export default function EditorPage() {
   const [selectedCustomHeadingPos, setSelectedCustomHeadingPos] = useState<number | null>(null);
   const [selectedDialoguePos, setSelectedDialoguePos] = useState<number | null>(null);
   const [selectedLesetrainingPos, setSelectedLesetrainingPos] = useState<number | null>(null);
+  const [selectedDictationLinesPos, setSelectedDictationLinesPos] = useState<number | null>(null);
   const [selectedRewriteSentencesPos, setSelectedRewriteSentencesPos] = useState<number | null>(null);
   const [selectedSortingCategoriesPos, setSelectedSortingCategoriesPos] = useState<number | null>(null);
   const [selectedOrderingPos, setSelectedOrderingPos] = useState<number | null>(null);
@@ -1705,6 +1716,7 @@ export default function EditorPage() {
   const [worksheetTableCsvAutoHeader, setWorksheetTableCsvAutoHeader] = useState(true);
   const [selectedPageBreakPos, setSelectedPageBreakPos] = useState<number | null>(null);
   const [exportingPDF, setExportingPDF] = useState(false);
+  const [exportingSolutionPDF, setExportingSolutionPDF] = useState(false);
   const [publishingPDF, setPublishingPDF] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [dazitDocumentType, setDazitDocumentType] = useState('Arbeitsblatt');
@@ -1749,6 +1761,7 @@ export default function EditorPage() {
     useState<ContentEditorBlock | null>(null);
   const [dialogueAudioBlock, setDialogueAudioBlock] =
     useState<{ pos: number; type: 'dialogue' | 'lesetraining' } | null>(null);
+  const [dictationAudioBlock, setDictationAudioBlock] = useState<number | null>(null);
   const [dialogueAIBlock, setDialogueAIBlock] =
     useState<ContentEditorBlock | null>(null);
   const [miniFormAIBlock, setMiniFormAIBlock] =
@@ -1850,6 +1863,7 @@ export default function EditorPage() {
       RichText,
       Spacer,
       WritingLines,
+      DictationLines,
       AlpharamaTerm,
       InstructionBlock,
       MediaLayout,
@@ -1950,6 +1964,9 @@ export default function EditorPage() {
       );
       setSelectedLesetrainingPos(
         selectedNodeName === 'lesetraining' ? selection.from : null,
+      );
+      setSelectedDictationLinesPos(
+        selectedNodeName === 'dictationLines' ? selection.from : null,
       );
       setSelectedRewriteSentencesPos(
         selectedNodeName === 'rewriteSentences' ? selection.from : null,
@@ -2446,6 +2463,17 @@ export default function EditorPage() {
       const node = currentEditor.state.doc.nodeAt(selectedLesetrainingPos);
       return node?.type.name === 'lesetraining'
         ? node.attrs as LesetrainingAttrs
+        : null;
+    },
+  });
+
+  const selectedDictationLinesAttrs = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor || selectedDictationLinesPos === null) return null;
+      const node = currentEditor.state.doc.nodeAt(selectedDictationLinesPos);
+      return node?.type.name === 'dictationLines'
+        ? node.attrs as DictationLinesAttrs
         : null;
     },
   });
@@ -4707,6 +4735,9 @@ export default function EditorPage() {
       exportContent.querySelectorAll(
         '.rich-text-node__selection-fragment',
       ).forEach((element) => element.remove());
+      exportContent.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((image) => {
+        image.setAttribute('loading', 'eager');
+      });
       const pageCount = Math.max(
         1,
         exportContent.querySelectorAll('.tiptap-page-footer').length,
@@ -4765,6 +4796,30 @@ export default function EditorPage() {
       setExportError(error instanceof Error ? error.message : 'PDF export failed.');
     } finally {
       setExportingPDF(false);
+    }
+  };
+
+  const exportSolutionPDF = async () => {
+    setExportingSolutionPDF(true);
+    setExportError(null);
+    try {
+      const { pdf: blob } = await renderPDF({ showSolutions: true });
+      const url = URL.createObjectURL(blob);
+      const filename = worksheetTitle
+        .trim()
+        .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '-')
+        .replace(/[. ]+$/g, '') || 'worksheet';
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${filename}-solution-key.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : 'Solution key PDF export failed.');
+    } finally {
+      setExportingSolutionPDF(false);
     }
   };
 
@@ -5091,6 +5146,9 @@ export default function EditorPage() {
       const editorShell = editor.view.dom.cloneNode(false) as HTMLElement;
       editorShell.removeAttribute('contenteditable');
       editorShell.appendChild(clone);
+      editorShell.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((image) => {
+        image.setAttribute('loading', 'eager');
+      });
       await inlinePrivateMediaImages(editorShell);
 
       const visitedStyleSheets = new Set<CSSStyleSheet>();
@@ -5551,13 +5609,24 @@ export default function EditorPage() {
           <Button
             color="secondary"
             size="md"
-            isDisabled={exportingPDF}
+            isDisabled={exportingPDF || exportingSolutionPDF}
             iconLeading={exportingPDF
               ? <Loading01 className="size-4.5 animate-spin" />
               : <Download01 className="size-4.5" />}
             onPress={exportPDF}
           >
             {exportingPDF ? t('editor.exporting') : t('editor.exportPdf')}
+          </Button>
+          <Button
+            color="secondary"
+            size="md"
+            isDisabled={exportingPDF || exportingSolutionPDF}
+            iconLeading={exportingSolutionPDF
+              ? <Loading01 className="size-4.5 animate-spin" />
+              : <Download01 className="size-4.5" />}
+            onPress={exportSolutionPDF}
+          >
+            {exportingSolutionPDF ? 'Exporting solution key…' : 'Solution key PDF'}
           </Button>
           <Button
             color="primary"
@@ -6001,6 +6070,27 @@ export default function EditorPage() {
                       className="w-full"
                     />
                   )}
+                </>
+              )}
+              {selectedCustomBlock.type === 'dictationLines' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setDictationAudioBlock(selectedCustomBlock.pos)}
+                    className="flex w-full items-center justify-start gap-2 rounded-lg border border-primary bg-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+                  >
+                    <Volume2 className="size-4" />
+                    {selectedDictationLinesAttrs?.audioTracks?.length
+                      ? 'Edit audio'
+                      : 'Generate audio'}
+                  </button>
+                  {selectedDictationLinesAttrs?.audioTracks?.length ? (
+                    <div className="mt-2 space-y-1 text-xs text-tertiary">
+                      {selectedDictationLinesAttrs.audioTracks.map((track) => (
+                        <audio key={track.itemId} controls preload="none" src={track.url} className="w-full" />
+                      ))}
+                    </div>
+                  ) : null}
                 </>
               )}
             </div>
@@ -11439,6 +11529,23 @@ export default function EditorPage() {
           editor.chain().command(({ tr }) => {
             if (tr.doc.nodeAt(block.pos)?.type.name !== block.type) return false;
             tr.setNodeAttribute(block.pos, 'audio', audio);
+            return true;
+          }).run();
+        }}
+      />
+      <DictationAudioModal
+        contentLanguage={documentContext.contentLanguage}
+        initialTracks={selectedDictationLinesAttrs?.audioTracks ?? []}
+        items={selectedDictationLinesAttrs?.items ?? []}
+        open={dictationAudioBlock !== null}
+        onClose={() => setDictationAudioBlock(null)}
+        onGenerated={({ tracks, playlistUrl }) => {
+          const pos = dictationAudioBlock;
+          if (pos === null) return;
+          editor.chain().command(({ tr }) => {
+            if (tr.doc.nodeAt(pos)?.type.name !== 'dictationLines') return false;
+            tr.setNodeAttribute(pos, 'audioTracks', tracks);
+            tr.setNodeAttribute(pos, 'audioPlaylistUrl', playlistUrl);
             return true;
           }).run();
         }}

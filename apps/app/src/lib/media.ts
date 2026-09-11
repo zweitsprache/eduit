@@ -44,8 +44,10 @@ function mapRow(row: UserMediaRow): UserMedia {
   };
 }
 
-export async function listUserMedia(ownerUserId: string, query = '') {
+export async function listUserMedia(ownerUserId: string, query = '', offset = 0) {
   const search = query.trim().slice(0, 100);
+  const safeOffset = Math.max(0, Math.min(10_000, Math.floor(offset)));
+  const limit = 40;
   const rows = search
     ? await sql`
         select *
@@ -57,16 +59,21 @@ export async function listUserMedia(ownerUserId: string, query = '') {
             or alt_text ilike ${`%${search}%`}
           )
         order by created_at desc
-        limit 250
+        limit ${limit + 1}
+        offset ${safeOffset}
       ` as UserMediaRow[]
     : await sql`
         select *
         from user_media
         where owner_user_id = ${ownerUserId}
         order by created_at desc
-        limit 250
+        limit ${limit + 1}
+        offset ${safeOffset}
       ` as UserMediaRow[];
-  return rows.map(mapRow);
+  return {
+    media: rows.slice(0, limit).map(mapRow),
+    hasMore: rows.length > limit,
+  };
 }
 
 export async function createUserMedia(

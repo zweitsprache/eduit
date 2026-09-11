@@ -6,10 +6,11 @@ export const dynamic = 'force-dynamic';
 // Public, unauthenticated: reached from a printed worksheet's QR code, so no
 // user session exists. The private blob store's addRandomSuffix path segment
 // is the de facto access token — only the `dialogue-audio-public/` prefix and
-// `.mp3` suffix are enforced to reject unrelated paths.
+// `.mp3`/`.json` suffixes are enforced to reject unrelated paths.
 export async function GET(request: Request) {
   const path = new URL(request.url).searchParams.get('path') ?? '';
-  if (!path.startsWith('dialogue-audio-public/') || !path.endsWith('.mp3')) {
+  if (!path.startsWith('dialogue-audio-public/')
+    || (!path.endsWith('.mp3') && !path.endsWith('.json'))) {
     return Response.json({ error: 'Audio not found.' }, { status: 404 });
   }
 
@@ -27,9 +28,11 @@ export async function GET(request: Request) {
 
   return new Response(result.stream, {
     headers: {
-      'Content-Type': 'audio/mpeg',
+      'Content-Type': path.endsWith('.json') ? 'application/json' : 'audio/mpeg',
       'Content-Length': String(result.blob.size),
-      'Content-Disposition': 'inline; filename="dialogue.mp3"',
+      'Content-Disposition': path.endsWith('.json')
+        ? 'inline; filename="dictation-playlist.json"'
+        : 'inline; filename="dialogue.mp3"',
       'X-Content-Type-Options': 'nosniff',
       ETag: result.blob.etag,
       'Cache-Control': 'public, max-age=3600',

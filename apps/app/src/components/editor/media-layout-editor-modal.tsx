@@ -19,7 +19,11 @@ import {
   Link,
   List as ListIcon,
   ListOrdered,
+  RemoveFormatting,
   Sparkles,
+  TextAlignCenter,
+  TextAlignEnd,
+  TextAlignStart,
 } from 'lucide-react';
 import {
   ContentCard,
@@ -65,6 +69,13 @@ const inputClass =
   'h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm text-secondary outline-none placeholder:text-placeholder focus:border-brand focus:ring-2 focus:ring-brand';
 const MAX_AI_PROMPT_LENGTH = 1500;
 
+function normalizeRichTextHtml(value: string) {
+  return value
+    .replace(/\sdir\s*=\s*["'][^"']*["']/gi, ' dir="ltr"')
+    .replace(/direction\s*:\s*(?:ltr|rtl|inherit|initial|unset)\s*;?/gi, 'direction: ltr;')
+    .replace(/unicode-bidi\s*:\s*[^;"']+\s*;?/gi, '');
+}
+
 function textPreview(value: string) {
   if (typeof document === 'undefined') return value.replace(/<[^>]+>/g, ' ');
   const element = document.createElement('div');
@@ -86,20 +97,69 @@ function MediaRichTextEditor({
   onChange: (value: string) => void;
   value: string;
 }) {
+  const editorRootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLDivElement>(null);
+  const selectionRef = useRef<Range | null>(null);
+  const draftRef = useRef(normalizeRichTextHtml(value));
+  const [draft, setDraft] = useState(() => normalizeRichTextHtml(value));
 
   useEffect(() => {
     const input = inputRef.current;
-    if (!input || document.activeElement === input || input.innerHTML === value) {
+    const html = normalizeRichTextHtml(value);
+    const isActive = Boolean(
+      editorRootRef.current?.contains(document.activeElement),
+    );
+    if (!input || isActive || input.innerHTML === html) {
       return;
     }
-    input.innerHTML = value;
+    draftRef.current = html;
+    setDraft(html);
+    input.innerHTML = html;
   }, [value]);
 
+  const saveSelection = () => {
+    const selection = window.getSelection();
+    if (!selection?.rangeCount || !inputRef.current?.contains(selection.anchorNode)) return;
+    selectionRef.current = selection.getRangeAt(0).cloneRange();
+  };
+
+  const commit = () => {
+    const input = inputRef.current;
+    if (!input) return;
+    const html = normalizeRichTextHtml(input.innerHTML);
+    draftRef.current = html;
+    setDraft(html);
+    onChange(html);
+  };
+
   const run = (command: string, commandValue?: string) => {
-    inputRef.current?.focus();
+    const input = inputRef.current;
+    if (!input) return;
+    input.focus();
+    const selection = window.getSelection();
+    if (selection && selectionRef.current) {
+      selection.removeAllRanges();
+      selection.addRange(selectionRef.current);
+    }
     document.execCommand(command, false, commandValue);
-    if (inputRef.current) onChange(inputRef.current.innerHTML);
+    selectionRef.current = null;
+    commit();
+  };
+
+  const clearFormatting = () => {
+    const input = inputRef.current;
+    if (!input) return;
+    input.focus();
+    const selection = window.getSelection();
+    if (selection && selectionRef.current) {
+      selection.removeAllRanges();
+      selection.addRange(selectionRef.current);
+    }
+    document.execCommand('removeFormat');
+    document.execCommand('unlink');
+    document.execCommand('justifyLeft');
+    selectionRef.current = null;
+    commit();
   };
 
   const tools = [
@@ -107,6 +167,9 @@ function MediaRichTextEditor({
     { label: 'Italic', icon: Italic, action: () => run('italic') },
     { label: 'Bulleted list', icon: ListIcon, action: () => run('insertUnorderedList') },
     { label: 'Numbered list', icon: ListOrdered, action: () => run('insertOrderedList') },
+    { label: 'Align left', icon: TextAlignStart, action: () => run('justifyLeft') },
+    { label: 'Align centre', icon: TextAlignCenter, action: () => run('justifyCenter') },
+    { label: 'Align right', icon: TextAlignEnd, action: () => run('justifyRight') },
     {
       label: 'Link',
       icon: Link,
@@ -118,30 +181,67 @@ function MediaRichTextEditor({
   ];
 
   return (
-    <div className="mt-1.5 overflow-hidden rounded-md border border-primary bg-primary focus-within:border-brand focus-within:ring-2 focus-within:ring-brand">
+    <div
+      ref={editorRootRef}
+      className="mt-1.5 overflow-hidden rounded-md border border-primary bg-primary focus-within:border-brand focus-within:ring-2 focus-within:ring-brand"
+    >
       <div className="flex items-center gap-0.5 border-b border-secondary p-1">
+        <select
+          aria-label="Font size"
+          defaultValue="3"
+          onMouseDown={saveSelection}
+          onChange={(event) => run('fontSize', event.target.value)}
+          className="h-8 rounded-md border border-transparent bg-transparent px-1.5 text-xs text-secondary outline-none hover:border-primary focus:border-brand"
+        >
+          <option value="2">Small</option>
+          <option value="3">Normal</option>
+          <option value="5">Large</option>
+          <option value="6">Extra large</option>
+        </select>
         {tools.map(({ action, icon: Icon, label }) => (
           <button
             type="button"
             aria-label={label}
             title={label}
             key={label}
-            onMouseDown={(event) => event.preventDefault()}
+            onMouseDown={(event) => {
+              saveSelection();
+              event.preventDefault();
+            }}
             onClick={action}
             className="flex size-8 items-center justify-center rounded-md text-quaternary hover:bg-primary_hover hover:text-secondary"
           >
             <Icon className="size-4" />
           </button>
         ))}
+        <button
+          type="button"
+          aria-label="Clear formatting"
+          title="Clear formatting"
+          onMouseDown={(event) => {
+            saveSelection();
+            event.preventDefault();
+          }}
+          onClick={clearFormatting}
+          className="flex size-8 items-center justify-center rounded-md text-quaternary hover:bg-primary_hover hover:text-secondary"
+        >
+          <RemoveFormatting className="size-4" />
+        </button>
       </div>
       <div
         ref={inputRef}
+        dir="ltr"
         role="textbox"
         aria-label="Text"
         aria-multiline="true"
         contentEditable
-        dangerouslySetInnerHTML={{ __html: value }}
-        onInput={(event) => onChange(event.currentTarget.innerHTML)}
+        dangerouslySetInnerHTML={{ __html: draft }}
+        onInput={(event) => setDraft(normalizeRichTextHtml(event.currentTarget.innerHTML))}
+        onBlur={(event) => {
+          const nextFocused = event.relatedTarget;
+          if (nextFocused instanceof Node && editorRootRef.current?.contains(nextFocused)) return;
+          commit();
+        }}
         className="min-h-32 px-3 py-2 text-sm leading-6 text-secondary outline-none [&_a]:text-brand-secondary [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-0 [&_ul]:list-disc [&_ul]:pl-5"
         suppressContentEditableWarning
       />
@@ -411,6 +511,20 @@ export function MediaLayoutEditorModal({
                     <option value="large">Large</option>
                   </select>
                 </label>
+                <label className="text-sm font-semibold text-secondary">
+                  Image border
+                  <select
+                    value={attrs.border}
+                    onChange={(event) => set({
+                      border: event.target.value as MediaLayoutAttrs['border'],
+                    })}
+                    className={`${inputClass} mt-1.5`}
+                  >
+                    <option value="none">None</option>
+                    <option value="light">Light</option>
+                    <option value="medium">Medium</option>
+                  </select>
+                </label>
               </div>
               <Toggle
                 className="mt-4"
@@ -418,6 +532,36 @@ export function MediaLayoutEditorModal({
                 onChange={(value) => set({ showCaptions: value })}
                 label="Show captions and credits"
               />
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <label className="text-sm font-semibold text-secondary">
+                  Caption size
+                  <select
+                    value={attrs.captionSize}
+                    onChange={(event) => set({
+                      captionSize: event.target.value as MediaLayoutAttrs['captionSize'],
+                    })}
+                    className={`${inputClass} mt-1.5`}
+                  >
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                  </select>
+                </label>
+                <label className="text-sm font-semibold text-secondary">
+                  Caption style
+                  <select
+                    value={attrs.captionStyle}
+                    onChange={(event) => set({
+                      captionStyle: event.target.value as MediaLayoutAttrs['captionStyle'],
+                    })}
+                    className={`${inputClass} mt-1.5`}
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="italic">Italic</option>
+                    <option value="bold">Bold</option>
+                  </select>
+                </label>
+              </div>
 
               {(attrs.layout === 'image-left'
                 || attrs.layout === 'image-right') && (
@@ -550,14 +694,13 @@ export function MediaLayoutEditorModal({
                       </div>
                     </div>
                     <div className="mt-2 grid grid-cols-2 gap-2">
-                      <input
-                        value={item.caption}
-                        onChange={(event) => updateItem(item.id, {
-                          caption: event.target.value,
-                        })}
-                        className={inputClass}
-                        placeholder="Caption"
-                      />
+                      <div className="col-span-2">
+                        <ContentFieldLabel>Caption</ContentFieldLabel>
+                        <MediaRichTextEditor
+                          value={item.caption}
+                          onChange={(caption) => updateItem(item.id, { caption })}
+                        />
+                      </div>
                       <input
                         value={item.credit}
                         onChange={(event) => updateItem(item.id, {

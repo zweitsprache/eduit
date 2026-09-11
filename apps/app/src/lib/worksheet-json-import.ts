@@ -94,6 +94,27 @@ const writingLinesSchema = z.object({
   type: z.literal('writingLines'),
   lineCount: z.number().int().min(1).max(30).default(4),
   lineHeight: z.number().int().min(16).max(120).default(40),
+  showLineNumbers: z.boolean().default(false),
+});
+
+const dictationLinesSchema = z.object({
+  type: z.literal('dictationLines'),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    text: z.string().max(5000).default(''),
+  })).min(1).max(30).default([{ text: '' }]),
+  variant: z.enum(['itemized', 'ongoingText']).default('itemized'),
+  twoColumns: z.boolean().default(false),
+  linesPerItem: z.number().int().min(1).max(20).default(1),
+  lineHeight: z.number().int().min(16).max(120).default(40),
+  showLineNumbers: z.boolean().default(false),
+  audioTracks: z.array(z.object({
+    itemId: z.string().trim().min(1).max(100),
+    url: z.string().trim().max(2000),
+    durationSeconds: z.number().nonnegative().default(0),
+    updatedAt: z.string().max(100).default(''),
+  })).default([]),
+  audioPlaylistUrl: z.string().trim().max(2000).nullable().default(null),
 });
 
 const alpharamaTermSchema = z.object({
@@ -753,6 +774,7 @@ export const generatedWorksheetSchema = z.object({
     pageBreakSchema,
     spacerSchema,
     writingLinesSchema,
+    dictationLinesSchema,
     alpharamaTermSchema,
     letterCloudSchema,
     anagramSchema,
@@ -849,7 +871,14 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     return `<div data-spacer-height="${block.height}" data-type="spacer"></div>`;
   }
   if (block.type === 'writingLines') {
-    return `<div data-writing-lines-count="${block.lineCount}" data-writing-lines-height="${block.lineHeight}" data-type="writing-lines"></div>`;
+    return `<div data-writing-lines-count="${block.lineCount}" data-writing-lines-height="${block.lineHeight}" data-writing-lines-show-line-numbers="${block.showLineNumbers}" data-type="writing-lines"></div>`;
+  }
+  if (block.type === 'dictationLines') {
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `dictation-line-${index + 1}`,
+      text: item.text,
+    }));
+    return `<div data-dictation-lines-items="${escapeAttribute(JSON.stringify(items))}" data-dictation-lines-variant="${block.variant}" data-dictation-lines-two-columns="${block.twoColumns}" data-dictation-lines-per-item="${block.linesPerItem}" data-dictation-lines-height="${block.lineHeight}" data-dictation-lines-show-line-numbers="${block.showLineNumbers}" data-dictation-lines-audio="${escapeAttribute(JSON.stringify(block.audioTracks))}" data-dictation-lines-audio-playlist="${block.audioPlaylistUrl ? escapeAttribute(block.audioPlaylistUrl) : ''}" data-type="dictation-lines"></div>`;
   }
   if (block.type === 'alpharamaTerm') {
     const items = block.items.map((item, index) => ({
