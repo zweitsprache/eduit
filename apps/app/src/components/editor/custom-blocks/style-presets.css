@@ -245,7 +245,14 @@
 .tiptap:is([data-style-preset="academic"], [data-style-preset="semi-academic"])
   :is(.media-layout-node__caption, .media-layout-node__credit) {
   font-size: 0.5625rem;
-  line-height: 1.25;
+  line-height: 1.4;
+}
+
+.tiptap:is([data-style-preset="academic"], [data-style-preset="semi-academic"])
+  .media-layout-node__layout[data-caption-size="medium"]
+  :is(.media-layout-node__caption, .media-layout-node__credit) {
+  font-size: var(--custom-block-body-font-size);
+  line-height: 1.4;
 }
 
 .tiptap:is([data-style-preset="academic"], [data-style-preset="semi-academic"]) .media-layout-node__text {

@@ -228,10 +228,13 @@ Use specifically for German noun article and plural practice.
 
 | Field | Constraint |
 | --- | --- |
-| `instruction` | must be exactly `Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.` |
+| `instruction` | string up to 1000 characters; defaults to `Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.` |
+| `hideInstructionBadge` | boolean, default `false` |
 | `rows` | required array of 1-1000 rows |
 | `order` | `alphabetical` or `shuffle`, default `alphabetical` |
 | `shuffleSeed` | integer 0-1,000,000, default `0` |
+| `showAdditionalBlankItems` | boolean, default `true` |
+| `showPluralColumn` | boolean, default `true` |
 | `continuation` | boolean, default `false` |
 | `rowNumberOffset` | integer 0-1,000,000, default `0` |
 

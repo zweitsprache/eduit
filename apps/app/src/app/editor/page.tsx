@@ -860,12 +860,16 @@ function learningCardFooterTexts(
     Pick<BrandProfile, 'footer1Html' | 'footer2Html'>
   >,
   worksheetId?: string | null,
+  translationLanguage?: string | null,
 ) {
   const footer1 = inlineFooterText(brand.footer1Html ?? brand.name);
   const footer2 = inlineFooterText(brand.footer2Html ?? DOCUMENT_CREATOR);
+  const idLine = translationLanguage && translationLanguage !== ORIGINAL_VIEW_LANGUAGE
+    ? `${worksheetId ?? DOCUMENT_ID} ${translationLanguage.toUpperCase()}`
+    : worksheetId ?? DOCUMENT_ID;
   return {
     left: [footer1, footer2].filter(Boolean).join('\n'),
-    right: `${worksheetId ?? DOCUMENT_ID}\n${formatBrandDate(new Date(), brand.dateFormat)}`,
+    right: `${idLine}\n${formatBrandDate(new Date(), brand.dateFormat)}`,
   };
 }
 
@@ -1458,9 +1462,10 @@ const A5_FOTOKARTEN_FORMAT: PageFormatSpec = {
   id: 'A5-fotokarten-eduit',
   margins: {
     ...A5_LANDSCAPE_FORMAT.margins,
-    bottom: mmToPixels(23),
-    left: mmToPixels(20),
-    right: mmToPixels(20),
+    top: mmToPixels(15),
+    bottom: mmToPixels(12.5),
+    left: mmToPixels(10),
+    right: mmToPixels(10),
   },
 };
 
@@ -1883,7 +1888,9 @@ export default function EditorPage() {
           ?? documentFormat(PAGE_FORMATS.A4),
         header: DOCUMENT_HEADER,
         headerTopMargin: mmToPixels(PAGE_HEADER_TOP_MARGIN_MM),
-        footer: documentFooter(DEFAULT_DOCUMENT_BRAND, null, null, docSize !== 'a5-fotokarten'),
+        footer: docSize === 'a5-fotokarten'
+          ? ''
+          : documentFooter(DEFAULT_DOCUMENT_BRAND),
         editableFooter: false,
         pageGapBackground: 'var(--color-bg-tertiary)',
       }),
@@ -2687,12 +2694,14 @@ export default function EditorPage() {
     editor.view.dom.setAttribute('data-doc-size', docSize);
     editor.view.dom.style.setProperty(
       '--document-logo-top',
-      docSize.startsWith('a4-') ? '15mm' : '10mm',
+      docSize === 'a5-fotokarten'
+        ? '11.25mm'
+        : docSize.startsWith('a4-') ? '15mm' : '10mm',
     );
     if (docSize === 'a4-landscape') {
       editor.commands.setFooterBottomMargin(mmToPixels(7.5));
     } else if (docSize === 'a5-fotokarten') {
-      editor.commands.setFooterBottomMargin(mmToPixels(12.5));
+      editor.commands.setFooterBottomMargin(0);
     } else {
       editor.commands.resetFooterBottomMargin();
     }
@@ -2761,7 +2770,11 @@ export default function EditorPage() {
       '--document-brand-logo-scale',
       String(activeBrand.logoScale),
     );
-    const learningCardFooter = learningCardFooterTexts(activeBrand, worksheetId);
+    const learningCardFooter = learningCardFooterTexts(
+      activeBrand,
+      worksheetId,
+      viewLanguage,
+    );
     editorElement.style.setProperty(
       '--learning-card-footer-left',
       cssContent(learningCardFooter.left),
@@ -2886,12 +2899,16 @@ export default function EditorPage() {
       instructionNumberFormat: activeBrand.instructionNumberFormat,
       headingNumberFormats: activeBrand.headingNumberFormats,
     });
-    editor.commands.setFooter(documentFooter(
-      activeBrand,
-      worksheetId,
-      viewLanguage,
-      docSize !== 'a5-fotokarten',
-    ));
+    editor.commands.setHeader(
+      docSize === 'a5-fotokarten' && activeBrand.logoUrl
+        ? `<p><img src="${escapeAttribute(activeBrand.logoUrl)}" alt="" width="1" height="1"></p>`
+        : DOCUMENT_HEADER,
+    );
+    editor.commands.setFooter(
+      docSize === 'a5-fotokarten'
+        ? ''
+        : documentFooter(activeBrand, worksheetId, viewLanguage),
+    );
     return () => {
       measurementCancelled = true;
     };
@@ -10803,6 +10820,7 @@ export default function EditorPage() {
       )}
 
       <InsertBlockPalette
+        documentSize={docSize}
         editor={editor}
         insertAt={insertBlockAt}
         open={insertPaletteOpen}
@@ -11785,6 +11803,7 @@ export default function EditorPage() {
       />
       <MediaLayoutEditorModal
         block={mediaLayoutEditorBlock}
+        documentSize={docSize}
         editor={editor}
         onClose={() => setMediaLayoutEditorBlock(null)}
       />

@@ -31,6 +31,7 @@ function readRecentBlocks() {
 }
 
 export function InsertBlockPalette({
+  documentSize,
   editor,
   insertAt,
   onStartOccupationPortrait,
@@ -39,6 +40,7 @@ export function InsertBlockPalette({
   open,
   onClose,
 }: {
+  documentSize: string;
   editor: Editor;
   insertAt?: number | null;
   onStartOccupationPortrait: (insertAt: number) => void;
@@ -62,15 +64,18 @@ export function InsertBlockPalette({
 
   const results = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
+    const availableBlocks = documentSize === 'a5-fotokarten'
+      ? CUSTOM_BLOCK_REGISTRY.filter(({ type }) => type === 'mediaLayout')
+      : [...CUSTOM_BLOCK_REGISTRY, VOCABULARY_ONE_WORKFLOW];
     const matching = normalizedQuery
-      ? [...CUSTOM_BLOCK_REGISTRY, VOCABULARY_ONE_WORKFLOW].filter((block) => (
+      ? availableBlocks.filter((block) => (
           block.label.toLowerCase().includes(normalizedQuery)
           || block.description.toLowerCase().includes(normalizedQuery)
           || block.type.includes(normalizedQuery)
           || block.category.toLowerCase().includes(normalizedQuery)
           || block.keywords.some((keyword) => keyword.includes(normalizedQuery))
         ))
-      : [...CUSTOM_BLOCK_REGISTRY, VOCABULARY_ONE_WORKFLOW];
+      : availableBlocks;
 
     return [...matching].sort((left, right) => {
       const leftRecent = recentTypes.indexOf(left.type);
@@ -82,7 +87,7 @@ export function InsertBlockPalette({
       if (rightRecent === -1) return -1;
       return leftRecent - rightRecent;
     });
-  }, [query, recentTypes]);
+  }, [documentSize, query, recentTypes]);
 
   useEffect(() => {
     setActiveIndex((current) => Math.min(current, Math.max(0, results.length - 1)));

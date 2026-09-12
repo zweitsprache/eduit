@@ -2098,7 +2098,11 @@
             "instruction": {
               "default": "Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.",
               "type": "string",
-              "const": "Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform."
+              "maxLength": 1000
+            },
+            "hideInstructionBadge": {
+              "default": false,
+              "type": "boolean"
             },
             "rows": {
               "minItems": 1,
@@ -2121,6 +2125,14 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 1000000
+            },
+            "showAdditionalBlankItems": {
+              "default": true,
+              "type": "boolean"
+            },
+            "showPluralColumn": {
+              "default": true,
+              "type": "boolean"
             },
             "continuation": {
               "default": false,

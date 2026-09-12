@@ -1,6 +1,7 @@
 import { Extension } from '@tiptap/core';
 
 export const DEFAULT_BLOCK_INSTRUCTIONS = {
+  articlePlural: 'Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.',
   dialogue: 'Complete the dialogue.',
   familyKinship: 'Solve the family relationship riddles.',
   fillInTheBlank: 'Fill in the blanks with the correct words.',

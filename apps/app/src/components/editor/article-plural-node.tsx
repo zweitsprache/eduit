@@ -13,6 +13,7 @@ import {
 import { CUSTOM_BLOCK_NODE_GROUP } from '@/components/editor/custom-blocks/numbering';
 import { useRoughSolutionXs } from '@/components/editor/custom-blocks/use-rough-solution-xs';
 import { InlineFormattedText } from '@/components/editor/custom-blocks/inline-formatting';
+import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/instructions';
 
 export type GermanArticle = 'der' | 'das' | 'die';
 export type ArticlePluralOrder = 'alphabetical' | 'shuffle';
@@ -25,17 +26,18 @@ export type ArticlePluralRow = {
 };
 
 export type ArticlePluralAttrs = {
+  instruction: string | null;
   rows: ArticlePluralRow[];
   order: ArticlePluralOrder;
   shuffleSeed: number;
+  hideInstructionBadge: boolean;
+  showAdditionalBlankItems: boolean;
+  showPluralColumn: boolean;
   continuation: boolean;
   rowNumberOffset: number;
 };
 
 export const ARTICLE_PLURAL_ROWS_PER_PAGE = 22;
-
-const ARTICLE_PLURAL_INSTRUCTION =
-  'Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.';
 
 export const ARTICLE_OPTIONS: GermanArticle[] = ['der', 'das', 'die'];
 export const DEFAULT_ARTICLE_PLURAL_ROWS: ArticlePluralRow[] = [
@@ -127,10 +129,15 @@ function ArticlePluralNodeView({ node, selected }: NodeViewProps) {
   const rows = orderedArticlePluralRows(attrs.rows, attrs.order, attrs.shuffleSeed)
     .slice(0, ARTICLE_PLURAL_ROWS_PER_PAGE);
   const emptyRowCount = ARTICLE_PLURAL_ROWS_PER_PAGE - rows.length;
-  const showAdditionalSection = emptyRowCount >= 3;
+  const showAdditionalSection = attrs.showAdditionalBlankItems && emptyRowCount >= 3;
 
   return (
-    <CustomBlockRoot selected={selected} className="article-plural-node">
+    <CustomBlockRoot
+      selected={selected}
+      className={`article-plural-node${
+        attrs.showPluralColumn ? '' : ' article-plural-node--without-plural'
+      }`}
+    >
       <div className="custom-block__matrix-layout" ref={layoutRef}>
         <svg
           aria-hidden="true"
@@ -139,8 +146,8 @@ function ArticlePluralNodeView({ node, selected }: NodeViewProps) {
           ref={solutionsRef}
         />
         {!attrs.continuation && (
-          <BlockInstruction>
-            {ARTICLE_PLURAL_INSTRUCTION}
+          <BlockInstruction hideBadge={attrs.hideInstructionBadge}>
+            {attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.articlePlural}
           </BlockInstruction>
         )}
         <div className="article-plural-node__header">
@@ -149,7 +156,9 @@ function ArticlePluralNodeView({ node, selected }: NodeViewProps) {
             {ARTICLE_OPTIONS.map((article) => <strong key={article}>{article}</strong>)}
           </div>
           <span className="article-plural-node__term-header">Begriff</span>
-          <strong className="article-plural-node__plural-header">Plural</strong>
+          {attrs.showPluralColumn && (
+            <strong className="article-plural-node__plural-header">Plural</strong>
+          )}
         </div>
         <BlockRows>
           {rows.map((row, rowIndex) => (
@@ -169,19 +178,21 @@ function ArticlePluralNodeView({ node, selected }: NodeViewProps) {
                   fallback={`Term ${attrs.rowNumberOffset + rowIndex + 1}`}
                 />
               </div>
-              <div className="article-plural-node__plural-answer">
-                <span>die</span>
-                <span
-                  className="matching-pairs-node__writing-line article-plural-node__writing-line"
-                  data-solution-text={row.plural || undefined}
-                />
-              </div>
+              {attrs.showPluralColumn && (
+                <div className="article-plural-node__plural-answer">
+                  <span>die</span>
+                  <span
+                    className="matching-pairs-node__writing-line article-plural-node__writing-line"
+                    data-solution-text={row.plural || undefined}
+                  />
+                </div>
+              )}
             </BlockRow>
           ))}
         </BlockRows>
         {showAdditionalSection && (
           <section className="article-plural-node__additional-section">
-            <BlockInstruction>
+            <BlockInstruction hideBadge={attrs.hideInstructionBadge}>
               Suchen Sie weitere Nomen / Substantive zum Thema.
             </BlockInstruction>
             <div className="article-plural-node__header">
@@ -190,7 +201,9 @@ function ArticlePluralNodeView({ node, selected }: NodeViewProps) {
                 {ARTICLE_OPTIONS.map((article) => <strong key={article}>{article}</strong>)}
               </div>
               <span className="article-plural-node__term-header">Begriff</span>
-              <strong className="article-plural-node__plural-header">Plural</strong>
+              {attrs.showPluralColumn && (
+                <strong className="article-plural-node__plural-header">Plural</strong>
+              )}
             </div>
             <BlockRows>
               {Array.from({ length: emptyRowCount }, (_, emptyIndex) => (
@@ -208,10 +221,12 @@ function ArticlePluralNodeView({ node, selected }: NodeViewProps) {
                     <span aria-hidden="true" className="article-plural-node__term-baseline">die</span>
                     <span className="matching-pairs-node__writing-line article-plural-node__writing-line" />
                   </div>
-                  <div className="article-plural-node__plural-answer">
-                    <span>die</span>
-                    <span className="matching-pairs-node__writing-line article-plural-node__writing-line" />
-                  </div>
+                  {attrs.showPluralColumn && (
+                    <div className="article-plural-node__plural-answer">
+                      <span>die</span>
+                      <span className="matching-pairs-node__writing-line article-plural-node__writing-line" />
+                    </div>
+                  )}
                 </BlockRow>
               ))}
             </BlockRows>
@@ -262,6 +277,37 @@ export const ArticlePlural = Node.create({
           'data-article-plural-shuffle-seed': String(attributes.shuffleSeed),
         }),
       },
+      hideInstructionBadge: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-article-plural-hide-instruction-badge') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-article-plural-hide-instruction-badge': String(
+            attributes.hideInstructionBadge,
+          ),
+        }),
+      },
+      showAdditionalBlankItems: {
+        default: true,
+        parseHTML: (element) => (
+          element.getAttribute('data-article-plural-show-additional-blank-items') !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-article-plural-show-additional-blank-items': String(
+            attributes.showAdditionalBlankItems,
+          ),
+        }),
+      },
+      showPluralColumn: {
+        default: true,
+        parseHTML: (element) => (
+          element.getAttribute('data-article-plural-show-plural-column') !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-article-plural-show-plural-column': String(attributes.showPluralColumn),
+        }),
+      },
       continuation: {
         default: false,
         parseHTML: (element) => element.getAttribute('data-article-plural-continuation') === 'true',
@@ -308,6 +354,7 @@ export const ArticlePlural = Node.create({
             chunkArticlePluralRows(rows).map((chunk, index) => ({
             type: this.name,
             attrs: {
+              ...attrs,
               rows: chunk,
               order,
               shuffleSeed,

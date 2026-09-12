@@ -462,10 +462,8 @@ function updateArticlePluralGroup(
     const chunks = chunkArticlePluralRows(rows);
     const nodeType = group.nodes[0].type;
     const nodes = chunks.map((chunk, index) => nodeType.create({
-      ...group.nodes[0].attrs,
+      ...nextAttrs,
       rows: chunk,
-      order: nextAttrs.order,
-      shuffleSeed: nextAttrs.shuffleSeed,
       continuation: nextAttrs.continuation || index > 0,
       rowNumberOffset: nextAttrs.rowNumberOffset
         + index * ARTICLE_PLURAL_ROWS_PER_PAGE,
@@ -4087,6 +4085,30 @@ function ArticlePluralEditor({
   );
   return (
     <>
+      <ContentSectionHeader>Display</ContentSectionHeader>
+      <ContentSwitchGrid>
+        <ContentSwitch
+          label="Hide instruction numbering"
+          isSelected={attrs.hideInstructionBadge}
+          onChange={(hideInstructionBadge) => updateArticlePluralGroup(editor, block, {
+            hideInstructionBadge,
+          })}
+        />
+        <ContentSwitch
+          label="Show additional blank items"
+          isSelected={attrs.showAdditionalBlankItems}
+          onChange={(showAdditionalBlankItems) => updateArticlePluralGroup(editor, block, {
+            showAdditionalBlankItems,
+          })}
+        />
+        <ContentSwitch
+          label="Show plural column"
+          isSelected={attrs.showPluralColumn}
+          onChange={(showPluralColumn) => updateArticlePluralGroup(editor, block, {
+            showPluralColumn,
+          })}
+        />
+      </ContentSwitchGrid>
       <ContentSectionHeader>Row order</ContentSectionHeader>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {(['alphabetical', 'shuffle'] as const).map((order) => (

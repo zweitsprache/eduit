@@ -1145,9 +1145,7 @@
 
 :is(
   .editor-app[data-doc-size="a5-landscape"] .tiptap,
-  .tiptap[data-doc-size="a5-landscape"],
-  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
-  .tiptap[data-doc-size="a5-fotokarten"]
+  .tiptap[data-doc-size="a5-landscape"]
 )
   .media-layout-node__layout[data-image-only="true"] {
   position: relative;
@@ -1156,9 +1154,7 @@
 
 :is(
   .editor-app[data-doc-size="a5-landscape"] .tiptap,
-  .tiptap[data-doc-size="a5-landscape"],
-  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
-  .tiptap[data-doc-size="a5-fotokarten"]
+  .tiptap[data-doc-size="a5-landscape"]
 )
   .media-layout-node__layout[data-image-only="true"]
   > .media-layout-node__media {
@@ -1168,15 +1164,76 @@
 
 :is(
   .editor-app[data-doc-size="a5-landscape"] .tiptap,
-  .tiptap[data-doc-size="a5-landscape"],
-  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
-  .tiptap[data-doc-size="a5-fotokarten"]
+  .tiptap[data-doc-size="a5-landscape"]
 )
   .media-layout-node__layout[data-image-only="true"]
   > .media-layout-node__media
   .media-layout-node__image {
   height: calc(var(--page-max-height) + 70px);
   aspect-ratio: auto;
+}
+
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .media-layout-node__layout {
+  position: relative;
+  display: block;
+  height: calc(var(--page-max-height) - 2px);
+}
+
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .media-layout-node__media,
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .media-layout-node__item,
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .media-layout-node__item > a,
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .media-layout-node__image {
+  width: 100%;
+  height: 100%;
+}
+
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .media-layout-node__media {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  display: block;
+  width: calc(100% + 4px);
+  height: 120.5mm;
+  overflow: hidden;
+}
+
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .media-layout-node__image {
+  aspect-ratio: auto;
+  border: 0;
+  border-radius: 0;
+  object-fit: cover;
+}
+
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) :is(
+  .media-layout-node__item:not(:first-child),
+  .media-layout-node__caption,
+  .media-layout-node__text
+) {
+  display: none;
 }
 
 :is(
@@ -1280,6 +1337,12 @@
   border-radius: 0.75rem;
 }
 
+.media-layout-node__item[data-has-caption="true"]
+  .media-layout-node__image {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
 .media-layout-node__layout[data-border="light"] .media-layout-node__image {
   border: 1px solid var(--color-border-primary);
 }
@@ -1295,14 +1358,44 @@
   padding-top: 0.35rem;
   color: var(--color-text-tertiary);
   font-size: 0.68rem;
-  line-height: 1.35;
+  line-height: 1.4;
+}
+
+.media-layout-node__item[data-has-caption="true"]
+  .media-layout-node__caption {
+  padding: 0.5rem;
+  background: var(--color-bg-secondary);
+}
+
+.media-layout-node__layout[data-radius="small"]
+  .media-layout-node__item[data-has-caption="true"]
+  .media-layout-node__caption {
+  border-radius: 0 0 0.25rem 0.25rem;
+}
+
+.media-layout-node__layout[data-radius="medium"]
+  .media-layout-node__item[data-has-caption="true"]
+  .media-layout-node__caption {
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.media-layout-node__layout[data-radius="large"]
+  .media-layout-node__item[data-has-caption="true"]
+  .media-layout-node__caption {
+  border-radius: 0 0 0.75rem 0.75rem;
 }
 
 .media-layout-node__caption-content {
   flex: 1 1 auto;
   min-width: 0;
   direction: ltr !important;
+  line-height: 1.4 !important;
   unicode-bidi: isolate;
+}
+
+.media-layout-node__caption-content
+  :is(p, div, li) {
+  line-height: 1.4 !important;
 }
 
 .media-layout-node__caption-content [dir="rtl"],
@@ -1350,7 +1443,8 @@
 }
 
 .media-layout-node__layout[data-caption-size="medium"] .media-layout-node__caption {
-  font-size: 0.8rem;
+  font-size: var(--custom-block-body-font-size);
+  line-height: 1.4;
 }
 
 .media-layout-node__layout[data-caption-size="large"] .media-layout-node__caption {
@@ -3720,6 +3814,12 @@
   gap: var(--custom-block-inline-gap);
 }
 
+.article-plural-node--without-plural .article-plural-node__header,
+.article-plural-node--without-plural .custom-block__row {
+  grid-template-columns: var(--custom-block-index-size) minmax(7rem, 0.8fr)
+    minmax(8rem, 2.35fr);
+}
+
 .article-plural-node__header {
   min-height: var(--custom-block-row-height);
   padding-block: var(--custom-block-row-padding-block);
@@ -4118,6 +4218,11 @@
   display: block;
   break-inside: auto;
   page-break-inside: auto;
+}
+
+.without-fill-blank-instruction
+  > :first-child {
+  margin-block-start: 0 !important;
 }
 
 .custom-block__word-bank + .fill-in-the-blank-node__items {

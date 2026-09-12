@@ -129,6 +129,13 @@ function textToHtml(value: string) {
     .replaceAll('\n', '<br>');
 }
 
+function hasRichTextContent(value: string) {
+  return value
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;|&#160;/gi, ' ')
+    .trim().length > 0;
+}
+
 export const MediaLayoutContent = memo(function MediaLayoutContent({
   attrs,
 }: { attrs: MediaLayoutAttrs }) {
@@ -157,6 +164,7 @@ export const MediaLayoutContent = memo(function MediaLayoutContent({
     >
       {attrs.items.map((item) => {
         const href = safeLink(item.href);
+        const hasCaption = hasRichTextContent(item.caption);
         const image = item.src.trim() ? (
           <img
             alt={item.alt}
@@ -168,15 +176,19 @@ export const MediaLayoutContent = memo(function MediaLayoutContent({
           />
         ) : null;
         return (
-          <figure className="media-layout-node__item" key={item.id}>
+          <figure
+            className="media-layout-node__item"
+            data-has-caption={hasCaption}
+            key={item.id}
+          >
             {href && image ? (
               <a href={href} rel="noreferrer" target="_blank">
                 {image}
               </a>
             ) : image}
-            {attrs.showCaptions && (item.caption || item.credit) && (
+            {attrs.showCaptions && (hasCaption || item.credit) && (
               <figcaption className="media-layout-node__caption">
-                {item.caption && (
+                {hasCaption && (
                   <div
                     className="media-layout-node__caption-content"
                     dangerouslySetInnerHTML={{ __html: textToHtml(item.caption) }}

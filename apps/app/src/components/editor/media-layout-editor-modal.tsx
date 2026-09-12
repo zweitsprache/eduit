@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/core';
 import { useEditorState } from '@tiptap/react';
 import { createPortal } from 'react-dom';
@@ -101,9 +101,8 @@ function MediaRichTextEditor({
   const inputRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef<Range | null>(null);
   const draftRef = useRef(normalizeRichTextHtml(value));
-  const [draft, setDraft] = useState(() => normalizeRichTextHtml(value));
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const input = inputRef.current;
     const html = normalizeRichTextHtml(value);
     const isActive = Boolean(
@@ -113,7 +112,6 @@ function MediaRichTextEditor({
       return;
     }
     draftRef.current = html;
-    setDraft(html);
     input.innerHTML = html;
   }, [value]);
 
@@ -128,7 +126,6 @@ function MediaRichTextEditor({
     if (!input) return;
     const html = normalizeRichTextHtml(input.innerHTML);
     draftRef.current = html;
-    setDraft(html);
     onChange(html);
   };
 
@@ -235,8 +232,9 @@ function MediaRichTextEditor({
         aria-label="Text"
         aria-multiline="true"
         contentEditable
-        dangerouslySetInnerHTML={{ __html: draft }}
-        onInput={(event) => setDraft(normalizeRichTextHtml(event.currentTarget.innerHTML))}
+        onInput={(event) => {
+          draftRef.current = event.currentTarget.innerHTML;
+        }}
         onBlur={(event) => {
           const nextFocused = event.relatedTarget;
           if (nextFocused instanceof Node && editorRootRef.current?.contains(nextFocused)) return;
@@ -251,10 +249,12 @@ function MediaRichTextEditor({
 
 export function MediaLayoutEditorModal({
   block,
+  documentSize,
   editor,
   onClose,
 }: {
   block: MediaBlock | null;
+  documentSize: string;
   editor: Editor;
   onClose: () => void;
 }) {
@@ -283,6 +283,23 @@ export function MediaLayoutEditorModal({
   }, [block, onClose, selectingItemId]);
 
   if (!block || !attrs || typeof document === 'undefined') return null;
+  const isFotokarten = documentSize === 'a5-fotokarten';
+  const visibleItems = isFotokarten ? attrs.items.slice(0, 1) : attrs.items;
+  const previewAttrs: MediaLayoutAttrs = isFotokarten
+    ? {
+        ...attrs,
+        layout: 'full',
+        gap: 'none',
+        aspectRatio: 'auto',
+        fit: 'cover',
+        radius: 'none',
+        border: 'none',
+        maximize: false,
+        showCaptions: false,
+        text: '',
+        items: visibleItems,
+      }
+    : attrs;
   const set = (patch: Partial<MediaLayoutAttrs>) => (
     updateAttrs(editor, block, patch)
   );
@@ -367,6 +384,8 @@ export function MediaLayoutEditorModal({
 
           <div className="grid min-h-0 flex-1 grid-cols-[minmax(24rem,0.9fr)_minmax(30rem,1.1fr)] overflow-hidden">
             <div className="overflow-y-auto border-r border-secondary p-6">
+              {!isFotokarten && (
+                <>
               <ContentSectionHeader className="">Layout</ContentSectionHeader>
               <ContentOptionButtonGroup
                 ariaLabel="Media layout"
@@ -543,7 +562,7 @@ export function MediaLayoutEditorModal({
                     className={`${inputClass} mt-1.5`}
                   >
                     <option value="small">Small</option>
-                    <option value="medium">Medium</option>
+                    <option value="medium">Normal</option>
                     <option value="large">Large</option>
                   </select>
                 </label>
@@ -588,12 +607,14 @@ export function MediaLayoutEditorModal({
                   />
                 </>
               )}
+                </>
+              )}
 
-              <ContentSectionHeader count={attrs.items.length}>
-                Images
+              <ContentSectionHeader count={visibleItems.length}>
+                {isFotokarten ? 'Photo' : 'Images'}
               </ContentSectionHeader>
               <div className="mt-3 space-y-3">
-                {attrs.items.map((item, index) => (
+                {visibleItems.map((item, index) => (
                   <ContentCard key={item.id}>
                     <div className="flex items-start gap-2">
                       <button
@@ -657,7 +678,7 @@ export function MediaLayoutEditorModal({
                           </button>
                         </div>
                       </div>
-                      <div className="flex shrink-0">
+                      {!isFotokarten && <div className="flex shrink-0">
                         <button
                           type="button"
                           aria-label={`Move image ${index + 1} up`}
@@ -691,9 +712,9 @@ export function MediaLayoutEditorModal({
                         >
                           <Trash01 className="size-4" />
                         </button>
-                      </div>
+                      </div>}
                     </div>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
+                    {!isFotokarten && <div className="mt-2 grid grid-cols-2 gap-2">
                       <div className="col-span-2">
                         <ContentFieldLabel>Caption</ContentFieldLabel>
                         <MediaRichTextEditor
@@ -717,8 +738,8 @@ export function MediaLayoutEditorModal({
                         className="col-span-2 h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm text-secondary outline-none placeholder:text-placeholder focus:border-brand focus:ring-2 focus:ring-brand"
                         placeholder="Optional link URL"
                       />
-                    </div>
-                    {attrs.fit === 'cover' && (
+                    </div>}
+                    {(isFotokarten || attrs.fit === 'cover') && (
                       <div className="mt-2 grid grid-cols-2 gap-3">
                         <label className="text-xs font-semibold text-tertiary">
                           Horizontal focus
@@ -751,7 +772,7 @@ export function MediaLayoutEditorModal({
                   </ContentCard>
                 ))}
               </div>
-              <button
+              {!isFotokarten && <button
                 type="button"
                 onClick={() => {
                   const id = `media-item-${Date.now()}`;
@@ -773,7 +794,7 @@ export function MediaLayoutEditorModal({
               >
                 <PlusSquare className="size-4" />
                 Add image
-              </button>
+              </button>}
               {generationError && (
                 <p className="mt-3 rounded-md border border-error-secondary bg-error-primary/5 px-3 py-2 text-sm text-error-primary">
                   {generationError}
@@ -784,7 +805,7 @@ export function MediaLayoutEditorModal({
             <div className="overflow-y-auto bg-primary p-6">
               <p className="mb-4 text-sm font-semibold text-secondary">Preview</p>
               <div className="mx-auto w-full max-w-[48rem]">
-                <MediaLayoutContent attrs={attrs} />
+                <MediaLayoutContent attrs={previewAttrs} />
               </div>
             </div>
           </div>

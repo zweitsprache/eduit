@@ -668,12 +668,14 @@ const articlePluralRowSchema = z.object({
 
 const articlePluralSchema = z.object({
   type: z.literal('articlePlural'),
-  instruction: z.literal(
-    'Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.',
-  ).default('Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.'),
+  instruction: z.string().trim().max(1000)
+    .default('Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.'),
+  hideInstructionBadge: z.boolean().default(false),
   rows: z.array(articlePluralRowSchema).min(1).max(1000),
   order: z.enum(['alphabetical', 'shuffle']).default('alphabetical'),
   shuffleSeed: z.number().int().min(0).max(1_000_000).default(0),
+  showAdditionalBlankItems: z.boolean().default(true),
+  showPluralColumn: z.boolean().default(true),
   continuation: z.boolean().default(false),
   rowNumberOffset: z.number().int().min(0).max(1_000_000).default(0),
 });
@@ -1516,7 +1518,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       (_, index) => rows.slice(index * 22, (index + 1) * 22),
     );
     return chunks.map((chunk, index) => (
-      `<div data-article-plural-rows="${escapeAttribute(encodeURIComponent(JSON.stringify(chunk)))}" data-article-plural-order="${block.order}" data-article-plural-shuffle-seed="${block.shuffleSeed}" data-article-plural-continuation="${block.continuation || index > 0}" data-article-plural-row-number-offset="${block.rowNumberOffset + index * 22}" data-type="article-plural"></div>`
+      `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-article-plural-hide-instruction-badge="${block.hideInstructionBadge}" data-article-plural-rows="${escapeAttribute(encodeURIComponent(JSON.stringify(chunk)))}" data-article-plural-order="${block.order}" data-article-plural-shuffle-seed="${block.shuffleSeed}" data-article-plural-show-additional-blank-items="${block.showAdditionalBlankItems}" data-article-plural-show-plural-column="${block.showPluralColumn}" data-article-plural-continuation="${block.continuation || index > 0}" data-article-plural-row-number-offset="${block.rowNumberOffset + index * 22}" data-type="article-plural"></div>`
     )).join('');
   }
   if (block.type === 'trueFalse') {

@@ -873,11 +873,13 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     }
     case 'articlePlural': {
       const {
-        rows, order, shuffleSeed, continuation, rowNumberOffset,
+        instruction, hideInstructionBadge, rows, order, shuffleSeed,
+        showAdditionalBlankItems, showPluralColumn, continuation, rowNumberOffset,
       } = attrs as ArticlePluralAttrs;
       return {
         type: 'articlePlural',
-        instruction: 'Kreuzen Sie den richtigen Artikel an. Schreiben Sie die Pluralform.',
+        instruction: instruction || DEFAULT_BLOCK_INSTRUCTIONS.articlePlural,
+        hideInstructionBadge,
         rows: rows.map(({ id, term, articles, plural }) => ({
           id,
           term,
@@ -886,6 +888,8 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         })),
         order,
         shuffleSeed,
+        showAdditionalBlankItems,
+        showPluralColumn,
         continuation,
         rowNumberOffset,
       };

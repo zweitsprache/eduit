@@ -90,7 +90,62 @@
   .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
   .tiptap[data-doc-size="a5-fotokarten"]
 ) .tiptap-page-header::after {
-  right: calc(var(--document-page-header-right, 15mm) + 2px - 5mm);
+  display: none;
+}
+
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .tiptap-page-header img {
+  position: absolute;
+  top: calc(4.25mm - 1px);
+  right: calc(10mm + 1px - 3.75mm);
+  display: block !important;
+  width: 7.5mm;
+  height: 7.5mm;
+  object-fit: contain;
+  transform: none;
+}
+
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .tiptap-page-footer {
+  min-height: 12.5mm !important;
+  height: 12.5mm !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  align-content: center;
+  transform: none;
+}
+
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .tiptap-page-footer::before,
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .tiptap-page-footer::after {
+  line-height: 1.4;
+  white-space: pre-line;
+  transform: translateY(-2.75mm);
+}
+
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .tiptap-page-footer::before {
+  content: var(--learning-card-footer-left, "");
+}
+
+:is(
+  .editor-app[data-doc-size="a5-fotokarten"] .tiptap,
+  .tiptap[data-doc-size="a5-fotokarten"]
+) .tiptap-page-footer::after {
+  grid-column: 3;
+  text-align: right;
+  content: var(--learning-card-footer-right, "");
 }
 
 .tiptap[data-learning-cards-double] .tiptap-page-header::before {

@@ -75,6 +75,7 @@ function buildNumberingDecorations(
     );
     const hasAdditionalArticlePluralInstruction = (
       node.type.name === 'articlePlural'
+      && node.attrs.showAdditionalBlankItems !== false
       && Array.isArray(node.attrs.rows)
       && node.attrs.rows.length <= 19
     );
