@@ -98,6 +98,7 @@ export type Worksheet = {
   brandProfileName: string | null;
   title: string;
   contentHtml: string;
+  contentJson: import('@/lib/worksheet-document-schema').WorksheetDocument | null;
   documentSize: WorksheetDocumentSize;
   showSolutions: boolean;
   context: WorksheetContext;
@@ -113,6 +114,7 @@ export type WorksheetPatch = Partial<Pick<
   Worksheet,
   | 'title'
   | 'contentHtml'
+  | 'contentJson'
   | 'documentSize'
   | 'showSolutions'
   | 'context'

@@ -4723,6 +4723,13 @@ function FillInTheBlankEditor({
           })}
         />
         <ContentSwitch
+          label="Show instruction"
+          isSelected={attrs.showInstruction !== false}
+          onChange={(showInstruction) => updateAttrs(editor, block, {
+            showInstruction,
+          })}
+        />
+        <ContentSwitch
           label="Hide instruction number badge"
           isSelected={attrs.hideInstructionBadge}
           onChange={(hideInstructionBadge) => updateAttrs(editor, block, {
@@ -4752,6 +4759,13 @@ function FillInTheBlankEditor({
             })}
           />
         )}
+        <ContentSwitch
+          label="Render empty lines as spacer rows"
+          isSelected={attrs.renderEmptyLinesAsSpacerRows}
+          onChange={(renderEmptyLinesAsSpacerRows) => updateAttrs(editor, block, {
+            renderEmptyLinesAsSpacerRows,
+          })}
+        />
       </ContentSwitchGrid>
       <ContentSectionHeader>Word bank distractors</ContentSectionHeader>
       <ContentFieldLabel>

@@ -23,11 +23,13 @@ export type FillInTheBlankAttrs = {
   text: string;
   distractors: string[];
   widthFactor: number;
+  showInstruction: boolean;
   hideInstructionBadge: boolean;
   compactSingleLetterBlanks: boolean;
   hideBlankNumbers: boolean;
   hideItemNumbers: boolean;
   showLineNumbers: boolean;
+  renderEmptyLinesAsSpacerRows: boolean;
   showWordBank: boolean;
   showFirstAsExample: boolean;
 };
@@ -139,13 +141,29 @@ export function textWithBlankBoundaryJoiners(
   return joinedValue;
 }
 
-function parseParagraphs(text: string, defaultWidthFactor: number) {
+type FillInTheBlankRow = {
+  itemNumber?: number;
+  parts: FillInTheBlankPart[];
+  spacer: boolean;
+};
+
+function parseParagraphs(
+  text: string,
+  defaultWidthFactor: number,
+  renderEmptyLinesAsSpacerRows: boolean,
+): FillInTheBlankRow[] {
   let blankOffset = 0;
+  let itemNumber = 0;
 
   return text
     .split(/\r?\n/)
-    .filter((paragraph) => paragraph.trim().length > 0)
-    .map((paragraph) => {
+    .flatMap<FillInTheBlankRow>((paragraph) => {
+      if (!paragraph.trim()) {
+        return renderEmptyLinesAsSpacerRows
+          ? [{ parts: [], spacer: true }]
+          : [];
+      }
+      itemNumber += 1;
       const parts = parseFillInTheBlankText(paragraph, defaultWidthFactor)
         .map((part) => (
           part.type === 'blank'
@@ -153,7 +171,7 @@ function parseParagraphs(text: string, defaultWidthFactor: number) {
             : part
         ));
       blankOffset += parts.filter((part) => part.type === 'blank').length;
-      return parts;
+      return [{ itemNumber, parts, spacer: false }];
     });
 }
 
@@ -242,11 +260,13 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
     title,
     text,
     widthFactor,
+    showInstruction,
     hideInstructionBadge,
     compactSingleLetterBlanks,
     hideBlankNumbers,
     hideItemNumbers,
     showLineNumbers,
+    renderEmptyLinesAsSpacerRows,
     showWordBank,
     showFirstAsExample,
     distractors,
@@ -256,9 +276,13 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
     number: number;
     top: number;
   }>>([]);
-  const paragraphs = parseParagraphs(text, widthFactor);
-  const hasMultipleParagraphs = paragraphs.length > 1;
-  const wordBankItems = paragraphs.flatMap((parts) => (
+  const rows = parseParagraphs(
+    text,
+    widthFactor,
+    renderEmptyLinesAsSpacerRows,
+  );
+  const usesItemRows = rows.length > 1 || rows.some((row) => row.spacer);
+  const wordBankItems = rows.flatMap(({ parts }) => (
     parts.flatMap((part) => (
       part.type === 'blank' && part.answer.trim()
         ? [{ id: `blank-${part.index}`, text: part.answer.trim() }]
@@ -350,36 +374,49 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
     };
   }, [hideItemNumbers, measureLineNumbers, showLineNumbers]);
 
-  const finalPairStart = Math.max(0, paragraphs.length - 2);
-  const renderParagraph = (parts: FillInTheBlankPart[], paragraphIndex: number) => (
+  const finalPairStart = Math.max(0, rows.length - 2);
+  const renderRow = (row: FillInTheBlankRow, rowIndex: number) => (
     <div
       className={`fill-in-the-blank-node__item${
-        paragraphIndex === 0 ? ' fill-in-the-blank-node__item--first' : ''
+        rowIndex === 0 ? ' fill-in-the-blank-node__item--first' : ''
+      }${
+        row.spacer ? ' fill-in-the-blank-node__item--spacer' : ''
       }`}
-      key={paragraphIndex}
+      key={rowIndex}
     >
-      {!hideItemNumbers && (
-        <span className="custom-block__row-index">
-          {String(paragraphIndex + 1).padStart(2, '0')}
-        </span>
+      {!row.spacer && (
+        <>
+          {!hideItemNumbers && (
+            <span className="custom-block__row-index">
+              {String(row.itemNumber).padStart(2, '0')}
+            </span>
+          )}
+          <p className="fill-in-the-blank-node__text">
+            <FillInTheBlankParts
+              compactSingleLetterBlanks={compactSingleLetterBlanks}
+              hideBlankNumbers={hideBlankNumbers}
+              itemNumber={row.itemNumber}
+              parts={row.parts}
+              showFirstAsExample={showFirstAsExample}
+            />
+          </p>
+        </>
       )}
-      <p className="fill-in-the-blank-node__text">
-        <FillInTheBlankParts
-          compactSingleLetterBlanks={compactSingleLetterBlanks}
-          hideBlankNumbers={hideBlankNumbers}
-          itemNumber={paragraphIndex + 1}
-          parts={parts}
-          showFirstAsExample={showFirstAsExample}
-        />
-      </p>
     </div>
   );
 
   return (
-    <CustomBlockRoot selected={selected} className="fill-in-the-blank-node">
-      <BlockInstruction hideBadge={hideInstructionBadge}>
-        {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.fillInTheBlank}
-      </BlockInstruction>
+    <CustomBlockRoot
+      selected={selected}
+      className={`fill-in-the-blank-node${
+        showInstruction ? '' : ' without-fill-blank-instruction'
+      }`}
+    >
+      {showInstruction && (
+        <BlockInstruction hideBadge={hideInstructionBadge}>
+          {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.fillInTheBlank}
+        </BlockInstruction>
+      )}
       {showWordBank && orderedWordBankItems.length > 0 && (
         <div className="custom-block__word-bank fill-in-the-blank-node__word-bank">
           {orderedWordBankItems.map((item) => (
@@ -397,7 +434,7 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
           <strong>{title}</strong>
         </p>
       )}
-      {hasMultipleParagraphs ? (
+      {usesItemRows ? (
         <div
           ref={itemsRef}
           className={`fill-in-the-blank-node__items${
@@ -420,10 +457,10 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
               {String(marker.number).padStart(2, '0')}
             </span>
           ))}
-          {paragraphs.slice(0, finalPairStart).map(renderParagraph)}
+          {rows.slice(0, finalPairStart).map(renderRow)}
           <div className="fill-in-the-blank-node__final-pair">
-            {paragraphs.slice(finalPairStart).map((parts, offset) => (
-              renderParagraph(parts, finalPairStart + offset)
+            {rows.slice(finalPairStart).map((row, offset) => (
+              renderRow(row, finalPairStart + offset)
             ))}
           </div>
         </div>
@@ -432,7 +469,7 @@ function FillInTheBlankNodeView({ node, selected }: NodeViewProps) {
           <FillInTheBlankParts
             compactSingleLetterBlanks={compactSingleLetterBlanks}
             hideBlankNumbers={hideBlankNumbers}
-            parts={paragraphs[0] ?? []}
+            parts={rows[0]?.parts ?? []}
             showFirstAsExample={showFirstAsExample}
           />
         </p>
@@ -503,6 +540,15 @@ export const FillInTheBlank = Node.create({
           'data-fill-blank-width-factor': attributes.widthFactor,
         }),
       },
+      showInstruction: {
+        default: true,
+        parseHTML: (element) => (
+          element.getAttribute('data-fill-blank-show-instruction') !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-fill-blank-show-instruction': String(attributes.showInstruction),
+        }),
+      },
       hideInstructionBadge: {
         default: false,
         parseHTML: (element) => (
@@ -551,6 +597,17 @@ export const FillInTheBlank = Node.create({
         renderHTML: (attributes) => ({
           'data-fill-blank-show-line-numbers': String(
             attributes.showLineNumbers,
+          ),
+        }),
+      },
+      renderEmptyLinesAsSpacerRows: {
+        default: false,
+        parseHTML: (element) => (
+          element.getAttribute('data-fill-blank-empty-line-spacers') === 'true'
+        ),
+        renderHTML: (attributes) => ({
+          'data-fill-blank-empty-line-spacers': String(
+            attributes.renderEmptyLinesAsSpacerRows,
           ),
         }),
       },
@@ -604,11 +661,14 @@ export const FillInTheBlank = Node.create({
               text: attrs.text ?? 'The {{blank:answer}} is the correct word.',
               distractors: attrs.distractors ?? [],
               widthFactor: attrs.widthFactor ?? 1,
+              showInstruction: attrs.showInstruction ?? true,
               hideInstructionBadge: attrs.hideInstructionBadge ?? false,
               compactSingleLetterBlanks: attrs.compactSingleLetterBlanks ?? true,
               hideBlankNumbers: attrs.hideBlankNumbers ?? false,
               hideItemNumbers: attrs.hideItemNumbers ?? false,
               showLineNumbers: attrs.showLineNumbers ?? false,
+              renderEmptyLinesAsSpacerRows:
+                attrs.renderEmptyLinesAsSpacerRows ?? false,
               showWordBank: attrs.showWordBank ?? false,
               showFirstAsExample: attrs.showFirstAsExample ?? false,
             },

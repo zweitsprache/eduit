@@ -22,6 +22,23 @@ import type { ArticlePluralCardsAttrs } from '@/components/editor/article-plural
 import type { RichTextAttrs } from '@/components/editor/rich-text-node';
 import type { SpacerAttrs } from '@/components/editor/spacer-node';
 import type { WritingLinesAttrs } from '@/components/editor/writing-lines-node';
+import type { InstructionBlockAttrs } from '@/components/editor/instruction-node';
+import type { LearningObjectiveAttrs } from '@/components/editor/learning-objective-node';
+import type { OrderingAttrs } from '@/components/editor/ordering-node';
+import type { FrayerModelAttrs } from '@/components/editor/frayer-model-node';
+import type { OccupationPortraitAttrs } from '@/components/editor/occupation-portrait-node';
+import type { ErrorCorrectionAttrs } from '@/components/editor/error-correction-node';
+import type { LetterNodeAttrs } from '@/components/editor/letter-node';
+import type { DateMatchingAttrs } from '@/components/editor/date-matching-node';
+import type { TwoWayPrepositionsAttrs } from '@/components/editor/two-way-prepositions-node';
+import type { WeatherAttrs } from '@/components/editor/weather-node';
+import type { FamilyKinshipAttrs } from '@/components/editor/family-kinship-node';
+import type { InlineChoiceAttrs } from '@/components/editor/inline-choice-node';
+import type { MiniFormAttrs } from '@/components/editor/mini-form-node';
+import type { MCHAttrs } from '@/components/editor/mch-node';
+import type { MediaLayoutAttrs } from '@/components/editor/media-layout-node';
+import type { ColorFurnitureAttrs } from '@/components/editor/color-furniture-node';
+import type { ColorFurnitureItem } from '@/lib/color-furniture-activities';
 import type { DictationLinesAttrs } from '@/components/editor/dictation-lines-node';
 import type { AlpharamaTermAttrs } from '@/components/editor/alpharama-term-node';
 import type { LetterCloudAttrs } from '@/components/editor/letter-cloud-node';
@@ -39,6 +56,13 @@ import type { RewriteSentencesAttrs } from '@/components/editor/rewrite-sentence
 import type { SortingCategoriesAttrs } from '@/components/editor/sorting-categories-node';
 import type { ChooseCorrectWordsAttrs } from '@/components/editor/choose-correct-words-node';
 import type { WorksheetContext } from '@/lib/worksheet-types';
+import {
+  createWorksheetDocument,
+  generatedBlocksFromWorksheetDocument,
+  reconcileWorksheetDocument,
+  type GeneratedWorksheetBlock,
+  type WorksheetDocument,
+} from '@/lib/worksheet-document-schema';
 
 const DECLENSION_ENDINGS = ['em', 'en', 'er', 'es', 'e'] as const;
 
@@ -80,6 +104,7 @@ export type WorksheetJsonExportMeta = {
 
 export type WorksheetJsonExportResult = {
   json: string;
+  document: WorksheetDocument;
   blockCount: number;
   skippedTypes: string[];
 };
@@ -102,6 +127,22 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'pageBreak',
   'spacer',
   'writingLines',
+  'instructionBlock',
+  'learningObjective',
+  'ordering',
+  'frayerModel',
+  'occupationPortrait',
+  'errorCorrection',
+  'letterNode',
+  'dateMatching',
+  'twoWayPrepositions',
+  'weather',
+  'familyKinship',
+  'inlineChoice',
+  'miniForm',
+  'mch',
+  'mediaLayout',
+  'colorFurniture',
   'dictationLines',
   'alpharamaTerm',
   'letterCloud',
@@ -245,6 +286,278 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
       const { lineCount, lineHeight, showLineNumbers } = attrs as WritingLinesAttrs;
       return { type: 'writingLines', lineCount, lineHeight, showLineNumbers };
     }
+    case 'instructionBlock': {
+      const { instruction, bypassGap } = attrs as InstructionBlockAttrs;
+      return { type: 'instruction', instruction, bypassGap };
+    }
+    case 'learningObjective': {
+      const {
+        title,
+        curriculumCode,
+        objective,
+        successCriteria,
+      } = attrs as LearningObjectiveAttrs;
+      return {
+        type: 'learningObjective',
+        title,
+        curriculumCode,
+        objective,
+        successCriteria,
+      };
+    }
+    case 'ordering': {
+      const {
+        instruction,
+        items,
+        shuffleItems,
+        generation,
+        showRandomAsExample,
+      } = attrs as OrderingAttrs;
+      return {
+        type: 'ordering',
+        instruction,
+        items,
+        shuffleItems,
+        generation,
+        showRandomAsExample,
+      };
+    }
+    case 'frayerModel': {
+      const {
+        instruction,
+        concept,
+        quadrants,
+        responseLines,
+        showModelAnswers,
+      } = attrs as FrayerModelAttrs;
+      return {
+        type: 'frayerModel',
+        instruction,
+        concept,
+        quadrants,
+        responseLines,
+        showModelAnswers,
+      };
+    }
+    case 'occupationPortrait': {
+      const {
+        profession,
+        title,
+        paragraphs,
+        sourceUrl,
+        proficiencyLevel,
+        proficiencyPhase,
+        textType,
+      } = attrs as OccupationPortraitAttrs;
+      return {
+        type: 'occupationPortrait',
+        profession,
+        title,
+        paragraphs,
+        sourceUrl,
+        proficiencyLevel,
+        proficiencyPhase,
+        textType,
+      };
+    }
+    case 'errorCorrection': {
+      const {
+        instruction,
+        language,
+        markup,
+        incorrectText,
+        correctText,
+        errors,
+        markErrorPositions,
+        correctionLines,
+      } = attrs as ErrorCorrectionAttrs;
+      return {
+        type: 'errorCorrection',
+        instruction,
+        language,
+        markup,
+        incorrectText,
+        correctText,
+        errors,
+        markErrorPositions,
+        correctionLines,
+      };
+    }
+    case 'letterNode': {
+      const {
+        instruction,
+        alphabetChoice,
+        alphabet,
+        helperLetters,
+        keyColumns,
+        cellHeight,
+        showKey,
+        showItemNumbers,
+        showFirstAsExample,
+        items,
+      } = attrs as LetterNodeAttrs;
+      return {
+        type: 'letterNode',
+        instruction,
+        alphabetChoice,
+        alphabet,
+        helperLetters,
+        keyColumns,
+        cellHeight,
+        showKey,
+        showItemNumbers,
+        showFirstAsExample,
+        items,
+      };
+    }
+    case 'dateMatching': {
+      const {
+        instruction,
+        leftRepresentation,
+        rightRepresentation,
+        dates,
+        rightOrder,
+      } = attrs as DateMatchingAttrs;
+      return {
+        type: 'dateMatching',
+        instruction,
+        leftRepresentation,
+        rightRepresentation,
+        dates,
+        rightOrder,
+      };
+    }
+    case 'twoWayPrepositions': {
+      const { instruction, mode, items, showVocabulary } =
+        attrs as TwoWayPrepositionsAttrs;
+      return {
+        type: 'twoWayPrepositions',
+        instruction,
+        mode,
+        items,
+        showVocabulary,
+      };
+    }
+    case 'weather': {
+      const {
+        instruction,
+        mode,
+        items,
+        questionOrder,
+        showInstruction,
+        weatherKinds,
+        minTemperature,
+        maxTemperature,
+        shuffleQuestions,
+        varyWeekdayAndCity,
+      } = attrs as WeatherAttrs;
+      return {
+        type: 'weather',
+        instruction,
+        mode,
+        items,
+        questionOrder,
+        showInstruction,
+        weatherKinds,
+        minTemperature,
+        maxTemperature,
+        shuffleQuestions,
+        varyWeekdayAndCity,
+      };
+    }
+    case 'familyKinship': {
+      const { riddles, showFirstAsExample } = attrs as FamilyKinshipAttrs;
+      return {
+        type: 'familyKinship',
+        instruction: optionalInstruction(attrs.instruction),
+        riddles,
+        showFirstAsExample,
+      };
+    }
+    case 'inlineChoice': {
+      const {
+        instruction,
+        shuffleChoices,
+        showFirstAsExample,
+        items,
+      } = attrs as InlineChoiceAttrs;
+      return {
+        type: 'inlineChoice',
+        instruction,
+        shuffleChoices,
+        showFirstAsExample,
+        items,
+      };
+    }
+    case 'miniForm': {
+      const {
+        instruction,
+        fields,
+        columns,
+        fillRemainingRow,
+        showFirstAsExample,
+        items,
+      } = attrs as MiniFormAttrs;
+      return {
+        type: 'miniForm',
+        instruction,
+        fields,
+        columns,
+        fillRemainingRow,
+        showFirstAsExample,
+        items,
+      };
+    }
+    case 'mch': {
+      const { question, options, rows, showFirstAsExample } = attrs as MCHAttrs;
+      return {
+        type: 'mch',
+        instruction: optionalInstruction(attrs.instruction),
+        question,
+        options,
+        rows,
+        showFirstAsExample,
+      };
+    }
+    case 'mediaLayout': {
+      const {
+        layout,
+        columns,
+        imageWidth,
+        gap,
+        aspectRatio,
+        fit,
+        radius,
+        border,
+        maximize,
+        showCaptions,
+        captionSize,
+        captionStyle,
+        text,
+        textVertical,
+        items,
+      } = attrs as MediaLayoutAttrs;
+      return {
+        type: 'mediaLayout',
+        layout,
+        columns,
+        imageWidth,
+        gap,
+        aspectRatio,
+        fit,
+        radius,
+        border,
+        maximize,
+        showCaptions,
+        captionSize,
+        captionStyle,
+        text,
+        textVertical,
+        items,
+      };
+    }
+    case 'colorFurniture':
+      return colorFurnitureBlockJson(attrs as ColorFurnitureAttrs);
     case 'dictationLines': {
       const {
         items,
@@ -387,20 +700,22 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     case 'fillInTheBlank': {
       const {
         title, text, distractors, widthFactor, hideBlankNumbers,
-        hideInstructionBadge, hideItemNumbers, showLineNumbers,
-        showWordBank, showFirstAsExample,
+        showInstruction, hideInstructionBadge, hideItemNumbers, showLineNumbers,
+        renderEmptyLinesAsSpacerRows, showWordBank, showFirstAsExample,
       } = attrs as FillInTheBlankAttrs;
       return {
         type: 'fillInTheBlank',
         instruction: instructionOr(attrs.instruction, DEFAULT_BLOCK_INSTRUCTIONS.fillInTheBlank),
         title,
-        items: text.split('\n').map((item) => item.trim()).filter(Boolean),
+        items: text.split(/\r?\n/).map((item) => item.trim()),
         distractors,
         widthFactor,
+        showInstruction,
         hideInstructionBadge,
         hideBlankNumbers,
         hideItemNumbers,
         showLineNumbers,
+        renderEmptyLinesAsSpacerRows,
         showWordBank,
         showFirstAsExample,
       };
@@ -950,6 +1265,18 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
   }
 }
 
+function colorFurnitureBlockJson(
+  attrs: ColorFurnitureAttrs,
+  items: ColorFurnitureItem[] = attrs.items,
+) {
+  return {
+    type: 'colorFurniture',
+    instruction: attrs.instruction,
+    mode: attrs.mode,
+    items,
+  };
+}
+
 function contextJson(context: WorksheetContext) {
   const entries = Object.entries(context).filter(([, value]) => (
     value !== null && value !== undefined && value !== ''
@@ -965,6 +1292,8 @@ function contextJson(context: WorksheetContext) {
 export function worksheetJsonFromDoc(
   doc: ProseMirrorNode,
   meta: WorksheetJsonExportMeta,
+  createBlockId?: () => string,
+  previousDocument: WorksheetDocument | null = null,
 ): WorksheetJsonExportResult {
   const blocks: Record<string, unknown>[] = [];
   const skippedTypes = new Set<string>();
@@ -988,8 +1317,22 @@ export function worksheetJsonFromDoc(
   let dominoSeen = false;
   const informationGapActivitiesSeen = new Set<string>();
   let informationGapPageBreakPending = false;
+  let colorFurnitureSequence: {
+    attrs: ColorFurnitureAttrs;
+    items: Map<string, ColorFurnitureItem>;
+  } | null = null;
+
+  const flushColorFurniture = () => {
+    if (!colorFurnitureSequence) return;
+    blocks.push(colorFurnitureBlockJson(
+      colorFurnitureSequence.attrs,
+      [...colorFurnitureSequence.items.values()],
+    ));
+    colorFurnitureSequence = null;
+  };
 
   doc.forEach((node) => {
+    if (node.type.name !== 'colorFurniture') flushColorFurniture();
     const legacyRichText = legacyRichTextNode(node) ?? legacyRichTextFromSubtree(node).trim();
     if (legacyRichText) {
       legacyRichTextParts.push(legacyRichText);
@@ -997,6 +1340,21 @@ export function worksheetJsonFromDoc(
     }
 
     flushLegacyRichText();
+
+    if (node.type.name === 'colorFurniture') {
+      const colorAttrs = node.attrs as ColorFurnitureAttrs;
+      if (colorFurnitureSequence && colorAttrs.showInstruction !== false) {
+        flushColorFurniture();
+      }
+      colorFurnitureSequence ??= {
+        attrs: colorAttrs,
+        items: new Map(),
+      };
+      colorAttrs.items.forEach((item) => {
+        colorFurnitureSequence?.items.set(item.id, item);
+      });
+      return;
+    }
 
     if (node.type.name === 'learningCards') {
       if (learningCardsSeen) return;
@@ -1050,7 +1408,17 @@ export function worksheetJsonFromDoc(
     skippedTypes.add(node.type.name);
   });
 
+  flushColorFurniture();
   flushLegacyRichText();
+
+  const document = previousDocument
+    ? reconcileWorksheetDocument(
+      blocks as GeneratedWorksheetBlock[],
+      previousDocument,
+      createBlockId,
+    )
+    : createWorksheetDocument(blocks as GeneratedWorksheetBlock[], createBlockId);
+  const generatedBlocks = generatedBlocksFromWorksheetDocument(document);
 
   const payload = {
     schemaVersion: 1,
@@ -1061,14 +1429,15 @@ export function worksheetJsonFromDoc(
       status: 'draft',
       brandProfileId: meta.brandProfileId ?? undefined,
       context: contextJson(meta.context),
-      blocks,
+      blocks: generatedBlocks,
     }],
   };
 
   return {
     // JSON.stringify drops the `undefined` values used above for "omit this key".
     json: JSON.stringify(payload, null, 2),
-    blockCount: blocks.length,
+    document,
+    blockCount: generatedBlocks.length,
     skippedTypes: [...skippedTypes],
   };
 }

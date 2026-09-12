@@ -253,6 +253,7 @@ import {
   type WorksheetContext,
 } from '@/lib/worksheet-types';
 import { worksheetJsonFromDoc } from '@/lib/worksheet-json-export';
+import type { WorksheetDocument } from '@/lib/worksheet-document-schema';
 import { worksheetBlocksHtmlFromGeneratedJson } from '@/lib/worksheet-json-import';
 import { hasMeaningfulSolutions } from '@/lib/worksheet-solutions';
 import type { ContextProfile } from '@/lib/context-profiles';
@@ -548,7 +549,7 @@ const DOCUMENT_CREATOR = 'Creator name';
 const DOCUMENT_ID = 'Document ID';
 const FOOTER_BLOCK_TAG_PATTERN =
   /<\/?(?:address|article|aside|blockquote|div|footer|h[1-6]|header|li|main|nav|ol|p|section|table|tbody|td|tfoot|th|thead|tr|ul)(?:\s[^>]*)?>/gi;
-const CUSTOM_BLOCK_TYPES = new Set(
+const CUSTOM_BLOCK_TYPES = new Set<string>(
   CUSTOM_BLOCK_REGISTRY.map(({ type }) => type),
 );
 const CONTENT_EDITOR_BLOCK_TYPES = new Set([
@@ -1680,6 +1681,7 @@ export default function EditorPage() {
     worksheetId,
   }));
   const worksheetSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const worksheetDocumentRef = useRef<WorksheetDocument | null>(null);
   const worksheetTitleSaveTimerRef =
     useRef<ReturnType<typeof setTimeout> | null>(null);
   const worksheetPreviewTimerRef =
@@ -1903,12 +1905,23 @@ export default function EditorPage() {
       if (worksheetSaveTimerRef.current) clearTimeout(worksheetSaveTimerRef.current);
       worksheetSaveTimerRef.current = setTimeout(async () => {
         try {
+          const { document } = worksheetJsonFromDoc(editor.state.doc, {
+            title: worksheetTitle,
+            documentSize: docSize,
+            showSolutions,
+            brandProfileId,
+            context: documentContext,
+          }, undefined, worksheetDocumentRef.current);
+          worksheetDocumentRef.current = document;
           const response = await fetch('/api/worksheets', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               id: worksheetId,
-              worksheet: { contentHtml: editor.getHTML() },
+              worksheet: {
+                contentHtml: editor.getHTML(),
+                contentJson: document,
+              },
             }),
           });
           setSaved(response.ok);
@@ -3108,6 +3121,7 @@ export default function EditorPage() {
             id: string;
             title: string;
             contentHtml: string;
+            contentJson: WorksheetDocument | null;
             documentSize: string;
             brandProfileId: string | null;
             folderId: string | null;
@@ -3132,6 +3146,7 @@ export default function EditorPage() {
           localStorage.removeItem(STORAGE_KEY);
         }
         setWorksheetTitle(result.worksheet.title);
+        worksheetDocumentRef.current = result.worksheet.contentJson;
         const storedDocSize = localStorage.getItem(
           worksheetDocSizeStorageKey(result.worksheet.id),
         );
@@ -9595,6 +9610,20 @@ export default function EditorPage() {
               </label>
 
               <label className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                <span>Show instruction</span>
+                <input
+                  type="checkbox"
+                  checked={selectedFillInTheBlankAttrs.showInstruction !== false}
+                  onChange={(event) => setFillInTheBlankAttr(
+                    editor,
+                    selectedFillInTheBlankPos,
+                    'showInstruction',
+                    event.target.checked,
+                  )}
+                />
+              </label>
+
+              <label className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
                 <span>Hide instruction number badge</span>
                 <input
                   type="checkbox"
@@ -9617,6 +9646,20 @@ export default function EditorPage() {
                     editor,
                     selectedFillInTheBlankPos,
                     'hideBlankNumbers',
+                    event.target.checked,
+                  )}
+                />
+              </label>
+
+              <label className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-tertiary">
+                <span>Render empty lines as spacer rows</span>
+                <input
+                  type="checkbox"
+                  checked={selectedFillInTheBlankAttrs.renderEmptyLinesAsSpacerRows}
+                  onChange={(event) => setFillInTheBlankAttr(
+                    editor,
+                    selectedFillInTheBlankPos,
+                    'renderEmptyLinesAsSpacerRows',
                     event.target.checked,
                   )}
                 />

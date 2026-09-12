@@ -10,6 +10,7 @@ import {
 } from '@/lib/worksheet-types';
 import { GRAMMAR_TAG_ID_SET } from '@/lib/grammar-tags';
 import { requireOwnedWorksheetFolder } from '@/lib/worksheet-folders';
+import { worksheetDocumentSchema } from '@/lib/worksheet-document-schema';
 
 type WorksheetRow = {
   id: string;
@@ -19,6 +20,7 @@ type WorksheetRow = {
   brand_profile_name: string | null;
   title: string;
   content_html: string;
+  content_json: unknown;
   document_size: Worksheet['documentSize'];
   show_solutions: boolean;
   context: WorksheetContext | null;
@@ -44,6 +46,7 @@ function mapRow(row: WorksheetRow): Worksheet {
     brandProfileName: row.brand_profile_name,
     title: row.title,
     contentHtml: row.content_html,
+    contentJson: worksheetDocumentSchema.safeParse(row.content_json).data ?? null,
     documentSize: row.document_size,
     showSolutions: row.show_solutions,
     context: {
@@ -133,6 +136,7 @@ const SELECT_WORKSHEET = `
     b.name as brand_profile_name,
     w.title,
     w.content_html,
+    w.content_json,
     w.document_size,
     w.show_solutions,
     w.context,
@@ -318,6 +322,7 @@ export async function createWorksheet(ownerUserId: string, input: WorksheetPatch
       owner_user_id,
       title,
       content_html,
+      content_json,
       document_size,
       show_solutions,
       status,
@@ -329,6 +334,7 @@ export async function createWorksheet(ownerUserId: string, input: WorksheetPatch
       ${ownerUserId},
       ${input.title?.trim() || 'Untitled Worksheet'},
       ${input.contentHtml ?? ''},
+      ${input.contentJson ? JSON.stringify(input.contentJson) : null}::jsonb,
       ${input.documentSize ?? 'a4-portrait'},
       ${input.showSolutions ?? false},
       ${input.status ?? 'draft'},
@@ -361,6 +367,15 @@ export function validateWorksheetPatch(value: unknown): WorksheetPatch {
       throw new Error('Worksheet content is invalid or too large.');
     }
     patch.contentHtml = input.contentHtml;
+  }
+  if ('contentJson' in input) {
+    if (input.contentJson === null) {
+      patch.contentJson = null;
+    } else {
+      const result = worksheetDocumentSchema.safeParse(input.contentJson);
+      if (!result.success) throw new Error('Worksheet JSON content is invalid.');
+      patch.contentJson = result.data;
+    }
   }
   if ('documentSize' in input) {
     if (!WORKSHEET_DOCUMENT_SIZES.includes(input.documentSize as never)) {
@@ -551,6 +566,7 @@ export async function updateWorksheet(
   }
   const affectsPublication = patch.title !== undefined
     || patch.contentHtml !== undefined
+    || patch.contentJson !== undefined
     || patch.documentSize !== undefined
     || patch.showSolutions !== undefined
     || patch.context !== undefined
@@ -562,6 +578,9 @@ export async function updateWorksheet(
           then ${patch.title ?? ''} else title end,
         content_html = case when ${patch.contentHtml !== undefined}
           then ${patch.contentHtml ?? ''} else content_html end,
+        content_json = case when ${patch.contentJson !== undefined}
+          then ${patch.contentJson ? JSON.stringify(patch.contentJson) : null}::jsonb
+          else content_json end,
         document_size = case when ${patch.documentSize !== undefined}
           then ${patch.documentSize ?? 'a4-portrait'} else document_size end,
         show_solutions = case when ${patch.showSolutions !== undefined}

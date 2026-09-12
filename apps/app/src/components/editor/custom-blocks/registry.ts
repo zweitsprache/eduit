@@ -32,7 +32,7 @@ export type CustomBlockDefinition = {
   insert: (editor: Editor) => boolean;
 };
 
-export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
+export const CUSTOM_BLOCK_REGISTRY = [
   {
     type: 'jsonImport',
     label: 'JSON Import',
@@ -529,4 +529,8 @@ export const CUSTOM_BLOCK_REGISTRY: CustomBlockDefinition[] = [
       editor.chain().focus().insertInformationGapActivity().run()
     ),
   },
-];
+] as const satisfies readonly CustomBlockDefinition[];
+
+export type CustomBlockRegistryType = (
+  typeof CUSTOM_BLOCK_REGISTRY
+)[number]['type'];

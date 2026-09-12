@@ -44,13 +44,15 @@ const fillInTheBlankSchema = z.object({
   type: z.literal('fillInTheBlank'),
   instruction: z.string().trim().min(1).max(1000),
   title: z.string().trim().max(500).default(''),
-  items: z.array(z.string().trim().min(1).max(5000)).min(1).max(500),
+  items: z.array(z.string().trim().max(5000)).min(1).max(500),
   distractors: z.array(z.string().trim().min(1).max(500)).max(500).default([]),
   widthFactor: z.number().min(0.25).max(5).default(1),
+  showInstruction: z.boolean().default(true),
   hideInstructionBadge: z.boolean().default(false),
   hideBlankNumbers: z.boolean().default(false),
   hideItemNumbers: z.boolean().default(false),
   showLineNumbers: z.boolean().default(false),
+  renderEmptyLinesAsSpacerRows: z.boolean().default(false),
   showWordBank: z.boolean().default(false),
   showFirstAsExample: z.boolean().default(false),
 });
@@ -95,6 +97,310 @@ const writingLinesSchema = z.object({
   lineCount: z.number().int().min(1).max(30).default(4),
   lineHeight: z.number().int().min(16).max(120).default(40),
   showLineNumbers: z.boolean().default(false),
+});
+
+const instructionSchema = z.object({
+  type: z.literal('instruction'),
+  instruction: z.string().trim().min(1).max(1000),
+  bypassGap: z.boolean().default(false),
+});
+
+const learningObjectiveSchema = z.object({
+  type: z.literal('learningObjective'),
+  title: z.string().trim().min(1).max(500).default('Learning objective'),
+  curriculumCode: z.string().trim().max(200).default(''),
+  objective: z.string().trim().min(1).max(5000),
+  successCriteria: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    text: z.string().trim().min(1).max(2000),
+  })).min(1).max(20),
+});
+
+const orderingSchema = z.object({
+  type: z.literal('ordering'),
+  instruction: z.string().trim().min(1).max(1000),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    text: z.string().trim().min(1).max(2000),
+  })).min(2).max(100),
+  shuffleItems: z.boolean().default(true),
+  generation: z.number().int().min(0).default(0),
+  showRandomAsExample: z.boolean().default(true),
+});
+
+const frayerModelSchema = z.object({
+  type: z.literal('frayerModel'),
+  instruction: z.string().trim().max(1000).default(
+    'Complete the Frayer model for the concept.',
+  ),
+  concept: z.string().trim().max(500).default('Key concept'),
+  quadrants: z.array(z.object({
+    id: z.enum(['definition', 'characteristics', 'examples', 'nonExamples']),
+    label: z.string().trim().max(500),
+    answer: z.string().max(5000).default(''),
+  })).length(4),
+  responseLines: z.number().int().min(1).max(6).default(3),
+  showModelAnswers: z.boolean().default(false),
+});
+
+const occupationPortraitSchema = z.object({
+  type: z.literal('occupationPortrait'),
+  profession: z.string().trim().max(500).default(''),
+  title: z.string().trim().max(500).default(''),
+  paragraphs: z.array(z.string().max(10_000)).max(100).default([]),
+  sourceUrl: z.string().trim().max(2000).default(''),
+  proficiencyLevel: z.string().trim().max(100).default('A2.1'),
+  proficiencyPhase: z.string().trim().max(100).default('beginning'),
+  textType: z.enum(['self-portrait', 'portrait']).default('self-portrait'),
+});
+
+const errorCorrectionSchema = z.object({
+  type: z.literal('errorCorrection'),
+  instruction: z.string().trim().min(1).max(1000),
+  language: z.enum(['german', 'english']).default('german'),
+  markup: z.string().max(100_000),
+  incorrectText: z.string().max(100_000),
+  correctText: z.string().max(100_000),
+  errors: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    typeId: z.string().trim().max(100).default(''),
+    incorrect: z.string().max(5000),
+    correct: z.string().max(5000),
+    explanation: z.string().max(5000).default(''),
+    start: z.number().int(),
+    end: z.number().int(),
+  })).max(500),
+  markErrorPositions: z.boolean().default(true),
+  correctionLines: z.number().int().min(0).max(8).default(2),
+});
+
+const letterNodeSchema = z.object({
+  type: z.literal('letterNode'),
+  instruction: z.string().trim().min(1).max(1000),
+  alphabetChoice: z.enum(['english', 'german']).default('german'),
+  alphabet: z.string().trim().min(1).max(100),
+  helperLetters: z.string().max(100).default('U'),
+  keyColumns: z.number().int().min(5).max(20).default(15),
+  cellHeight: z.number().int().min(36).max(90).default(52),
+  showKey: z.boolean().default(true),
+  showItemNumbers: z.boolean().default(true),
+  showFirstAsExample: z.boolean().default(true),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    clue: z.string().max(2000),
+    answer: z.string().trim().min(1).max(500),
+  })).min(1).max(100),
+});
+
+const dateMatchingSchema = z.object({
+  type: z.literal('dateMatching'),
+  instruction: z.string().trim().min(1).max(1000),
+  leftRepresentation: z.enum(['calendar', 'numeric', 'written']),
+  rightRepresentation: z.enum(['calendar', 'numeric', 'written']),
+  dates: z.array(z.object({
+    id: z.string().trim().min(1).max(100),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  })).min(1).max(100),
+  rightOrder: z.array(z.string().trim().min(1).max(100)).max(100),
+});
+
+const choiceOptionSchema = z.object({
+  id: z.string().trim().min(1).max(100),
+  text: z.string().max(5000),
+  correct: z.boolean(),
+});
+
+const twoWayPrepositionsSchema = z.object({
+  type: z.literal('twoWayPrepositions'),
+  instruction: z.string().trim().min(1).max(1000),
+  mode: z.enum(['mcq', 'trueFalse']),
+  showVocabulary: z.boolean().default(true),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100),
+    preposition: z.enum([
+      'an', 'auf', 'hinter', 'in', 'neben', 'über', 'unter', 'vor', 'zwischen',
+    ]),
+    grammaticalCase: z.enum(['accusative', 'dative']),
+    subjectShape: z.enum(['square', 'circle', 'ellipse']),
+    referenceShape: z.enum(['square', 'circle', 'ellipse']),
+    secondReferenceShape: z.enum(['square', 'circle', 'ellipse']).nullable(),
+    subjectPlural: z.boolean(),
+    referencePlural: z.boolean(),
+    statement: z.string().max(5000),
+    statementCorrect: z.boolean(),
+    options: z.array(choiceOptionSchema).max(10),
+  })).min(1).max(100),
+});
+
+const weatherKindSchema = z.enum([
+  'cloudy', 'rain', 'snow', 'snowStorm', 'sunSnow', 'sunny', 'storm', 'windy',
+]);
+
+const weatherSchema = z.object({
+  type: z.literal('weather'),
+  instruction: z.string().trim().min(1).max(1000),
+  mode: z.enum(['mcq', 'trueFalse']),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100),
+    weekday: z.string().trim().max(100),
+    city: z.string().trim().max(200),
+    temperature: z.number().min(-100).max(100),
+    weather: weatherKindSchema,
+    statement: z.string().max(5000),
+    statementCorrect: z.boolean(),
+    options: z.array(choiceOptionSchema).max(10),
+  })).min(1).max(100),
+  questionOrder: z.array(z.string().trim().min(1).max(100)).max(100).default([]),
+  showInstruction: z.boolean().default(true),
+  weatherKinds: z.array(weatherKindSchema).max(8).nullable().default(null),
+  minTemperature: z.number().min(-100).max(100).nullable().default(null),
+  maxTemperature: z.number().min(-100).max(100).nullable().default(null),
+  shuffleQuestions: z.boolean().nullable().default(null),
+  varyWeekdayAndCity: z.boolean().default(true),
+});
+
+const familyKinshipSchema = z.object({
+  type: z.literal('familyKinship'),
+  instruction: z.string().trim().max(1000).optional(),
+  riddles: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    prompt: z.string().max(5000),
+    answerMode: z.enum(['mcq', 'open', 'trueFalse']),
+    answer: z.string().max(5000).default(''),
+    options: z.array(z.object({
+      id: z.string().trim().min(1).max(100).optional(),
+      text: z.string().max(2000),
+    })).max(20).default([]),
+    trueFalseValue: z.boolean().default(true),
+  })).min(1).max(100),
+  showFirstAsExample: z.boolean().default(false),
+});
+
+const inlineChoiceSchema = z.object({
+  type: z.literal('inlineChoice'),
+  instruction: z.string().trim().min(1).max(1000),
+  shuffleChoices: z.boolean().default(false),
+  showFirstAsExample: z.boolean().default(false),
+  items: z.array(z.discriminatedUnion('type', [
+    z.object({
+      id: z.string().trim().min(1).max(100).optional(),
+      type: z.literal('sentence'),
+      text: z.string().max(10_000),
+    }),
+    z.object({
+      id: z.string().trim().min(1).max(100).optional(),
+      type: z.literal('divider'),
+    }),
+    z.object({
+      id: z.string().trim().min(1).max(100).optional(),
+      type: z.literal('subtitle'),
+      text: z.string().max(2000),
+    }),
+  ])).min(1).max(500),
+});
+
+const miniFormSchema = z.object({
+  type: z.literal('miniForm'),
+  instruction: z.string().trim().min(1).max(1000),
+  fields: z.array(z.object({
+    id: z.string().trim().min(1).max(100),
+    label: z.string().max(500),
+  })).min(1).max(20),
+  columns: z.union([z.literal(1), z.literal(2), z.literal(3)]).default(3),
+  fillRemainingRow: z.boolean().default(false),
+  showFirstAsExample: z.boolean().default(true),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    prompt: z.string().max(10_000),
+    values: z.record(z.string(), z.string().max(5000)).default({}),
+    image: z.object({
+      src: z.string().max(2000),
+      alt: z.string().max(500).default(''),
+    }).optional(),
+  })).min(1).max(100),
+});
+
+const mchSchema = z.object({
+  type: z.literal('mch'),
+  instruction: z.string().trim().max(1000).optional(),
+  question: z.string().max(5000).default(''),
+  options: z.array(z.object({
+    id: z.string().trim().min(1).max(100),
+    text: z.string().max(2000),
+  })).min(1).max(4),
+  rows: z.array(z.object({
+    id: z.string().trim().min(1).max(100),
+    text: z.string().max(5000),
+    correctOptionId: z.string().trim().min(1).max(100).nullable(),
+  })).min(1).max(500),
+  showFirstAsExample: z.boolean().default(false),
+});
+
+const mediaLayoutSchema = z.object({
+  type: z.literal('mediaLayout'),
+  layout: z.enum(['full', 'image-left', 'image-right', 'grid']).default('full'),
+  columns: z.union([
+    z.literal(1), z.literal(2), z.literal(3), z.literal(4),
+  ]).default(2),
+  imageWidth: z.number().min(1).max(99).default(50),
+  gap: z.enum(['none', 'small', 'medium', 'large']).default('medium'),
+  aspectRatio: z.enum([
+    'auto', 'square', 'four-three', 'three-two', 'wide',
+  ]).default('wide'),
+  fit: z.enum(['cover', 'contain']).default('cover'),
+  radius: z.enum(['none', 'small', 'medium', 'large']).default('small'),
+  border: z.enum(['none', 'light', 'medium']).default('none'),
+  maximize: z.boolean().default(false),
+  showCaptions: z.boolean().default(true),
+  captionSize: z.enum(['small', 'medium', 'large']).default('small'),
+  captionStyle: z.enum(['normal', 'italic', 'bold']).default('normal'),
+  text: z.string().max(100_000).default(''),
+  textVertical: z.enum(['start', 'center', 'end']).default('start'),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    src: z.string().max(2000),
+    alt: z.string().max(500).default(''),
+    caption: z.string().max(10_000).default(''),
+    credit: z.string().max(2000).default(''),
+    href: z.string().max(2000).default(''),
+    focalX: z.number().min(0).max(100).default(50),
+    focalY: z.number().min(0).max(100).default(50),
+  })).min(1).max(100),
+});
+
+const colorFurnitureSchema = z.object({
+  type: z.literal('colorFurniture'),
+  instruction: z.string().trim().min(1).max(1000),
+  mode: z.enum(['mcq', 'trueFalse']),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100),
+    furniture: z.enum([
+      'sofaSingle',
+      'sofaDouble',
+      'table',
+      'chair',
+      'desk',
+      'bed',
+      'wardrobe',
+      'cupboard',
+      'bookshelf',
+    ]),
+    color: z.enum([
+      'red',
+      'blue',
+      'green',
+      'yellow',
+      'orange',
+      'purple',
+      'pink',
+      'brown',
+      'grey',
+      'black',
+    ]),
+    statement: z.string().max(5000),
+    statementCorrect: z.boolean(),
+    options: z.array(choiceOptionSchema).max(10),
+  })).min(1).max(100),
 });
 
 const dictationLinesSchema = z.object({
@@ -755,6 +1061,62 @@ function normalizeGeneratedBlockType(value: unknown) {
   return { ...record, type: rawType };
 }
 
+export const generatedWorksheetBlockSchema = z.discriminatedUnion('type', [
+  headingSchema,
+  glossarySchema,
+  fillInTheBlankSchema,
+  pageBreakSchema,
+  spacerSchema,
+  writingLinesSchema,
+  instructionSchema,
+  learningObjectiveSchema,
+  orderingSchema,
+  frayerModelSchema,
+  occupationPortraitSchema,
+  errorCorrectionSchema,
+  letterNodeSchema,
+  dateMatchingSchema,
+  twoWayPrepositionsSchema,
+  weatherSchema,
+  familyKinshipSchema,
+  inlineChoiceSchema,
+  miniFormSchema,
+  mchSchema,
+  mediaLayoutSchema,
+  colorFurnitureSchema,
+  dictationLinesSchema,
+  alpharamaTermSchema,
+  letterCloudSchema,
+  anagramSchema,
+  crosswordSchema,
+  dialogueSchema,
+  messengerSchema,
+  emailSchema,
+  timetableSchema,
+  openingHoursSchema,
+  mcqSchema,
+  mcmSchema,
+  articlePluralSchema,
+  trueFalseSchema,
+  matchingPairsSchema,
+  timeMatchingSchema,
+  communicationCardsSchema,
+  learningCardsSchema,
+  articlePluralCardsSchema,
+  richTextSchema,
+  lesetrainingSchema,
+  wordGridSchema,
+  wordBankSchema,
+  rewriteSentencesSchema,
+  sortingCategoriesSchema,
+  chooseCorrectWordsSchema,
+  dominoSchema,
+  germanVerbTableSchema,
+  declinationTableSchema,
+  worksheetTableSchema,
+  informationGapActivitySchema,
+]);
+
 export const generatedWorksheetSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
   documentSize: z.enum(['a4-portrait', 'a4-landscape', 'a5-landscape', 'a5-fotokarten', 'letter-portrait', 'letter-landscape']).default('a4-portrait'),
@@ -767,45 +1129,7 @@ export const generatedWorksheetSchema = z.object({
   blocks: z.preprocess((raw) => {
     if (!Array.isArray(raw)) return raw;
     return raw.map((entry) => normalizeGeneratedBlockType(entry));
-  }, z.array(z.discriminatedUnion('type', [
-    headingSchema,
-    glossarySchema,
-    fillInTheBlankSchema,
-    pageBreakSchema,
-    spacerSchema,
-    writingLinesSchema,
-    dictationLinesSchema,
-    alpharamaTermSchema,
-    letterCloudSchema,
-    anagramSchema,
-    crosswordSchema,
-    dialogueSchema,
-    messengerSchema,
-    emailSchema,
-    timetableSchema,
-    openingHoursSchema,
-    mcqSchema,
-    mcmSchema,
-    articlePluralSchema,
-    trueFalseSchema,
-    matchingPairsSchema,
-    timeMatchingSchema,
-    communicationCardsSchema,
-    learningCardsSchema,
-    articlePluralCardsSchema,
-    richTextSchema,
-    lesetrainingSchema,
-    wordGridSchema,
-    wordBankSchema,
-    rewriteSentencesSchema,
-    sortingCategoriesSchema,
-    chooseCorrectWordsSchema,
-    dominoSchema,
-    germanVerbTableSchema,
-    declinationTableSchema,
-    worksheetTableSchema,
-    informationGapActivitySchema,
-  ])).max(1000)).default([]),
+  }, z.array(generatedWorksheetBlockSchema).max(1000)).default([]),
 }).refine((value) => Boolean(value.sourceWorksheetId) || value.blocks.length >= 1, {
   message: 'Provide blocks or a sourceWorksheetId.',
   path: ['blocks'],
@@ -872,6 +1196,128 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
   }
   if (block.type === 'writingLines') {
     return `<div data-writing-lines-count="${block.lineCount}" data-writing-lines-height="${block.lineHeight}" data-writing-lines-show-line-numbers="${block.showLineNumbers}" data-type="writing-lines"></div>`;
+  }
+  if (block.type === 'instruction') {
+    return `<div data-instruction-text="${escapeAttribute(block.instruction)}" data-instruction-bypass-gap="${block.bypassGap}" data-type="instruction-block"></div>`;
+  }
+  if (block.type === 'learningObjective') {
+    const successCriteria = block.successCriteria.map((criterion, index) => ({
+      id: criterion.id ?? `criterion-${index + 1}`,
+      text: criterion.text,
+    }));
+    return `<div data-learning-objective-title="${escapeAttribute(block.title)}" data-learning-objective-code="${escapeAttribute(block.curriculumCode)}" data-learning-objective-text="${escapeAttribute(block.objective)}" data-learning-objective-criteria="${escapeAttribute(encodeURIComponent(JSON.stringify(successCriteria)))}" data-type="learning-objective"></div>`;
+  }
+  if (block.type === 'ordering') {
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `ordering-${index + 1}`,
+      text: item.text,
+    }));
+    return `<div data-ordering-instruction="${escapeAttribute(block.instruction)}" data-ordering-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-ordering-shuffle="${block.shuffleItems}" data-ordering-generation="${block.generation}" data-ordering-show-random-example="${block.showRandomAsExample}" data-type="ordering"></div>`;
+  }
+  if (block.type === 'frayerModel') {
+    const quadrants = escapeAttribute(
+      encodeURIComponent(JSON.stringify(block.quadrants)),
+    );
+    return `<div data-frayer-instruction="${escapeAttribute(block.instruction)}" data-frayer-concept="${escapeAttribute(block.concept)}" data-frayer-quadrants="${quadrants}" data-frayer-response-lines="${block.responseLines}" data-frayer-show-model-answers="${block.showModelAnswers}" data-type="frayer-model"></div>`;
+  }
+  if (block.type === 'occupationPortrait') {
+    const paragraphs = escapeAttribute(
+      encodeURIComponent(JSON.stringify(block.paragraphs)),
+    );
+    return `<div data-profession="${escapeAttribute(block.profession)}" data-title="${escapeAttribute(block.title)}" data-paragraphs="${paragraphs}" data-source-url="${escapeAttribute(block.sourceUrl)}" data-proficiency-level="${escapeAttribute(block.proficiencyLevel)}" data-proficiency-phase="${escapeAttribute(block.proficiencyPhase)}" data-text-type="${block.textType}" data-type="occupation-portrait"></div>`;
+  }
+  if (block.type === 'errorCorrection') {
+    const markup = escapeAttribute(encodeURIComponent(block.markup));
+    const errors = escapeAttribute(encodeURIComponent(JSON.stringify(
+      block.errors.map((error, index) => ({
+        ...error,
+        id: error.id ?? `error-correction-${index + 1}`,
+      })),
+    )));
+    return `<div data-error-correction-instruction="${escapeAttribute(block.instruction)}" data-error-correction-language="${block.language}" data-error-correction-markup="${markup}" data-error-correction-incorrect="${escapeAttribute(block.incorrectText)}" data-error-correction-correct="${escapeAttribute(block.correctText)}" data-error-correction-errors="${errors}" data-error-correction-mark-errors="${block.markErrorPositions}" data-error-correction-lines="${block.correctionLines}" data-type="error-correction"></div>`;
+  }
+  if (block.type === 'letterNode') {
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `letter-item-${index + 1}`,
+      clue: item.clue,
+      answer: item.answer,
+    }));
+    return `<div data-letter-instruction="${escapeAttribute(block.instruction)}" data-letter-alphabet-choice="${block.alphabetChoice}" data-letter-alphabet="${escapeAttribute(block.alphabet)}" data-letter-helpers="${escapeAttribute(block.helperLetters)}" data-letter-key-columns="${block.keyColumns}" data-letter-cell-height="${block.cellHeight}" data-letter-show-key="${block.showKey}" data-letter-item-numbers="${block.showItemNumbers}" data-letter-show-example="${block.showFirstAsExample}" data-letter-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-type="letter-node"></div>`;
+  }
+  if (block.type === 'dateMatching') {
+    const dates = escapeAttribute(encodeURIComponent(JSON.stringify(block.dates)));
+    const rightOrder = escapeAttribute(encodeURIComponent(JSON.stringify(block.rightOrder)));
+    return `<div data-instruction="${escapeAttribute(block.instruction)}" data-left-representation="${block.leftRepresentation}" data-right-representation="${block.rightRepresentation}" data-dates="${dates}" data-right-order="${rightOrder}" data-type="date-matching"></div>`;
+  }
+  if (block.type === 'twoWayPrepositions') {
+    const items = escapeAttribute(encodeURIComponent(JSON.stringify(block.items)));
+    return `<div data-instruction="${escapeAttribute(block.instruction)}" data-mode="${block.mode}" data-show-vocabulary="${block.showVocabulary}" data-items="${items}" data-type="two-way-prepositions"></div>`;
+  }
+  if (block.type === 'weather') {
+    const items = escapeAttribute(encodeURIComponent(JSON.stringify(block.items)));
+    const questionOrder = escapeAttribute(encodeURIComponent(JSON.stringify(block.questionOrder)));
+    const weatherKinds = block.weatherKinds == null
+      ? ''
+      : ` data-weather-kinds="${escapeAttribute(encodeURIComponent(JSON.stringify(block.weatherKinds)))}"`;
+    const minTemperature = block.minTemperature == null
+      ? ''
+      : ` data-min-temperature="${block.minTemperature}"`;
+    const maxTemperature = block.maxTemperature == null
+      ? ''
+      : ` data-max-temperature="${block.maxTemperature}"`;
+    const shuffleQuestions = block.shuffleQuestions == null
+      ? ''
+      : ` data-shuffle-questions="${block.shuffleQuestions}"`;
+    return `<div data-instruction="${escapeAttribute(block.instruction)}" data-mode="${block.mode}" data-items="${items}" data-question-order="${questionOrder}" data-show-instruction="${block.showInstruction}"${weatherKinds}${minTemperature}${maxTemperature}${shuffleQuestions} data-vary-weekday-city="${block.varyWeekdayAndCity}" data-type="weather"></div>`;
+  }
+  if (block.type === 'familyKinship') {
+    const riddles = block.riddles.map((riddle, riddleIndex) => ({
+      ...riddle,
+      id: riddle.id ?? `kinship-${riddleIndex + 1}`,
+      options: riddle.options.map((option, optionIndex) => ({
+        ...option,
+        id: option.id ?? `kinship-${riddleIndex + 1}-option-${optionIndex + 1}`,
+      })),
+    }));
+    const instruction = block.instruction
+      ? ` data-block-instruction="${escapeAttribute(block.instruction)}"`
+      : '';
+    return `<div${instruction} data-family-kinship-riddles="${escapeAttribute(encodeURIComponent(JSON.stringify(riddles)))}" data-family-kinship-show-first-example="${block.showFirstAsExample}" data-type="family-kinship"></div>`;
+  }
+  if (block.type === 'inlineChoice') {
+    const items = block.items.map((item, index) => ({
+      ...item,
+      id: item.id ?? `inline-choice-${item.type}-${index + 1}`,
+    }));
+    return `<div data-inline-choice-instruction="${escapeAttribute(block.instruction)}" data-inline-choice-shuffle="${block.shuffleChoices}" data-inline-choice-show-example="${block.showFirstAsExample}" data-inline-choice-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-type="inline-choice"></div>`;
+  }
+  if (block.type === 'miniForm') {
+    const items = block.items.map((item, index) => ({
+      ...item,
+      id: item.id ?? `mini-form-item-${index + 1}`,
+    }));
+    const fields = escapeAttribute(encodeURIComponent(JSON.stringify(block.fields)));
+    const encodedItems = escapeAttribute(encodeURIComponent(JSON.stringify(items)));
+    return `<div data-mini-form-instruction="${escapeAttribute(block.instruction)}" data-mini-form-fields="${fields}" data-mini-form-columns="${block.columns}" data-mini-form-fill-remaining-row="${block.fillRemainingRow}" data-mini-form-show-example="${block.showFirstAsExample}" data-mini-form-items="${encodedItems}" data-type="mini-form"></div>`;
+  }
+  if (block.type === 'mch') {
+    const instruction = block.instruction
+      ? ` data-block-instruction="${escapeAttribute(block.instruction)}"`
+      : '';
+    const options = escapeAttribute(encodeURIComponent(JSON.stringify(block.options)));
+    const rows = escapeAttribute(encodeURIComponent(JSON.stringify(block.rows)));
+    return `<div${instruction} data-mch-question="${escapeAttribute(block.question)}" data-mch-options="${options}" data-mch-rows="${rows}" data-mch-show-first-example="${block.showFirstAsExample}" data-type="mch"></div>`;
+  }
+  if (block.type === 'mediaLayout') {
+    const items = block.items.map((item, index) => ({
+      ...item,
+      id: item.id ?? `media-item-${index + 1}`,
+    }));
+    return `<div data-media-layout="${block.layout}" data-media-columns="${block.columns}" data-media-image-width="${block.imageWidth}" data-media-gap="${block.gap}" data-media-aspect="${block.aspectRatio}" data-media-fit="${block.fit}" data-media-radius="${block.radius}" data-media-border="${block.border}" data-media-maximize="${block.maximize}" data-media-captions="${block.showCaptions}" data-media-caption-size="${block.captionSize}" data-media-caption-style="${block.captionStyle}" data-media-text="${escapeAttribute(encodeURIComponent(block.text))}" data-media-text-vertical="${block.textVertical}" data-media-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-type="media-layout"></div>`;
+  }
+  if (block.type === 'colorFurniture') {
+    const items = escapeAttribute(encodeURIComponent(JSON.stringify(block.items)));
+    return `<div data-instruction="${escapeAttribute(block.instruction)}" data-mode="${block.mode}" data-items="${items}" data-item-start="0" data-show-instruction="true" data-show-cards="true" data-show-tasks="true" data-pagination-part="combined" data-type="color-furniture"></div>`;
   }
   if (block.type === 'dictationLines') {
     const items = block.items.map((item, index) => ({
@@ -988,7 +1434,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     return `<div data-choose-correct-instruction="${escapeAttribute(block.instruction)}" data-choose-correct-keep-left="${block.keepLeft}" data-choose-correct-keep-right="${block.keepRight}" data-choose-correct-show-example="${block.showFirstAsExample}" data-choose-correct-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-choose-correct-generation="${block.generation}" data-type="choose-correct-words"></div>`;
   }
   if (block.type === 'fillInTheBlank') {
-    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-fill-blank-title="${escapeAttribute(block.title)}" data-fill-blank-text="${escapeAttribute(block.items.join('\n'))}" data-fill-blank-distractors="${escapeAttribute(JSON.stringify(block.distractors))}" data-fill-blank-width-factor="${block.widthFactor}" data-fill-blank-hide-instruction-badge="${block.hideInstructionBadge}" data-fill-blank-hide-numbers="${block.hideBlankNumbers}" data-fill-blank-hide-item-numbers="${block.hideItemNumbers}" data-fill-blank-show-line-numbers="${block.showLineNumbers}" data-fill-blank-show-word-bank="${block.showWordBank}" data-fill-blank-show-first-example="${block.showFirstAsExample}" data-type="fill-in-the-blank"></div>`;
+    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-fill-blank-title="${escapeAttribute(block.title)}" data-fill-blank-text="${escapeAttribute(block.items.join('\n'))}" data-fill-blank-distractors="${escapeAttribute(JSON.stringify(block.distractors))}" data-fill-blank-width-factor="${block.widthFactor}" data-fill-blank-show-instruction="${block.showInstruction}" data-fill-blank-hide-instruction-badge="${block.hideInstructionBadge}" data-fill-blank-hide-numbers="${block.hideBlankNumbers}" data-fill-blank-hide-item-numbers="${block.hideItemNumbers}" data-fill-blank-show-line-numbers="${block.showLineNumbers}" data-fill-blank-empty-line-spacers="${block.renderEmptyLinesAsSpacerRows}" data-fill-blank-show-word-bank="${block.showWordBank}" data-fill-blank-show-first-example="${block.showFirstAsExample}" data-type="fill-in-the-blank"></div>`;
   }
   if (block.type === 'dialogue') {
     const items = block.items.map((item, index) => ({
