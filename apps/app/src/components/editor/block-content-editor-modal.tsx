@@ -8269,6 +8269,24 @@ function WorksheetTableEditor({
             }))}
           />
           <ContentSectionHeader>Learner support</ContentSectionHeader>
+          <label className="mt-3 flex items-center gap-3 text-sm font-semibold text-secondary">
+            <span>Anzahl Beispiele</span>
+            <input
+              aria-label="Anzahl Beispiele"
+              className="h-9 w-20 rounded-md border border-primary bg-primary px-2.5 text-sm font-normal tabular-nums text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              max={1000}
+              min={0}
+              onChange={(event) => updateAttrs(editor, block, {
+                exampleRowCount: Math.min(
+                  1000,
+                  Math.max(0, Math.floor(Number(event.target.value) || 0)),
+                ),
+              })}
+              step={1}
+              type="number"
+              value={attrs.exampleRowCount ?? 0}
+            />
+          </label>
           <ContentSwitchGrid>
             <ContentSwitch
               label="Compact single-letter blanks"
@@ -8537,6 +8555,7 @@ function InformationGapActivityEditor({
     hideBlankNumbers: true,
     blankWidthFactor: 1,
     showFirstAsExample: false,
+    exampleRowCount: 0,
   };
 
   return (

@@ -57,6 +57,8 @@ export const WORKSHEET_DOCUMENT_BLOCK_TYPES = [
   'domino',
   'germanVerbTable',
   'declinationTable',
+  'possessivePronoun',
+  'indefiniteArticle',
 ] as const;
 
 export const worksheetDocumentBlockSchema = z.intersection(

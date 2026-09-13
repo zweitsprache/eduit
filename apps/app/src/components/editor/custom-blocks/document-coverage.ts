@@ -58,6 +58,8 @@ export const CUSTOM_BLOCK_DOCUMENT_COVERAGE = {
   familyKinship: { status: 'canonical', documentType: 'familyKinship' },
   germanVerbTable: { status: 'canonical', documentType: 'germanVerbTable' },
   declinationTable: { status: 'canonical', documentType: 'declinationTable' },
+  possessivePronoun: { status: 'canonical', documentType: 'possessivePronoun' },
+  indefiniteArticle: { status: 'canonical', documentType: 'indefiniteArticle' },
   occupationPortrait: { status: 'canonical', documentType: 'occupationPortrait' },
   trueFalse: { status: 'canonical', documentType: 'trueFalse' },
   fillInTheBlank: { status: 'canonical', documentType: 'fillInTheBlank' },

@@ -51,6 +51,7 @@ export type WorksheetTableAttrs = {
   hideBlankNumbers: boolean;
   blankWidthFactor: number;
   showFirstAsExample: boolean;
+  exampleRowCount: number;
 };
 
 export const DEFAULT_WORKSHEET_TABLE_COLUMNS: WorksheetTableColumn[] = [
@@ -221,6 +222,13 @@ function clampBlankWidth(value: unknown) {
   return Number.isFinite(width) ? Math.min(5, Math.max(1, width)) : 1;
 }
 
+function clampExampleRowCount(value: unknown) {
+  const count = Number(value);
+  return Number.isFinite(count)
+    ? Math.min(1000, Math.max(0, Math.floor(count)))
+    : 0;
+}
+
 function TableCellContent({
   compactSingleLetterBlanks,
   hideBlankNumbers,
@@ -301,8 +309,11 @@ function WorksheetTableNodeView({ node, selected }: NodeViewProps) {
         ...attrs.rows.map((row) => ({ ...row, isHeader: false })),
       ];
   let blankOffset = 0;
+  let dataRowIndex = 0;
   const parsedRows = displayedRows.map((row) => ({
     row,
+    isExample: !row.isHeader
+      && dataRowIndex++ < clampExampleRowCount(attrs.exampleRowCount),
     cells: attrs.columns.map((column) => {
       const parts = parseFillInTheBlankText(
         row.cells[column.id] ?? '',
@@ -397,7 +408,7 @@ function WorksheetTableNodeView({ node, selected }: NodeViewProps) {
         role="table"
       >
         <div role="rowgroup">
-          {parsedRows.map(({ row, cells }) => {
+          {parsedRows.map(({ row, cells, isExample }) => {
             const renderedCells: Array<{
               key: string;
               colSpan: number;
@@ -465,6 +476,7 @@ function WorksheetTableNodeView({ node, selected }: NodeViewProps) {
                 className={row.isHeader
                   ? 'worksheet-table-node__header'
                   : 'worksheet-table-node__row'}
+                data-example={!row.isHeader && isExample}
                 key={row.id}
                 role="row"
               >
@@ -635,6 +647,17 @@ export const WorksheetTable = Node.create({
           ),
         }),
       },
+      exampleRowCount: {
+        default: 0,
+        parseHTML: (element) => clampExampleRowCount(
+          element.getAttribute('data-worksheet-table-example-row-count'),
+        ),
+        renderHTML: (attributes) => ({
+          'data-worksheet-table-example-row-count': clampExampleRowCount(
+            attributes.exampleRowCount,
+          ),
+        }),
+      },
     };
   },
 
@@ -671,6 +694,7 @@ export const WorksheetTable = Node.create({
               hideBlankNumbers: attrs.hideBlankNumbers ?? false,
               blankWidthFactor: attrs.blankWidthFactor ?? 1,
               showFirstAsExample: attrs.showFirstAsExample ?? false,
+              exampleRowCount: clampExampleRowCount(attrs.exampleRowCount),
             },
           }),
     };

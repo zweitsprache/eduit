@@ -50,6 +50,8 @@ import type { DominoAttrs } from '@/components/editor/domino-node';
 import type { CrosswordAttrs } from '@/components/editor/crossword-node';
 import type { GermanVerbTableAttrs } from '@/components/editor/german-verb-table-node';
 import type { DeclinationTableAttrs } from '@/components/editor/declination-table-node';
+import type { PossessivePronounAttrs } from '@/components/editor/possessive-pronoun-node';
+import type { IndefiniteArticleAttrs } from '@/components/editor/indefinite-article-node';
 import type { WorksheetTableAttrs } from '@/components/editor/worksheet-table-node';
 import type { InformationGapActivityAttrs } from '@/components/editor/information-gap-activity-node';
 import type { RewriteSentencesAttrs } from '@/components/editor/rewrite-sentences-node';
@@ -171,6 +173,8 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'crossword',
   'germanVerbTable',
   'declinationTable',
+  'possessivePronoun',
+  'indefiniteArticle',
   'worksheetTable',
   'informationGapActivity',
   'rewriteSentences',
@@ -1169,6 +1173,35 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         })),
       };
     }
+    case 'possessivePronoun': {
+      const possessivePronounAttrs = attrs as PossessivePronounAttrs;
+      return {
+        type: 'possessivePronoun',
+        displayedCases: possessivePronounAttrs.displayedCases
+          ?? ['nom', 'akk', 'dat', 'gen'],
+        rows: possessivePronounAttrs.rows.map((row) => ({
+          key: row.key,
+          genders: row.genders.map((genderRow) => ({
+            gender: genderRow.gender,
+            values: { ...genderRow.values },
+            additional: genderRow.additional ?? '',
+          })),
+        })),
+      };
+    }
+    case 'indefiniteArticle': {
+      const indefiniteArticleAttrs = attrs as IndefiniteArticleAttrs;
+      return {
+        type: 'indefiniteArticle',
+        displayedCases: indefiniteArticleAttrs.displayedCases
+          ?? ['nom', 'akk', 'dat', 'gen'],
+        rows: indefiniteArticleAttrs.rows.map((row) => ({
+          gender: row.gender,
+          values: { ...row.values },
+          additional: row.additional ?? '',
+        })),
+      };
+    }
     case 'worksheetTable': {
       const tableAttrs = attrs as WorksheetTableAttrs;
       return {
@@ -1192,6 +1225,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         hideBlankNumbers: tableAttrs.hideBlankNumbers,
         blankWidthFactor: tableAttrs.blankWidthFactor,
         showFirstAsExample: tableAttrs.showFirstAsExample,
+        exampleRowCount: tableAttrs.exampleRowCount ?? 0,
       };
     }
     case 'informationGapActivity': {

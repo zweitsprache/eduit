@@ -123,6 +123,12 @@ import {
   DeclinationTable,
 } from '@/components/editor/declination-table-node';
 import {
+  PossessivePronoun,
+} from '@/components/editor/possessive-pronoun-node';
+import {
+  IndefiniteArticle,
+} from '@/components/editor/indefinite-article-node';
+import {
   OccupationPortrait,
   DEFAULT_OCCUPATION_PORTRAIT_ATTRS,
   type OccupationPortraitAttrs,
@@ -340,6 +346,12 @@ import {
 import {
   DeclinationTableEditorModal,
 } from '@/components/editor/declination-table-editor-modal';
+import {
+  PossessivePronounEditorModal,
+} from '@/components/editor/possessive-pronoun-editor-modal';
+import {
+  IndefiniteArticleEditorModal,
+} from '@/components/editor/indefinite-article-editor-modal';
 import {
   DeclinationTableAIModal,
 } from '@/components/editor/declination-table-ai-modal';
@@ -1793,6 +1805,10 @@ export default function EditorPage() {
     useState<{ pos: number; type: 'germanVerbTable' } | null>(null);
   const [declinationTableEditorBlock, setDeclinationTableEditorBlock] =
     useState<{ pos: number; type: 'declinationTable' } | null>(null);
+  const [possessivePronounEditorBlock, setPossessivePronounEditorBlock] =
+    useState<{ pos: number; type: 'possessivePronoun' } | null>(null);
+  const [indefiniteArticleEditorBlock, setIndefiniteArticleEditorBlock] =
+    useState<{ pos: number; type: 'indefiniteArticle' } | null>(null);
   const [declinationTableAIBlock, setDeclinationTableAIBlock] =
     useState<{ pos: number; type: 'declinationTable' } | null>(null);
   const [germanVerbTableAIBlock, setGermanVerbTableAIBlock] =
@@ -1842,6 +1858,8 @@ export default function EditorPage() {
       FamilyKinship,
       GermanVerbTable,
       DeclinationTable,
+      PossessivePronoun,
+      IndefiniteArticle,
       OccupationPortrait,
       TrueFalse,
       FillInTheBlank,
@@ -5843,6 +5861,8 @@ export default function EditorPage() {
               || selectedCustomBlock.type === 'colorFurniture'
               || selectedCustomBlock.type === 'germanVerbTable'
               || selectedCustomBlock.type === 'declinationTable'
+              || selectedCustomBlock.type === 'possessivePronoun'
+              || selectedCustomBlock.type === 'indefiniteArticle'
             ) && (
             <div className="flex flex-col gap-2">
               {CONTENT_EDITOR_BLOCK_TYPES.has(selectedCustomBlock.type) && (
@@ -5899,6 +5919,32 @@ export default function EditorPage() {
                   onClick={() => setDeclinationTableEditorBlock({
                     pos: selectedCustomBlock.pos,
                     type: 'declinationTable',
+                  })}
+                  className="flex w-full items-center justify-start gap-2 rounded-lg bg-brand-solid px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-solid_hover"
+                >
+                  <Edit05 className="size-4" />
+                  Edit content
+                </button>
+              )}
+              {selectedCustomBlock.type === 'possessivePronoun' && (
+                <button
+                  type="button"
+                  onClick={() => setPossessivePronounEditorBlock({
+                    pos: selectedCustomBlock.pos,
+                    type: 'possessivePronoun',
+                  })}
+                  className="flex w-full items-center justify-start gap-2 rounded-lg bg-brand-solid px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-solid_hover"
+                >
+                  <Edit05 className="size-4" />
+                  Edit content
+                </button>
+              )}
+              {selectedCustomBlock.type === 'indefiniteArticle' && (
+                <button
+                  type="button"
+                  onClick={() => setIndefiniteArticleEditorBlock({
+                    pos: selectedCustomBlock.pos,
+                    type: 'indefiniteArticle',
                   })}
                   className="flex w-full items-center justify-start gap-2 rounded-lg bg-brand-solid px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-solid_hover"
                 >
@@ -11125,6 +11171,16 @@ export default function EditorPage() {
           });
         }}
         onClose={() => setDeclinationTableEditorBlock(null)}
+      />
+      <PossessivePronounEditorModal
+        block={possessivePronounEditorBlock}
+        editor={editor}
+        onClose={() => setPossessivePronounEditorBlock(null)}
+      />
+      <IndefiniteArticleEditorModal
+        block={indefiniteArticleEditorBlock}
+        editor={editor}
+        onClose={() => setIndefiniteArticleEditorBlock(null)}
       />
       <DeclinationTableAIModal
         open={declinationTableAIBlock !== null}

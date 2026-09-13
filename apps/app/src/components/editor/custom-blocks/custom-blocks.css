@@ -2659,6 +2659,198 @@
   border-bottom-color: var(--declination-emphasis-row-border-color);
 }
 
+.possessive-pronoun-node__scroller {
+  overflow-x: auto;
+}
+
+.possessive-pronoun-node {
+  --possessive-pronoun-divider-color: color-mix(
+    in srgb,
+    var(--custom-block-row-border-color) 52%,
+    var(--color-text-primary)
+  );
+}
+
+.possessive-pronoun-node__table {
+  width: 100%;
+  min-width: 48rem;
+  border-collapse: collapse;
+  border-top: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  border-left: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  color: var(--color-text-primary);
+  font-size: var(--custom-block-body-font-size);
+  line-height: var(--custom-block-label-line-height);
+  table-layout: fixed;
+}
+
+.possessive-pronoun-node .possessive-pronoun-node__table th,
+.possessive-pronoun-node .possessive-pronoun-node__table td {
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  border-right: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  overflow-wrap: anywhere;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.possessive-pronoun-node .possessive-pronoun-node__cell-content {
+  display: flex;
+  min-height: var(--custom-block-row-height);
+  box-sizing: border-box;
+  align-items: center;
+  padding-inline: var(--custom-block-inline-gap);
+  line-height: var(--custom-block-label-line-height);
+}
+
+.possessive-pronoun-node .possessive-pronoun-node__table .possessive-pronoun-node__case-header th {
+  border-top: var(--custom-block-row-border-width) solid
+    var(--possessive-pronoun-divider-color);
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--possessive-pronoun-divider-color);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.possessive-pronoun-node__table tbody tr:not(.possessive-pronoun-node__case-header) > th {
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.possessive-pronoun-node__table td {
+  font-weight: 500;
+}
+
+.possessive-pronoun-node__label-column {
+  width: 7.5rem;
+}
+
+.possessive-pronoun-node__case-header th:first-child {
+  text-transform: uppercase;
+}
+
+.possessive-pronoun-node__table sup {
+  font-size: 0.65em;
+  font-weight: 400;
+  vertical-align: super;
+}
+
+.possessive-pronoun-node__highlight {
+  color: var(--eduit-accent, var(--color-bg-brand-solid));
+  font-weight: 800;
+}
+
+.possessive-pronoun-node .possessive-pronoun-node__table .possessive-pronoun-node__case-header th:first-child,
+.possessive-pronoun-node .possessive-pronoun-node__table tbody tr:not(.possessive-pronoun-node__case-header) > th {
+  border-right: var(--custom-block-row-border-width) solid
+    var(--possessive-pronoun-divider-color);
+}
+
+.possessive-pronoun-node__table tbody > tr:last-child > * {
+  border-bottom-color: var(--possessive-pronoun-divider-color);
+}
+
+.indefinite-article-node {
+  --indefinite-article-divider-color: color-mix(
+    in srgb,
+    var(--custom-block-row-border-color) 52%,
+    var(--color-text-primary)
+  );
+}
+
+.indefinite-article-node__scroller {
+  overflow-x: auto;
+}
+
+.indefinite-article-node__table {
+  width: 100%;
+  min-width: 48rem;
+  border-collapse: collapse;
+  border-left: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  color: var(--color-text-primary);
+  font-size: var(--custom-block-body-font-size);
+  line-height: var(--custom-block-label-line-height);
+  table-layout: fixed;
+}
+
+.indefinite-article-node .indefinite-article-node__table th,
+.indefinite-article-node .indefinite-article-node__table td {
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  border-right: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--custom-block-row-border-color);
+  overflow-wrap: anywhere;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.indefinite-article-node .indefinite-article-node__cell-content {
+  display: flex;
+  min-height: var(--custom-block-row-height);
+  box-sizing: border-box;
+  align-items: center;
+  padding-inline: var(--custom-block-inline-gap);
+  line-height: var(--custom-block-label-line-height);
+}
+
+.indefinite-article-node .indefinite-article-node__table .indefinite-article-node__header-row th {
+  border-top: var(--custom-block-row-border-width) solid
+    var(--indefinite-article-divider-color);
+  border-bottom: var(--custom-block-row-border-width) solid
+    var(--indefinite-article-divider-color);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.indefinite-article-node__table tbody th {
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.indefinite-article-node__table td {
+  font-weight: 500;
+}
+
+.indefinite-article-node__visible-column,
+.indefinite-article-node__spacer-column {
+  width: 10%;
+}
+
+.indefinite-article-node__table sup {
+  font-size: 0.65em;
+  font-weight: 400;
+  vertical-align: super;
+}
+
+.indefinite-article-node__highlight {
+  color: var(--eduit-accent, var(--color-bg-brand-solid));
+  font-weight: 800;
+}
+
+.indefinite-article-node .indefinite-article-node__table .indefinite-article-node__header-row th:first-child,
+.indefinite-article-node .indefinite-article-node__table tbody tr:not(.indefinite-article-node__header-row) > th {
+  border-right: var(--custom-block-row-border-width) solid
+    var(--indefinite-article-divider-color);
+}
+
+.indefinite-article-node__table tbody tr:last-child > * {
+  border-bottom-color: var(--indefinite-article-divider-color);
+}
+
+.indefinite-article-node .indefinite-article-node__table .indefinite-article-node__spacer-cell {
+  padding: 0;
+  border: 0;
+}
+
 .german-verb-table-node__separable-value > span:first-child {
   border-right: var(--custom-block-row-border-width) solid
     var(--custom-block-row-border-color);
@@ -6193,6 +6385,13 @@
   width: 100%;
   min-width: 0;
   white-space: pre-wrap;
+}
+
+.worksheet-table-node__row[data-example="true"]
+  .worksheet-table-node__cell-content {
+  color: var(--custom-block-example-solution-color);
+  font-family: var(--custom-block-example-font-family);
+  font-size: var(--custom-block-example-font-size);
 }
 
 .worksheet-table-node__cell .fill-in-the-blank-node__blank {

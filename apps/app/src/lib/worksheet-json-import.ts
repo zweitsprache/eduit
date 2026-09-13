@@ -504,6 +504,7 @@ const worksheetTableSchema = z.object({
   hideBlankNumbers: z.boolean().default(false),
   blankWidthFactor: z.number().min(1).max(5).default(1),
   showFirstAsExample: z.boolean().default(false),
+  exampleRowCount: z.number().int().min(0).max(1000).default(0),
 });
 
 const informationGapActivitySchema = z.object({
@@ -1007,6 +1008,51 @@ const declinationTableSchema = z.object({
   })).length(4),
 });
 
+const possessivePronounValuesSchema = z.object({
+  ich: z.string().trim().max(200),
+  du: z.string().trim().max(200),
+  er: z.string().trim().max(200),
+  sie: z.string().trim().max(200),
+  es: z.string().trim().max(200),
+  wir: z.string().trim().max(200),
+  ihr: z.string().trim().max(200),
+  siePlural: z.string().trim().max(200),
+});
+
+const possessivePronounSchema = z.object({
+  type: z.literal('possessivePronoun'),
+  displayedCases: z.array(z.enum(['nom', 'akk', 'dat', 'gen']))
+    .min(1)
+    .max(4)
+    .default(['nom', 'akk', 'dat', 'gen']),
+  rows: z.array(z.object({
+    key: z.enum(['nom', 'akk', 'dat', 'gen']),
+    genders: z.array(z.object({
+      gender: z.enum(['masculine', 'neuter', 'feminine', 'plural']),
+      values: possessivePronounValuesSchema,
+      additional: z.string().trim().max(200).default(''),
+    })).length(4),
+  })).length(4),
+});
+
+const indefiniteArticleSchema = z.object({
+  type: z.literal('indefiniteArticle'),
+  displayedCases: z.array(z.enum(['nom', 'akk', 'dat', 'gen']))
+    .min(1)
+    .max(4)
+    .default(['nom', 'akk', 'dat', 'gen']),
+  rows: z.array(z.object({
+    gender: z.enum(['masculine', 'neuter', 'feminine', 'plural']),
+    values: z.object({
+      nom: z.string().trim().max(200),
+      akk: z.string().trim().max(200),
+      dat: z.string().trim().max(200),
+      gen: z.string().trim().max(200),
+    }),
+    additional: z.string().trim().max(200).default(''),
+  })).length(4),
+});
+
 const contextSchema = z.object({
   worksheetLanguage: z.enum(['en', 'de-formal', 'de-informal']).default('de-formal'),
   worksheetType: z.enum([
@@ -1115,6 +1161,8 @@ export const generatedWorksheetBlockSchema = z.discriminatedUnion('type', [
   dominoSchema,
   germanVerbTableSchema,
   declinationTableSchema,
+  possessivePronounSchema,
+  indefiniteArticleSchema,
   worksheetTableSchema,
   informationGapActivitySchema,
 ]);
@@ -1367,7 +1415,7 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
   if (block.type === 'worksheetTable') {
     const columns = escapeAttribute(encodeURIComponent(JSON.stringify(block.columns)));
     const rows = escapeAttribute(encodeURIComponent(JSON.stringify(block.rows)));
-    return `<div data-type="worksheet-table" data-worksheet-table-instruction="${escapeAttribute(block.instruction)}" data-worksheet-table-show-instruction="${block.showInstruction}" data-worksheet-table-hide-instruction-badge="${block.hideInstructionBadge}" data-worksheet-table-columns="${columns}" data-worksheet-table-rows="${rows}" data-worksheet-table-show-header="${block.showHeader}" data-worksheet-table-hide-blank-numbers="${block.hideBlankNumbers}" data-worksheet-table-blank-width="${block.blankWidthFactor}" data-worksheet-table-show-first-example="${block.showFirstAsExample}"></div>`;
+    return `<div data-type="worksheet-table" data-worksheet-table-instruction="${escapeAttribute(block.instruction)}" data-worksheet-table-show-instruction="${block.showInstruction}" data-worksheet-table-hide-instruction-badge="${block.hideInstructionBadge}" data-worksheet-table-columns="${columns}" data-worksheet-table-rows="${rows}" data-worksheet-table-show-header="${block.showHeader}" data-worksheet-table-hide-blank-numbers="${block.hideBlankNumbers}" data-worksheet-table-blank-width="${block.blankWidthFactor}" data-worksheet-table-show-first-example="${block.showFirstAsExample}" data-worksheet-table-example-row-count="${block.exampleRowCount}"></div>`;
   }
   if (block.type === 'informationGapActivity') {
     const activityId = crypto.randomUUID();
@@ -1381,6 +1429,16 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     const baseAdjectives = escapeAttribute(encodeURIComponent(JSON.stringify(block.baseAdjectives)));
     const baseNouns = escapeAttribute(encodeURIComponent(JSON.stringify(block.baseNouns)));
     return `<div data-type="declination-table" data-declination-rows="${rows}" data-declination-base-adjectives="${baseAdjectives}" data-declination-base-nouns="${baseNouns}"></div>`;
+  }
+  if (block.type === 'possessivePronoun') {
+    const rows = escapeAttribute(encodeURIComponent(JSON.stringify(block.rows)));
+    const displayedCases = escapeAttribute(encodeURIComponent(JSON.stringify(block.displayedCases)));
+    return `<div data-type="possessive-pronoun" data-possessive-pronoun-rows="${rows}" data-possessive-pronoun-displayed-cases="${displayedCases}"></div>`;
+  }
+  if (block.type === 'indefiniteArticle') {
+    const rows = escapeAttribute(encodeURIComponent(JSON.stringify(block.rows)));
+    const displayedCases = escapeAttribute(encodeURIComponent(JSON.stringify(block.displayedCases)));
+    return `<div data-type="indefinite-article" data-indefinite-article-rows="${rows}" data-indefinite-article-displayed-cases="${displayedCases}"></div>`;
   }
   if (block.type === 'wordGrid') {
     const { leftToRight, ...otherDirections } = block.directions;
