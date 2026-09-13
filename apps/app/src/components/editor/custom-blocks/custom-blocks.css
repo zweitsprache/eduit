@@ -176,14 +176,14 @@
   display: none;
   position: absolute;
   inset-inline: 0;
-  bottom: 0.25rem;
-  overflow: hidden;
+  top: 0;
+  z-index: 1;
   color: var(--custom-block-solution-color);
   font-family: var(--custom-block-solution-font-family);
   font-size: var(--custom-block-solution-font-size);
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  pointer-events: none;
 }
 
 .tiptap[data-show-solutions="true"] .dictation-lines-node__solution {

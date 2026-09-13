@@ -165,8 +165,11 @@ function DictationLinesNodeView({ editor, getPos, node, selected }: NodeViewProp
                   className="writing-lines-node__line dictation-lines-node__line"
                   style={{ height: `${lineHeight}px` }}
                 >
-                  {variant === 'itemized' && lineIndex === linesPerItem - 1 && (
-                    <span className="dictation-lines-node__solution">
+                  {variant === 'itemized' && lineIndex === 0 && (
+                    <span
+                      className="dictation-lines-node__solution"
+                      style={{ lineHeight: `${lineHeight}px` }}
+                    >
                       {item.text}
                     </span>
                   )}
