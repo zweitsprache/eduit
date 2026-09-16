@@ -180,7 +180,9 @@ function RewriteSentencesNodeView({ node, selected }: NodeViewProps) {
                       className="custom-block__word-bank-item rewrite-sentences-node__word-bank-item"
                       key={segment.id}
                     >
-                      {segment.text}
+                      <span className="custom-block__compact-label">
+                        {segment.text}
+                      </span>
                       {showFirstAsExample && index === 0 && (
                         <RoughExampleStrike seed={segment.id} />
                       )}

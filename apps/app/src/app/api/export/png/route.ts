@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { replaceClockPlaceholders } from '@/lib/clock-placeholder';
-import { launchRenderingBrowser } from '@/lib/server-chromium';
+import {
+  fulfillPrivateMediaRequest,
+  launchRenderingBrowser,
+} from '@/lib/server-chromium';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -27,6 +30,7 @@ export async function POST(request: Request) {
   }
 
   const origin = new URL(request.url).origin;
+  const sessionCookie = request.headers.get('cookie');
   const safeHead = (payload.head ?? '')
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
     .replace(/<base\b[^>]*>/gi, '')
@@ -105,6 +109,8 @@ export async function POST(request: Request) {
         });
         return;
       }
+      if (await fulfillPrivateMediaRequest(route, origin, sessionCookie)) return;
+
       const url = new URL(route.request().url());
       const allowed = url.origin === origin
         || url.hostname === 'fonts.googleapis.com'

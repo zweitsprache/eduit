@@ -5199,7 +5199,6 @@ export default function EditorPage() {
       editorShell.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((image) => {
         image.setAttribute('loading', 'eager');
       });
-      await inlinePrivateMediaImages(editorShell);
 
       const visitedStyleSheets = new Set<CSSStyleSheet>();
       const head = Array.from(document.styleSheets).map((styleSheet) => {
