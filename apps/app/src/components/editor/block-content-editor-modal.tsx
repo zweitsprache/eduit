@@ -7,6 +7,7 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { useEditorState } from '@tiptap/react';
 import { createPortal } from 'react-dom';
 import {
+  Image01,
   ChevronDown,
   ChevronUp,
   PlusSquare,
@@ -107,6 +108,7 @@ import {
   translationLanguageLabel,
 } from '@/components/editor/worksheet-view-language';
 import type { WorksheetContext } from '@/lib/worksheet-types';
+import { MediaLibraryModal } from '@/components/editor/media-library-modal';
 import type {
   FrayerModelAttrs,
   FrayerQuadrant,
@@ -6137,6 +6139,7 @@ function RewriteSentencesEditor({
   block: ContentEditorBlock;
   editor: Editor;
 }) {
+  const [selectingItemId, setSelectingItemId] = useState<string | null>(null);
   const setItems = (items: RewriteSentenceItem[]) => updateAttrs(
     editor,
     block,
@@ -6165,6 +6168,13 @@ function RewriteSentencesEditor({
           isSelected={attrs.showFirstAsExample}
           onChange={(showFirstAsExample) => updateAttrs(editor, block, {
             showFirstAsExample,
+          })}
+        />
+        <ContentSwitch
+          label="Shuffle segment banks"
+          isSelected={attrs.shuffleSegments !== false}
+          onChange={(shuffleSegments) => updateAttrs(editor, block, {
+            shuffleSegments,
           })}
         />
       </ContentSwitchGrid>
@@ -6219,6 +6229,32 @@ function RewriteSentencesEditor({
                 placeholder="Optional image URL"
                 className="col-start-2 w-full rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
               />
+              <div className="col-start-2 flex items-center gap-2">
+                {item.image && (
+                  <img
+                    alt={item.image.alt || `Sentence ${index + 1}`}
+                    className="size-12 rounded-md border border-primary object-cover"
+                    src={item.image.src}
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => setSelectingItemId(item.id)}
+                  className="flex items-center gap-2 rounded-md border border-primary px-2.5 py-1.5 text-sm font-semibold text-secondary hover:bg-primary_hover"
+                >
+                  <Image01 className="size-4" />
+                  {item.image ? 'Change image' : 'Choose image'}
+                </button>
+                {item.image && (
+                  <button
+                    type="button"
+                    onClick={() => updateItem(item.id, { image: undefined })}
+                    className="rounded-md px-2 py-1.5 text-sm text-tertiary hover:bg-primary_hover hover:text-secondary"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
               {item.image && (
                 <input
                   aria-label={`Image alternative text ${index + 1}`}
@@ -6248,6 +6284,14 @@ function RewriteSentencesEditor({
       >
         <PlusSquare className="size-4" /> Add sentence
       </button>
+      <MediaLibraryModal
+        open={selectingItemId !== null}
+        onClose={() => setSelectingItemId(null)}
+        onSelect={(image) => {
+          if (selectingItemId) updateItem(selectingItemId, { image });
+          setSelectingItemId(null);
+        }}
+      />
     </>
   );
 }

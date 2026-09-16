@@ -24,6 +24,7 @@ export type RewriteSentencesAttrs = {
   items: RewriteSentenceItem[];
   showInstruction: boolean;
   showFirstAsExample: boolean;
+  shuffleSegments: boolean;
 };
 
 export const DEFAULT_REWRITE_SENTENCE_ITEMS: RewriteSentenceItem[] = [
@@ -112,7 +113,12 @@ function shuffledSegments(
 }
 
 function RewriteSentencesNodeView({ node, selected }: NodeViewProps) {
-  const { items, showInstruction, showFirstAsExample } = node.attrs as RewriteSentencesAttrs;
+  const {
+    items,
+    showInstruction,
+    showFirstAsExample,
+    shuffleSegments,
+  } = node.attrs as RewriteSentencesAttrs;
 
   return (
     <CustomBlockRoot
@@ -130,7 +136,17 @@ function RewriteSentencesNodeView({ node, selected }: NodeViewProps) {
           const usesWordBank = wordBankMode !== 'none';
           const separator = wordBankMode === 'manual' ? '||' : '|';
           const segments = usesWordBank
-            ? shuffledSegments(item, separator)
+            ? (shuffleSegments
+              ? shuffledSegments(item, separator)
+              : item.input
+                  .split(separator)
+                  .map((text, segmentIndex) => ({
+                    id: `${item.id}-${segmentIndex}`,
+                    index: segmentIndex,
+                    text: text.trim(),
+                  }))
+                  .filter((segment) => segment.text)
+            )
             : [];
           const solution = wordBankMode === 'automatic'
             ? item.input
@@ -238,6 +254,15 @@ export const RewriteSentences = Node.create({
           'data-rewrite-show-instruction': String(attributes.showInstruction),
         }),
       },
+      shuffleSegments: {
+        default: true,
+        parseHTML: (element) => (
+          element.getAttribute('data-rewrite-shuffle-segments') !== 'false'
+        ),
+        renderHTML: (attributes) => ({
+          'data-rewrite-shuffle-segments': String(attributes.shuffleSegments),
+        }),
+      },
     };
   },
 
@@ -267,6 +292,7 @@ export const RewriteSentences = Node.create({
               items: attrs.items ?? defaultItems(),
               showInstruction: attrs.showInstruction ?? true,
               showFirstAsExample: attrs.showFirstAsExample ?? false,
+              shuffleSegments: attrs.shuffleSegments ?? true,
             },
           }),
     };
