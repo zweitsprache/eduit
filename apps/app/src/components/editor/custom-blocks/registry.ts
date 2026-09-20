@@ -218,6 +218,15 @@ export const CUSTOM_BLOCK_REGISTRY = [
     insert: (editor) => editor.chain().focus().insertAnagramNode().run(),
   },
   {
+    type: 'telephoneNumbers',
+    label: 'Telefonnummern',
+    description: 'Write ten-digit telephone numbers in a 3-3-2-2 box pattern.',
+    category: 'Assessment',
+    keywords: ['telephone', 'phone', 'number', 'digits', '3-2-2'],
+    Icon: Grid01,
+    insert: (editor) => editor.chain().focus().insertTelephoneNumbers().run(),
+  },
+  {
     type: 'letterCloud',
     label: 'Letter Cloud',
     description: 'Scrambled letters scattered on a card with a writing line for the solution.',

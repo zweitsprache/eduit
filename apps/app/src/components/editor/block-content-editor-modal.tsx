@@ -231,6 +231,8 @@ import type {
   AnagramNodeItem,
 } from '@/components/editor/anagram-node';
 import { DEFAULT_ANAGRAM_INSTRUCTION } from '@/components/editor/anagram-node';
+import type { TelephoneNumbersAttrs, TelephoneNumbersItem } from '@/components/editor/telephone-numbers-node';
+import { DEFAULT_TELEPHONE_NUMBERS_INSTRUCTION } from '@/components/editor/telephone-numbers-node';
 import type { LesetrainingAttrs } from '@/components/editor/lesetraining-node';
 import type {
   LetterCloudAttrs,
@@ -325,6 +327,7 @@ export type ContentEditorBlock = {
     | 'instructionBlock'
     | 'letterNode'
     | 'anagramNode'
+    | 'telephoneNumbers'
     | 'letterCloud'
     | 'crossword'
     | 'errorCorrection'
@@ -371,6 +374,7 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   instructionBlock: 'Instruction content',
   letterNode: 'Letter Node content',
   anagramNode: 'Anagram content',
+  telephoneNumbers: 'Telefonnummern content',
   letterCloud: 'Letter Cloud content',
   crossword: 'Crossword content',
   errorCorrection: 'Error correction text content',
@@ -7486,6 +7490,69 @@ function AnagramEditor({
   );
 }
 
+function TelephoneNumbersEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: TelephoneNumbersAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const setItems = (items: TelephoneNumbersItem[]) => updateAttrs(editor, block, { items });
+  const normalizeNumber = (value: string) => {
+    let digitCount = 0;
+    return Array.from(value).flatMap((character) => {
+      if (character === '*') return character;
+      if (/\d/.test(character) && digitCount < 10) {
+        digitCount += 1;
+        return character;
+      }
+      return [];
+    }).join('');
+  };
+
+  return (
+    <>
+      <ContentFieldLabel>Instruction</ContentFieldLabel>
+      <textarea
+        rows={1}
+        value={attrs.instruction || DEFAULT_TELEPHONE_NUMBERS_INSTRUCTION}
+        onChange={(event) => updateAttrs(editor, block, { instruction: event.target.value })}
+        className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+      <ContentSwitchGrid>
+        <ContentSwitch label="Hide instruction numbering" isSelected={attrs.hideInstructionBadge} onChange={(hideInstructionBadge) => updateAttrs(editor, block, { hideInstructionBadge })} />
+        <ContentSwitch label="Show item numbers" isSelected={attrs.showItemNumbers} onChange={(showItemNumbers) => updateAttrs(editor, block, { showItemNumbers })} />
+        <ContentSwitch label="Show first as example" isSelected={attrs.showFirstAsExample} onChange={(showFirstAsExample) => updateAttrs(editor, block, { showFirstAsExample })} />
+      </ContentSwitchGrid>
+      <ContentSectionHeader count={`${attrs.items.length} items`}>Telephone numbers</ContentSectionHeader>
+      <div className="mt-3 space-y-2">
+        {attrs.items.map((item, index) => (
+          <ContentCard key={item.id}>
+            <ContentItemGrid>
+              <ContentItemNumber>{String(index + 1).padStart(2, '0')}</ContentItemNumber>
+              <input
+                aria-label={`Telephone number ${index + 1}`}
+                inputMode="text"
+                onChange={(event) => setItems(attrs.items.map((current) => (
+                  current.id === item.id ? { ...current, number: normalizeNumber(event.target.value) } : current
+                )))}
+                pattern="[0-9*]*"
+                placeholder="0*7912*3456*7"
+                value={item.number}
+                className="h-9 min-w-0 w-full rounded-md border border-primary bg-primary px-2.5 text-sm tracking-wide text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+              <ContentItemActions label={`telephone number ${index + 1}`} canDelete={attrs.items.length > 1} canMoveUp={index > 0} canMoveDown={index < attrs.items.length - 1} onDelete={() => setItems(attrs.items.filter(({ id }) => id !== item.id))} onMoveUp={() => setItems(moveItem(attrs.items, index, -1))} onMoveDown={() => setItems(moveItem(attrs.items, index, 1))} />
+            </ContentItemGrid>
+          </ContentCard>
+        ))}
+      </div>
+      <ContentAddButton onClick={() => setItems([...attrs.items, { id: `telephone-number-${Date.now()}`, number: '' }])}>Add telephone number</ContentAddButton>
+    </>
+  );
+}
+
 function LetterCloudEditor({
   attrs,
   block,
@@ -8192,6 +8259,7 @@ function WorksheetTableEditor({
             ? 24 - (maxColumns - 1)
             : 1,
           align: 'left',
+          verticalAlign: 'center',
           useTabularNums: false,
         }),
       );
@@ -8433,6 +8501,23 @@ function WorksheetTableEditor({
                     </button>
                   ))}
                 </div>
+                <select
+                  aria-label={`Vertical alignment of column ${index + 1}`}
+                  className="h-9 min-w-0 rounded-md border border-primary bg-primary px-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  onChange={(event) => setColumns(attrs.columns.map((current) => (
+                    current.id === column.id
+                      ? {
+                          ...current,
+                          verticalAlign: event.target.value as WorksheetTableColumn['verticalAlign'],
+                        }
+                      : current
+                  )))}
+                  value={column.verticalAlign ?? 'center'}
+                >
+                  <option value="top">Top</option>
+                  <option value="center">Middle</option>
+                  <option value="bottom">Bottom</option>
+                </select>
               </div>
               <ContentItemActions
                 label={`column ${index + 1}`}
@@ -8485,6 +8570,7 @@ function WorksheetTableEditor({
                       : current
                   )))}
                   placeholder={attrs.columns[0].label || 'Cell'}
+                  multiline
                   className="min-h-9 min-w-0 flex-1 rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
                 />
               )}
@@ -8517,6 +8603,7 @@ function WorksheetTableEditor({
                         : current
                     )))}
                     placeholder={column.label || 'Cell'}
+                    multiline
                     className="min-h-9 rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
                   />
                 ))}
@@ -9282,6 +9369,7 @@ export function BlockContentEditorModal({
             {block.type === 'instructionBlock' && <StandaloneInstructionEditor attrs={attrs as unknown as InstructionBlockAttrs} block={block} editor={editor} />}
             {block.type === 'letterNode' && <LetterNodeEditor attrs={attrs as unknown as LetterNodeAttrs} block={block} editor={editor} />}
             {block.type === 'anagramNode' && <AnagramEditor attrs={attrs as unknown as AnagramNodeAttrs} block={block} editor={editor} />}
+            {block.type === 'telephoneNumbers' && <TelephoneNumbersEditor attrs={attrs as unknown as TelephoneNumbersAttrs} block={block} editor={editor} />}
             {block.type === 'letterCloud' && <LetterCloudEditor attrs={attrs as unknown as LetterCloudAttrs} block={block} editor={editor} />}
             {block.type === 'crossword' && <CrosswordEditor attrs={attrs as unknown as CrosswordAttrs} block={block} editor={editor} />}
             {block.type === 'errorCorrection' && <ErrorCorrectionEditor attrs={attrs as unknown as ErrorCorrectionAttrs} block={block} editor={editor} />}

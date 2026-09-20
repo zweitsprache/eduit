@@ -43,6 +43,7 @@ import type { DictationLinesAttrs } from '@/components/editor/dictation-lines-no
 import type { AlpharamaTermAttrs } from '@/components/editor/alpharama-term-node';
 import type { LetterCloudAttrs } from '@/components/editor/letter-cloud-node';
 import type { AnagramNodeAttrs } from '@/components/editor/anagram-node';
+import type { TelephoneNumbersAttrs } from '@/components/editor/telephone-numbers-node';
 import type { LesetrainingAttrs } from '@/components/editor/lesetraining-node';
 import type { WordGridAttrs } from '@/components/editor/word-grid-node';
 import type { WordBankAttrs } from '@/components/editor/word-bank-node';
@@ -149,6 +150,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'alpharamaTerm',
   'letterCloud',
   'anagramNode',
+  'telephoneNumbers',
   'lesetraining',
   'richText',
   'glossaryTerms',
@@ -626,6 +628,10 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         pageBreakBetweenItems,
         items,
       };
+    }
+    case 'telephoneNumbers': {
+      const { instruction, hideInstructionBadge, showItemNumbers, showFirstAsExample, items } = attrs as TelephoneNumbersAttrs;
+      return { type: 'telephoneNumbers', instruction, hideInstructionBadge, showItemNumbers, showFirstAsExample, items };
     }
     case 'lesetraining': {
       const { html, bypassGap, audio } = attrs as LesetrainingAttrs;
@@ -1214,6 +1220,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
           label: column.label,
           span: column.span,
           align: column.align,
+          verticalAlign: column.verticalAlign ?? 'center',
           useTabularNums: column.useTabularNums === true,
         })),
         rows: tableAttrs.rows.map((row) => ({

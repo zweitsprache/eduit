@@ -465,6 +465,21 @@ const anagramSchema = z.object({
   pageBreakBetweenItems: z.boolean().default(false),
 });
 
+const telephoneNumbersSchema = z.object({
+  type: z.literal('telephoneNumbers'),
+  instruction: z.string().trim().max(1000).default('Write the telephone numbers.'),
+  hideInstructionBadge: z.boolean().default(false),
+  showItemNumbers: z.boolean().default(true),
+  showFirstAsExample: z.boolean().default(false),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    number: z.string().regex(/^[\d*]+$/).refine(
+      (value) => value.replace(/\D/g, '').length === 10,
+      'Telephone numbers must contain exactly 10 digits.',
+    ),
+  })).min(1).max(100),
+});
+
 const crosswordSchema = z.object({
   type: z.literal('crossword'),
   instruction: z.string().trim().min(1).max(1000).default('Complete the crossword using the clues.'),
@@ -484,6 +499,7 @@ const worksheetTableColumnSchema = z.object({
   label: z.string().max(500).default(''),
   span: z.number().min(0.5).max(24),
   align: z.enum(['left', 'center', 'right']).default('left'),
+  verticalAlign: z.enum(['top', 'center', 'bottom']).default('center'),
   useTabularNums: z.boolean().default(false),
 });
 
@@ -1136,6 +1152,7 @@ export const generatedWorksheetBlockSchema = z.discriminatedUnion('type', [
   alpharamaTermSchema,
   letterCloudSchema,
   anagramSchema,
+  telephoneNumbersSchema,
   crosswordSchema,
   dialogueSchema,
   messengerSchema,
@@ -1399,6 +1416,10 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       answer: item.answer,
     }));
     return `<div data-anagram-instruction="${escapeAttribute(block.instruction)}" data-anagram-hide-instruction-badge="${block.hideInstructionBadge}" data-anagram-show-clues="${block.showClues}" data-anagram-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-anagram-item-numbers="${block.showItemNumbers}" data-anagram-show-first-as-example="${block.showFirstAsExample}" data-anagram-page-break-between-items="${block.pageBreakBetweenItems}" data-type="anagram-node"></div>`;
+  }
+  if (block.type === 'telephoneNumbers') {
+    const items = block.items.map((item, index) => ({ id: item.id ?? `telephone-number-${index + 1}`, number: item.number }));
+    return `<div data-telephone-numbers-instruction="${escapeAttribute(block.instruction)}" data-telephone-numbers-hide-instruction-badge="${block.hideInstructionBadge}" data-telephone-numbers-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-telephone-numbers-item-numbers="${block.showItemNumbers}" data-telephone-numbers-show-first-as-example="${block.showFirstAsExample}" data-type="telephone-numbers"></div>`;
   }
   if (block.type === 'crossword') {
     return `<div data-crossword-instruction="${escapeAttribute(block.instruction)}" data-crossword-entries="${escapeAttribute(encodeURIComponent(JSON.stringify(block.entries)))}" data-crossword-layout-seed="${block.layoutSeed}" data-crossword-cell-size="${block.cellSize}" data-crossword-cell-aspect-ratio="${block.cellAspectRatio}" data-crossword-show-word-bank="${block.showWordBank}" data-type="crossword"></div>`;

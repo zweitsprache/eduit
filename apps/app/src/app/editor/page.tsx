@@ -305,6 +305,7 @@ import { MediaLayoutEditorModal } from '@/components/editor/media-layout-editor-
 import { BlockHoverToolbar } from '@/components/editor/block-hover-toolbar';
 import { LetterNode } from '@/components/editor/letter-node';
 import { AnagramNode } from '@/components/editor/anagram-node';
+import { TelephoneNumbers } from '@/components/editor/telephone-numbers-node';
 import { LetterCloud } from '@/components/editor/letter-cloud-node';
 import { Lesetraining, type LesetrainingAttrs } from '@/components/editor/lesetraining-node';
 import {
@@ -603,6 +604,7 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'mediaLayout',
   'letterNode',
   'anagramNode',
+  'telephoneNumbers',
   'letterCloud',
   'lesetraining',
   'crossword',
@@ -1894,6 +1896,7 @@ export default function EditorPage() {
       MediaLayout,
       LetterNode,
       AnagramNode,
+      TelephoneNumbers,
       LetterCloud,
       Lesetraining,
       Crossword,

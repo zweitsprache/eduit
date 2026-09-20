@@ -40,6 +40,7 @@ export const CUSTOM_BLOCK_DOCUMENT_COVERAGE = {
   mediaLayout: { status: 'canonical', documentType: 'mediaLayout' },
   letterNode: { status: 'canonical', documentType: 'letterNode' },
   anagramNode: { status: 'canonical', documentType: 'anagram' },
+    telephoneNumbers: { status: 'canonical', documentType: 'telephoneNumbers' },
   letterCloud: { status: 'canonical', documentType: 'letterCloud' },
   lesetraining: { status: 'canonical', documentType: 'lesetraining' },
   crossword: { status: 'canonical', documentType: 'crossword' },

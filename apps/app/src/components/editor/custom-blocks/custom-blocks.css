@@ -3313,6 +3313,25 @@
   padding-left: 0;
 }
 
+/* Telephone numbers */
+.custom-block.telephone-numbers-node { display: block; break-inside: auto; page-break-inside: auto; }
+.telephone-numbers-node__page-break-spacer { display: block; }
+.telephone-numbers-node__items { display: block; margin-block-start: var(--custom-block-space-section); }
+.telephone-numbers-node > .custom-block__instruction + .telephone-numbers-node__items { margin-block-start: var(--custom-block-space-instruction-to-divider); }
+.telephone-numbers-node__item { display: flex; min-height: var(--custom-block-row-height); align-items: center; gap: var(--custom-block-inline-gap); break-inside: avoid; page-break-inside: avoid; }
+.telephone-numbers-node__item + .telephone-numbers-node__item { margin-block-start: var(--custom-block-space-question-to-rows); padding-block-start: var(--custom-block-space-question-to-rows); border-top: 1px solid var(--color-border-secondary); }
+.telephone-numbers-node__boxes { --telephone-number-cell-size: 2rem; --telephone-number-cell-gap: 0.35rem; display: flex; flex-wrap: nowrap; gap: var(--telephone-number-cell-gap); }
+.telephone-numbers-node__cell { display: inline-flex; width: var(--telephone-number-cell-size); height: var(--telephone-number-cell-size); align-items: center; justify-content: center; border: 1px solid var(--color-border-secondary); border-radius: var(--custom-block-radius-control); background: var(--color-bg-primary); }
+.telephone-numbers-node__cell[data-group-end="true"] { margin-inline-end: calc(var(--telephone-number-cell-size) - var(--telephone-number-cell-gap)); }
+.telephone-numbers-node__digit { visibility: hidden; color: var(--custom-block-solution-color); font-size: 1rem; line-height: 1; }
+.tiptap[data-show-solutions="true"] .telephone-numbers-node__digit { visibility: visible; font-family: var(--custom-block-solution-font-family); font-size: var(--custom-block-solution-font-size); font-weight: 500; }
+.telephone-numbers-node__boxes[data-example="true"] .telephone-numbers-node__digit { visibility: visible; color: var(--custom-block-example-solution-color); font-family: var(--custom-block-example-font-family); font-size: var(--custom-block-example-font-size); font-weight: 500; }
+.telephone-numbers-node__digit[data-prefilled="true"] { visibility: visible; color: var(--custom-block-example-solution-color); font-family: var(--custom-block-example-font-family); font-size: var(--custom-block-example-font-size); font-weight: 500; }
+
+@media print {
+  .telephone-numbers-node__page-break-spacer { display: none !important; }
+}
+
 /* Letter cloud */
 .letter-cloud-node__grid {
   display: grid;

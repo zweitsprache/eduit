@@ -31,6 +31,7 @@ export type WorksheetTableColumn = {
   label: string;
   span: number;
   align: 'left' | 'center' | 'right';
+  verticalAlign?: 'top' | 'center' | 'bottom';
   useTabularNums?: boolean;
 };
 
@@ -60,6 +61,7 @@ export const DEFAULT_WORKSHEET_TABLE_COLUMNS: WorksheetTableColumn[] = [
     label: 'Term',
     span: 8,
     align: 'left',
+    verticalAlign: 'center',
     useTabularNums: false,
   },
   {
@@ -67,6 +69,7 @@ export const DEFAULT_WORKSHEET_TABLE_COLUMNS: WorksheetTableColumn[] = [
     label: 'Definition',
     span: 16,
     align: 'left',
+    verticalAlign: 'center',
     useTabularNums: false,
   },
 ];
@@ -181,6 +184,10 @@ function parseColumns(value: string | null): WorksheetTableColumn[] {
             align: column.align === 'center' || column.align === 'right'
               ? column.align
               : 'left',
+            verticalAlign: column.verticalAlign === 'top'
+              || column.verticalAlign === 'bottom'
+              ? column.verticalAlign
+              : 'center',
             useTabularNums: column.useTabularNums === true,
           }]
         : []
@@ -413,6 +420,7 @@ function WorksheetTableNodeView({ node, selected }: NodeViewProps) {
               key: string;
               colSpan: number;
               align: 'left' | 'center' | 'right';
+              verticalAlign: 'top' | 'center' | 'bottom';
               useTabularNums: boolean;
               headerText: string;
               fallback: string;
@@ -446,6 +454,7 @@ function WorksheetTableNodeView({ node, selected }: NodeViewProps) {
                   key: `${row.id}-${column.id}`,
                   colSpan: mergedSpan,
                   align: column.align ?? 'left',
+                  verticalAlign: column.verticalAlign ?? 'center',
                   useTabularNums: attrs.columns
                     .slice(index, mergeEnd + 1)
                     .some((mergedColumn) => mergedColumn.useTabularNums === true),
@@ -463,6 +472,7 @@ function WorksheetTableNodeView({ node, selected }: NodeViewProps) {
                 key: `${row.id}-${column.id}`,
                 colSpan: baseSpan,
                 align: column.align ?? 'left',
+                verticalAlign: column.verticalAlign ?? 'center',
                 useTabularNums: column.useTabularNums === true,
                 headerText,
                 fallback: `Column ${index + 1}`,
@@ -492,6 +502,11 @@ function WorksheetTableNodeView({ node, selected }: NodeViewProps) {
                     style={{
                       gridColumn: `span ${cell.colSpan}`,
                       textAlign: cell.align,
+                      alignItems: cell.verticalAlign === 'top'
+                        ? 'flex-start'
+                        : cell.verticalAlign === 'bottom'
+                          ? 'flex-end'
+                          : 'center',
                     }}
                   >
                     {cell.isHeader ? (

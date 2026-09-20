@@ -32,6 +32,7 @@ export const WORKSHEET_DOCUMENT_BLOCK_TYPES = [
   'alpharamaTerm',
   'letterCloud',
   'anagram',
+  'telephoneNumbers',
   'crossword',
   'worksheetTable',
   'informationGapActivity',
