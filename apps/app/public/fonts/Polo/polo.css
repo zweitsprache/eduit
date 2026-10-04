@@ -1,0 +1,71 @@
+@font-face {
+  font-family: "PoloCEF";
+  src: url("/fonts/Polo/PoloCEF_Light.otf") format("opentype");
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PoloCEF";
+  src: url("/fonts/Polo/PoloCEF_LightItalic.otf") format("opentype");
+  font-style: italic;
+  font-weight: 300;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PoloCEF";
+  src: url("/fonts/Polo/PoloCEF_Regular.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PoloCEF";
+  src: url("/fonts/Polo/PoloCEF_RegularItalic.otf") format("opentype");
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PoloCEF";
+  src: url("/fonts/Polo/PoloCEF_Medium.otf") format("opentype");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PoloCEF";
+  src: url("/fonts/Polo/PoloCEF_MediumItalic.otf") format("opentype");
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PoloCEF";
+  src: url("/fonts/Polo/PoloCEF_Demibold.otf") format("opentype");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PoloCEF";
+  src: url("/fonts/Polo/PoloCEF_DemiboldItalic.otf") format("opentype");
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "UberhandPro";
+  src: url("/fonts/Polo/UberhandPro.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}

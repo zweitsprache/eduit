@@ -1,4 +1,5 @@
 @import "../../public/fonts/thesans.css";
+@import "../../public/fonts/Polo/polo.css";
 @import "../../../../packages/brand/tokens.css";
 @import "tailwindcss";
 @import "@neondatabase/auth/ui/tailwind";
