@@ -15,6 +15,7 @@ export const STYLE_PRESETS = [
   'educational',
   'semi-academic',
   'academic',
+  'nachalphabetisierung',
 ] as const;
 
 export type BrandNumberFormat = typeof NUMBER_FORMATS[number];

@@ -366,6 +366,19 @@
             "restartInstructionNumbering": {
               "default": true,
               "type": "boolean"
+            },
+            "icon": {
+              "default": "none",
+              "type": "string",
+              "enum": [
+                "none",
+                "listening",
+                "playing",
+                "reading",
+                "speaking",
+                "writing",
+                "speechBubble"
+              ]
             }
           },
           "required": [
@@ -1678,6 +1691,44 @@
           "properties": {
             "type": {
               "type": "string",
+              "const": "telephoneNumbers"
+            },
+            "instruction": {
+              "default": "Write the telephone numbers.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "hideInstructionBadge": {
+              "default": false,
+              "type": "boolean"
+            },
+            "showItemNumbers": {
+              "default": true,
+              "type": "boolean"
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            },
+            "items": {
+              "minItems": 1,
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema48"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
               "const": "crossword"
             },
             "instruction": {
@@ -1691,7 +1742,7 @@
               "maxItems": 100,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema48"
+                "$ref": "#/$defs/__schema49"
               }
             },
             "layoutSeed": {
@@ -1799,7 +1850,7 @@
               "maxItems": 500,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema49"
+                "$ref": "#/$defs/__schema50"
               }
             }
           },
@@ -1832,7 +1883,7 @@
               "maxItems": 500,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema50"
+                "$ref": "#/$defs/__schema51"
               }
             }
           },
@@ -1944,7 +1995,7 @@
               "maxItems": 100,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema51"
+                "$ref": "#/$defs/__schema52"
               }
             }
           },
@@ -1978,7 +2029,7 @@
               "maxItems": 20,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema52"
+                "$ref": "#/$defs/__schema53"
               }
             }
           },
@@ -2009,7 +2060,7 @@
               "maxItems": 50,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema54"
+                "$ref": "#/$defs/__schema55"
               }
             },
             "questionNumber": {
@@ -2054,6 +2105,46 @@
           "properties": {
             "type": {
               "type": "string",
+              "const": "mcqTwo"
+            },
+            "instruction": {
+              "default": "Choose the correct answer.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "hideInstructionBadge": {
+              "default": false,
+              "type": "boolean"
+            },
+            "items": {
+              "minItems": 1,
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema57"
+              }
+            },
+            "columns": {
+              "default": 3,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "items"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
               "const": "mcm"
             },
             "instruction": {
@@ -2071,7 +2162,7 @@
               "maxItems": 100,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema56"
+                "$ref": "#/$defs/__schema59"
               }
             },
             "showFirstAsExample": {
@@ -2109,7 +2200,7 @@
               "maxItems": 1000,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema58"
+                "$ref": "#/$defs/__schema61"
               }
             },
             "order": {
@@ -2195,7 +2286,7 @@
               "maxItems": 100,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema60"
+                "$ref": "#/$defs/__schema63"
               }
             },
             "showFirstAsExample": {
@@ -2230,7 +2321,7 @@
               "maxItems": 100,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema61"
+                "$ref": "#/$defs/__schema64"
               }
             },
             "rightOrder": {
@@ -2318,7 +2409,7 @@
               "maxItems": 100,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema62"
+                "$ref": "#/$defs/__schema65"
               }
             },
             "rightOrder": {
@@ -2347,7 +2438,7 @@
               "maxItems": 60,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema63"
+                "$ref": "#/$defs/__schema66"
               }
             },
             "rangeStart": {
@@ -2424,7 +2515,7 @@
               "maxItems": 400,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema64"
+                "$ref": "#/$defs/__schema67"
               }
             }
           },
@@ -2487,7 +2578,7 @@
               "maxItems": 450,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema65"
+                "$ref": "#/$defs/__schema68"
               }
             }
           },
@@ -2523,7 +2614,7 @@
               "maxItems": 450,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema66"
+                "$ref": "#/$defs/__schema69"
               }
             }
           },
@@ -2748,7 +2839,7 @@
               "maxItems": 100,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema67"
+                "$ref": "#/$defs/__schema70"
               }
             },
             "generation": {
@@ -2775,7 +2866,7 @@
               "maxItems": 500,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema68"
+                "$ref": "#/$defs/__schema71"
               }
             }
           },
@@ -2801,7 +2892,7 @@
               "maxItems": 200,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema69"
+                "$ref": "#/$defs/__schema72"
               }
             },
             "showInstruction": {
@@ -2835,7 +2926,7 @@
               "maxItems": 4,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema70"
+                "$ref": "#/$defs/__schema73"
               }
             },
             "items": {
@@ -2843,7 +2934,7 @@
               "maxItems": 500,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema71"
+                "$ref": "#/$defs/__schema74"
               }
             },
             "colorCoding": {
@@ -2894,7 +2985,7 @@
               "maxItems": 100,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema72"
+                "$ref": "#/$defs/__schema75"
               }
             },
             "generation": {
@@ -2921,29 +3012,61 @@
               "maxItems": 500,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema73"
+                "$ref": "#/$defs/__schema76"
               }
             },
-            "showFirstAsExample": {
+            "shuffle": {
               "default": false,
               "type": "boolean"
             },
             "oddTextSize": {
-              "$ref": "#/$defs/__schema74"
+              "$ref": "#/$defs/__schema77"
             },
             "evenTextSize": {
-              "$ref": "#/$defs/__schema74"
+              "$ref": "#/$defs/__schema77"
             },
             "leftRepresentation": {
-              "$ref": "#/$defs/__schema75"
+              "$ref": "#/$defs/__schema78"
             },
             "rightRepresentation": {
-              "$ref": "#/$defs/__schema75"
+              "$ref": "#/$defs/__schema78"
             }
           },
           "required": [
             "type",
             "pairs"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "blitzdiktat"
+            },
+            "items": {
+              "minItems": 1,
+              "maxItems": 200,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema79"
+              }
+            },
+            "textSize": {
+              "default": "m",
+              "type": "string",
+              "enum": [
+                "xs",
+                "s",
+                "m",
+                "l",
+                "xl"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "items"
           ]
         },
         {
@@ -3006,7 +3129,7 @@
               "maxLength": 200
             },
             "leftForms": {
-              "$ref": "#/$defs/__schema76"
+              "$ref": "#/$defs/__schema80"
             },
             "leftAuxiliary": {
               "default": "sein",
@@ -3037,7 +3160,7 @@
               "maxLength": 200
             },
             "forms": {
-              "$ref": "#/$defs/__schema76"
+              "$ref": "#/$defs/__schema80"
             },
             "rightAuxiliary": {
               "default": "haben",
@@ -3075,7 +3198,7 @@
               "maxItems": 20,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema77"
+                "$ref": "#/$defs/__schema81"
               }
             }
           },
@@ -3160,7 +3283,7 @@
               "maxItems": 4,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema78"
+                "$ref": "#/$defs/__schema82"
               }
             }
           },
@@ -3168,6 +3291,76 @@
             "type",
             "baseAdjectives",
             "baseNouns",
+            "rows"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "possessivePronoun"
+            },
+            "displayedCases": {
+              "default": [
+                "nom",
+                "akk",
+                "dat",
+                "gen"
+              ],
+              "minItems": 1,
+              "maxItems": 4,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema84"
+              }
+            },
+            "rows": {
+              "minItems": 4,
+              "maxItems": 4,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema85"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "rows"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "indefiniteArticle"
+            },
+            "displayedCases": {
+              "default": [
+                "nom",
+                "akk",
+                "dat",
+                "gen"
+              ],
+              "minItems": 1,
+              "maxItems": 4,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema87"
+              }
+            },
+            "rows": {
+              "minItems": 4,
+              "maxItems": 4,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema88"
+              }
+            }
+          },
+          "required": [
+            "type",
             "rows"
           ]
         },
@@ -3196,7 +3389,7 @@
               "maxItems": 6,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema80"
+                "$ref": "#/$defs/__schema89"
               }
             },
             "rows": {
@@ -3204,7 +3397,7 @@
               "maxItems": 1000,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema81"
+                "$ref": "#/$defs/__schema90"
               }
             },
             "showHeader": {
@@ -3224,6 +3417,12 @@
             "showFirstAsExample": {
               "default": false,
               "type": "boolean"
+            },
+            "exampleRowCount": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000
             }
           },
           "required": [
@@ -3250,7 +3449,7 @@
               "maxItems": 6,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema80"
+                "$ref": "#/$defs/__schema89"
               }
             },
             "rows": {
@@ -3258,7 +3457,7 @@
               "maxItems": 1000,
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema81"
+                "$ref": "#/$defs/__schema90"
               }
             }
           },
@@ -3266,6 +3465,58 @@
             "type",
             "columns",
             "rows"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "audioComprehension"
+            },
+            "instruction": {
+              "default": "Listen and click the word you hear.",
+              "type": "string",
+              "maxLength": 1000
+            },
+            "hideInstructionBadge": {
+              "default": false,
+              "type": "boolean"
+            },
+            "items": {
+              "minItems": 1,
+              "maxItems": 100,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema91"
+              }
+            },
+            "columns": {
+              "default": 2,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3
+            },
+            "shuffleItems": {
+              "default": false,
+              "type": "boolean"
+            },
+            "showFirstAsExample": {
+              "default": false,
+              "type": "boolean"
+            },
+            "textAlign": {
+              "default": "center",
+              "type": "string",
+              "enum": [
+                "left",
+                "center"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "items"
           ]
         }
       ]
@@ -4060,14 +4311,11 @@
           "maxLength": 100
         },
         "word": {
+          "default": "",
           "type": "string",
-          "minLength": 1,
           "maxLength": 100
         }
-      },
-      "required": [
-        "word"
-      ]
+      }
     },
     "__schema47": {
       "type": "object",
@@ -4100,6 +4348,23 @@
           "minLength": 1,
           "maxLength": 100
         },
+        "number": {
+          "type": "string",
+          "pattern": "^[\\d*]+$"
+        }
+      },
+      "required": [
+        "number"
+      ]
+    },
+    "__schema49": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
         "answer": {
           "type": "string",
           "minLength": 1,
@@ -4116,7 +4381,7 @@
         "clue"
       ]
     },
-    "__schema49": {
+    "__schema50": {
       "type": "object",
       "properties": {
         "speaker": {
@@ -4125,17 +4390,28 @@
           "maximum": 4
         },
         "text": {
+          "default": "",
           "type": "string",
-          "minLength": 1,
           "maxLength": 5000
+        },
+        "isSpacer": {
+          "default": false,
+          "type": "boolean"
+        },
+        "spacerBreak": {
+          "default": "page",
+          "type": "string",
+          "enum": [
+            "page",
+            "line"
+          ]
         }
       },
       "required": [
-        "speaker",
-        "text"
+        "speaker"
       ]
     },
-    "__schema50": {
+    "__schema51": {
       "type": "object",
       "properties": {
         "side": {
@@ -4160,7 +4436,7 @@
         "text"
       ]
     },
-    "__schema51": {
+    "__schema52": {
       "type": "object",
       "properties": {
         "id": {
@@ -4195,7 +4471,7 @@
         }
       }
     },
-    "__schema52": {
+    "__schema53": {
       "type": "object",
       "properties": {
         "id": {
@@ -4217,7 +4493,7 @@
           "maxItems": 50,
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema53"
+            "$ref": "#/$defs/__schema54"
           }
         }
       },
@@ -4226,7 +4502,7 @@
         "rows"
       ]
     },
-    "__schema53": {
+    "__schema54": {
       "type": "object",
       "properties": {
         "id": {
@@ -4246,7 +4522,7 @@
         }
       }
     },
-    "__schema54": {
+    "__schema55": {
       "type": "object",
       "properties": {
         "id": {
@@ -4264,7 +4540,7 @@
           "maxItems": 10,
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema55"
+            "$ref": "#/$defs/__schema56"
           }
         },
         "answerMode": {
@@ -4281,7 +4557,7 @@
         "options"
       ]
     },
-    "__schema55": {
+    "__schema56": {
       "type": "object",
       "properties": {
         "id": {
@@ -4303,7 +4579,47 @@
         "text"
       ]
     },
-    "__schema56": {
+    "__schema57": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "options": {
+          "minItems": 2,
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema58"
+          }
+        }
+      },
+      "required": [
+        "options"
+      ]
+    },
+    "__schema58": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "text": {
+          "default": "",
+          "type": "string",
+          "maxLength": 1000
+        },
+        "correct": {
+          "default": false,
+          "type": "boolean"
+        }
+      }
+    },
+    "__schema59": {
       "type": "object",
       "properties": {
         "id": {
@@ -4321,7 +4637,7 @@
           "maxItems": 3,
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema57"
+            "$ref": "#/$defs/__schema60"
           }
         }
       },
@@ -4330,7 +4646,7 @@
         "options"
       ]
     },
-    "__schema57": {
+    "__schema60": {
       "type": "object",
       "properties": {
         "id": {
@@ -4352,7 +4668,7 @@
         "text"
       ]
     },
-    "__schema58": {
+    "__schema61": {
       "type": "object",
       "properties": {
         "id": {
@@ -4368,13 +4684,13 @@
           "maxItems": 3,
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema59"
+            "$ref": "#/$defs/__schema62"
           }
         },
         "article": {
           "anyOf": [
             {
-              "$ref": "#/$defs/__schema59"
+              "$ref": "#/$defs/__schema62"
             },
             {
               "type": "null"
@@ -4391,7 +4707,7 @@
         "term"
       ]
     },
-    "__schema59": {
+    "__schema62": {
       "type": "string",
       "enum": [
         "der",
@@ -4399,7 +4715,7 @@
         "die"
       ]
     },
-    "__schema60": {
+    "__schema63": {
       "type": "object",
       "properties": {
         "id": {
@@ -4439,7 +4755,7 @@
         "text"
       ]
     },
-    "__schema61": {
+    "__schema64": {
       "type": "object",
       "properties": {
         "id": {
@@ -4463,7 +4779,7 @@
         "right"
       ]
     },
-    "__schema62": {
+    "__schema65": {
       "type": "object",
       "properties": {
         "id": {
@@ -4487,12 +4803,12 @@
         "minute"
       ]
     },
-    "__schema63": {
+    "__schema66": {
       "type": "integer",
       "minimum": 0,
       "maximum": 59
     },
-    "__schema64": {
+    "__schema67": {
       "type": "object",
       "properties": {
         "id": {
@@ -4540,7 +4856,7 @@
         }
       }
     },
-    "__schema65": {
+    "__schema68": {
       "type": "object",
       "properties": {
         "id": {
@@ -4560,7 +4876,7 @@
         }
       }
     },
-    "__schema66": {
+    "__schema69": {
       "type": "object",
       "properties": {
         "id": {
@@ -4585,17 +4901,17 @@
         }
       }
     },
-    "__schema67": {
+    "__schema70": {
       "type": "string",
       "minLength": 1,
       "maxLength": 100
     },
-    "__schema68": {
+    "__schema71": {
       "type": "string",
       "minLength": 1,
       "maxLength": 500
     },
-    "__schema69": {
+    "__schema72": {
       "type": "object",
       "properties": {
         "id": {
@@ -4637,7 +4953,7 @@
         "solution"
       ]
     },
-    "__schema70": {
+    "__schema73": {
       "type": "object",
       "properties": {
         "id": {
@@ -4652,7 +4968,7 @@
         }
       }
     },
-    "__schema71": {
+    "__schema74": {
       "type": "object",
       "properties": {
         "id": {
@@ -4676,7 +4992,7 @@
         "categoryId"
       ]
     },
-    "__schema72": {
+    "__schema75": {
       "type": "object",
       "properties": {
         "id": {
@@ -4700,7 +5016,7 @@
         "word"
       ]
     },
-    "__schema73": {
+    "__schema76": {
       "type": "object",
       "properties": {
         "id": {
@@ -4724,7 +5040,7 @@
         "right"
       ]
     },
-    "__schema74": {
+    "__schema77": {
       "default": "m",
       "type": "string",
       "enum": [
@@ -4735,7 +5051,7 @@
         "xl"
       ]
     },
-    "__schema75": {
+    "__schema78": {
       "default": "text",
       "type": "string",
       "enum": [
@@ -4746,7 +5062,22 @@
         "text"
       ]
     },
-    "__schema76": {
+    "__schema79": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "text": {
+          "default": "",
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "__schema80": {
       "type": "object",
       "properties": {
         "ich": {
@@ -4796,7 +5127,7 @@
         }
       }
     },
-    "__schema77": {
+    "__schema81": {
       "type": "object",
       "properties": {
         "verb": {
@@ -4805,7 +5136,7 @@
           "maxLength": 200
         },
         "forms": {
-          "$ref": "#/$defs/__schema76"
+          "$ref": "#/$defs/__schema80"
         },
         "separablePrefix": {
           "default": "",
@@ -4817,7 +5148,7 @@
         "forms"
       ]
     },
-    "__schema78": {
+    "__schema82": {
       "type": "object",
       "properties": {
         "key": {
@@ -4833,16 +5164,16 @@
           "type": "object",
           "properties": {
             "masculine": {
-              "$ref": "#/$defs/__schema79"
+              "$ref": "#/$defs/__schema83"
             },
             "feminine": {
-              "$ref": "#/$defs/__schema79"
+              "$ref": "#/$defs/__schema83"
             },
             "neuter": {
-              "$ref": "#/$defs/__schema79"
+              "$ref": "#/$defs/__schema83"
             },
             "plural": {
-              "$ref": "#/$defs/__schema79"
+              "$ref": "#/$defs/__schema83"
             }
           },
           "required": [
@@ -4858,7 +5189,7 @@
         "values"
       ]
     },
-    "__schema79": {
+    "__schema83": {
       "type": "object",
       "properties": {
         "article": {
@@ -4919,7 +5250,171 @@
         "noun"
       ]
     },
-    "__schema80": {
+    "__schema84": {
+      "type": "string",
+      "enum": [
+        "nom",
+        "akk",
+        "dat",
+        "gen"
+      ]
+    },
+    "__schema85": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "enum": [
+            "nom",
+            "akk",
+            "dat",
+            "gen"
+          ]
+        },
+        "genders": {
+          "minItems": 4,
+          "maxItems": 4,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema86"
+          }
+        }
+      },
+      "required": [
+        "key",
+        "genders"
+      ]
+    },
+    "__schema86": {
+      "type": "object",
+      "properties": {
+        "gender": {
+          "type": "string",
+          "enum": [
+            "masculine",
+            "neuter",
+            "feminine",
+            "plural"
+          ]
+        },
+        "values": {
+          "type": "object",
+          "properties": {
+            "ich": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "du": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "er": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "sie": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "es": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "wir": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "ihr": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "siePlural": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "required": [
+            "ich",
+            "du",
+            "er",
+            "sie",
+            "es",
+            "wir",
+            "ihr",
+            "siePlural"
+          ]
+        },
+        "additional": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "gender",
+        "values"
+      ]
+    },
+    "__schema87": {
+      "type": "string",
+      "enum": [
+        "nom",
+        "akk",
+        "dat",
+        "gen"
+      ]
+    },
+    "__schema88": {
+      "type": "object",
+      "properties": {
+        "gender": {
+          "type": "string",
+          "enum": [
+            "masculine",
+            "neuter",
+            "feminine",
+            "plural"
+          ]
+        },
+        "values": {
+          "type": "object",
+          "properties": {
+            "nom": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "akk": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "dat": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "gen": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "required": [
+            "nom",
+            "akk",
+            "dat",
+            "gen"
+          ]
+        },
+        "additional": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "gender",
+        "values"
+      ]
+    },
+    "__schema89": {
       "type": "object",
       "properties": {
         "id": {
@@ -4946,6 +5441,15 @@
             "right"
           ]
         },
+        "verticalAlign": {
+          "default": "center",
+          "type": "string",
+          "enum": [
+            "top",
+            "center",
+            "bottom"
+          ]
+        },
         "useTabularNums": {
           "default": false,
           "type": "boolean"
@@ -4956,7 +5460,7 @@
         "span"
       ]
     },
-    "__schema81": {
+    "__schema90": {
       "type": "object",
       "properties": {
         "id": {
@@ -4983,6 +5487,21 @@
         "id",
         "cells"
       ]
+    },
+    "__schema91": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "text": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        }
+      }
     }
   },
   "$id": "https://eduit.app/schemas/worksheet-generation-v1.json",

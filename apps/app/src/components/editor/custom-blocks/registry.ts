@@ -20,7 +20,7 @@ import {
   GraduationHat01,
   Image01,
 } from '@untitledui/icons';
-import { Clock3, TrainFront } from 'lucide-react';
+import { Clock3, TrainFront, Volume2 } from 'lucide-react';
 
 export type CustomBlockDefinition = {
   type: string;
@@ -272,6 +272,15 @@ export const CUSTOM_BLOCK_REGISTRY = [
     insert: (editor) => editor.chain().focus().insertMCQ().run(),
   },
   {
+    type: 'mcqTwo',
+    label: 'MCQ II',
+    description: 'Numbered items with answer options laid out in row columns.',
+    category: 'Assessment',
+    keywords: ['mcq', 'mcq ii', 'question', 'quiz', 'items', 'columns'],
+    Icon: CheckSquare,
+    insert: (editor) => editor.chain().focus().insertMCQTwo().run(),
+  },
+  {
     type: 'mcm',
     label: 'Multiple-choice matrix',
     description: 'Rows with independently configurable answer options.',
@@ -315,6 +324,15 @@ export const CUSTOM_BLOCK_REGISTRY = [
     keywords: ['domino', 'chain', 'matching', 'pairs', 'trail', 'ZIEL'],
     Icon: SwitchHorizontal01,
     insert: (editor) => editor.chain().focus().insertDomino().run(),
+  },
+  {
+    type: 'blitzdiktat',
+    label: 'Blitzdiktat',
+    description: 'A 3 × 4 cuttable card grid with one word or phrase per card.',
+    category: 'Assessment',
+    keywords: ['blitzdiktat', 'dictation', 'cards', 'cut', 'grid', 'flashcards'],
+    Icon: Grid01,
+    insert: (editor) => editor.chain().focus().insertBlitzdiktat().run(),
   },
   {
     type: 'timeMatching',
@@ -555,6 +573,15 @@ export const CUSTOM_BLOCK_REGISTRY = [
     insert: (editor) => (
       editor.chain().focus().insertInformationGapActivity().run()
     ),
+  },
+  {
+    type: 'audioComprehension',
+    label: 'Audio Comprehension',
+    description: 'A numbered list of words or phrases for a listening activity, read aloud by the teacher.',
+    category: 'Assessment',
+    keywords: ['audio', 'comprehension', 'listening', 'words', 'phrases'],
+    Icon: Volume2,
+    insert: (editor) => editor.chain().focus().insertAudioComprehension().run(),
   },
 ] as const satisfies readonly CustomBlockDefinition[];
 

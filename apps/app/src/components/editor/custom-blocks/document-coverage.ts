@@ -46,11 +46,13 @@ export const CUSTOM_BLOCK_DOCUMENT_COVERAGE = {
   crossword: { status: 'canonical', documentType: 'crossword' },
   errorCorrection: { status: 'canonical', documentType: 'errorCorrection' },
   mcq: { status: 'canonical', documentType: 'mcq' },
+  mcqTwo: { status: 'canonical', documentType: 'mcqTwo' },
   mcm: { status: 'canonical', documentType: 'mcm' },
   mch: { status: 'canonical', documentType: 'mch' },
   articlePlural: { status: 'canonical', documentType: 'articlePlural' },
   matchingPairs: { status: 'canonical', documentType: 'matchingPairs' },
   domino: { status: 'canonical', documentType: 'domino' },
+  blitzdiktat: { status: 'canonical', documentType: 'blitzdiktat' },
   timeMatching: { status: 'canonical', documentType: 'timeMatching' },
   dateMatching: { status: 'canonical', documentType: 'dateMatching' },
   twoWayPrepositions: { status: 'canonical', documentType: 'twoWayPrepositions' },
@@ -77,6 +79,7 @@ export const CUSTOM_BLOCK_DOCUMENT_COVERAGE = {
   miniForm: { status: 'canonical', documentType: 'miniForm' },
   worksheetTable: { status: 'canonical', documentType: 'worksheetTable' },
   informationGapActivity: { status: 'canonical', documentType: 'informationGapActivity' },
+  audioComprehension: { status: 'canonical', documentType: 'audioComprehension' },
 } as const satisfies Record<
   CustomBlockRegistryType,
   CustomBlockDocumentCoverage

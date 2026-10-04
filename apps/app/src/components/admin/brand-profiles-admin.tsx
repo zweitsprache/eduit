@@ -91,6 +91,12 @@ const TASK_NUMBER_COLOR_OPTIONS = [
 ] as const;
 const BRAND_PROFILES_UPDATED_KEY = 'eduit-brand-profiles-updated';
 const BRAND_PROFILES_UPDATED_EVENT = 'eduit:brand-profiles-updated';
+const STYLE_PRESET_LABELS: Record<BrandProfileInput['stylePreset'], string> = {
+  educational: 'Educational',
+  'semi-academic': 'Semi-Academic',
+  academic: 'Academic',
+  nachalphabetisierung: 'Nachalphabetisierung',
+};
 
 export function BrandProfilesAdmin() {
   const [profiles, setProfiles] = useState<BrandProfile[]>([]);
@@ -310,11 +316,7 @@ export function BrandProfilesAdmin() {
                       {profile.isDefault ? 'Default · ' : ''}
                       {profile.isSystem ? 'System' : 'Custom'}
                       {' · '}
-                      {profile.stylePreset === 'educational'
-                        ? 'Educational'
-                        : profile.stylePreset === 'semi-academic'
-                          ? 'Semi-Academic'
-                          : 'Academic'}
+                      {STYLE_PRESET_LABELS[profile.stylePreset]}
                     </span>
                   </span>
                   {!profile.isActive && <span className="size-2 bg-quaternary" title="Inactive" />}
@@ -459,18 +461,15 @@ export function BrandProfilesAdmin() {
               >
                 {STYLE_PRESETS.map((preset) => (
                   <option key={preset} value={preset}>
-                    {preset === 'educational'
-                      ? 'Educational'
-                      : preset === 'semi-academic'
-                        ? 'Semi-Academic'
-                        : 'Academic'}
+                    {STYLE_PRESET_LABELS[preset]}
                   </option>
                 ))}
               </select>
               <p className="mt-2 text-xs leading-5 text-quaternary">
                 Educational is spacious. Semi-Academic keeps the academic
                 layout with slightly larger body text. Academic is the most
-                compact.
+                compact. Nachalphabetisierung is the largest and most spacious,
+                for learners still building reading fluency.
               </p>
             </div>
             <div>

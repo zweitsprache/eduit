@@ -9,6 +9,9 @@ const headingSchema = z.object({
   numbered: z.boolean().default(false),
   gapAfter: z.number().int().min(1).max(3).default(1),
   restartInstructionNumbering: z.boolean().default(true),
+  icon: z
+    .enum(['none', 'listening', 'playing', 'reading', 'speaking', 'writing', 'speechBubble'])
+    .default('none'),
 });
 
 const glossaryEntrySchema = z.object({
@@ -442,10 +445,26 @@ const letterCloudSchema = z.object({
   hideInstructionBadge: z.boolean().default(false),
   items: z.array(z.object({
     id: z.string().trim().min(1).max(100).optional(),
-    word: z.string().trim().min(1).max(100),
+    word: z.string().trim().max(100).default(''),
   })).min(1).max(100),
   showItemNumbers: z.boolean().default(true),
   columns: z.number().int().min(1).max(4).default(2),
+});
+
+const audioComprehensionSchema = z.object({
+  type: z.literal('audioComprehension'),
+  instruction: z.string().trim().max(1000).default(
+    'Listen and click the word you hear.',
+  ),
+  hideInstructionBadge: z.boolean().default(false),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    text: z.string().trim().max(200).default(''),
+  })).min(1).max(100),
+  columns: z.number().int().min(1).max(3).default(2),
+  shuffleItems: z.boolean().default(false),
+  showFirstAsExample: z.boolean().default(false),
+  textAlign: z.enum(['left', 'center']).default('center'),
 });
 
 const anagramSchema = z.object({
@@ -549,9 +568,29 @@ const dialogueSchema = z.object({
   showFirstAsExample: z.boolean().default(false),
   items: z.array(z.object({
     speaker: z.number().int().min(1).max(4),
-    text: z.string().trim().min(1).max(5000),
+    text: z.string().trim().max(5000).default(''),
+    isSpacer: z.boolean().default(false),
+    spacerBreak: z.enum(['page', 'line']).default('page'),
   })).min(2).max(500),
 });
+
+// A spacer row ends a dialogue group; every node in a multi-group dialogue
+// shares the full items list, so this just needs the group count (import
+// mirrors the domino multi-page-node pattern, see blockHtml below).
+function countDialogueGroups(
+  items: Array<{ isSpacer?: boolean; spacerBreak?: 'page' | 'line' }>,
+): number {
+  const groupCounts: number[] = [0];
+  items.forEach((item) => {
+    if (item.isSpacer && item.spacerBreak !== 'line') {
+      groupCounts.push(0);
+      return;
+    }
+    groupCounts[groupCounts.length - 1] += 1;
+  });
+  const nonEmpty = groupCounts.filter((count) => count > 0);
+  return nonEmpty.length || 1;
+}
 
 const messengerSchema = z.object({
   type: z.literal('messenger'),
@@ -645,6 +684,26 @@ const mcqSchema = z.object({
   shuffleAnswers: z.boolean().default(false),
   showInstruction: z.boolean().default(true),
   hideInstructionBadge: z.boolean().default(false),
+});
+
+const mcqTwoOptionSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  text: z.string().trim().max(1000).default(''),
+  correct: z.boolean().default(false),
+});
+
+const mcqTwoItemSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  options: z.array(mcqTwoOptionSchema).min(2).max(8),
+});
+
+const mcqTwoSchema = z.object({
+  type: z.literal('mcqTwo'),
+  instruction: z.string().trim().max(1000).default('Choose the correct answer.'),
+  hideInstructionBadge: z.boolean().default(false),
+  items: z.array(mcqTwoItemSchema).min(1).max(100),
+  columns: z.number().int().min(1).max(3).default(3),
+  showFirstAsExample: z.boolean().default(false),
 });
 
 const mcmOptionSchema = z.object({
@@ -931,11 +990,24 @@ const dominoRepresentationSchema = z.enum(['analog', 'digital', 'official', 'inf
 const dominoSchema = z.object({
   type: z.literal('domino'),
   pairs: z.array(dominoPairSchema).min(1).max(500),
-  showFirstAsExample: z.boolean().default(false),
+  shuffle: z.boolean().default(false),
   oddTextSize: dominoTextSizeSchema,
   evenTextSize: dominoTextSizeSchema,
   leftRepresentation: dominoRepresentationSchema,
   rightRepresentation: dominoRepresentationSchema,
+});
+
+const BLITZDIKTAT_GRID_CELLS = 12;
+
+const blitzdiktatTextSizeSchema = z.enum(['xs', 's', 'm', 'l', 'xl']).default('m');
+
+const blitzdiktatSchema = z.object({
+  type: z.literal('blitzdiktat'),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(100).optional(),
+    text: z.string().trim().max(2000).default(''),
+  })).min(1).max(200),
+  textSize: blitzdiktatTextSizeSchema,
 });
 
 const germanVerbTableFormsSchema = z.object({
@@ -1160,6 +1232,7 @@ export const generatedWorksheetBlockSchema = z.discriminatedUnion('type', [
   timetableSchema,
   openingHoursSchema,
   mcqSchema,
+  mcqTwoSchema,
   mcmSchema,
   articlePluralSchema,
   trueFalseSchema,
@@ -1176,12 +1249,14 @@ export const generatedWorksheetBlockSchema = z.discriminatedUnion('type', [
   sortingCategoriesSchema,
   chooseCorrectWordsSchema,
   dominoSchema,
+  blitzdiktatSchema,
   germanVerbTableSchema,
   declinationTableSchema,
   possessivePronounSchema,
   indefiniteArticleSchema,
   worksheetTableSchema,
   informationGapActivitySchema,
+  audioComprehensionSchema,
 ]);
 
 export const generatedWorksheetSchema = z.object({
@@ -1253,7 +1328,7 @@ const escapeAttribute = (value: string) => value
 
 function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][number]) {
   if (block.type === 'heading') {
-    return `<div data-heading-text="${escapeAttribute(block.text)}" data-heading-level="${block.level}" data-heading-numbered="${block.numbered}" data-heading-gap-after="${block.gapAfter}" data-restart-instruction-numbering="${block.restartInstructionNumbering}" data-type="custom-heading"></div>`;
+    return `<div data-heading-text="${escapeAttribute(block.text)}" data-heading-level="${block.level}" data-heading-numbered="${block.numbered}" data-heading-gap-after="${block.gapAfter}" data-restart-instruction-numbering="${block.restartInstructionNumbering}" data-heading-icon="${block.icon}" data-type="custom-heading"></div>`;
   }
   if (block.type === 'pageBreak') {
     return `<div data-restart-pagination="${block.restartPagination}" data-type="pageBreak"></div>`;
@@ -1409,6 +1484,13 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     }));
     return `<div data-letter-cloud-instruction="${escapeAttribute(block.instruction)}" data-letter-cloud-hide-instruction-badge="${block.hideInstructionBadge}" data-letter-cloud-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-letter-cloud-item-numbers="${block.showItemNumbers}" data-letter-cloud-columns="${block.columns}" data-type="letter-cloud"></div>`;
   }
+  if (block.type === 'audioComprehension') {
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `audio-comprehension-item-${index + 1}`,
+      text: item.text,
+    }));
+    return `<div data-audio-comprehension-instruction="${escapeAttribute(block.instruction)}" data-audio-comprehension-hide-instruction-badge="${block.hideInstructionBadge}" data-audio-comprehension-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-audio-comprehension-columns="${block.columns}" data-audio-comprehension-shuffle="${block.shuffleItems}" data-audio-comprehension-show-first-as-example="${block.showFirstAsExample}" data-audio-comprehension-text-align="${block.textAlign}" data-type="audio-comprehension"></div>`;
+  }
   if (block.type === 'anagram') {
     const items = block.items.map((item, index) => ({
       id: item.id ?? `anagram-item-${index + 1}`,
@@ -1522,8 +1604,21 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       id: `dialogue-${index + 1}`,
       speaker: item.speaker,
       text: item.text,
+      isSpacer: item.isSpacer,
+      spacerBreak: item.spacerBreak,
     }));
-    return `<div data-block-instruction="${escapeAttribute(block.instruction)}" data-dialogue-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-dialogue-speaker-names="${escapeAttribute(encodeURIComponent(JSON.stringify(block.speakerNames)))}" data-dialogue-show-instruction="${block.showInstruction}" data-dialogue-hide-instruction-badge="${block.hideInstructionBadge}" data-dialogue-show-speaker-names="${block.showSpeakerNames}" data-dialogue-show-original="${block.showOriginal}" data-dialogue-show-word-bank="${block.showWordBank}" data-dialogue-hide-blank-numbers="${block.hideBlankNumbers}" data-dialogue-show-first-example="${block.showFirstAsExample}" data-dialogue-context="${escapeAttribute(encodeURIComponent(block.context))}" data-type="dialogue"></div>`;
+    const sharedAttrs = `data-block-instruction="${escapeAttribute(block.instruction)}" data-dialogue-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-dialogue-speaker-names="${escapeAttribute(encodeURIComponent(JSON.stringify(block.speakerNames)))}" data-dialogue-show-instruction="${block.showInstruction}" data-dialogue-hide-instruction-badge="${block.hideInstructionBadge}" data-dialogue-show-speaker-names="${block.showSpeakerNames}" data-dialogue-show-original="${block.showOriginal}" data-dialogue-show-word-bank="${block.showWordBank}" data-dialogue-hide-blank-numbers="${block.hideBlankNumbers}" data-dialogue-show-first-example="${block.showFirstAsExample}" data-dialogue-context="${escapeAttribute(encodeURIComponent(block.context))}"`;
+    const groupSize = countDialogueGroups(items);
+    if (groupSize <= 1) {
+      return `<div ${sharedAttrs} data-type="dialogue"></div>`;
+    }
+    // Spacer rows split the dialogue into multiple pages: store one node per
+    // group (all sharing the same items) separated by real page breaks.
+    const groupId = `dialogue-${Date.now()}`;
+    const sheets = Array.from({ length: groupSize }, (_, groupIndex) => (
+      `<div ${sharedAttrs} data-dialogue-group-index="${groupIndex}" data-dialogue-group-size="${groupSize}" data-dialogue-group-id="${groupId}" data-type="dialogue"></div>`
+    ));
+    return sheets.join('<div data-restart-pagination="false" data-type="pageBreak"></div>');
   }
   if (block.type === 'messenger') {
     const messages = block.messages.map((message, index) => ({
@@ -1568,6 +1663,17 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
       ? ''
       : ` data-mcq-question-number="${block.questionNumber}"`;
     return `<div data-mcq-instruction="${escapeAttribute(block.instruction)}" data-mcq-block-question="${escapeAttribute(encodeURIComponent(block.blockQuestion))}" data-mcq-questions="${escapeAttribute(encodeURIComponent(JSON.stringify(questions)))}" data-mcq-columns="${block.columns}" data-mcq-shuffle-answers="${block.shuffleAnswers}" data-mcq-show-instruction="${block.showInstruction}" data-mcq-hide-instruction-badge="${block.hideInstructionBadge}"${questionNumber} data-type="mcq"></div>`;
+  }
+  if (block.type === 'mcqTwo') {
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `mcq-two-item-${index + 1}`,
+      options: item.options.map((option, optionIndex) => ({
+        id: option.id ?? `mcq-two-item-${index + 1}-option-${optionIndex + 1}`,
+        text: option.text,
+        correct: option.correct,
+      })),
+    }));
+    return `<div data-mcq-two-instruction="${escapeAttribute(block.instruction)}" data-mcq-two-hide-instruction-badge="${block.hideInstructionBadge}" data-mcq-two-items="${escapeAttribute(encodeURIComponent(JSON.stringify(items)))}" data-mcq-two-columns="${block.columns}" data-mcq-two-show-first-as-example="${block.showFirstAsExample}" data-type="mcq-two"></div>`;
   }
   if (block.type === 'mcm') {
     const rows = block.rows.map((row, rowIndex) => ({
@@ -1711,7 +1817,21 @@ function blockHtml(block: z.infer<typeof generatedWorksheetSchema>['blocks'][num
     const leftRepresentation = block.leftRepresentation ?? 'text';
     const rightRepresentation = block.rightRepresentation ?? 'text';
     const sheets = Array.from({ length: groupSize }, (_, groupIndex) => (
-      `<div data-type="domino" data-domino-pairs="${encodedPairs}" data-domino-show-first-example="${block.showFirstAsExample}" data-domino-group-index="${groupIndex}" data-domino-group-size="${groupSize}" data-domino-group-id="${groupId}" data-domino-odd-text-size="${oddTextSize}" data-domino-even-text-size="${evenTextSize}" data-domino-left-representation="${leftRepresentation}" data-domino-right-representation="${rightRepresentation}"></div>`
+      `<div data-type="domino" data-domino-pairs="${encodedPairs}" data-domino-shuffle="${block.shuffle}" data-domino-group-index="${groupIndex}" data-domino-group-size="${groupSize}" data-domino-group-id="${groupId}" data-domino-odd-text-size="${oddTextSize}" data-domino-even-text-size="${evenTextSize}" data-domino-left-representation="${leftRepresentation}" data-domino-right-representation="${rightRepresentation}"></div>`
+    ));
+    return sheets.join('<div data-restart-pagination="false" data-type="pageBreak"></div>');
+  }
+  if (block.type === 'blitzdiktat') {
+    const items = block.items.map((item, index) => ({
+      id: item.id ?? `blitzdiktat-${index + 1}`,
+      text: item.text,
+    }));
+    const groupSize = Math.max(1, Math.ceil(items.length / BLITZDIKTAT_GRID_CELLS));
+    const groupId = `blitzdiktat-${Date.now()}`;
+    const encodedItems = escapeAttribute(encodeURIComponent(JSON.stringify(items)));
+    const textSize = block.textSize ?? 'm';
+    const sheets = Array.from({ length: groupSize }, (_, groupIndex) => (
+      `<div data-type="blitzdiktat" data-blitzdiktat-items="${encodedItems}" data-blitzdiktat-text-size="${textSize}" data-blitzdiktat-group-index="${groupIndex}" data-blitzdiktat-group-size="${groupSize}" data-blitzdiktat-group-id="${groupId}"></div>`
     ));
     return sheets.join('<div data-restart-pagination="false" data-type="pageBreak"></div>');
   }

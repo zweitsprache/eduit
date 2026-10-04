@@ -159,8 +159,12 @@ function createRandom(seed: number) {
   };
 }
 
-function wordLetters(word: string) {
-  return Array.from(word.trim().toLocaleUpperCase());
+// `null` marks a blank gap (from a space in the source word/phrase): it never
+// has to match existing grid content and is rendered as an empty cell.
+function wordLetters(word: string): Array<string | null> {
+  return Array.from(word.trim().toLocaleUpperCase()).map((char) => (
+    char === ' ' ? null : char
+  ));
 }
 
 function buildGrid(attrs: WordGridAttrs) {
@@ -206,9 +210,12 @@ function buildGrid(attrs: WordGridAttrs) {
               + column
               + columnStep * letterIndex
             ));
-            if (candidateCells.every((cellIndex, letterIndex) => (
-              cells[cellIndex] === null || cells[cellIndex] === letters[letterIndex]
-            ))) {
+            if (candidateCells.every((cellIndex, letterIndex) => {
+              const letter = letters[letterIndex];
+              return letter === null
+                || cells[cellIndex] === null
+                || cells[cellIndex] === letter;
+            })) {
               candidates.push({ cells: candidateCells });
             }
           }
@@ -218,7 +225,14 @@ function buildGrid(attrs: WordGridAttrs) {
       if (!candidates.length) return;
       const candidate = candidates[Math.floor(random() * candidates.length)];
       candidate.cells.forEach((cellIndex, letterIndex) => {
-        cells[cellIndex] = letters[letterIndex];
+        const letter = letters[letterIndex];
+        if (letter === null) {
+          // Reserve the gap as blank only if nothing else occupies it yet;
+          // otherwise leave a crossing word's letter showing through.
+          if (cells[cellIndex] === null) cells[cellIndex] = '';
+          return;
+        }
+        cells[cellIndex] = letter;
       });
       placements.push({ wordIndex, cells: candidate.cells });
     });
@@ -231,7 +245,10 @@ function buildGrid(attrs: WordGridAttrs) {
   }
 
   const filler = Array.from(new Set(
-    [...words.flat(), ...Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ')],
+    [
+      ...words.flat().filter((char): char is string => char !== null),
+      ...Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ'),
+    ],
   ));
   const random = createRandom(baseSeed ^ 0x9e3779b9);
   const cells = bestCells.length
@@ -240,7 +257,7 @@ function buildGrid(attrs: WordGridAttrs) {
 
   return {
     cells: cells.map((letter) => (
-      letter ?? filler[Math.floor(random() * filler.length)]
+      letter === null ? filler[Math.floor(random() * filler.length)] : letter
     )),
     placements: bestPlacements,
   };

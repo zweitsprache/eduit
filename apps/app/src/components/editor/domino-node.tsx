@@ -29,7 +29,7 @@ export type DominoRepresentation = TimeRepresentation | 'text';
 
 export type DominoAttrs = {
   pairs: DominoPair[];
-  showFirstAsExample: boolean;
+  shuffle: boolean;
   groupIndex: number;
   groupSize: number;
   groupId: string;
@@ -58,6 +58,37 @@ function defaultPairs() {
 
 function newGroupId() {
   return globalThis.crypto?.randomUUID?.() ?? `domino-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function stableHash(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function createRandom(seed: number) {
+  let state = seed >>> 0;
+  return () => {
+    state += 0x6d2b79f5;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Deterministic so every page of a multi-page domino group renders the same order.
+function shuffleWithSeed<T>(items: T[], seed: string): T[] {
+  const random = createRandom(stableHash(seed));
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+  }
+  return result;
 }
 
 function parsePairs(value: string | null): DominoPair[] {
@@ -211,33 +242,36 @@ function buildAllCells(
   pairs: DominoPair[],
   leftRepresentation: TimeRepresentation,
   rightRepresentation: TimeRepresentation,
+  shuffle: boolean,
 ): CellSpec[] {
-  const cells: CellSpec[] = [{ kind: 'start', text: 'START' }];
+  const cards: CellSpec[] = [];
   pairs.forEach((pair) => {
     const time = extractTime(pair, leftRepresentation, rightRepresentation);
-    cells.push({
+    cards.push({
       kind: 'left',
       text: renderSide(leftRepresentation, time, rightRepresentation, pair.left),
       pairId: pair.id,
     });
-    cells.push({
+    cards.push({
       kind: 'right',
       text: renderSide(rightRepresentation, time, leftRepresentation, pair.right),
       pairId: pair.id,
     });
   });
-  cells.push({ kind: 'end', text: 'ZIEL' });
-  return cells;
+  // Shuffle individual cut-out cards, not whole pairs, so adjacent cards in
+  // the printed grid don't already reveal the correct matches before cutting.
+  const orderedCards = shuffle
+    ? shuffleWithSeed(cards, cards.map((card) => `${card.pairId}:${card.kind}`).join(','))
+    : cards;
+  return [{ kind: 'start', text: 'START' }, ...orderedCards, { kind: 'end', text: 'ZIEL' }];
 }
 
 function DominoGridView({
   cells,
-  showFirstAsExample,
   oddTextSize,
   evenTextSize,
 }: {
   cells: CellSpec[];
-  showFirstAsExample: boolean;
   oddTextSize: DominoTextSize;
   evenTextSize: DominoTextSize;
 }) {
@@ -245,7 +279,6 @@ function DominoGridView({
     <div className="domino-node__grid">
       {Array.from({ length: GRID_CELLS }, (_, index) => {
         const cell = cells[index];
-        const isExample = showFirstAsExample && index === 1 && cell?.kind === 'left';
         const isStart = cell?.kind === 'start';
         const isEnd = cell?.kind === 'end';
         const isOddColumn = (index % 6) % 2 === 0;
@@ -259,7 +292,6 @@ function DominoGridView({
               'domino-node__cell',
               cell ? `domino-node__cell--${cell.kind}` : 'domino-node__cell--empty',
               sizeClass,
-              isExample ? 'domino-node__cell--example' : '',
             ].join(' ')}
             data-cell-index={index}
           >
@@ -281,7 +313,7 @@ function DominoGridView({
 function DominoNodeView({ node, selected }: NodeViewProps) {
   const {
     pairs,
-    showFirstAsExample,
+    shuffle,
     groupIndex,
     oddTextSize,
     evenTextSize,
@@ -295,17 +327,16 @@ function DominoNodeView({ node, selected }: NodeViewProps) {
     pairs,
     detectedLeft as TimeRepresentation,
     detectedRight as TimeRepresentation,
+    shuffle,
   );
   const pageStart = groupIndex * GRID_CELLS;
   const pageEnd = Math.min(pageStart + GRID_CELLS, allCells.length);
   const pageCells = allCells.slice(pageStart, pageEnd);
-  const isFirstPage = groupIndex === 0;
 
   return (
     <CustomBlockRoot selected={selected} className="domino-node">
       <DominoGridView
         cells={pageCells}
-        showFirstAsExample={showFirstAsExample && isFirstPage}
         oddTextSize={oddTextSize}
         evenTextSize={evenTextSize}
       />
@@ -344,13 +375,13 @@ export const Domino = Node.create({
           'data-domino-pairs': encodeURIComponent(JSON.stringify(attributes.pairs)),
         }),
       },
-      showFirstAsExample: {
+      shuffle: {
         default: false,
         parseHTML: (element) => (
-          element.getAttribute('data-domino-show-first-example') === 'true'
+          element.getAttribute('data-domino-shuffle') === 'true'
         ),
         renderHTML: (attributes) => ({
-          'data-domino-show-first-example': String(attributes.showFirstAsExample),
+          'data-domino-shuffle': String(attributes.shuffle),
         }),
       },
       groupIndex: {
@@ -449,7 +480,7 @@ export const Domino = Node.create({
             type: this.name,
             attrs: {
               pairs,
-              showFirstAsExample: attrs.showFirstAsExample ?? false,
+              shuffle: attrs.shuffle ?? false,
               groupIndex: attrs.groupIndex ?? 0,
               groupSize: attrs.groupSize ?? 1,
               groupId: attrs.groupId ?? newGroupId(),
@@ -500,21 +531,21 @@ export const Domino = Node.create({
             });
             if (nodes.length <= 1) return;
 
-            // Use the first node's pairs/showFirstAsExample as the source of truth.
+            // Use the first node's pairs/shuffle as the source of truth.
             const source = nodes[0].node;
             const pairs = source.attrs.pairs as DominoPair[];
-            const showFirstAsExample = source.attrs.showFirstAsExample as boolean;
+            const shuffle = source.attrs.shuffle as boolean;
             const groupSize = dominoGroupSize(pairs);
 
             nodes.forEach(({ node, pos }, index) => {
               if (
                 node.attrs.pairs !== pairs
-                || node.attrs.showFirstAsExample !== showFirstAsExample
+                || node.attrs.shuffle !== shuffle
                 || node.attrs.groupSize !== groupSize
                 || node.attrs.groupIndex !== index
               ) {
                 tr.setNodeAttribute(pos, 'pairs', pairs);
-                tr.setNodeAttribute(pos, 'showFirstAsExample', showFirstAsExample);
+                tr.setNodeAttribute(pos, 'shuffle', shuffle);
                 tr.setNodeAttribute(pos, 'groupSize', groupSize);
                 tr.setNodeAttribute(pos, 'groupIndex', index);
               }

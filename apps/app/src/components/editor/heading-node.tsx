@@ -7,6 +7,24 @@ import { cx } from '@/utils/cx';
 
 export type CustomHeadingLevel = 1 | 2 | 3 | 4 | 5;
 export type CustomHeadingGapAfter = 1 | 2 | 3;
+export type CustomHeadingIcon =
+  | 'none'
+  | 'listening'
+  | 'playing'
+  | 'reading'
+  | 'speaking'
+  | 'writing'
+  | 'speechBubble';
+
+const HEADING_ICONS: CustomHeadingIcon[] = [
+  'none',
+  'listening',
+  'playing',
+  'reading',
+  'speaking',
+  'writing',
+  'speechBubble',
+];
 
 export type CustomHeadingAttrs = {
   text: string;
@@ -14,6 +32,7 @@ export type CustomHeadingAttrs = {
   numbered: boolean;
   gapAfter: CustomHeadingGapAfter;
   restartInstructionNumbering: boolean;
+  icon: CustomHeadingIcon;
 };
 
 function parseLevel(value: string | null): CustomHeadingLevel {
@@ -26,6 +45,12 @@ function parseGapAfter(value: string | null): CustomHeadingGapAfter {
   return gapAfter === 2 || gapAfter === 3 ? gapAfter : 1;
 }
 
+function parseIcon(value: string | null): CustomHeadingIcon {
+  return HEADING_ICONS.includes(value as CustomHeadingIcon)
+    ? value as CustomHeadingIcon
+    : 'none';
+}
+
 function CustomHeadingNodeView({ node, selected }: NodeViewProps) {
   const {
     text,
@@ -33,6 +58,7 @@ function CustomHeadingNodeView({ node, selected }: NodeViewProps) {
     numbered,
     gapAfter,
     restartInstructionNumbering,
+    icon,
   } = node.attrs as CustomHeadingAttrs;
 
   return (
@@ -50,7 +76,18 @@ function CustomHeadingNodeView({ node, selected }: NodeViewProps) {
       {createElement(
         `h${level}`,
         { className: 'heading-node__content' },
-        text || 'Heading',
+        icon !== 'none' ? (
+          <span className="heading-node__icon-group" key="icon-group">
+            <span
+              aria-hidden="true"
+              className="heading-node__icon"
+              data-heading-icon={icon}
+            />
+            <span className="heading-node__text">{text || 'Heading'}</span>
+          </span>
+        ) : (
+          text || 'Heading'
+        ),
       )}
     </NodeViewWrapper>
   );
@@ -108,6 +145,13 @@ export const CustomHeading = Node.create({
           ),
         }),
       },
+      icon: {
+        default: 'none',
+        parseHTML: (element) => parseIcon(element.getAttribute('data-heading-icon')),
+        renderHTML: (attributes) => ({
+          'data-heading-icon': attributes.icon,
+        }),
+      },
     };
   },
 
@@ -139,6 +183,7 @@ export const CustomHeading = Node.create({
               numbered: attrs.numbered ?? false,
               gapAfter: attrs.gapAfter ?? 1,
               restartInstructionNumbering: attrs.restartInstructionNumbering ?? true,
+              icon: attrs.icon ?? 'none',
             },
           }),
     };

@@ -1,6 +1,7 @@
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { DEFAULT_BLOCK_INSTRUCTIONS } from '@/components/editor/custom-blocks/instructions';
 import { getMCQQuestions, type MCQAttrs } from '@/components/editor/mcq-node';
+import type { MCQTwoAttrs } from '@/components/editor/mcq-two-node';
 import type { CustomHeadingAttrs } from '@/components/editor/heading-node';
 import type { GlossaryTermsAttrs } from '@/components/editor/glossary-terms-node';
 import type { FillInTheBlankAttrs } from '@/components/editor/fill-in-the-blank-node';
@@ -42,12 +43,14 @@ import type { ColorFurnitureItem } from '@/lib/color-furniture-activities';
 import type { DictationLinesAttrs } from '@/components/editor/dictation-lines-node';
 import type { AlpharamaTermAttrs } from '@/components/editor/alpharama-term-node';
 import type { LetterCloudAttrs } from '@/components/editor/letter-cloud-node';
+import type { AudioComprehensionAttrs } from '@/components/editor/audio-comprehension-node';
 import type { AnagramNodeAttrs } from '@/components/editor/anagram-node';
 import type { TelephoneNumbersAttrs } from '@/components/editor/telephone-numbers-node';
 import type { LesetrainingAttrs } from '@/components/editor/lesetraining-node';
 import type { WordGridAttrs } from '@/components/editor/word-grid-node';
 import type { WordBankAttrs } from '@/components/editor/word-bank-node';
 import type { DominoAttrs } from '@/components/editor/domino-node';
+import type { BlitzdiktatAttrs } from '@/components/editor/blitzdiktat-node';
 import type { CrosswordAttrs } from '@/components/editor/crossword-node';
 import type { GermanVerbTableAttrs } from '@/components/editor/german-verb-table-node';
 import type { DeclinationTableAttrs } from '@/components/editor/declination-table-node';
@@ -172,6 +175,7 @@ const CUSTOM_BLOCK_NODE_TYPES = new Set([
   'learningCards',
   'articlePluralCards',
   'domino',
+  'blitzdiktat',
   'crossword',
   'germanVerbTable',
   'declinationTable',
@@ -271,7 +275,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
   const attrs = node.attrs as Record<string, unknown>;
   switch (node.type.name) {
     case 'customHeading': {
-      const { text, level, numbered, gapAfter, restartInstructionNumbering } =
+      const { text, level, numbered, gapAfter, restartInstructionNumbering, icon } =
         attrs as CustomHeadingAttrs;
       return {
         type: 'heading',
@@ -280,6 +284,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         numbered,
         gapAfter,
         restartInstructionNumbering,
+        icon,
       };
     }
     case 'pageBreak':
@@ -608,6 +613,27 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         columns,
       };
     }
+    case 'audioComprehension': {
+      const {
+        instruction,
+        hideInstructionBadge,
+        items,
+        columns,
+        shuffleItems,
+        showFirstAsExample,
+        textAlign,
+      } = attrs as AudioComprehensionAttrs;
+      return {
+        type: 'audioComprehension',
+        instruction,
+        hideInstructionBadge,
+        items,
+        columns,
+        shuffleItems,
+        showFirstAsExample,
+        textAlign,
+      };
+    }
     case 'anagramNode': {
       const {
         instruction,
@@ -748,7 +774,9 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         showWordBank,
         hideBlankNumbers,
         showFirstAsExample,
-        items: items.map(({ speaker, text }) => ({ speaker, text })),
+        items: items.map(({ speaker, text, isSpacer, spacerBreak }) => ({
+          speaker, text, isSpacer, spacerBreak,
+        })),
       };
     }
     case 'messenger': {
@@ -860,6 +888,23 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
           answerMode,
           options: options.map(({ text, correct }) => ({ text, correct })),
         })),
+      };
+    }
+    case 'mcqTwo': {
+      const {
+        instruction,
+        hideInstructionBadge,
+        items,
+        columns,
+        showFirstAsExample,
+      } = attrs as MCQTwoAttrs;
+      return {
+        type: 'mcqTwo',
+        instruction,
+        hideInstructionBadge,
+        items,
+        columns,
+        showFirstAsExample,
       };
     }
     case 'mcm': {
@@ -1066,7 +1111,7 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
     case 'domino': {
       const {
         pairs,
-        showFirstAsExample,
+        shuffle,
         oddTextSize,
         evenTextSize,
         leftRepresentation,
@@ -1077,11 +1122,21 @@ function blockJson(node: ProseMirrorNode): Record<string, unknown> | null {
         // A multi-page domino is stored as several nodes separated by pageBreaks;
         // the export only needs the single canonical pair list from the first node.
         pairs: pairs.map(({ id, left, right }) => ({ id, left, right })),
-        showFirstAsExample,
+        shuffle,
         oddTextSize,
         evenTextSize,
         leftRepresentation,
         rightRepresentation,
+      };
+    }
+    case 'blitzdiktat': {
+      const { items, textSize } = attrs as BlitzdiktatAttrs;
+      return {
+        type: 'blitzdiktat',
+        // A multi-page Blitzdiktat is stored as several nodes separated by
+        // pageBreaks; the export only needs the canonical item list.
+        items: items.map(({ id, text }) => ({ id, text })),
+        textSize,
       };
     }
     case 'germanVerbTable': {
@@ -1360,6 +1415,9 @@ export function worksheetJsonFromDoc(
   let communicationCardsSeen = false;
 
   let dominoSeen = false;
+  let blitzdiktatSeen = false;
+  const dialogueGroupsSeen = new Set<string>();
+  let dialoguePageBreakPending = false;
   const informationGapActivitiesSeen = new Set<string>();
   let informationGapPageBreakPending = false;
   let colorFurnitureSequence: {
@@ -1422,6 +1480,25 @@ export function worksheetJsonFromDoc(
       return;
     }
     if (communicationCardsSeen && node.type.name === 'pageBreak') return;
+    if (node.type.name === 'dialogue') {
+      // A multi-group dialogue (spacer rows) is stored as several nodes
+      // sharing the same groupId, separated by page breaks. Every node
+      // already carries the full combined items, so only the first node of
+      // the group needs to be exported.
+      const groupId = String(node.attrs.groupId || '');
+      const groupSize = Number(node.attrs.groupSize) || 1;
+      if (groupSize > 1 && groupId) {
+        dialoguePageBreakPending = true;
+        if (dialogueGroupsSeen.has(groupId)) return;
+        dialogueGroupsSeen.add(groupId);
+      }
+      blocks.push(blockJson(node)!);
+      return;
+    }
+    if (dialoguePageBreakPending && node.type.name === 'pageBreak') {
+      dialoguePageBreakPending = false;
+      return;
+    }
     if (node.type.name === 'domino') {
       // Multi-page dominoes are stored as multiple nodes separated by page breaks.
       // Only the first node carries the canonical block in the export.
@@ -1432,6 +1509,16 @@ export function worksheetJsonFromDoc(
       return;
     }
     if (dominoSeen && node.type.name === 'pageBreak') return;
+    if (node.type.name === 'blitzdiktat') {
+      // Multi-page Blitzdiktat is stored as multiple nodes separated by page
+      // breaks. Only the first node carries the canonical block in the export.
+      if (!blitzdiktatSeen) {
+        blitzdiktatSeen = true;
+        blocks.push(blockJson(node)!);
+      }
+      return;
+    }
+    if (blitzdiktatSeen && node.type.name === 'pageBreak') return;
     if (node.type.name === 'informationGapActivity') {
       const activityId = String(node.attrs.activityId);
       if (informationGapActivitiesSeen.has(activityId)) return;

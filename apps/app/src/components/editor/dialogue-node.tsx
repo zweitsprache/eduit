@@ -2,6 +2,9 @@
 
 import { Fragment, type CSSProperties } from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
+import { Plugin, PluginKey, type Transaction } from '@tiptap/pm/state';
+import { ReplaceStep, ReplaceAroundStep } from '@tiptap/pm/transform';
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react';
 import { MessageChatSquare } from '@untitledui/icons';
 import QRCode from 'react-qr-code';
@@ -23,11 +26,19 @@ import {
 
 export type DialogueSpeaker = 1 | 2 | 3 | 4;
 export type DialogueSpeakerNames = Record<DialogueSpeaker, string>;
+export type DialogueSpacerBreak = 'page' | 'line';
 
 export type DialogueItem = {
   id: string;
   speaker: DialogueSpeaker;
   text: string;
+  // A spacer row ends the current speaker group: numbering restarts after
+  // it, and (when any spacer exists) a "Dialog N" heading precedes each group.
+  isSpacer?: boolean;
+  // Only meaningful when isSpacer is true. 'page' (default) splits the
+  // dialogue into a new page/node; 'line' just adds a gap and restarts
+  // numbering without a page break or heading.
+  spacerBreak?: DialogueSpacerBreak;
 };
 
 export type DialogueAudio = {
@@ -54,6 +65,12 @@ export type DialogueAttrs = {
   hideBlankNumbers: boolean;
   showFirstAsExample: boolean;
   audio: DialogueAudio | null;
+  // A multi-group dialogue (spacer rows present) is stored as one dialogue
+  // node per group, separated by real pageBreak nodes, all sharing `items`
+  // (the full combined list) + `groupId`; each node renders only its slice.
+  groupIndex: number;
+  groupSize: number;
+  groupId: string;
 };
 
 export const DEFAULT_DIALOGUE_SPEAKER_NAMES: DialogueSpeakerNames = {
@@ -78,6 +95,88 @@ export const DEFAULT_DIALOGUE_ITEMS: DialogueItem[] = [
 
 function defaultItems() {
   return DEFAULT_DIALOGUE_ITEMS.map((item) => ({ ...item }));
+}
+
+export function newDialogueGroupId() {
+  return globalThis.crypto?.randomUUID?.()
+    ?? `dialogue-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+// Splits the full items list into page-break-delimited groups (spacers
+// marked spacerBreak:'line' stay inside their group; 'page' spacers, the
+// default, start a new group/node). Always returns at least one group.
+export function dialogueGroups(items: DialogueItem[]): DialogueItem[][] {
+  const groups: DialogueItem[][] = [[]];
+  items.forEach((item) => {
+    if (item.isSpacer && item.spacerBreak !== 'line') {
+      groups.push([]);
+      return;
+    }
+    groups[groups.length - 1].push(item);
+  });
+  const nonEmpty = groups.filter((group) => group.length > 0);
+  return nonEmpty.length ? nonEmpty : [[]];
+}
+
+export function dialogueGroupSize(items: DialogueItem[]): number {
+  return dialogueGroups(items).length;
+}
+
+// Rebuilds the full dialogue+pageBreak node group at `pos` so it has exactly
+// one dialogue node per spacer-delimited group, all sharing the given items
+// as their common source of truth. Used by both editing surfaces so adding/
+// removing a spacer always keeps the on-page node count in sync.
+export function rebuildDialogueGroup(
+  tr: Transaction,
+  pos: number,
+  items: DialogueItem[],
+): boolean {
+  const currentNode = tr.doc.nodeAt(pos);
+  if (currentNode?.type.name !== 'dialogue') return false;
+  const dialogueType = tr.doc.type.schema.nodes.dialogue;
+  const pageBreakType = tr.doc.type.schema.nodes.pageBreak;
+  if (!dialogueType) return false;
+
+  const groupId = (currentNode.attrs.groupId as string) || newDialogueGroupId();
+  const groupNodes: Array<{ node: ProseMirrorNode; pos: number }> = [];
+  tr.doc.forEach((node, offset) => {
+    if (node.type.name === 'dialogue' && node.attrs.groupId === groupId) {
+      groupNodes.push({ node, pos: offset });
+    }
+  });
+  if (!groupNodes.length) groupNodes.push({ node: currentNode, pos });
+
+  const groupSize = dialogueGroupSize(items);
+  if (groupSize === groupNodes.length) {
+    groupNodes.forEach(({ pos: nodePos }, index) => {
+      tr.setNodeAttribute(nodePos, 'items', items);
+      tr.setNodeAttribute(nodePos, 'groupId', groupId);
+      tr.setNodeAttribute(nodePos, 'groupSize', groupSize);
+      tr.setNodeAttribute(nodePos, 'groupIndex', index);
+    });
+    return true;
+  }
+
+  const baseAttrs = {
+    ...groupNodes[0].node.attrs,
+    items,
+    groupId,
+    groupSize,
+  };
+  const nodes = Array.from({ length: groupSize }, (_, groupIndex) => dialogueType.create({
+    ...baseAttrs,
+    groupIndex,
+  }));
+  const separatedNodes = nodes.flatMap((node, index) => (
+    index < nodes.length - 1 && pageBreakType
+      ? [node, pageBreakType.create()]
+      : [node]
+  ));
+  const from = groupNodes[0].pos;
+  const lastGroupNode = groupNodes[groupNodes.length - 1];
+  const to = lastGroupNode.pos + lastGroupNode.node.nodeSize;
+  tr.replaceWith(from, to, separatedNodes);
+  return true;
 }
 
 function parseItems(value: string | null): DialogueItem[] {
@@ -186,12 +285,34 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
     hideBlankNumbers,
     showFirstAsExample,
     audio,
+    groupIndex,
   } = node.attrs as DialogueAttrs;
-  const listenUrl = audio?.url ? buildListenUrl(audio.url) : null;
+  const groups = dialogueGroups(items);
+  const groupItems = groups[groupIndex] ?? groups[0] ?? [];
+  const showGroupHeading = groups.length > 1;
+  const isFirstGroup = groupIndex === 0;
+  const listenUrl = isFirstGroup && audio?.url ? buildListenUrl(audio.url) : null;
   let blankOffset = 0;
   let speakerOrdinal = 0;
   let previousSpeaker: DialogueSpeaker | null = null;
-  const parsedItems = items.map((item) => {
+  const parsedItems: Array<
+    | { kind: 'spacer'; key: string }
+    | {
+        kind: 'line';
+        key: string;
+        item: DialogueItem;
+        parts: ReturnType<typeof parseFillInTheBlankText>;
+        speakerOrdinal: number;
+        startsSpeakerTurn: boolean;
+      }
+  > = [];
+  groupItems.forEach((item) => {
+    if (item.isSpacer) {
+      previousSpeaker = null;
+      speakerOrdinal = 0;
+      parsedItems.push({ kind: 'spacer', key: item.id });
+      return;
+    }
     const startsSpeakerTurn = item.speaker !== previousSpeaker;
     if (startsSpeakerTurn) speakerOrdinal += 1;
     previousSpeaker = item.speaker;
@@ -200,13 +321,15 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
       blankOffset += 1;
       return { ...part, index: blankOffset };
     });
-    return { item, parts, speakerOrdinal, startsSpeakerTurn };
+    parsedItems.push({
+      kind: 'line', key: item.id, item, parts, speakerOrdinal, startsSpeakerTurn,
+    });
   });
-  const wordBankItems = parsedItems.flatMap(({ item, parts }) => (
-    parts.flatMap((part) => (
+  const wordBankItems = parsedItems.flatMap((entry) => (
+    entry.kind !== 'line' ? [] : entry.parts.flatMap((part) => (
       part.type === 'blank' && part.answer.trim()
         ? [{
-            id: `${item.id}-blank-${part.index}`,
+            id: `${entry.item.id}-blank-${part.index}`,
             text: part.answer.trim(),
           }]
         : []
@@ -214,16 +337,19 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
   ));
   const orderedWordBankItems = stableWordBankOrder(wordBankItems);
   const firstExampleWordBankItemId = wordBankItems[0]?.id;
-  const hasContext = context.trim().length > 0;
-  const hasWordBank = showWordBank && wordBankItems.length > 0;
+  const hasContext = isFirstGroup && context.trim().length > 0;
+  const hasWordBank = isFirstGroup && showWordBank && wordBankItems.length > 0;
   const speakerBadgeWidth = 15;
 
   return (
     <CustomBlockRoot
       selected={selected}
-      className={showOriginal ? 'dialogue-node dialogue-node--with-original' : 'dialogue-node'}
+      className={[
+        'dialogue-node',
+        showOriginal && 'dialogue-node--with-original',
+      ].filter(Boolean).join(' ')}
     >
-      {showInstruction && (
+      {isFirstGroup && showInstruction && (
         <BlockInstruction hideBadge={hideInstructionBadge}>
           {node.attrs.instruction || DEFAULT_BLOCK_INSTRUCTIONS.dialogue}
         </BlockInstruction>
@@ -243,11 +369,14 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
           ))}
         </div>
       )}
+      {showGroupHeading && (
+        <h3 className="dialogue-node__group-heading">{`Dialog ${groupIndex + 1}`}</h3>
+      )}
       <div
         className={`dialogue-node__rows${
           showSpeakerNames ? ' dialogue-node__rows--speaker-names' : ''
         }${listenUrl ? ' dialogue-node__rows--with-audio' : ''}${
-          !showInstruction && !hasContext && !hasWordBank
+          !(isFirstGroup && showInstruction) && !hasContext && !hasWordBank && !showGroupHeading
             ? ' dialogue-node__rows--no-instruction'
             : ''
         }`}
@@ -260,29 +389,41 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
             <QRCode value={listenUrl} size={64} className="dialogue-node__audio-qr-code" />
           </div>
         )}
-        {parsedItems.map(({ item, parts, speakerOrdinal: itemOrdinal, startsSpeakerTurn }) => (
-          <div className="dialogue-node__row" key={item.id}>
-            {!startsSpeakerTurn ? (
-              showSpeakerNames ? (
-                <span aria-hidden="true" />
-              ) : (
-                <>
-                  <span aria-hidden="true" />
-                  <span aria-hidden="true" />
-                </>
-              )
-            ) : (
-              <>
-                <span className={`custom-block__row-index${
-                  showSpeakerNames ? ' dialogue-node__speaker-name' : ''
-                }`} data-speaker={item.speaker}>
-                  {showSpeakerNames
-                    ? speakerNames[item.speaker] || `Speaker ${item.speaker}`
-                    : String(itemOrdinal).padStart(2, '0')}
+        {parsedItems.map((entry) => (
+          entry.kind === 'spacer' ? (
+            <div aria-hidden="true" className="dialogue-node__line-spacer" key={entry.key} />
+          ) : (
+            <div className="dialogue-node__row" key={entry.key}>
+              {(() => {
+                const { item, parts, speakerOrdinal: itemOrdinal, startsSpeakerTurn } = entry;
+                return (
+                  <>
+                    {!startsSpeakerTurn ? (
+                      showSpeakerNames ? (
+                        <span aria-hidden="true" />
+                      ) : (
+                        <>
+                          <span aria-hidden="true" />
+                          <span aria-hidden="true" />
+                        </>
+                      )
+                    ) : (
+                      <>
+                        <span className={`custom-block__row-index${
+                          showSpeakerNames ? ' dialogue-node__speaker-name' : ''
+                        }`} data-speaker={item.speaker}>
+                          {showSpeakerNames
+                            ? speakerNames[item.speaker] || `Speaker ${item.speaker}`
+                            : String(itemOrdinal).padStart(2, '0')}
                 </span>
                 <MessageChatSquare
                   aria-label={`Speaker ${item.speaker}`}
                   className="dialogue-node__speaker-icon"
+                  data-speaker={item.speaker}
+                />
+                <span
+                  aria-hidden="true"
+                  className="dialogue-node__speaker-icon-image"
                   data-speaker={item.speaker}
                 />
               </>
@@ -310,7 +451,7 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
                           : ''
                       }`}
                       data-answer={part.answer}
-                      data-example={showFirstAsExample && part.index === 1}
+                      data-example={isFirstGroup && showFirstAsExample && part.index === 1}
                       data-show-number={!hideBlankNumbers}
                       style={{
                         '--fill-blank-width-factor': part.widthFactor,
@@ -335,7 +476,11 @@ function DialogueNodeView({ node, selected }: NodeViewProps) {
                 <InlineFormattedText text={originalText(parts)} />
               </p>
             )}
-          </div>
+                  </>
+                );
+              })()}
+            </div>
+          )
         ))}
       </div>
     </CustomBlockRoot>
@@ -469,6 +614,33 @@ export const Dialogue = Node.create({
           'data-dialogue-audio': encodeURIComponent(JSON.stringify(attributes.audio)),
         } : {}),
       },
+      groupIndex: {
+        default: 0,
+        parseHTML: (element) => (
+          Number(element.getAttribute('data-dialogue-group-index')) || 0
+        ),
+        renderHTML: (attributes) => ({
+          'data-dialogue-group-index': String(attributes.groupIndex),
+        }),
+      },
+      groupSize: {
+        default: 1,
+        parseHTML: (element) => (
+          Number(element.getAttribute('data-dialogue-group-size')) || 1
+        ),
+        renderHTML: (attributes) => ({
+          'data-dialogue-group-size': String(attributes.groupSize),
+        }),
+      },
+      groupId: {
+        default: '',
+        parseHTML: (element) => (
+          element.getAttribute('data-dialogue-group-id') ?? ''
+        ),
+        renderHTML: (attributes) => ({
+          'data-dialogue-group-id': attributes.groupId,
+        }),
+      },
     };
   },
 
@@ -504,8 +676,67 @@ export const Dialogue = Node.create({
               hideBlankNumbers: attrs.hideBlankNumbers ?? false,
               showFirstAsExample: attrs.showFirstAsExample ?? false,
               audio: attrs.audio ?? null,
+              groupIndex: attrs.groupIndex ?? 0,
+              groupSize: attrs.groupSize ?? 1,
+              groupId: attrs.groupId ?? '',
             },
           }),
     };
+  },
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey('dialogueSync'),
+        filterTransaction: (tr, state) => {
+          if (!tr.docChanged) return true;
+          const dialogueType = state.schema.nodes.dialogue;
+          if (!dialogueType) return true;
+
+          const changedGroupIds = new Set<string>();
+          tr.steps.forEach((step) => {
+            if (!(step instanceof ReplaceStep || step instanceof ReplaceAroundStep)) return;
+            step.getMap().forEach((oldStart, oldEnd, newStart, newEnd) => {
+              tr.doc.nodesBetween(newStart, newEnd, (node) => {
+                if (node.type.name === 'dialogue' && node.attrs.groupId) {
+                  changedGroupIds.add(node.attrs.groupId as string);
+                }
+              });
+            });
+          });
+
+          if (changedGroupIds.size === 0) return true;
+
+          changedGroupIds.forEach((groupId) => {
+            const nodes: { node: ProseMirrorNode; pos: number }[] = [];
+            tr.doc.descendants((node, pos) => {
+              if (node.type.name === 'dialogue' && node.attrs.groupId === groupId) {
+                nodes.push({ node, pos });
+              }
+            });
+            if (nodes.length <= 1) return;
+
+            // Use the first node's items as the source of truth.
+            const source = nodes[0].node;
+            const items = source.attrs.items as DialogueItem[];
+            const groupSize = dialogueGroupSize(items);
+
+            nodes.forEach(({ node, pos }, index) => {
+              if (
+                node.attrs.items !== items
+                || node.attrs.groupSize !== groupSize
+                || node.attrs.groupIndex !== index
+              ) {
+                tr.setNodeAttribute(pos, 'items', items);
+                tr.setNodeAttribute(pos, 'groupSize', groupSize);
+                tr.setNodeAttribute(pos, 'groupIndex', index);
+              }
+            });
+          });
+
+          return true;
+        },
+      }),
+    ];
   },
 });

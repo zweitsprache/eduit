@@ -42,6 +42,7 @@ export const WORKSHEET_DOCUMENT_BLOCK_TYPES = [
   'timetable',
   'openingHours',
   'mcq',
+  'mcqTwo',
   'mcm',
   'articlePlural',
   'trueFalse',
@@ -56,10 +57,12 @@ export const WORKSHEET_DOCUMENT_BLOCK_TYPES = [
   'sortingCategories',
   'chooseCorrectWords',
   'domino',
+  'blitzdiktat',
   'germanVerbTable',
   'declinationTable',
   'possessivePronoun',
   'indefiniteArticle',
+  'audioComprehension',
 ] as const;
 
 export const worksheetDocumentBlockSchema = z.intersection(

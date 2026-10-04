@@ -99,8 +99,8 @@ export const uiGerman: Record<string, string> = {
   'All settings are inherited from the parent.':
     'Alle Einstellungen werden vom übergeordneten Profil übernommen.',
   Educational: 'Pädagogisch',
-  'Educational is spacious. Semi-Academic keeps the academic layout with slightly larger body text. Academic is the most compact.':
-    '„Educational“ ist großzügig. „Semi-Academic“ behält das akademische Layout mit etwas grösserem Fliesstext bei. „Academic“ ist am kompaktesten.',
+  'Educational is spacious. Semi-Academic keeps the academic layout with slightly larger body text. Academic is the most compact. Nachalphabetisierung is the largest and most spacious, for learners still building reading fluency.':
+    '„Educational“ ist großzügig. „Semi-Academic“ behält das akademische Layout mit etwas grösserem Fliesstext bei. „Academic“ ist am kompaktesten. „Nachalphabetisierung“ ist am größten und großzügigsten für Lernende, die noch an ihrer Lesefähigkeit arbeiten.',
   'Enter a prompt and one expected value for every field.':
     'Gib für jedes Feld eine Aufforderung und einen erwarteten Wert ein.',
   'Enter dialogue text': 'Dialogtext eingeben',

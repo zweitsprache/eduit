@@ -39,6 +39,12 @@ import {
   type MCQQuestion,
 } from '@/components/editor/mcq-node';
 import {
+  DEFAULT_MCQ_TWO_INSTRUCTION,
+  type MCQTwoAttrs,
+  type MCQTwoItem,
+  type MCQTwoOption,
+} from '@/components/editor/mcq-two-node';
+import {
   DEFAULT_MATCHING_INSTRUCTION,
   type MatchingPair,
   type MatchingPairsAttrs,
@@ -50,6 +56,13 @@ import {
   type DominoTextSize,
   dominoGroupSize,
 } from '@/components/editor/domino-node';
+import {
+  BLITZDIKTAT_MAX_ITEMS,
+  type BlitzdiktatAttrs,
+  type BlitzdiktatItem,
+  type BlitzdiktatTextSize,
+  blitzdiktatGroupSize,
+} from '@/components/editor/blitzdiktat-node';
 import {
   DEFAULT_TIME_MATCHING_ATTRS,
   type TimeMatchingAttrs,
@@ -138,8 +151,10 @@ import type {
 import type {
   DialogueAttrs,
   DialogueItem,
+  DialogueSpacerBreak,
   DialogueSpeaker,
 } from '@/components/editor/dialogue-node';
+import { rebuildDialogueGroup } from '@/components/editor/dialogue-node';
 import type {
   EmailAttrs,
   MessengerAttrs,
@@ -243,6 +258,15 @@ import {
   MAX_LETTER_CLOUD_COLUMNS,
   MIN_LETTER_CLOUD_COLUMNS,
 } from '@/components/editor/letter-cloud-node';
+import type {
+  AudioComprehensionAttrs,
+  AudioComprehensionItem,
+} from '@/components/editor/audio-comprehension-node';
+import {
+  DEFAULT_AUDIO_COMPREHENSION_INSTRUCTION,
+  MAX_AUDIO_COMPREHENSION_COLUMNS,
+  MIN_AUDIO_COMPREHENSION_COLUMNS,
+} from '@/components/editor/audio-comprehension-node';
 import {
   DEFAULT_CROSSWORD_INSTRUCTION,
   generateCrosswordLayout,
@@ -331,7 +355,10 @@ export type ContentEditorBlock = {
     | 'letterCloud'
     | 'crossword'
     | 'errorCorrection'
-    | 'domino';
+    | 'domino'
+    | 'blitzdiktat'
+    | 'audioComprehension'
+    | 'mcqTwo';
 };
 
 const TITLES: Record<ContentEditorBlock['type'], string> = {
@@ -379,6 +406,9 @@ const TITLES: Record<ContentEditorBlock['type'], string> = {
   crossword: 'Crossword content',
   errorCorrection: 'Error correction text content',
   domino: 'Domino content',
+  blitzdiktat: 'Blitzdiktat content',
+  audioComprehension: 'Audio Comprehension content',
+  mcqTwo: 'MCQ II content',
 };
 
 function updateAttrs(
@@ -3680,6 +3710,186 @@ function MCQEditor({
   );
 }
 
+function MCQTwoEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: MCQTwoAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const setItems = (items: MCQTwoItem[]) => updateAttrs(editor, block, { items });
+  const updateItem = (id: string, patch: Partial<MCQTwoItem>) => setItems(
+    attrs.items.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+  );
+  const updateOption = (
+    item: MCQTwoItem,
+    optionId: string,
+    patch: Partial<MCQTwoOption>,
+  ) => updateItem(item.id, {
+    options: item.options.map((option) => (
+      option.id === optionId ? { ...option, ...patch } : option
+    )),
+  });
+
+  return (
+    <>
+      <ContentFieldLabel
+        action={(
+          <button
+            type="button"
+            aria-label="Reset instruction"
+            title="Reset instruction"
+            disabled={attrs.instruction === DEFAULT_MCQ_TWO_INSTRUCTION}
+            onClick={() => updateAttrs(editor, block, {
+              instruction: DEFAULT_MCQ_TWO_INSTRUCTION,
+            })}
+            className="flex size-7 items-center justify-center rounded-md text-secondary transition hover:bg-primary_hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            <RotateCcw className="size-4" />
+          </button>
+        )}
+      >
+        Instruction
+      </ContentFieldLabel>
+      <textarea
+        rows={1}
+        value={attrs.instruction || DEFAULT_MCQ_TWO_INSTRUCTION}
+        placeholder={DEFAULT_MCQ_TWO_INSTRUCTION}
+        onChange={(event) => updateAttrs(editor, block, {
+          instruction: event.target.value,
+        })}
+        className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+
+      <ContentSectionHeader>Layout</ContentSectionHeader>
+      <div className="mt-3 max-w-[12rem]">
+        <label>
+          <ContentFieldLabel>Option columns</ContentFieldLabel>
+          <input
+            type="number"
+            min={1}
+            max={3}
+            value={attrs.columns}
+            onChange={(event) => updateAttrs(editor, block, {
+              columns: Math.min(3, Math.max(1, Number(event.target.value))),
+            })}
+            className="mt-1.5 h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm tabular-nums text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          />
+        </label>
+      </div>
+
+      <ContentSectionHeader>Learner support</ContentSectionHeader>
+      <ContentSwitchGrid>
+        <ContentSwitch
+          label="Hide instruction number badge"
+          isSelected={attrs.hideInstructionBadge}
+          onChange={(hideInstructionBadge) => updateAttrs(editor, block, {
+            hideInstructionBadge,
+          })}
+        />
+        <ContentSwitch
+          label="Show first as example"
+          isSelected={attrs.showFirstAsExample}
+          onChange={(showFirstAsExample) => updateAttrs(editor, block, {
+            showFirstAsExample,
+          })}
+        />
+      </ContentSwitchGrid>
+
+      <ContentSectionHeader count={`${attrs.items.length} items`}>
+        Items
+      </ContentSectionHeader>
+      <div className="mt-3 space-y-3">
+        {attrs.items.map((item, index) => (
+          <ContentCard key={item.id}>
+            <div className="flex items-center gap-3">
+              <ContentItemNumber>
+                {String(index + 1).padStart(2, '0')}
+              </ContentItemNumber>
+              <div className="ml-auto">
+                <ContentItemActions
+                  label={`item ${index + 1}`}
+                  canDelete={attrs.items.length > 1}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < attrs.items.length - 1}
+                  onDelete={() => setItems(attrs.items.filter(({ id }) => id !== item.id))}
+                  onMoveUp={() => setItems(moveItem(attrs.items, index, -1))}
+                  onMoveDown={() => setItems(moveItem(attrs.items, index, 1))}
+                />
+              </div>
+            </div>
+            <div className="mt-2 space-y-2">
+              {item.options.map((option, optionIndex) => (
+                <div className="flex items-center gap-2" key={option.id}>
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={option.correct}
+                    aria-label={`Mark option ${optionIndex + 1} correct`}
+                    onClick={() => updateOption(item, option.id, { correct: !option.correct })}
+                    className={`size-4 shrink-0 rounded-[3px] border transition ${option.correct ? 'border-fg-success-primary bg-fg-success-primary' : 'border-primary bg-primary hover:border-secondary'}`}
+                  />
+                  <input
+                    aria-label={`Option ${optionIndex + 1}`}
+                    value={option.text}
+                    placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
+                    onChange={(event) => updateOption(item, option.id, { text: event.target.value })}
+                    className="h-9 min-w-0 flex-1 rounded-md border border-primary bg-primary px-2.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  />
+                  <ContentItemActions
+                    label={`option ${optionIndex + 1}`}
+                    canDelete={item.options.length > 2}
+                    canMoveUp={optionIndex > 0}
+                    canMoveDown={optionIndex < item.options.length - 1}
+                    onDelete={() => updateItem(item.id, {
+                      options: item.options.filter(({ id }) => id !== option.id),
+                    })}
+                    onMoveUp={() => updateItem(item.id, {
+                      options: moveItem(item.options, optionIndex, -1),
+                    })}
+                    onMoveDown={() => updateItem(item.id, {
+                      options: moveItem(item.options, optionIndex, 1),
+                    })}
+                  />
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => updateItem(item.id, {
+                options: [...item.options, {
+                  id: `mcq-two-option-${Date.now()}`,
+                  text: '',
+                  correct: false,
+                }],
+              })}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-xs font-semibold text-secondary hover:bg-primary_hover"
+            >
+              <PlusSquare className="size-4" /> Add option
+            </button>
+          </ContentCard>
+        ))}
+      </div>
+      <ContentAddButton
+        onClick={() => setItems([
+          ...attrs.items,
+          {
+            id: `mcq-two-item-${Date.now()}`,
+            options: [
+              { id: `mcq-two-option-${Date.now()}-a`, text: '', correct: true },
+              { id: `mcq-two-option-${Date.now()}-b`, text: '', correct: false },
+            ],
+          },
+        ])}
+      >
+        Add item
+      </ContentAddButton>
+    </>
+  );
+}
+
 function OrderingEditor({
   attrs,
   block,
@@ -5966,7 +6176,9 @@ function DialogueEditor({
   block: ContentEditorBlock;
   editor: Editor;
 }) {
-  const setItems = (items: DialogueItem[]) => updateAttrs(editor, block, { items });
+  const setItems = (items: DialogueItem[]) => {
+    editor.chain().command(({ tr }) => rebuildDialogueGroup(tr, block.pos, items)).run();
+  };
   const updateItem = (id: string, patch: Partial<DialogueItem>) => setItems(
     attrs.items.map((item) => item.id === id ? { ...item, ...patch } : item),
   );
@@ -6076,60 +6288,107 @@ function DialogueEditor({
       <div className="mt-3 space-y-2">
         {attrs.items.map((item, index) => (
           <ContentCard key={item.id}>
-            <ContentItemGrid>
-              <span className="rounded bg-primary px-2 py-1 text-[10px] font-bold tabular-nums text-secondary">
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <ContentOptionButtonGroup
-                ariaLabel={`Speaker for line ${index + 1}`}
-                className="mt-0"
-                value={String(item.speaker)}
-                onChange={(speaker) => updateItem(item.id, {
-                  speaker: Number(speaker) as DialogueSpeaker,
-                })}
-                options={[1, 2, 3, 4].map((speaker) => ({
-                  label: (
-                    <>
-                      <User className="mr-1.5 size-4" />
-                      {speaker}
-                    </>
-                  ),
-                  value: String(speaker),
-                }))}
-              />
-              <ContentItemActions
-                label={`dialogue line ${index + 1}`}
-                canDelete={attrs.items.length > 1}
-                canMoveUp={index > 0}
-                canMoveDown={index < attrs.items.length - 1}
-                onDelete={() => setItems(attrs.items.filter(({ id }) => id !== item.id))}
-                onMoveUp={() => setItems(moveItem(attrs.items, index, -1))}
-                onMoveDown={() => setItems(moveItem(attrs.items, index, 1))}
-              />
-              <InlineFormattedInput
-                aria-label={`Dialogue line ${index + 1}`}
-                ariaLabel={`Dialogue line ${index + 1}`}
-                multiline
-                value={item.text}
-                onChange={(text) => updateItem(item.id, { text })}
-                placeholder="Enter dialogue text"
-                className="col-start-2 min-h-16 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
-              />
-            </ContentItemGrid>
+            {item.isSpacer ? (
+              <ContentItemGrid>
+                <span className="rounded bg-primary px-2 py-1 text-[10px] font-bold tabular-nums text-secondary">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <div className="col-start-2 flex min-w-0 items-center gap-2">
+                  <span className="min-w-0 flex-1 text-sm font-semibold text-tertiary">
+                    Spacer row (restarts numbering)
+                  </span>
+                  <select
+                    aria-label={`Spacer type for line ${index + 1}`}
+                    value={item.spacerBreak ?? 'page'}
+                    onChange={(event) => updateItem(item.id, {
+                      spacerBreak: event.target.value as DialogueSpacerBreak,
+                    })}
+                    className="shrink-0 rounded-md border border-primary bg-primary px-2 py-1.5 text-xs font-medium text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                  >
+                    <option value="page">Page break</option>
+                    <option value="line">Line break</option>
+                  </select>
+                </div>
+                <ContentItemActions
+                  label={`dialogue line ${index + 1}`}
+                  canDelete
+                  canMoveUp={index > 0}
+                  canMoveDown={index < attrs.items.length - 1}
+                  onDelete={() => setItems(attrs.items.filter(({ id }) => id !== item.id))}
+                  onMoveUp={() => setItems(moveItem(attrs.items, index, -1))}
+                  onMoveDown={() => setItems(moveItem(attrs.items, index, 1))}
+                />
+              </ContentItemGrid>
+            ) : (
+              <ContentItemGrid>
+                <span className="rounded bg-primary px-2 py-1 text-[10px] font-bold tabular-nums text-secondary">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <ContentOptionButtonGroup
+                  ariaLabel={`Speaker for line ${index + 1}`}
+                  className="mt-0"
+                  value={String(item.speaker)}
+                  onChange={(speaker) => updateItem(item.id, {
+                    speaker: Number(speaker) as DialogueSpeaker,
+                  })}
+                  options={[1, 2, 3, 4].map((speaker) => ({
+                    label: (
+                      <>
+                        <User className="mr-1.5 size-4" />
+                        {speaker}
+                      </>
+                    ),
+                    value: String(speaker),
+                  }))}
+                />
+                <ContentItemActions
+                  label={`dialogue line ${index + 1}`}
+                  canDelete={attrs.items.length > 1}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < attrs.items.length - 1}
+                  onDelete={() => setItems(attrs.items.filter(({ id }) => id !== item.id))}
+                  onMoveUp={() => setItems(moveItem(attrs.items, index, -1))}
+                  onMoveDown={() => setItems(moveItem(attrs.items, index, 1))}
+                />
+                <InlineFormattedInput
+                  aria-label={`Dialogue line ${index + 1}`}
+                  ariaLabel={`Dialogue line ${index + 1}`}
+                  multiline
+                  value={item.text}
+                  onChange={(text) => updateItem(item.id, { text })}
+                  placeholder="Enter dialogue text"
+                  className="col-start-2 min-h-16 w-full whitespace-pre-wrap rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+                />
+              </ContentItemGrid>
+            )}
           </ContentCard>
         ))}
       </div>
-      <button
-        type="button"
-        onClick={() => setItems([...attrs.items, {
-          id: `dialogue-${Date.now()}`,
-          speaker: 1,
-          text: 'New dialogue line',
-        }])}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover"
-      >
-        <PlusSquare className="size-4" /> Add line
-      </button>
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={() => setItems([...attrs.items, {
+            id: `dialogue-${Date.now()}`,
+            speaker: 1,
+            text: 'New dialogue line',
+          }])}
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover"
+        >
+          <PlusSquare className="size-4" /> Add line
+        </button>
+        <button
+          type="button"
+          onClick={() => setItems([...attrs.items, {
+            id: `dialogue-spacer-${Date.now()}`,
+            speaker: 1,
+            text: '',
+            isSpacer: true,
+          }])}
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-secondary hover:bg-primary_hover"
+        >
+          <PlusSquare className="size-4" /> Add spacer row
+        </button>
+      </div>
     </>
   );
 }
@@ -7687,6 +7946,176 @@ function LetterCloudEditor({
   );
 }
 
+function AudioComprehensionEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: AudioComprehensionAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const setItems = (items: AudioComprehensionItem[]) => updateAttrs(
+    editor,
+    block,
+    { items },
+  );
+
+  return (
+    <>
+      <ContentFieldLabel
+        action={(
+          <button
+            type="button"
+            aria-label="Reset instruction"
+            title="Reset instruction"
+            disabled={attrs.instruction === DEFAULT_AUDIO_COMPREHENSION_INSTRUCTION}
+            onClick={() => updateAttrs(editor, block, {
+              instruction: DEFAULT_AUDIO_COMPREHENSION_INSTRUCTION,
+            })}
+            className="flex size-7 items-center justify-center rounded-md text-secondary transition hover:bg-primary_hover hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            <RotateCcw className="size-4" />
+          </button>
+        )}
+      >
+        Instruction
+      </ContentFieldLabel>
+      <textarea
+        rows={1}
+        value={attrs.instruction || DEFAULT_AUDIO_COMPREHENSION_INSTRUCTION}
+        placeholder={DEFAULT_AUDIO_COMPREHENSION_INSTRUCTION}
+        onChange={(event) => updateAttrs(editor, block, {
+          instruction: event.target.value,
+        })}
+        className="mt-2 w-full resize-none rounded-md border border-primary bg-primary px-3 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+      />
+
+      <ContentSectionHeader>Layout</ContentSectionHeader>
+      <div className="mt-3 max-w-[12rem]">
+        <label>
+          <ContentFieldLabel>Item columns</ContentFieldLabel>
+          <input
+            type="number"
+            min={MIN_AUDIO_COMPREHENSION_COLUMNS}
+            max={MAX_AUDIO_COMPREHENSION_COLUMNS}
+            value={attrs.columns}
+            onChange={(event) => updateAttrs(editor, block, {
+              columns: Math.min(
+                MAX_AUDIO_COMPREHENSION_COLUMNS,
+                Math.max(MIN_AUDIO_COMPREHENSION_COLUMNS, Number(event.target.value)),
+              ),
+            })}
+            className="mt-1.5 h-9 w-full rounded-md border border-primary bg-primary px-2.5 text-sm tabular-nums text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+          />
+        </label>
+      </div>
+
+      <div className="mt-3">
+        <ContentFieldLabel>Text alignment</ContentFieldLabel>
+        <div
+          aria-label="Item text alignment"
+          className="mt-1.5 flex items-center gap-1"
+          role="group"
+        >
+          {([
+            ['left', TextAlignStart],
+            ['center', TextAlignCenter],
+          ] as const).map(([alignment, Icon]) => (
+            <button
+              type="button"
+              aria-label={`${alignment} align item text`}
+              aria-pressed={attrs.textAlign === alignment}
+              key={alignment}
+              onClick={() => updateAttrs(editor, block, { textAlign: alignment })}
+              className={`flex size-9 items-center justify-center rounded-md border text-secondary transition ${
+                attrs.textAlign === alignment
+                  ? 'border-primary bg-active ring-1 ring-inset ring-primary'
+                  : 'border-primary bg-primary hover:bg-primary_hover'
+              }`}
+            >
+              <Icon className="size-4" />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <ContentSectionHeader>Learner support</ContentSectionHeader>
+      <ContentSwitchGrid>
+        <ContentSwitch
+          label="Hide instruction number badge"
+          isSelected={attrs.hideInstructionBadge}
+          onChange={(hideInstructionBadge) => updateAttrs(editor, block, {
+            hideInstructionBadge,
+          })}
+        />
+        <ContentSwitch
+          label="Shuffle items"
+          isSelected={attrs.shuffleItems}
+          onChange={(shuffleItems) => updateAttrs(editor, block, {
+            shuffleItems,
+          })}
+        />
+        <ContentSwitch
+          label="Show first as example"
+          isSelected={attrs.showFirstAsExample}
+          onChange={(showFirstAsExample) => updateAttrs(editor, block, {
+            showFirstAsExample,
+          })}
+        />
+      </ContentSwitchGrid>
+
+      <ContentSectionHeader count={`${attrs.items.length} items`}>
+        Words / phrases
+      </ContentSectionHeader>
+      <div className="mt-3 space-y-2">
+        {attrs.items.map((item, index) => (
+          <ContentCard key={item.id}>
+            <ContentItemGrid>
+              <ContentItemNumber>
+                {String(index + 1).padStart(2, '0')}
+              </ContentItemNumber>
+              <input
+                aria-label={`Item ${index + 1}`}
+                value={item.text}
+                onChange={(event) => setItems(attrs.items.map((current) => (
+                  current.id === item.id
+                    ? { ...current, text: event.target.value }
+                    : current
+                )))}
+                className="h-9 min-w-0 w-full rounded-md border border-primary bg-primary px-2.5 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                placeholder="Word or phrase"
+              />
+              <ContentItemActions
+                label={`item ${index + 1}`}
+                canDelete={attrs.items.length > 1}
+                canMoveUp={index > 0}
+                canMoveDown={index < attrs.items.length - 1}
+                onDelete={() => setItems(
+                  attrs.items.filter(({ id }) => id !== item.id),
+                )}
+                onMoveUp={() => setItems(moveItem(attrs.items, index, -1))}
+                onMoveDown={() => setItems(moveItem(attrs.items, index, 1))}
+              />
+            </ContentItemGrid>
+          </ContentCard>
+        ))}
+      </div>
+      <ContentAddButton
+        onClick={() => setItems([
+          ...attrs.items,
+          {
+            id: `audio-comprehension-item-${Date.now()}`,
+            text: '',
+          },
+        ])}
+      >
+        Add item
+      </ContentAddButton>
+    </>
+  );
+}
+
 function CrosswordEditor({
   attrs,
   block,
@@ -8971,10 +9400,10 @@ function DominoEditor({
       <ContentSectionHeader>Learner support</ContentSectionHeader>
       <ContentSwitchGrid>
         <ContentSwitch
-          label="Show first as example"
-          isSelected={attrs.showFirstAsExample}
-          onChange={(showFirstAsExample) => updateAttrs(editor, block, {
-            showFirstAsExample,
+          label="Shuffle cards"
+          isSelected={attrs.shuffle}
+          onChange={(shuffle) => updateAttrs(editor, block, {
+            shuffle,
           })}
         />
       </ContentSwitchGrid>
@@ -9075,6 +9504,133 @@ function DominoEditor({
         }])}
       >
         Add pair
+      </ContentAddButton>
+    </>
+  );
+}
+
+function BlitzdiktatEditor({
+  attrs,
+  block,
+  editor,
+}: {
+  attrs: BlitzdiktatAttrs;
+  block: ContentEditorBlock;
+  editor: Editor;
+}) {
+  const maxItems = BLITZDIKTAT_MAX_ITEMS;
+  const setItems = (items: BlitzdiktatItem[]) => {
+    editor.chain().command(({ tr }) => {
+      const currentNode = tr.doc.nodeAt(block.pos);
+      if (currentNode?.type.name !== 'blitzdiktat') return false;
+      const blitzdiktatType = tr.doc.type.schema.nodes.blitzdiktat;
+      if (!blitzdiktatType) return false;
+
+      const groupId = currentNode.attrs.groupId || `blitzdiktat-${Date.now()}`;
+      const groupNodes: Array<{ node: ProseMirrorNode; pos: number }> = [];
+      tr.doc.forEach((node, pos) => {
+        if (node.type.name === 'blitzdiktat' && node.attrs.groupId === groupId) {
+          groupNodes.push({ node, pos });
+        }
+      });
+      if (!groupNodes.length) groupNodes.push({ node: currentNode, pos: block.pos });
+
+      const groupSize = blitzdiktatGroupSize(items);
+      if (groupSize === groupNodes.length) {
+        groupNodes.forEach(({ pos }, index) => {
+          tr.setNodeAttribute(pos, 'items', items);
+          tr.setNodeAttribute(pos, 'groupId', groupId);
+          tr.setNodeAttribute(pos, 'groupSize', groupSize);
+          tr.setNodeAttribute(pos, 'groupIndex', index);
+        });
+        return true;
+      }
+
+      const baseAttrs = {
+        ...groupNodes[0].node.attrs,
+        items,
+        groupId,
+        groupSize,
+      };
+      const nodes = Array.from({ length: groupSize }, (_, groupIndex) => blitzdiktatType.create({
+        ...baseAttrs,
+        groupIndex,
+      }));
+      const pageBreakType = tr.doc.type.schema.nodes.pageBreak;
+      const separatedNodes = nodes.flatMap((node, index) => (
+        index < nodes.length - 1 && pageBreakType
+          ? [node, pageBreakType.create()]
+          : [node]
+      ));
+      const from = groupNodes[0].pos;
+      const to = groupNodes[groupNodes.length - 1].pos + groupNodes[groupNodes.length - 1].node.nodeSize;
+      tr.replaceWith(from, to, separatedNodes);
+      return true;
+    }).run();
+  };
+  return (
+    <>
+      <ContentSectionHeader className="mt-0">Text size</ContentSectionHeader>
+      <div className="mt-3 flex gap-2">
+        {(['xs', 's', 'm', 'l', 'xl'] as const).map((size) => (
+          <button
+            key={size}
+            type="button"
+            onClick={() => updateAttrs(editor, block, { textSize: size as BlitzdiktatTextSize })}
+            className={[
+              'flex-1 rounded-lg border py-2 text-xs font-semibold transition',
+              attrs.textSize === size
+                ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+            ].join(' ')}
+          >
+            {size.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
+      <ContentSectionHeader count={`${attrs.items.length} / ${maxItems}`}>
+        Cards
+      </ContentSectionHeader>
+      <p className="mt-1 text-xs leading-5 text-tertiary">
+        Each item fills one cuttable card. Two 3 × 4 grids hold up to 24 cards.
+      </p>
+      <div className="mt-3 space-y-2">
+        {attrs.items.map((item, index) => (
+          <ContentCard key={item.id}>
+            <ContentItemGrid>
+              <ContentItemNumber>
+                {String(index + 1).padStart(2, '0')}
+              </ContentItemNumber>
+              <InlineFormattedInput
+                ariaLabel={`Blitzdiktat card ${index + 1}`}
+                multiline
+                value={item.text}
+                onChange={(value) => setItems(attrs.items.map((current) => current.id === item.id ? { ...current, text: value } : current))}
+                placeholder="Word or phrase"
+                className="min-h-12 whitespace-pre-wrap rounded-md border border-primary bg-primary px-2.5 py-1.5 text-sm text-secondary outline-none empty:before:text-placeholder empty:before:content-[attr(data-placeholder)] focus:border-brand focus:ring-2 focus:ring-brand"
+              />
+              <ContentItemActions
+                label={`blitzdiktat card ${index + 1}`}
+                canDelete={attrs.items.length > 1}
+                canMoveUp={index > 0}
+                canMoveDown={index < attrs.items.length - 1}
+                onDelete={() => setItems(attrs.items.filter(({ id }) => id !== item.id))}
+                onMoveUp={() => setItems(moveItem(attrs.items, index, -1))}
+                onMoveDown={() => setItems(moveItem(attrs.items, index, 1))}
+              />
+            </ContentItemGrid>
+          </ContentCard>
+        ))}
+      </div>
+      <ContentAddButton
+        disabled={attrs.items.length >= maxItems}
+        onClick={() => setItems([...attrs.items, {
+          id: `blitzdiktat-${Date.now()}`,
+          text: '',
+        }])}
+      >
+        Add card
       </ContentAddButton>
     </>
   );
@@ -9374,6 +9930,9 @@ export function BlockContentEditorModal({
             {block.type === 'crossword' && <CrosswordEditor attrs={attrs as unknown as CrosswordAttrs} block={block} editor={editor} />}
             {block.type === 'errorCorrection' && <ErrorCorrectionEditor attrs={attrs as unknown as ErrorCorrectionAttrs} block={block} editor={editor} />}
             {block.type === 'domino' && <DominoEditor attrs={attrs as unknown as DominoAttrs} block={block} editor={editor} />}
+            {block.type === 'blitzdiktat' && <BlitzdiktatEditor attrs={attrs as unknown as BlitzdiktatAttrs} block={block} editor={editor} />}
+            {block.type === 'audioComprehension' && <AudioComprehensionEditor attrs={attrs as unknown as AudioComprehensionAttrs} block={block} editor={editor} />}
+            {block.type === 'mcqTwo' && <MCQTwoEditor attrs={attrs as unknown as MCQTwoAttrs} block={block} editor={editor} />}
           </div>
           {block.type !== 'writingLines' && block.type !== 'dictationLines' && (
             <div className="overflow-y-auto bg-primary p-6">

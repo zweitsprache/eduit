@@ -54,6 +54,7 @@ import { LanguageSwitcher } from '@/components/i18n/language-switcher';
 import { useI18n } from '@/components/i18n/locale-provider';
 import { EduitLogo } from '@eduit/ui';
 import { CustomBlockInstructions } from '@/components/editor/custom-blocks/instructions';
+import { MCQTwo } from '@/components/editor/mcq-two-node';
 import {
   getMCQQuestions,
   MCQ,
@@ -88,6 +89,13 @@ import {
   type DominoPair,
   type DominoTextSize,
 } from '@/components/editor/domino-node';
+import {
+  Blitzdiktat,
+  BLITZDIKTAT_MAX_ITEMS,
+  type BlitzdiktatAttrs,
+  type BlitzdiktatItem,
+  type BlitzdiktatTextSize,
+} from '@/components/editor/blitzdiktat-node';
 import { DominoAIModal } from '@/components/editor/domino-ai-modal';
 import {
   DEFAULT_TIME_MATCHING_ATTRS,
@@ -183,14 +191,17 @@ import {
   CustomHeading,
   type CustomHeadingAttrs,
   type CustomHeadingGapAfter,
+  type CustomHeadingIcon,
   type CustomHeadingLevel,
 } from '@/components/editor/heading-node';
 import {
   DEFAULT_DIALOGUE_SPEAKER_NAMES,
   Dialogue,
+  rebuildDialogueGroup,
   type DialogueAttrs,
   type DialogueAudio,
   type DialogueItem,
+  type DialogueSpacerBreak,
   type DialogueSpeaker,
 } from '@/components/editor/dialogue-node';
 import { dialogueLineToSpeechText } from '@/lib/dialogue-audio';
@@ -307,6 +318,7 @@ import { LetterNode } from '@/components/editor/letter-node';
 import { AnagramNode } from '@/components/editor/anagram-node';
 import { TelephoneNumbers } from '@/components/editor/telephone-numbers-node';
 import { LetterCloud } from '@/components/editor/letter-cloud-node';
+import { AudioComprehension } from '@/components/editor/audio-comprehension-node';
 import { Lesetraining, type LesetrainingAttrs } from '@/components/editor/lesetraining-node';
 import {
   Crossword,
@@ -567,6 +579,7 @@ const CUSTOM_BLOCK_TYPES = new Set<string>(
 );
 const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'mcq',
+  'mcqTwo',
   'mcm',
   'mch',
   'articlePlural',
@@ -611,6 +624,8 @@ const CONTENT_EDITOR_BLOCK_TYPES = new Set([
   'errorCorrection',
   'familyKinship',
   'domino',
+  'blitzdiktat',
+  'audioComprehension',
 ]);
 
 function richTextToPlainText(html: string) {
@@ -817,6 +832,7 @@ async function generateWorksheetPreview(
 }
 
 const DEFAULT_DOCUMENT_BRAND = {
+  slug: 'eduit',
   name: ACTIVE_CUSTOM_BLOCK_BRAND.name,
   primaryColor: ACTIVE_CUSTOM_BLOCK_BRAND.primaryColor,
   accentColor: ACTIVE_CUSTOM_BLOCK_BRAND.accentColor,
@@ -1280,6 +1296,23 @@ function setDominoAttr(
     .run();
 }
 
+function setBlitzdiktatAttr(
+  editor: Editor,
+  pos: number,
+  key: keyof BlitzdiktatAttrs,
+  value: BlitzdiktatAttrs[keyof BlitzdiktatAttrs],
+) {
+  editor
+    .chain()
+    // Deliberately no .focus(): sidebar inputs must retain DOM focus.
+    .command(({ tr }) => {
+      if (tr.doc.nodeAt(pos)?.type.name !== 'blitzdiktat') return false;
+      tr.setNodeAttribute(pos, key, value);
+      return true;
+    })
+    .run();
+}
+
 function setChooseCorrectWordsAttr(
   editor: Editor,
   pos: number,
@@ -1482,6 +1515,16 @@ const A5_FOTOKARTEN_FORMAT: PageFormatSpec = {
     right: mmToPixels(10),
   },
 };
+
+const HEADING_ICON_OPTIONS: { value: CustomHeadingIcon; label: string }[] = [
+  { value: 'none', label: 'None' },
+  { value: 'listening', label: 'Listening' },
+  { value: 'playing', label: 'Playing' },
+  { value: 'reading', label: 'Reading' },
+  { value: 'speaking', label: 'Speaking' },
+  { value: 'writing', label: 'Writing' },
+  { value: 'speechBubble', label: 'Speech bubble' },
+];
 
 const DOC_SIZES: { id: string; label: string; format: () => PageFormatSpec }[] = [
   { id: 'a4-portrait', label: 'DIN A4 Portrait', format: () => documentFormat(PAGE_FORMATS.A4) },
@@ -1728,6 +1771,7 @@ export default function EditorPage() {
   const [selectedOrderingPos, setSelectedOrderingPos] = useState<number | null>(null);
   const [selectedWordGridPos, setSelectedWordGridPos] = useState<number | null>(null);
   const [selectedDominoPos, setSelectedDominoPos] = useState<number | null>(null);
+  const [selectedBlitzdiktatPos, setSelectedBlitzdiktatPos] = useState<number | null>(null);
   const [selectedChooseCorrectWordsPos, setSelectedChooseCorrectWordsPos] = useState<number | null>(null);
   const [selectedInlineChoicePos, setSelectedInlineChoicePos] = useState<number | null>(null);
   const [selectedMiniFormPos, setSelectedMiniFormPos] = useState<number | null>(null);
@@ -1752,6 +1796,7 @@ export default function EditorPage() {
   const [loadingLearningLinkPublication, setLoadingLearningLinkPublication] = useState(false);
   const [managingLearningLinkPublication, setManagingLearningLinkPublication] = useState(false);
   const [exportingBlockPNG, setExportingBlockPNG] = useState(false);
+  const [exportingBlockSVG, setExportingBlockSVG] = useState(false);
   const [jsonCopied, setJsonCopied] = useState(false);
   const [jsonImportDialogOpen, setJsonImportDialogOpen] = useState(false);
   const [jsonImportText, setJsonImportText] = useState('');
@@ -1846,12 +1891,14 @@ export default function EditorPage() {
       TableKit,
       CustomBlockNumbering,
       MCQ,
+      MCQTwo,
       CustomBlockInstructions,
       MCM,
       MCH,
       ArticlePlural,
       MatchingPairs,
       Domino,
+      Blitzdiktat,
       TimeMatching,
       DateMatching,
       TwoWayPrepositions,
@@ -1898,6 +1945,7 @@ export default function EditorPage() {
       AnagramNode,
       TelephoneNumbers,
       LetterCloud,
+      AudioComprehension,
       Lesetraining,
       Crossword,
       ErrorCorrection,
@@ -2023,6 +2071,9 @@ export default function EditorPage() {
       );
       setSelectedDominoPos(
         selectedNodeName === 'domino' ? selection.from : null,
+      );
+      setSelectedBlitzdiktatPos(
+        selectedNodeName === 'blitzdiktat' ? selection.from : null,
       );
       setSelectedChooseCorrectWordsPos(
         selectedNodeName === 'chooseCorrectWords' ? selection.from : null,
@@ -2585,6 +2636,17 @@ export default function EditorPage() {
     },
   });
 
+  const selectedBlitzdiktatAttrs = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor || selectedBlitzdiktatPos === null) return null;
+      const node = currentEditor.state.doc.nodeAt(selectedBlitzdiktatPos);
+      return node?.type.name === 'blitzdiktat'
+        ? node.attrs as BlitzdiktatAttrs
+        : null;
+    },
+  });
+
   const selectedInlineChoiceAttrs = useEditorState({
     editor,
     selector: ({ editor: currentEditor }) => {
@@ -2740,6 +2802,7 @@ export default function EditorPage() {
     const editorElement = editor.view.dom;
     // Eduit supplies the structural defaults; profiles override brand tokens.
     editorElement.setAttribute('data-brand', 'eduit');
+    editorElement.setAttribute('data-brand-profile', activeBrand.slug);
     editorElement.setAttribute('data-style-preset', activeBrand.stylePreset);
     editorElement.style.setProperty('--eduit-primary', activeBrand.primaryColor);
     editorElement.style.setProperty('--eduit-accent', activeBrand.accentColor);
@@ -3706,7 +3769,7 @@ export default function EditorPage() {
 
   const updateDialogueItems = (items: DialogueItem[]) => {
     if (selectedDialoguePos === null) return;
-    setDialogueAttr(editor, selectedDialoguePos, 'items', items);
+    editor.chain().command(({ tr }) => rebuildDialogueGroup(tr, selectedDialoguePos, items)).run();
   };
 
   const updateDialogueItem = (id: string, patch: Partial<DialogueItem>) => {
@@ -3727,6 +3790,19 @@ export default function EditorPage() {
         id: `dialogue-${Date.now()}`,
         speaker: ((index % 4) + 1) as DialogueSpeaker,
         text: 'Enter dialogue text',
+      },
+    ]);
+  };
+
+  const addDialogueSpacer = () => {
+    if (!selectedDialogueAttrs) return;
+    updateDialogueItems([
+      ...selectedDialogueAttrs.items,
+      {
+        id: `dialogue-spacer-${Date.now()}`,
+        speaker: 1,
+        text: '',
+        isSpacer: true,
       },
     ]);
   };
@@ -3862,9 +3938,9 @@ export default function EditorPage() {
     );
   };
 
-  const updateDominoShowFirstAsExample = (showFirstAsExample: boolean) => {
+  const updateDominoShuffle = (shuffle: boolean) => {
     if (selectedDominoPos === null) return;
-    setDominoAttr(editor, selectedDominoPos, 'showFirstAsExample', showFirstAsExample);
+    setDominoAttr(editor, selectedDominoPos, 'shuffle', shuffle);
   };
 
   const updateDominoOddTextSize = (oddTextSize: DominoTextSize) => {
@@ -3875,6 +3951,25 @@ export default function EditorPage() {
   const updateDominoEvenTextSize = (evenTextSize: DominoTextSize) => {
     if (selectedDominoPos === null) return;
     setDominoAttr(editor, selectedDominoPos, 'evenTextSize', evenTextSize);
+  };
+
+  const updateBlitzdiktatItems = (items: BlitzdiktatItem[]) => {
+    if (selectedBlitzdiktatPos === null) return;
+    setBlitzdiktatAttr(editor, selectedBlitzdiktatPos, 'items', items);
+  };
+
+  const updateBlitzdiktatItem = (index: number, patch: Partial<BlitzdiktatItem>) => {
+    if (!selectedBlitzdiktatAttrs || selectedBlitzdiktatPos === null) return;
+    updateBlitzdiktatItems(
+      selectedBlitzdiktatAttrs.items.map((item, itemIndex) => (
+        itemIndex === index ? { ...item, ...patch } : item
+      )),
+    );
+  };
+
+  const updateBlitzdiktatTextSize = (textSize: BlitzdiktatTextSize) => {
+    if (selectedBlitzdiktatPos === null) return;
+    setBlitzdiktatAttr(editor, selectedBlitzdiktatPos, 'textSize', textSize);
   };
 
   const updateWordGridWord = (index: number, word: string) => {
@@ -5177,53 +5272,77 @@ export default function EditorPage() {
     }
   };
 
+  const buildSelectedBlockExportPayload = async () => {
+    if (!selectedCustomBlock) throw new Error('No block is selected.');
+    const nodeDom = editor.view.nodeDOM(selectedCustomBlock.pos);
+    if (!(nodeDom instanceof HTMLElement)) {
+      throw new Error('The selected block could not be rendered.');
+    }
+
+    const clone = nodeDom.cloneNode(true) as HTMLElement;
+    clone.classList.remove(
+      'ProseMirror-selectednode',
+      'custom-block--selected',
+      'heading-node--selected',
+    );
+    clone.style.setProperty('margin', '0', 'important');
+    clone.style.setProperty('margin-block', '0', 'important');
+    const editorShell = editor.view.dom.cloneNode(false) as HTMLElement;
+    editorShell.removeAttribute('contenteditable');
+    editorShell.appendChild(clone);
+    editorShell.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((image) => {
+      image.setAttribute('loading', 'eager');
+    });
+    await inlinePrivateMediaImages(editorShell);
+
+    const visitedStyleSheets = new Set<CSSStyleSheet>();
+    const head = Array.from(document.styleSheets).map((styleSheet) => {
+      try {
+        const css = serializeStyleSheet(styleSheet, visitedStyleSheets)
+          .replace(/<\/style/gi, '<\\/style');
+        return `<style>${css}</style>`;
+      } catch {
+        return styleSheet.ownerNode instanceof HTMLElement
+          ? styleSheet.ownerNode.outerHTML
+          : '';
+      }
+    }).join('\n');
+
+    return {
+      content: editorShell.outerHTML,
+      head,
+      width: Math.ceil(nodeDom.getBoundingClientRect().width),
+    };
+  };
+
+  const downloadSelectedBlockExport = (blob: Blob, extension: string) => {
+    if (!selectedCustomBlock) return;
+    const url = URL.createObjectURL(blob);
+    const safeTitle = worksheetTitle
+      .trim()
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/^-|-$/g, '')
+      .toLowerCase() || 'worksheet';
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${safeTitle}-${selectedCustomBlock.type}.${extension}`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const exportSelectedBlockPNG = async () => {
     if (!selectedCustomBlock || exportingBlockPNG) return;
     setExportingBlockPNG(true);
     setBlockExportError(null);
 
     try {
-      const nodeDom = editor.view.nodeDOM(selectedCustomBlock.pos);
-      if (!(nodeDom instanceof HTMLElement)) {
-        throw new Error('The selected block could not be rendered.');
-      }
-
-      const clone = nodeDom.cloneNode(true) as HTMLElement;
-      clone.classList.remove(
-        'ProseMirror-selectednode',
-        'custom-block--selected',
-        'heading-node--selected',
-      );
-      clone.style.setProperty('margin', '0', 'important');
-      clone.style.setProperty('margin-block', '0', 'important');
-      const editorShell = editor.view.dom.cloneNode(false) as HTMLElement;
-      editorShell.removeAttribute('contenteditable');
-      editorShell.appendChild(clone);
-      editorShell.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((image) => {
-        image.setAttribute('loading', 'eager');
-      });
-      await inlinePrivateMediaImages(editorShell);
-
-      const visitedStyleSheets = new Set<CSSStyleSheet>();
-      const head = Array.from(document.styleSheets).map((styleSheet) => {
-        try {
-          const css = serializeStyleSheet(styleSheet, visitedStyleSheets)
-            .replace(/<\/style/gi, '<\\/style');
-          return `<style>${css}</style>`;
-        } catch {
-          return styleSheet.ownerNode instanceof HTMLElement
-            ? styleSheet.ownerNode.outerHTML
-            : '';
-        }
-      }).join('\n');
+      const payload = await buildSelectedBlockExportPayload();
       const response = await fetch('/api/export/png', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: editorShell.outerHTML,
-          head,
-          width: Math.ceil(nodeDom.getBoundingClientRect().width),
-        }),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) {
         const result = await response.json().catch(() => null) as {
@@ -5232,26 +5351,42 @@ export default function EditorPage() {
         throw new Error(result?.error ?? 'PNG export failed.');
       }
 
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const safeTitle = worksheetTitle
-        .trim()
-        .replace(/[^a-z0-9]+/gi, '-')
-        .replace(/^-|-$/g, '')
-        .toLowerCase() || 'worksheet';
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = `${safeTitle}-${selectedCustomBlock.type}.png`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
+      downloadSelectedBlockExport(await response.blob(), 'png');
     } catch (error) {
       setBlockExportError(
         error instanceof Error ? error.message : 'PNG export failed.',
       );
     } finally {
       setExportingBlockPNG(false);
+    }
+  };
+
+  const exportSelectedBlockSVG = async () => {
+    if (!selectedCustomBlock || exportingBlockSVG) return;
+    setExportingBlockSVG(true);
+    setBlockExportError(null);
+
+    try {
+      const payload = await buildSelectedBlockExportPayload();
+      const response = await fetch('/api/export/svg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => null) as {
+          error?: string;
+        } | null;
+        throw new Error(result?.error ?? 'SVG export failed.');
+      }
+
+      downloadSelectedBlockExport(await response.blob(), 'svg');
+    } catch (error) {
+      setBlockExportError(
+        error instanceof Error ? error.message : 'SVG export failed.',
+      );
+    } finally {
+      setExportingBlockSVG(false);
     }
   };
 
@@ -7228,10 +7363,10 @@ export default function EditorPage() {
               <label className="mt-4 flex cursor-pointer items-center gap-2 text-xs font-semibold text-tertiary">
                 <input
                   type="checkbox"
-                  checked={selectedDominoAttrs.showFirstAsExample}
-                  onChange={(event) => updateDominoShowFirstAsExample(event.target.checked)}
+                  checked={selectedDominoAttrs.shuffle}
+                  onChange={(event) => updateDominoShuffle(event.target.checked)}
                 />
-                Show first pair as example
+                Shuffle cards
               </label>
 
               <div className="mt-4">
@@ -7356,6 +7491,119 @@ export default function EditorPage() {
                 >
                   <PlusSquare className="size-4" />
                   Add pair
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!selectedCustomBlock
+            && selectedBlitzdiktatAttrs
+            && selectedBlitzdiktatPos !== null && (
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-quaternary">
+                  Blitzdiktat
+                </p>
+                <span className="rounded bg-brand-primary px-2 py-0.5 text-[10px] font-bold text-brand-secondary">
+                  Blitzdiktat
+                </span>
+              </div>
+
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-tertiary">Text size</p>
+                <div className="mt-1 flex gap-1">
+                  {(['xs', 's', 'm', 'l', 'xl'] as const).map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => updateBlitzdiktatTextSize(size)}
+                      className={[
+                        'flex-1 rounded-md border py-1.5 text-xs font-semibold transition',
+                        selectedBlitzdiktatAttrs.textSize === size
+                          ? 'border-primary bg-active text-primary ring-1 ring-inset ring-primary'
+                          : 'border-primary bg-primary text-secondary hover:bg-primary_hover',
+                      ].join(' ')}
+                    >
+                      {size.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-tertiary">
+                  Items
+                  <span className="ml-2 text-quaternary">
+                    {selectedBlitzdiktatAttrs.items.length} / {BLITZDIKTAT_MAX_ITEMS}
+                  </span>
+                </p>
+                <div className="mt-2 space-y-2">
+                  {selectedBlitzdiktatAttrs.items.map((item, itemIndex) => (
+                    <div key={itemIndex} className="space-y-1">
+                      <input
+                        type="text"
+                        value={item.text}
+                        onChange={(event) => updateBlitzdiktatItem(itemIndex, { text: event.target.value })}
+                        className="w-full border border-primary bg-primary px-2 py-1.5 text-xs text-secondary outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+                        placeholder="Word or phrase"
+                      />
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          disabled={itemIndex === 0}
+                          onClick={() => updateBlitzdiktatItems(
+                            selectedBlitzdiktatAttrs.items.map((current, i) => {
+                              if (i !== itemIndex - 1 && i !== itemIndex) return current;
+                              if (i === itemIndex - 1) return selectedBlitzdiktatAttrs.items[itemIndex];
+                              return selectedBlitzdiktatAttrs.items[itemIndex - 1];
+                            }),
+                          )}
+                          className="disabled:opacity-30"
+                          title="Move up"
+                        >
+                          <ArrowUp className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={itemIndex === selectedBlitzdiktatAttrs.items.length - 1}
+                          onClick={() => updateBlitzdiktatItems(
+                            selectedBlitzdiktatAttrs.items.map((current, i) => {
+                              if (i !== itemIndex && i !== itemIndex + 1) return current;
+                              if (i === itemIndex) return selectedBlitzdiktatAttrs.items[itemIndex + 1];
+                              return selectedBlitzdiktatAttrs.items[itemIndex];
+                            }),
+                          )}
+                          className="disabled:opacity-30"
+                          title="Move down"
+                        >
+                          <ArrowDown className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={selectedBlitzdiktatAttrs.items.length <= 1}
+                          onClick={() => updateBlitzdiktatItems(
+                            selectedBlitzdiktatAttrs.items.filter((_, index) => index !== itemIndex),
+                          )}
+                          className="disabled:opacity-30"
+                          title="Remove item"
+                        >
+                          <Trash01 className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  disabled={selectedBlitzdiktatAttrs.items.length >= BLITZDIKTAT_MAX_ITEMS}
+                  onClick={() => updateBlitzdiktatItems([
+                    ...selectedBlitzdiktatAttrs.items,
+                    { id: crypto.randomUUID(), text: '' },
+                  ])}
+                  className="mt-3 flex w-full items-center justify-center gap-2 border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover disabled:opacity-50"
+                >
+                  <PlusSquare className="size-4" />
+                  Add item
                 </button>
               </div>
             </div>
@@ -8663,54 +8911,97 @@ export default function EditorPage() {
               <div className="mt-4 space-y-3">
                 {selectedDialogueAttrs.items.map((item, itemIndex) => (
                   <div className="rounded-lg border border-secondary bg-secondary p-3" key={item.id}>
-                    <div className="flex items-center gap-2">
-                      <span className="w-5 shrink-0 text-[10px] tabular-nums text-quaternary">
-                        {String(itemIndex + 1).padStart(2, '0')}
-                      </span>
-                      <select
-                        aria-label={`Speaker for dialogue row ${itemIndex + 1}`}
-                        value={item.speaker}
-                        onChange={(event) => updateDialogueItem(item.id, {
-                          speaker: Number(event.target.value) as DialogueSpeaker,
-                        })}
-                        className="min-w-0 flex-1 border border-primary bg-primary px-2.5 py-2 text-sm font-medium text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-                      >
-                        {[1, 2, 3, 4].map((speaker) => (
-                          <option key={speaker} value={speaker}>Speaker {speaker}</option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        aria-label={`Delete dialogue row ${itemIndex + 1}`}
-                        disabled={selectedDialogueAttrs.items.length <= 1}
-                        onClick={() => updateDialogueItems(
-                          selectedDialogueAttrs.items.filter(({ id }) => id !== item.id),
-                        )}
-                        className="text-quaternary transition hover:text-error-primary disabled:cursor-not-allowed disabled:opacity-30"
-                      >
-                        <Trash01 className="size-4" />
-                      </button>
-                    </div>
-                    <textarea
-                      aria-label={`Dialogue text ${itemIndex + 1}`}
-                      rows={3}
-                      value={item.text}
-                      onChange={(event) => updateDialogueItem(item.id, {
-                        text: event.target.value,
-                      })}
-                      className="mt-2 ml-7 w-[calc(100%_-_1.75rem)] resize-y border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
-                    />
+                    {item.isSpacer ? (
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 shrink-0 text-[10px] tabular-nums text-quaternary">
+                          {String(itemIndex + 1).padStart(2, '0')}
+                        </span>
+                        <span className="min-w-0 flex-1 text-xs font-semibold text-tertiary">
+                          Spacer row (restarts numbering)
+                        </span>
+                        <select
+                          aria-label={`Spacer type for dialogue row ${itemIndex + 1}`}
+                          value={item.spacerBreak ?? 'page'}
+                          onChange={(event) => updateDialogueItem(item.id, {
+                            spacerBreak: event.target.value as DialogueSpacerBreak,
+                          })}
+                          className="shrink-0 border border-primary bg-primary px-2 py-1.5 text-xs font-medium text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                        >
+                          <option value="page">Page break</option>
+                          <option value="line">Line break</option>
+                        </select>
+                        <button
+                          type="button"
+                          aria-label={`Delete dialogue row ${itemIndex + 1}`}
+                          onClick={() => updateDialogueItems(
+                            selectedDialogueAttrs.items.filter(({ id }) => id !== item.id),
+                          )}
+                          className="text-quaternary transition hover:text-error-primary"
+                        >
+                          <Trash01 className="size-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 shrink-0 text-[10px] tabular-nums text-quaternary">
+                            {String(itemIndex + 1).padStart(2, '0')}
+                          </span>
+                          <select
+                            aria-label={`Speaker for dialogue row ${itemIndex + 1}`}
+                            value={item.speaker}
+                            onChange={(event) => updateDialogueItem(item.id, {
+                              speaker: Number(event.target.value) as DialogueSpeaker,
+                            })}
+                            className="min-w-0 flex-1 border border-primary bg-primary px-2.5 py-2 text-sm font-medium text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                          >
+                            {[1, 2, 3, 4].map((speaker) => (
+                              <option key={speaker} value={speaker}>Speaker {speaker}</option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            aria-label={`Delete dialogue row ${itemIndex + 1}`}
+                            disabled={selectedDialogueAttrs.items.length <= 1}
+                            onClick={() => updateDialogueItems(
+                              selectedDialogueAttrs.items.filter(({ id }) => id !== item.id),
+                            )}
+                            className="text-quaternary transition hover:text-error-primary disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <Trash01 className="size-4" />
+                          </button>
+                        </div>
+                        <textarea
+                          aria-label={`Dialogue text ${itemIndex + 1}`}
+                          rows={3}
+                          value={item.text}
+                          onChange={(event) => updateDialogueItem(item.id, {
+                            text: event.target.value,
+                          })}
+                          className="mt-2 ml-7 w-[calc(100%_-_1.75rem)] resize-y border border-primary bg-primary px-2.5 py-2 text-sm text-secondary outline-none focus:border-brand focus:ring-2 focus:ring-brand"
+                        />
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
 
-              <button
-                type="button"
-                onClick={addDialogueItem}
-                className="mt-3 w-full rounded-lg border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
-              >
-                + Add dialogue row
-              </button>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={addDialogueItem}
+                  className="flex-1 rounded-lg border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+                >
+                  + Add dialogue row
+                </button>
+                <button
+                  type="button"
+                  onClick={addDialogueSpacer}
+                  className="flex-1 rounded-lg border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover"
+                >
+                  + Add spacer row
+                </button>
+              </div>
             </div>
           )}
 
@@ -8754,6 +9045,25 @@ export default function EditorPage() {
               >
                 {[1, 2, 3, 4, 5].map((level) => (
                   <option key={level} value={level}>H{level}</option>
+                ))}
+              </select>
+
+              <label htmlFor="custom-heading-icon" className="mt-4 block text-xs font-semibold text-tertiary">
+                Icon
+              </label>
+              <select
+                id="custom-heading-icon"
+                value={selectedCustomHeadingAttrs.icon}
+                onChange={(event) => setCustomHeadingAttr(
+                  editor,
+                  selectedCustomHeadingPos,
+                  'icon',
+                  event.target.value as CustomHeadingIcon,
+                )}
+                className="mt-2 w-full rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-medium text-secondary shadow-xs outline-none transition focus:border-brand focus:ring-2 focus:ring-brand"
+              >
+                {HEADING_ICON_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
 
@@ -9803,6 +10113,20 @@ export default function EditorPage() {
               </button>
               <p className="mt-2 text-xs leading-5 text-quaternary">
                 Exportiert diesen Block in 3× Auflösung mit umlaufendem Rand.
+              </p>
+              <button
+                type="button"
+                disabled={exportingBlockSVG}
+                onClick={() => void exportSelectedBlockSVG()}
+                className="mt-2 flex w-full items-center justify-start gap-2 rounded-lg border border-primary px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-primary_hover disabled:cursor-wait disabled:opacity-50"
+              >
+                {exportingBlockSVG
+                  ? <Loading01 className="size-4 animate-spin" />
+                  : <Download01 className="size-4" />}
+                {exportingBlockSVG ? 'SVG wird exportiert…' : 'SVG exportieren'}
+              </button>
+              <p className="mt-2 text-xs leading-5 text-quaternary">
+                Exportiert diesen Block als skalierbare Vektorgrafik.
               </p>
               {blockExportError && (
                 <p role="alert" className="mt-2 text-xs text-error-primary">

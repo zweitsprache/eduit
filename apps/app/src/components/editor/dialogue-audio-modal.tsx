@@ -29,7 +29,7 @@ const inputClass = 'mt-1.5 h-9 w-full rounded-md border border-primary bg-primar
 
 function usedSpeakers(items: DialogueItem[]) {
   return ([1, 2, 3, 4] as DialogueSpeaker[])
-    .filter((speaker) => items.some((item) => item.speaker === speaker));
+    .filter((speaker) => items.some((item) => !item.isSpacer && item.speaker === speaker));
 }
 
 function pickDefaultVoices(
@@ -52,7 +52,8 @@ function scriptFromItems(
   items: DialogueItem[],
   saved: DialogueAudio['scriptItems'] | undefined,
 ) {
-  const fallback = items.map((item) => ({
+  const speakableItems = items.filter((item) => !item.isSpacer);
+  const fallback = speakableItems.map((item) => ({
     id: item.id,
     speaker: item.speaker,
     text: dialogueLineToSpeechText(item.text),
